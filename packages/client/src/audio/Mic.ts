@@ -55,9 +55,12 @@ export class Mic {
 
     // Store deviceId
     const track = this.audioStream.getTracks()[0]
-    const newDeviceId =
+    let newDeviceId =
       track && track.getCapabilities && track.getCapabilities().deviceId
     if (newDeviceId) {
+      if (newDeviceId === 'default' && deviceId) {
+        newDeviceId = deviceId
+      }
       localStorage.setItem(LocalStorageKeys.MicDevice, newDeviceId)
       this.deviceId = newDeviceId
     } else {
