@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/elevenlabs",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "ElevenLabs implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",

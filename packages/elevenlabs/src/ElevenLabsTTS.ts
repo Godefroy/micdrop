@@ -85,11 +85,15 @@ export class ElevenLabsTTS extends TTS {
   cancel() {
     if (!this.isProcessing) return
     this.log('Cancel')
+
     this.canceled = true
     this.textSent = ''
     this.receivedAudioText = ''
     this.isProcessing = false
-    this.socket?.send(JSON.stringify({ text: ' ', flush: true }))
+
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ text: ' ', flush: true }))
+    }
   }
 
   destroy() {
@@ -153,8 +157,10 @@ export class ElevenLabsTTS extends TTS {
         // Start keep-alive interval
         this.keepAliveInterval = setInterval(
           () => {
-            this.log('Sending keep-alive message')
-            this.socket?.send(JSON.stringify({ text: ' ' }))
+            if (this.socket?.readyState === WebSocket.OPEN) {
+              this.log('Sending keep-alive message')
+              this.socket.send(JSON.stringify({ text: ' ' }))
+            }
           },
           (WS_INACTIVITY_TIMEOUT - 1) * 1000
         )

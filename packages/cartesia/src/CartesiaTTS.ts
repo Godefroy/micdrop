@@ -90,12 +90,14 @@ export class CartesiaTTS extends TTS {
     this.textSent = ''
 
     // Signal Cartesia to stop sending data
-    this.socket?.send(
-      JSON.stringify({
-        context_id: this.counter.toString(),
-        cancel: true,
-      } satisfies CartesiaCancelPayload)
-    )
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(
+        JSON.stringify({
+          context_id: this.counter.toString(),
+          cancel: true,
+        } satisfies CartesiaCancelPayload)
+      )
+    }
 
     // Increment counter to avoid processing messages from previous calls
     this.counter++
