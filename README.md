@@ -78,3 +78,7 @@ MIT License - see the [LICENSE](LICENSE) file for details
 ## Author
 
 Originally developed for [Raconte.ai](https://www.raconte.ai) and open sourced by [Lonestone](https://www.lonestone.io) ([GitHub](https://github.com/lonestone))
+
+## Acknowledgements
+
+Thanks to [ricky0123/vad](https://github.com/ricky0123/vad) for their work on voice activity detection.
