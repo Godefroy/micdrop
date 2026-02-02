@@ -22,6 +22,7 @@ const defaultOptions: SileroVADOptions = {
  * @see https://github.com/ricky0123/vad
  */
 export class SileroVAD extends VAD {
+  public readonly name = 'SileroVAD'
   public options = defaultOptions
   private vad: MicVAD | undefined
   private _isPaused = false

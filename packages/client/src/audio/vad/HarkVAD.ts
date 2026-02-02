@@ -14,6 +14,7 @@ const defaultOptions: HarkVADOptions = {
  * @see https://github.com/otalk/hark
  */
 export class HarkVAD extends VAD {
+  public readonly name = 'HarkVAD'
   public options = defaultOptions
   private hark: Harker | undefined
   private _isPaused = false

@@ -5,6 +5,7 @@ import { VAD, VADStatus } from './VAD'
  * Combine an array of VADs
  */
 export class MultipleVAD extends VAD {
+  public readonly name = 'MultipleVAD'
   public vads: VAD[]
 
   constructor(vads: Array<VAD | VADConfigName>) {

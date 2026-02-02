@@ -17,6 +17,7 @@ const defaultOptions: VolumeVADOptions = {
  * Based on the hark library implementation
  */
 export class VolumeVAD extends VAD {
+  public readonly name = 'VolumeVAD'
   public options = defaultOptions
   private _isPaused = false
   private analyser: AnalyserNode | undefined
