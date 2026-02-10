@@ -48,7 +48,7 @@ agent.on('Message', async (message) => {
 
 ## Save Conversation when Call ends
 
-Save the complete conversation when the call ends:
+Save the complete conversation when the call ends by listening to the `End` event:
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -57,17 +57,18 @@ const server = new MicdropServer(socket, {
   agent,
   stt,
   tts,
-  onEnd: (call) => {
-    // Save conversation
-    await db.conversations.create({
-      userId: currentUserId,
-      sessionId: currentSessionId,
-      messages: call.conversation,
-      endedAt: new Date(),
-      duration: call.duration,
-      totalMessages: conversationMessages.length,
-    })
-  },
+})
+
+server.on('End', async (call) => {
+  // Save conversation
+  await db.conversations.create({
+    userId: currentUserId,
+    sessionId: currentSessionId,
+    messages: call.conversation,
+    endedAt: new Date(),
+    duration: call.duration,
+    totalMessages: call.conversation.length,
+  })
 })
 ```
 

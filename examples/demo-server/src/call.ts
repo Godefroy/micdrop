@@ -2,6 +2,7 @@ import { handleError, Logger, MicdropServer } from '@micdrop/server'
 import { FastifyInstance } from 'fastify'
 import agents from './agents'
 import { checkParams } from './params'
+import { record } from './record'
 import speech2text from './speech2Text'
 import text2speech from './text2Speech'
 import { addTools } from './tools'
@@ -23,10 +24,15 @@ export default async (app: FastifyInstance) => {
         agent,
         stt,
         tts,
-        onEnd(call) {
-          console.log('Call ended', call)
-        },
       })
+
+      // Listen to End event
+      server.on('End', (call) => {
+        console.log('Call ended', call)
+      })
+
+      // Setup recorder
+      record(server)
 
       // Add tools
       addTools(server, agent)

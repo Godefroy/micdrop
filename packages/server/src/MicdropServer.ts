@@ -1,3 +1,4 @@
+import { EventEmitter } from 'eventemitter3'
 import { Duplex, PassThrough, Readable } from 'stream'
 import { WebSocket } from 'ws'
 import type { Agent } from './agent'
@@ -11,16 +12,21 @@ import {
   MicdropServerCommands,
 } from './types'
 
+export interface MicdropServerEvents {
+  End: [MicdropCallSummary]
+  UserAudio: [Buffer]
+  AssistantAudio: [Buffer]
+}
+
 export interface MicdropConfig {
   firstMessage?: string
   generateFirstMessage?: boolean
   agent: Agent
   stt: STT
   tts: TTS
-  onEnd?(call: MicdropCallSummary): void
 }
 
-export class MicdropServer {
+export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   public socket: WebSocket | null = null
   public config: MicdropConfig | null = null
   public logger?: Logger
@@ -37,6 +43,7 @@ export class MicdropServer {
   private userSpeechChunks = 0
 
   constructor(socket: WebSocket, config: MicdropConfig) {
+    super()
     this.socket = socket
     this.config = config
     this.log(`Call started`)
@@ -121,9 +128,9 @@ export class MicdropServer {
     this.config.stt.destroy()
     this.config.tts.destroy()
 
-    // End call callback
-    this.config.onEnd?.({
-      conversation: this.config.agent.conversation.slice(1), // Remove system message
+    // Emit End event
+    this.emit('End', {
+      conversation: this.config.agent.conversation,
       duration,
     })
 
@@ -158,14 +165,15 @@ export class MicdropServer {
 
     // Audio chunk
     else if (this.currentUserStream) {
-      this.onAudioChunk(message)
+      this.onUserAudio(message)
     }
   }
 
-  private onAudioChunk(chunk: Buffer) {
+  private onUserAudio(chunk: Buffer) {
     this.log(`Received chunk (${chunk.byteLength} bytes)`)
     this.currentUserStream?.write(chunk)
     this.userSpeechChunks++
+    this.emit('UserAudio', chunk)
   }
 
   private onMute() {
@@ -235,6 +243,7 @@ export class MicdropServer {
     if (!this.socket) return
     this.log(`Send audio chunk (${audio.byteLength} bytes)`)
     this.socket.send(audio)
+    this.emit('AssistantAudio', audio)
   }
 
   private sendFirstMessage() {

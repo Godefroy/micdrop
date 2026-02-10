@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recording Playback</title>
+  <style>
+    @property --progress {
+      syntax: '<percentage>';
+      inherits: false;
+      initial-value: 0%;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .play-all-btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .play-all-btn:hover {
+      background: #0056b3;
+    }
+    .play-all-btn:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    .message {
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      --progress: 0%;
+      transition: --progress 0.25s linear;
+    }
+    .message.user {
+      background: linear-gradient(to right, #90caf9 var(--progress), #e3f2fd var(--progress));
+      margin-left: 40px;
+    }
+    .message.assistant {
+      background: linear-gradient(to right, #c8e6c9 var(--progress), #f5f5f5 var(--progress));
+      border: 1px solid #ddd;
+      margin-right: 40px;
+    }
+    .play-btn {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .play-btn:hover {
+      background: #0056b3;
+    }
+    .play-btn:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    .message-content {
+      flex: 1;
+    }
+    .role {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .text {
+      line-height: 1.5;
+    }
+    .timestamp {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .error {
+      text-align: center;
+      padding: 40px;
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <h1>Recording Playback</h1>
+  <div class="controls">
+    <button class="play-all-btn" id="playAllBtn" disabled>▶ Play Conversation</button>
+  </div>
+  <div id="messages">
+    <div class="loading">Loading recording...</div>
+  </div>
+
+  <script>
+    let messages = []
+    let currentAudio = null
+    let currentPlayingIndex = -1
+    let isPlayingAll = false
+    let playAllIndex = 0
+
+    async function loadRecording() {
+      try {
+        const response = await fetch('recording.json')
+        if (!response.ok) throw new Error('Failed to load recording')
+        messages = await response.json()
+        renderMessages()
+        document.getElementById('playAllBtn').disabled = messages.length === 0
+      } catch (error) {
+        document.getElementById('messages').innerHTML =
+          '<div class="error">Failed to load recording.json</div>'
+      }
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messages')
+      if (messages.length === 0) {
+        container.innerHTML = '<div class="loading">No messages recorded yet</div>'
+        return
+      }
+
+      container.innerHTML = messages.map((msg, index) => `
+        <div class="message ${msg.role}" id="message-${index}">
+          <button class="play-btn" onclick="playMessage(${index})">▶</button>
+          <div class="message-content">
+            <div class="role">${msg.role}</div>
+            <div class="text">${escapeHtml(msg.message)}</div>
+            <div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div')
+      div.textContent = text
+      return div.innerHTML
+    }
+
+    function base64ToBytes(base64) {
+      const binaryString = atob(base64)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      return bytes
+    }
+
+    function createWavBlob(pcmData, sampleRate = 16000, numChannels = 1, bitsPerSample = 16) {
+      const byteRate = sampleRate * numChannels * bitsPerSample / 8
+      const blockAlign = numChannels * bitsPerSample / 8
+      const dataSize = pcmData.length
+      const buffer = new ArrayBuffer(44 + dataSize)
+      const view = new DataView(buffer)
+
+      // WAV header
+      const writeString = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i))
+      }
+      writeString(0, 'RIFF')
+      view.setUint32(4, 36 + dataSize, true)
+      writeString(8, 'WAVE')
+      writeString(12, 'fmt ')
+      view.setUint32(16, 16, true)
+      view.setUint16(20, 1, true)
+      view.setUint16(22, numChannels, true)
+      view.setUint32(24, sampleRate, true)
+      view.setUint32(28, byteRate, true)
+      view.setUint16(32, blockAlign, true)
+      view.setUint16(34, bitsPerSample, true)
+      writeString(36, 'data')
+      view.setUint32(40, dataSize, true)
+
+      // PCM data
+      const dataArray = new Uint8Array(buffer, 44)
+      dataArray.set(pcmData)
+
+      return new Blob([buffer], { type: 'audio/wav' })
+    }
+
+    function playMessage(index) {
+      // If clicking the same message that's playing, stop it
+      if (currentAudio && currentPlayingIndex === index) {
+        currentAudio.pause()
+        currentAudio = null
+        currentPlayingIndex = -1
+        resetAllProgress()
+        if (isPlayingAll) stopPlayAll()
+        return
+      }
+
+      // Stop any other playing audio
+      if (currentAudio) {
+        currentAudio.pause()
+        currentAudio = null
+        resetAllProgress()
+      }
+
+      currentPlayingIndex = index
+      const msg = messages[index]
+      const pcmData = base64ToBytes(msg.buffer)
+      const blob = createWavBlob(pcmData)
+      const url = URL.createObjectURL(blob)
+
+      currentAudio = new Audio(url)
+      const messageEl = document.getElementById(`message-${index}`)
+      const btn = messageEl.querySelector('.play-btn')
+
+      btn.textContent = '⏹'
+
+      currentAudio.ontimeupdate = () => {
+        if (!currentAudio || !currentAudio.duration) return
+        const progress = (currentAudio.currentTime / currentAudio.duration) * 100
+        updateProgress(messageEl, progress)
+      }
+
+      currentAudio.onerror = (e) => {
+        console.error('Audio playback error:', e)
+        btn.textContent = '▶'
+        resetProgress(messageEl)
+        currentPlayingIndex = -1
+        if (isPlayingAll) stopPlayAll()
+      }
+
+      currentAudio.onended = () => {
+        btn.textContent = '▶'
+        resetProgress(messageEl)
+        URL.revokeObjectURL(url)
+        currentAudio = null
+        currentPlayingIndex = -1
+
+        if (isPlayingAll) {
+          playAllIndex++
+          if (playAllIndex < messages.length) {
+            playMessage(playAllIndex)
+          } else {
+            stopPlayAll()
+          }
+        }
+      }
+
+      currentAudio.play()
+    }
+
+    function updateProgress(el, percent) {
+      el.style.setProperty('--progress', `${percent}%`)
+    }
+
+    function resetProgress(el) {
+      el.style.setProperty('--progress', '0%')
+    }
+
+    function resetAllProgress() {
+      messages.forEach((msg, index) => {
+        const el = document.getElementById(`message-${index}`)
+        if (el) {
+          resetProgress(el)
+          el.querySelector('.play-btn').textContent = '▶'
+        }
+      })
+    }
+
+    function playAll() {
+      if (isPlayingAll) {
+        stopPlayAll()
+        return
+      }
+
+      isPlayingAll = true
+      playAllIndex = 0
+      document.getElementById('playAllBtn').textContent = '⏹ Stop'
+      playMessage(0)
+    }
+
+    function stopPlayAll() {
+      isPlayingAll = false
+      playAllIndex = 0
+      document.getElementById('playAllBtn').textContent = '▶ Play Conversation'
+      if (currentAudio) {
+        currentAudio.pause()
+        currentAudio = null
+      }
+      resetAllProgress()
+    }
+
+    document.getElementById('playAllBtn').onclick = playAll
+    loadRecording()
+  </script>
+</body>
+</html>
