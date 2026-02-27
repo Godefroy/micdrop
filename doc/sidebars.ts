@@ -96,6 +96,7 @@ const sidebars: SidebarsConfig = {
             'ai-integration/fallback-strategies/tts-fallback',
           ],
         },
+        'ai-integration/sovereign-voice-ai',
       ],
     },
   ],

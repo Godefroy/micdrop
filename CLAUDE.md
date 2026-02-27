@@ -34,6 +34,8 @@ pnpm format
 pnpm clean
 ```
 
+Don't co-author commits with Claude.
+
 ## Typescript Formatting
 
 Follow this Prettierformatting for all Typescript code.

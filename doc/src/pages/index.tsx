@@ -6,6 +6,7 @@ import { FeaturesSection } from '../components/home/FeaturesSection'
 import { HomeHeader } from '../components/home/HomeHeader'
 import { PackagesSection } from '../components/home/PackagesSection'
 import { QuoteSection } from '../components/home/QuoteSection'
+import { SovereignSection } from '../components/home/SovereignSection'
 
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext()
@@ -20,6 +21,7 @@ export default function Home(): JSX.Element {
         <PackagesSection />
         <QuoteSection />
         <FeaturesSection />
+        <SovereignSection />
         <DemoSection />
       </main>
     </Layout>
