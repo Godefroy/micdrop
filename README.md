@@ -17,6 +17,7 @@ Micdrop is a set of open source Typescript packages to build real-time voice con
 - [`@micdrop/ai-sdk`](./packages/ai-sdk/README.md) - AI SDK agent compatible with a lot of LLM providers.
 - [`@micdrop/elevenlabs`](./packages/elevenlabs/README.md) - ElevenLabs text-to-speech integration with streaming support
 - [`@micdrop/cartesia`](./packages/cartesia/README.md) - Cartesia text-to-speech integration for real-time voice synthesis
+- [`@micdrop/gradium`](./packages/gradium/README.md) - Gradium text-to-speech integration with WebSocket streaming
 - [`@micdrop/mistral`](./packages/mistral/README.md) - Mistral AI agent integration for conversation handling
 - [`@micdrop/gladia`](./packages/gladia/README.md) - Gladia speech-to-text integration for audio transcription
 
@@ -61,7 +62,7 @@ This modular approach gives you the flexibility to build voice applications that
   - Streaming support
   - Device selection and control
 - 🌐 WebSocket communication
-- 📦 AI implementations provided for OpenAI, ElevenLabs, Mistral, Gladia, and more
+- 📦 AI implementations provided for OpenAI, ElevenLabs, Gradium, Mistral, Gladia, and more
 - 🔌 Bring your own AI components (framework agnostic)
   - Large Language Models (LLM)
   - Text-to-Speech (TTS)

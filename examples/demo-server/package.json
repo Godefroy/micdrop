@@ -18,6 +18,7 @@
     "@micdrop/cartesia": "*",
     "@micdrop/elevenlabs": "*",
     "@micdrop/gladia": "*",
+    "@micdrop/gradium": "*",
     "@micdrop/mistral": "*",
     "@micdrop/openai": "*",
     "@micdrop/server": "*",

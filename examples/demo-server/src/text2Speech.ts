@@ -1,5 +1,6 @@
 import { CartesiaTTS } from '@micdrop/cartesia'
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
+import { GradiumTTS } from '@micdrop/gradium'
 import { FallbackTTS, MockTTS } from '@micdrop/server'
 import path from 'path'
 
@@ -26,6 +27,13 @@ const text2speech = {
       modelId: 'sonic-turbo',
       voiceId: process.env.CARTESIA_VOICE_ID || '',
       language: 'fr',
+    }),
+
+  // Gradium
+  gradium: () =>
+    new GradiumTTS({
+      apiKey: process.env.GRADIUM_API_KEY || '',
+      voiceId: process.env.GRADIUM_VOICE_ID || '',
     }),
 
   // Fallback

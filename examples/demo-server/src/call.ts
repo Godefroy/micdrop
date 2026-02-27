@@ -15,7 +15,7 @@ export default async (app: FastifyInstance) => {
       // Select demo providers (see files agents.ts, speech2text.ts, text2speech.ts)
       const agent = agents.mistral(lang)
       const stt = speech2text.gladia()
-      const tts = text2speech.elevenlabs()
+      const tts = text2speech.gradium()
 
       // Start call
       const server = new MicdropServer(socket, {

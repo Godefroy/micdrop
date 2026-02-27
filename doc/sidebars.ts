@@ -74,6 +74,7 @@ const sidebars: SidebarsConfig = {
             'ai-integration/provided-integrations/cartesia',
             'ai-integration/provided-integrations/elevenlabs',
             'ai-integration/provided-integrations/gladia',
+            'ai-integration/provided-integrations/gradium',
             'ai-integration/provided-integrations/mistral',
             'ai-integration/provided-integrations/openai',
           ],

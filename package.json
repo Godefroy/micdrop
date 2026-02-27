@@ -8,7 +8,7 @@
     "doc"
   ],
   "scripts": {
-    "build": "pnpm build:server && pnpm build:client && concurrently -n \"ai-sdk,cartesia,elevenlabs,gladia,mistral,openai,react\" -c \"blue,green,yellow,magenta,cyan,red,green\" \"pnpm --filter ai-sdk build\" \"pnpm --filter cartesia build\" \"pnpm --filter elevenlabs build\" \"pnpm --filter gladia build\" \"pnpm --filter mistral build\" \"pnpm --filter openai build\" \"pnpm --filter react build\"",
+    "build": "pnpm build:server && pnpm build:client && concurrently -n \"ai-sdk,cartesia,elevenlabs,gladia,gradium,mistral,openai,react\" -c \"blue,green,yellow,magenta,white,cyan,red,green\" \"pnpm --filter ai-sdk build\" \"pnpm --filter cartesia build\" \"pnpm --filter elevenlabs build\" \"pnpm --filter gladia build\" \"pnpm --filter gradium build\" \"pnpm --filter mistral build\" \"pnpm --filter openai build\" \"pnpm --filter react build\"",
     "build:server": "pnpm --filter server build",
     "build:client": "pnpm --filter client build",
     "build:demo": "pnpm --filter demo-server build && pnpm --filter demo-client build",

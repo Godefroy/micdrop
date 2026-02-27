@@ -65,6 +65,12 @@ export function PackagesSection() {
               @micdrop/cartesia
             </a>
             <a
+              href="/docs/ai-integration/provided-integrations/gradium"
+              className="ai-badge-ai"
+            >
+              @micdrop/gradium
+            </a>
+            <a
               href="/docs/ai-integration/provided-integrations/mistral"
               className="ai-badge-ai"
             >

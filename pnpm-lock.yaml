@@ -145,6 +145,9 @@ importers:
       '@micdrop/gladia':
         specifier: '*'
         version: link:../../packages/gladia
+      '@micdrop/gradium':
+        specifier: '*'
+        version: link:../../packages/gradium
       '@micdrop/mistral':
         specifier: '*'
         version: link:../../packages/mistral
@@ -271,6 +274,25 @@ importers:
       '@types/node':
         specifier: ^22.13.4
         version: 22.17.2
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      tsup:
+        specifier: ^8.3.6
+        version: 8.5.0(typescript@5.7.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
+  packages/gradium:
+    dependencies:
+      '@micdrop/server':
+        specifier: '*'
+        version: link:../server
+      ws:
+        specifier: ^8.18.2
+        version: 8.18.3
+    devDependencies:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
@@ -7348,6 +7370,7 @@ packages:
 
   /glob@10.4.5:
     resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
     dependencies:
       foreground-child: 3.3.1
