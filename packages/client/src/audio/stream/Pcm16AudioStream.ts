@@ -6,8 +6,8 @@ const CHANNELS = 1
 
 export class Pcm16AudioStream extends AudioStream {
   private audioQueue: AudioBuffer[] = []
-  private currentSourceNode?: AudioBufferSourceNode
-  private isProcessingQueue = false
+  private sourceNodes: AudioBufferSourceNode[] = []
+  private nextStartTime = 0
 
   constructor() {
     super()
@@ -35,17 +35,17 @@ export class Pcm16AudioStream extends AudioStream {
   }
 
   stopAudio(): void {
-    if (this.currentSourceNode) {
+    for (const node of this.sourceNodes) {
       try {
-        this.currentSourceNode.stop()
-        this.currentSourceNode.disconnect()
+        node.stop()
+        node.disconnect()
       } catch (error) {
         // Ignore errors when stopping
       }
-      this.currentSourceNode = undefined
     }
+    this.sourceNodes = []
     this.audioQueue = []
-    this.isProcessingQueue = false
+    this.nextStartTime = 0
     this.setIsPlaying(false)
   }
 
@@ -82,37 +82,36 @@ export class Pcm16AudioStream extends AudioStream {
   }
 
   private processQueue(): void {
-    if (this.isProcessingQueue || this.audioQueue.length === 0) {
-      return
+    while (this.audioQueue.length > 0) {
+      const audioBuffer = this.audioQueue.shift()!
+      this.scheduleBuffer(audioBuffer)
     }
-
-    this.isProcessingQueue = true
-    this.playNextBuffer()
   }
 
-  private playNextBuffer(): void {
-    if (this.audioQueue.length === 0) {
-      this.isProcessingQueue = false
-      this.setIsPlaying(false)
-      return
+  private scheduleBuffer(audioBuffer: AudioBuffer): void {
+    const sourceNode = audioContext.createBufferSource()
+    sourceNode.buffer = audioBuffer
+    sourceNode.connect(this.outputNode)
+
+    // Schedule this buffer right after the previous one ends
+    const now = audioContext.currentTime
+    const startTime = Math.max(this.nextStartTime, now)
+    this.nextStartTime = startTime + audioBuffer.duration
+
+    sourceNode.onended = () => {
+      // Remove from tracked nodes
+      const index = this.sourceNodes.indexOf(sourceNode)
+      if (index !== -1) this.sourceNodes.splice(index, 1)
+
+      // If no more nodes playing and queue empty, playback is done
+      if (this.sourceNodes.length === 0 && this.audioQueue.length === 0) {
+        this.nextStartTime = 0
+        this.setIsPlaying(false)
+      }
     }
 
-    const audioBuffer = this.audioQueue.shift()!
-
-    // Create a new AudioBufferSourceNode
-    this.currentSourceNode = audioContext.createBufferSource()
-    this.currentSourceNode.buffer = audioBuffer
-    this.currentSourceNode.connect(this.outputNode)
-
-    // Set up event handler for when this buffer finishes
-    this.currentSourceNode.onended = () => {
-      this.currentSourceNode = undefined
-      // Continue processing queue
-      this.playNextBuffer()
-    }
-
-    // Start playing
-    this.currentSourceNode.start(0)
+    this.sourceNodes.push(sourceNode)
+    sourceNode.start(startTime)
     this.setIsPlaying(true)
   }
 }
