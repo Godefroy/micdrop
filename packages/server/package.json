@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/server",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "🖐️🎤 Micdrop: Real-Time Voice Conversations with AI",
   "author": "Lonestone",
   "license": "MIT",
@@ -33,14 +33,14 @@
     "conversation"
   ],
   "dependencies": {
-    "eventemitter3": "^5.0.1",
-    "ws": "^8.18.2"
+    "eventemitter3": "^5.0.4",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
+    "@types/node": "^22.19.13",
     "@types/ws": "^8.18.1",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3",
-    "zod": "^4.0.5"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/gladia",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Gladia implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",
@@ -35,15 +35,15 @@
     "stt"
   ],
   "dependencies": {
-    "ws": "^8.18.2"
+    "ws": "^8.19.0"
   },
   "peerDependencies": {
     "@micdrop/server": "*"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
+    "@types/node": "^22.19.13",
     "@types/ws": "^8.18.1",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }

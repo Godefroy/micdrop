@@ -5,7 +5,7 @@ import {
   ChatCompletionStreamRequestMessages,
 } from '@mistralai/mistralai/models/components'
 import { Writable } from 'stream'
-import z, { toJSONSchema } from 'zod-v4'
+import z, { toJSONSchema } from 'zod'
 
 export interface MistralAgentOptions extends AgentOptions {
   apiKey: string

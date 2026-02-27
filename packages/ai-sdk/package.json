@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/ai-sdk",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "AI SDK implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",
@@ -34,15 +34,15 @@
     "ai-sdk"
   ],
   "dependencies": {
-    "ai": "^5.0.14"
+    "ai": "^6.0.0"
   },
   "peerDependencies": {
     "@micdrop/server": "*",
     "zod": "^4"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3"
+    "@types/node": "^22.19.13",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }

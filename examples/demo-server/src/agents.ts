@@ -28,6 +28,7 @@ export default {
   openai: (lang: string) =>
     new OpenaiAgent({
       apiKey: process.env.OPENAI_API_KEY || '',
+      model: 'gpt-5.2',
       systemPrompt: getSystemPrompt(lang),
       autoEndCall: true,
       autoSemanticTurn: true,
@@ -37,7 +38,7 @@ export default {
   // AI SDK
   aiSdk: (lang: string) =>
     new AiSdkAgent({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       systemPrompt: getSystemPrompt(lang),
       autoEndCall: true,
       autoSemanticTurn: true,

@@ -140,10 +140,9 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
 
     this.tools.forEach((t) => {
       tools[t.name] = tool({
-        name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema || z.object({}),
-        execute: (args, { toolCallId }) =>
+        inputSchema: (t.inputSchema || z.object({})) as z.ZodObject,
+        execute: (args: any, { toolCallId }: { toolCallId: string }) =>
           this.executeTool({
             role: 'tool_call',
             toolCallId,

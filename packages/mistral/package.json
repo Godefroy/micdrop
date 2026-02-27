@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/mistral",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Mistral implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",
@@ -35,17 +35,15 @@
     "tts"
   ],
   "dependencies": {
-    "@mistralai/mistralai": "^1.7.3",
-    "zod": "^3.24.1",
-    "zod-v4": "npm:zod@^4.0.5"
+    "@mistralai/mistralai": "^1.14.1"
   },
   "peerDependencies": {
     "@micdrop/server": "*",
     "zod": "^4"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3"
+    "@types/node": "^22.19.13",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }
