@@ -4,9 +4,9 @@ The `STT` class is the core abstraction for speech-to-text functionality in Micd
 
 ## Available Implementations
 
-- [OpenaiSTT](https://github.com/lonestone/micdrop/blob/main/packages/openai/src/OpenaiSTT.ts) from [@micdrop/openai](../provided-integrations/openai)
-- [GladiaSTT](https://github.com/lonestone/micdrop/blob/main/packages/gladia/src/GladiaSTT.ts) from [@micdrop/gladia](../provided-integrations/gladia)
-- [MockSTT](https://github.com/lonestone/micdrop/blob/main/packages/server/src/stt/MockSTT.ts) for testing
+- [OpenaiSTT](https://github.com/Godefroy/micdrop/blob/main/packages/openai/src/OpenaiSTT.ts) from [@micdrop/openai](../provided-integrations/openai)
+- [GladiaSTT](https://github.com/Godefroy/micdrop/blob/main/packages/gladia/src/GladiaSTT.ts) from [@micdrop/gladia](../provided-integrations/gladia)
+- [MockSTT](https://github.com/Godefroy/micdrop/blob/main/packages/server/src/stt/MockSTT.ts) for testing
 
 For automatic failover between multiple STT providers, see [FallbackSTT](../fallback-strategies/stt-fallback).
 

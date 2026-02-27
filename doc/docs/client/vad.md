@@ -200,7 +200,7 @@ You can also pass your own VAD implementation:
 Micdrop.start({ vad: new MyCustomVAD() })
 ```
 
-See [VolumeVAD](https://github.com/lonestone/micdrop/blob/main/packages/client/src/audio/vad/VolumeVAD.ts) as an example.
+See [VolumeVAD](https://github.com/Godefroy/micdrop/blob/main/packages/client/src/audio/vad/VolumeVAD.ts) as an example.
 
 ## VAD Delay
 
@@ -269,4 +269,4 @@ Both VolumeVAD and SileroVAD settings are automatically saved to localStorage an
 
 ## React VAD Settings UI
 
-See a complete React component for VAD configuration based on the demo client: [VADSettings](https://github.com/lonestone/micdrop/blob/main/examples/demo-client/src/components/VADSettings.tsx)
+See a complete React component for VAD configuration based on the demo client: [VADSettings](https://github.com/Godefroy/micdrop/blob/main/examples/demo-client/src/components/VADSettings.tsx)

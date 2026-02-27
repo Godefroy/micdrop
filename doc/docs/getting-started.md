@@ -81,9 +81,9 @@ Don't forget to set the API keys in the environment variables.
 See Micdrop in action:
 
 - **Main Demo**
-  - **[Client](https://github.com/lonestone/micdrop/tree/main/examples/demo-client)** - React application with full UI
-  - **[Server](https://github.com/lonestone/micdrop/tree/main/examples/demo-server)** - Server setup with fastify
-- **[Form Demo](https://github.com/lonestone/micdrop-form-demo)** - A demo app showcasing Micdrop's capabilities for voice-assisted form filling using OpenAI and tool calling.
+  - **[Client](https://github.com/Godefroy/micdrop/tree/main/examples/demo-client)** - React application with full UI
+  - **[Server](https://github.com/Godefroy/micdrop/tree/main/examples/demo-server)** - Server setup with fastify
+- **[Form Demo](https://github.com/Godefroy/micdrop-form-demo)** - A demo app showcasing Micdrop's capabilities for voice-assisted form filling using OpenAI and tool calling.
 
 ## Setup Documentation MCP
 

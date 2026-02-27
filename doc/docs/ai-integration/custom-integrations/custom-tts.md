@@ -4,9 +4,9 @@ The `TTS` class is the core abstraction for **text-to-speech** functionality in 
 
 ## Available Implementations
 
-- [ElevenLabsTTS](https://github.com/lonestone/micdrop/blob/main/packages/elevenlabs/src/ElevenLabsTTS.ts) from [@micdrop/elevenlabs](../provided-integrations/elevenlabs)
-- [CartesiaTTS](https://github.com/lonestone/micdrop/blob/main/packages/cartesia/src/CartesiaTTS.ts) from [@micdrop/cartesia](../provided-integrations/cartesia)
-- [MockTTS](https://github.com/lonestone/micdrop/blob/main/packages/server/src/tts/MockTTS.ts) for testing
+- [ElevenLabsTTS](https://github.com/Godefroy/micdrop/blob/main/packages/elevenlabs/src/ElevenLabsTTS.ts) from [@micdrop/elevenlabs](../provided-integrations/elevenlabs)
+- [CartesiaTTS](https://github.com/Godefroy/micdrop/blob/main/packages/cartesia/src/CartesiaTTS.ts) from [@micdrop/cartesia](../provided-integrations/cartesia)
+- [MockTTS](https://github.com/Godefroy/micdrop/blob/main/packages/server/src/tts/MockTTS.ts) for testing
 
 For automatic failover between multiple TTS providers, see [FallbackTTS](../fallback-strategies/tts-fallback).
 

@@ -204,7 +204,7 @@ function MicVolumeIndicator() {
 
 This provides real-time visual feedback of microphone input levels, helping users verify their microphone is working and adjust VAD thresholds appropriately.
 
-**Example:** [MicVolume component](https://github.com/lonestone/micdrop/blob/main/examples/demo-client/src/components/MicVolume.tsx)
+**Example:** [MicVolume component](https://github.com/Godefroy/micdrop/blob/main/examples/demo-client/src/components/MicVolume.tsx)
 
 **Learn more:** [Mic utility class](./utility-classes/mic)
 
@@ -265,6 +265,6 @@ function SpeakerVolumeIndicator() {
 }
 ```
 
-**Example:** [SpeakerTestButton component](https://github.com/lonestone/micdrop/blob/main/examples/demo-client/src/components/SpeakerTestButton.tsx)
+**Example:** [SpeakerTestButton component](https://github.com/Godefroy/micdrop/blob/main/examples/demo-client/src/components/SpeakerTestButton.tsx)
 
 **Learn more:** [Speaker utility class](./utility-classes/speaker)

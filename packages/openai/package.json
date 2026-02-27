@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lonestone/micdrop.git",
+    "url": "git+https://github.com/Godefroy/micdrop.git",
     "directory": "packages/openai"
   },
   "publishConfig": {

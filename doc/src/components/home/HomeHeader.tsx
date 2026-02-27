@@ -32,7 +32,7 @@ export function HomeHeader() {
               </Link>
               <Link
                 className="ai-button-secondary"
-                to="https://github.com/lonestone/micdrop"
+                to="https://github.com/Godefroy/micdrop"
                 target="_blank"
               >
                 <FaGithub className="mr-2" />

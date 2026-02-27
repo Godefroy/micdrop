@@ -4,9 +4,9 @@ The `Agent` class is the core abstraction for AI conversation handling in Micdro
 
 ## Available Implementations
 
-- [OpenaiAgent](https://github.com/lonestone/micdrop/blob/main/packages/openai/src/OpenaiAgent.ts) from [@micdrop/openai](../provided-integrations/openai)
-- [MistralAgent](https://github.com/lonestone/micdrop/blob/main/packages/mistral/src/MistralAgent.ts) from [@micdrop/mistral](../provided-integrations/mistral)
-- [MockAgent](https://github.com/lonestone/micdrop/blob/main/packages/server/src/agent/MockAgent.ts) for testing
+- [OpenaiAgent](https://github.com/Godefroy/micdrop/blob/main/packages/openai/src/OpenaiAgent.ts) from [@micdrop/openai](../provided-integrations/openai)
+- [MistralAgent](https://github.com/Godefroy/micdrop/blob/main/packages/mistral/src/MistralAgent.ts) from [@micdrop/mistral](../provided-integrations/mistral)
+- [MockAgent](https://github.com/Godefroy/micdrop/blob/main/packages/server/src/agent/MockAgent.ts) for testing
 
 ## Overview
 

@@ -27,13 +27,13 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/lonestone/micdrop/tree/main/doc',
+          editUrl: 'https://github.com/Godefroy/micdrop/tree/main/doc',
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
         },
         blog: {
           showReadingTime: true,
-          editUrl: 'https://github.com/lonestone/micdrop/tree/main/doc',
+          editUrl: 'https://github.com/Godefroy/micdrop/tree/main/doc',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -59,7 +59,7 @@ const config: Config = {
         },
         // { to: '/blog', label: 'Blog', position: 'left' },
         {
-          href: 'https://github.com/lonestone/micdrop',
+          href: 'https://github.com/Godefroy/micdrop',
           label: 'GitHub',
           position: 'right',
         },
@@ -128,7 +128,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/lonestone/micdrop',
+              href: 'https://github.com/Godefroy/micdrop',
             },
             {
               label: 'Lonestone',

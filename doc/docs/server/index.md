@@ -45,7 +45,7 @@ wss.on('connection', (socket) => {
 
 ## Demo
 
-Check out [demo server](https://github.com/lonestone/micdrop/tree/main/examples/demo-server), it shows:
+Check out [demo server](https://github.com/Godefroy/micdrop/tree/main/examples/demo-server), it shows:
 
 - Setting up a Fastify server with WebSocket support
 - Configuring the MicdropServer with custom handlers
