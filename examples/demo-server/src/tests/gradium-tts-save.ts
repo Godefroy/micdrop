@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-import { ElevenLabsTTS } from '@micdrop/elevenlabs'
+import { GradiumTTS } from '@micdrop/gradium'
 import { Logger } from '@micdrop/server'
 import fs from 'fs'
 import { createTextStream } from './utils/createLongTextStream'
@@ -10,11 +10,11 @@ const textStream = createTextStream(
   `Hello, I'm Micdrop! What can I do for you today?`
 )
 
-const tts = new ElevenLabsTTS({
-  apiKey: process.env.ELEVENLABS_API_KEY || '',
-  voiceId: process.env.ELEVENLABS_VOICE_ID || '',
+const tts = new GradiumTTS({
+  apiKey: process.env.GRADIUM_API_KEY || '',
+  voiceId: process.env.GRADIUM_VOICE_ID || '',
 })
-tts.logger = new Logger('ElevenLabsTTS')
+tts.logger = new Logger('GradiumTTS')
 
 tts.speak(textStream)
 

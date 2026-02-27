@@ -17,20 +17,23 @@ const tts = new CartesiaTTS({
 })
 tts.logger = new Logger('CartesiaTTS')
 
-const audioStream = tts.speak(textStream)
+tts.speak(textStream)
 
 let i = 0
-audioStream.on('data', (chunk) => {
+tts.on('Audio', (chunk) => {
   i++
   console.log(`Chunk received and saved #${i} (${chunk.length} bytes)`)
-  fs.writeFileSync(`chunk-${i}.webm`, chunk)
+  fs.writeFileSync(`chunk-${i}.pcm`, chunk)
 })
 
-audioStream.on('error', (error) => {
-  console.log('Audio stream error', error)
-})
-
-audioStream.on('end', () => {
-  console.log('Audio stream ended, destroying tts')
+tts.on('Failed', (texts) => {
+  console.log('TTS failed', texts)
   tts.destroy()
+})
+
+textStream.on('end', () => {
+  setTimeout(() => {
+    console.log('Text stream ended, destroying tts')
+    tts.destroy()
+  }, 5000)
 })

@@ -14,24 +14,21 @@ const tts = new CartesiaTTS({
 })
 tts.logger = new Logger('CartesiaTTS')
 
-const audioStream = tts.speak(textStream)
+tts.speak(textStream)
 
 const COUNT_STOP = 3
 let i = 0
-audioStream.on('data', (chunk) => {
+tts.on('Audio', (chunk) => {
   i++
   console.log(`Chunk received #${i} (${chunk.length} bytes)`)
   if (i === COUNT_STOP) {
     console.log('Enough chunks received, cancelling tts')
     tts.cancel()
+    tts.destroy()
   }
 })
 
-audioStream.on('error', (error) => {
-  console.log('Audio stream error', error)
-})
-
-audioStream.on('end', () => {
-  console.log('Audio stream ended, destroying tts')
+tts.on('Failed', (texts) => {
+  console.log('TTS failed', texts)
   tts.destroy()
 })

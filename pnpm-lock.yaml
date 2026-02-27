@@ -170,6 +170,9 @@ importers:
       '@types/node':
         specifier: ^22.13.4
         version: 22.17.2
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@22.17.2)(typescript@5.7.3)
