@@ -94,3 +94,7 @@ When working on AI integrations, follow the established patterns:
 - STT implements the `STT` interface with `transcribe()` method
 - TTS implements the `TTS` interface with `speak()` method
 - Agents extend the `Agent` base class and implement `answer()` and `cancel()`
+
+## Contents
+
+Don't use em dashes (—) or simple dashes (-) as punctuation, use different formulation.
