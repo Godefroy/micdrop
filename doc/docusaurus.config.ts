@@ -9,6 +9,7 @@ const config: Config = {
 
   url: 'https://micdrop.dev',
   baseUrl: '/',
+  trailingSlash: false,
 
   organizationName: 'lonestone',
   projectName: 'micdrop',
