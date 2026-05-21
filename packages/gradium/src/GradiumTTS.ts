@@ -46,12 +46,24 @@ export class GradiumTTS extends TTS {
     this.textSent = ''
     this.textBuffer = ''
 
+    // Each speak() is its own multiplexed request: send a fresh setup stamped
+    // with the request's client_req_id before the first text chunk, so the
+    // server can bind the voice to this session. Multiplexing is required to
+    // reuse the connection across utterances (sequential mode only works for
+    // the first request on a socket). Queued here before any data handler can
+    // run, so the setup microtask precedes the first transcript microtask.
+    this.initPromise.then(() => {
+      if (counter !== this.counter) return
+      this.sendSetup(clientReqId)
+    })
+
     textStream.on('data', async (chunk: Buffer) => {
       if (counter !== this.counter) return
       const text = chunk.toString('utf-8').replace(/[\r\n ]+/g, ' ')
       this.textSent += text
 
       await this.initPromise
+      if (counter !== this.counter) return
 
       // Buffer text and only send complete words (flush on last space)
       const spaceIndex = text.lastIndexOf(' ')
@@ -74,6 +86,7 @@ export class GradiumTTS extends TTS {
     textStream.on('end', async () => {
       if (counter !== this.counter) return
       await this.initPromise
+      if (counter !== this.counter) return
 
       // Send remaining buffered text
       if (this.textBuffer.trim()) {
@@ -144,19 +157,11 @@ export class GradiumTTS extends TTS {
       }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
 
       socket.addEventListener('open', () => {
+        clearTimeout(timeout)
         this.log('Connection opened')
-
-        // Send setup message
-        socket.send(
-          JSON.stringify({
-            type: 'setup',
-            voice_id: this.options.voiceId,
-            model_name: this.options.modelName ?? DEFAULT_MODEL_NAME,
-            output_format: this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT,
-            close_ws_on_eos: false,
-            json_config: this.options.jsonConfig,
-          } satisfies GradiumSetupMessage)
-        )
+        // The setup is now sent per-request from speak(); we resolve as soon as
+        // the socket is open so callers can start streaming text immediately.
+        resolve()
       })
 
       socket.addEventListener('error', (error) => {
@@ -187,9 +192,10 @@ export class GradiumTTS extends TTS {
 
           switch (message.type) {
             case 'ready':
-              clearTimeout(timeout)
-              this.log('Server ready')
-              resolve()
+              // The server emits one ready per per-request setup. We already
+              // resolved initPromise on socket open, so this is purely
+              // informational. Logged so it shows up in debug traces.
+              this.log('Server ready', message.request_id ?? '')
               break
 
             case 'audio':
@@ -217,6 +223,21 @@ export class GradiumTTS extends TTS {
         }
       })
     })
+  }
+
+  private sendSetup(clientReqId: string) {
+    this.socket?.send(
+      JSON.stringify({
+        type: 'setup',
+        voice_id: this.options.voiceId,
+        model_name: this.options.modelName ?? DEFAULT_MODEL_NAME,
+        output_format: this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT,
+        close_ws_on_eos: false,
+        json_config: this.options.jsonConfig,
+        client_req_id: clientReqId,
+      } satisfies GradiumSetupMessage)
+    )
+    this.log(`Sent setup (client_req_id=${clientReqId})`)
   }
 
   private sendTranscript(text: string, clientReqId: string) {
@@ -255,16 +276,14 @@ export class GradiumTTS extends TTS {
           .then(() => {
             this.retryCount = 0
 
-            // Resend text if reconnecting during processing
+            // Resend text if reconnecting during processing. Setup must come
+            // first because the new socket has no session yet, and it carries
+            // the same client_req_id as the in-flight request.
             if (this.textSent.length > 0) {
+              const clientReqId = this.counter.toString()
               this.log('Sending text chunks again')
-              this.socket?.send(
-                JSON.stringify({
-                  type: 'text',
-                  text: this.textSent,
-                  client_req_id: this.counter.toString(),
-                } satisfies GradiumTextMessage)
-              )
+              this.sendSetup(clientReqId)
+              this.sendTranscript(this.textSent, clientReqId)
             }
           })
           .then(resolve)

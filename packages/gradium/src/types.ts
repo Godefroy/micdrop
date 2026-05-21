@@ -41,6 +41,7 @@ export interface GradiumSetupMessage {
   output_format: string
   close_ws_on_eos?: boolean
   json_config?: GradiumJsonConfig
+  client_req_id?: string
 }
 
 export interface GradiumTextMessage {

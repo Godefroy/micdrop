@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/gradium",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Gradium TTS implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",
