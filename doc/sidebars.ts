@@ -48,6 +48,7 @@ const sidebars: SidebarsConfig = {
         'server/auth-and-parameters',
         'server/first-message',
         'server/save-messages',
+        'server/resume-conversation',
         'server/recording-audio',
         'server/error-handling',
         'server/tools',
