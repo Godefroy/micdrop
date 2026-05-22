@@ -76,7 +76,9 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     )
 
     // Assistant speaks first
-    this.sendFirstMessage()
+    // Deferred so consumers (e.g. MicdropRecorder) can subscribe to agent
+    // events before the first message is added to the conversation.
+    queueMicrotask(() => this.sendFirstMessage())
 
     // Listen to events
     socket.on('close', this.onClose)
