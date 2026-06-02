@@ -86,7 +86,7 @@ function addTools(server: MicdropServer, agent: OpenaiAgent) {
 | `name`        | `string`                         | Required | Unique name for the tool                |
 | `description` | `string`                         | Required | Description of what the tool does       |
 | `inputSchema` | `z.ZodObject`                    | Optional | Zod schema for parameter validation     |
-| `execute`     | `(input) => any \| Promise<any>` | Required | Function to execute when tool is called |
+| `execute`     | `(input, agent) => any \| Promise<any>` | Required | Function to execute when tool is called |
 | `skipAnswer`  | `boolean`                        | `false`  | Skip assistant response after tool call |
 | `emitOutput`  | `boolean`                        | `false`  | Emit ToolCall events for monitoring     |
 
@@ -95,6 +95,20 @@ function addTools(server: MicdropServer, agent: OpenaiAgent) {
 If `emitOutput` is true, the tool call output is also sent to the client and available with the `ToolCall` event.
 
 :::
+
+## The `agent` context
+
+The `execute` function receives the executing agent as a second argument. Use it instead of capturing a specific agent in a closure, so tools stay portable and can be shared between agents (this is what lets [FallbackAgent](../ai-integration/fallback-strategies/agent-fallback) hand the same tools to every provider it switches to):
+
+```typescript
+agent.addTool({
+  name: 'count_messages',
+  description: 'Count the messages exchanged so far',
+  execute: (input, agent) => ({ count: agent.conversation.length }),
+})
+```
+
+The first `input` argument is always present; the `agent` argument is optional, so simple tools can keep ignoring it. The built-in `autoEndCall`, `autoSemanticTurn` and `autoIgnoreUserNoise` tools use this same mechanism internally.
 
 ## Removing Tools
 

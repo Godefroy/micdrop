@@ -86,6 +86,8 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
     } catch (error: any) {
       if (abortController === this.abortController) {
         console.error('[AiSdkAgent] Error answering:', error)
+        this.log('Generation failed, giving up')
+        this.emit('Failed')
       }
     }
   }

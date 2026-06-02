@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai'
 import { MistralAgent } from '@micdrop/mistral'
 import { OpenaiAgent } from '@micdrop/openai'
-import { MockAgent } from '@micdrop/server'
+import { FallbackAgent, MockAgent } from '@micdrop/server'
 import { AiSdkAgent } from '../../../packages/ai-sdk/dist'
 
 // System prompt passed to the LLM
@@ -21,7 +21,7 @@ Your role is to help the user with their questions and requests.
 `
 }
 
-export default {
+const agents = {
   mock: () => new MockAgent(),
 
   // OpenAI
@@ -55,4 +55,12 @@ export default {
       autoSemanticTurn: true,
       autoIgnoreUserNoise: true,
     }),
+
+  // Fallback (Mistral, then OpenAI)
+  fallback: (lang: string) =>
+    new FallbackAgent({
+      factories: [() => agents.mistral(lang), () => agents.openai(lang)],
+    }),
 }
+
+export default agents

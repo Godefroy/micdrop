@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/mistral",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Mistral implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",

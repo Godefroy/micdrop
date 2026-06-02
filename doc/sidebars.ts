@@ -93,6 +93,7 @@ const sidebars: SidebarsConfig = {
           type: 'category',
           label: 'Fallback Strategies',
           items: [
+            'ai-integration/fallback-strategies/agent-fallback',
             'ai-integration/fallback-strategies/stt-fallback',
             'ai-integration/fallback-strategies/tts-fallback',
           ],

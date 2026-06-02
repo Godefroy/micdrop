@@ -54,6 +54,9 @@ export interface AgentEvents {
   SkipAnswer: []
   EndCall: []
   ToolCall: [MicdropToolCall]
+  // Emitted when the agent gives up generating an answer (e.g. after exhausting
+  // its retries). Used by FallbackAgent to switch to the next agent.
+  Failed: []
 }
 
 export interface ExtractOptions {
@@ -76,8 +79,8 @@ export abstract class Agent<
 > extends EventEmitter<AgentEvents> {
   public logger?: Logger
   public conversation: MicdropConversation
+  public tools: Tool[]
 
-  protected tools: Tool[]
   protected answerCount = 0
   protected answering = false
 
@@ -193,7 +196,7 @@ export abstract class Agent<
           typeof this.options.autoEndCall === 'string'
             ? this.options.autoEndCall
             : AUTO_END_CALL_PROMPT,
-        execute: () => this.endCall(),
+        execute: (_input, agent) => agent.endCall(),
       })
     }
     if (this.options.autoSemanticTurn) {
@@ -204,7 +207,7 @@ export abstract class Agent<
             ? this.options.autoSemanticTurn
             : AUTO_SEMANTIC_TURN_PROMPT,
         skipAnswer: true,
-        execute: () => this.skipAnswer(),
+        execute: (_input, agent) => agent.skipAnswer(),
       })
     }
     if (this.options.autoIgnoreUserNoise) {
@@ -215,7 +218,7 @@ export abstract class Agent<
             ? this.options.autoIgnoreUserNoise
             : AUTO_IGNORE_USER_NOISE_PROMPT,
         skipAnswer: true,
-        execute: () => this.cancelLastUserMessage(),
+        execute: (_input, agent) => agent.cancelLastUserMessage(),
       })
     }
     return tools
@@ -234,7 +237,7 @@ export abstract class Agent<
       this.addToolMessage(toolCall)
 
       const parameters = JSON.parse(toolCall.parameters)
-      const output = tool.execute ? await tool.execute(parameters) : {}
+      const output = tool.execute ? await tool.execute(parameters, this) : {}
 
       // Save tool result in conversation
       this.addToolMessage({

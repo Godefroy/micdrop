@@ -1,10 +1,13 @@
 import type { z } from 'zod'
+import type { Agent } from './Agent'
 
 export interface Tool<Schema extends z.ZodObject = z.ZodObject> {
   name: string
   description: string
   inputSchema?: Schema
-  execute?: (input: z.infer<Schema>) => any | Promise<any>
+  // The executing agent is passed as context so tools stay portable (no binding
+  // to a specific agent instance), which lets them be shared between agents.
+  execute?: (input: z.infer<Schema>, agent: Agent) => any | Promise<any>
   skipAnswer?: boolean
   emitOutput?: boolean
 }

@@ -144,6 +144,9 @@ export class OpenaiAgent extends Agent<OpenaiAgentOptions> {
           setTimeout(resolve, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
         )
         await this.generateAnswer(stream, stepCount, tryCount + 1)
+      } else {
+        this.log('Max retries reached, giving up')
+        this.emit('Failed')
       }
     }
   }

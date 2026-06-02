@@ -315,11 +315,17 @@ Logs messages using the attached logger if available.
 agent.log('Processing user message:', userInput)
 ```
 
-## Protected Properties
+## Public Properties
+
+### `conversation: MicdropConversation`
+
+The full conversation history, starting with the system message.
 
 ### `tools: Tool[]`
 
 Array of available tools that the agent can use.
+
+## Protected Properties
 
 ### `answerCount: number`
 
