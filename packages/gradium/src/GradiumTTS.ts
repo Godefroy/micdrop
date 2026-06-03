@@ -21,7 +21,7 @@ const DEFAULT_MAX_RETRY = 3
 
 export class GradiumTTS extends TTS {
   private socket?: WebSocket
-  private initPromise: Promise<void>
+  private initPromise!: Promise<void>
   private counter = 0
   private isProcessing = false
   private reconnectTimeout?: NodeJS.Timeout
@@ -32,6 +32,10 @@ export class GradiumTTS extends TTS {
   constructor(private readonly options: GradiumTTSOptions) {
     super()
 
+    this.connect()
+  }
+
+  private connect() {
     this.initPromise = this.initWS().catch((error) => {
       console.error('[GradiumTTS] Connection error:', error)
       this.reconnect()
@@ -110,14 +114,36 @@ export class GradiumTTS extends TTS {
     this.log('Cancel')
     this.isProcessing = false
     this.textSent = ''
+    this.textBuffer = ''
 
     // Increment counter to ignore messages from previous calls
     this.counter++
 
-    // Close and reconnect to cancel ongoing synthesis
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.close(1000)
+    // A pending reconnect would open its own socket later: cancel it so we own
+    // the single fresh connection created below.
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout)
+      this.reconnectTimeout = undefined
     }
+
+    // Closing the socket cancels the in-flight synthesis server-side. Detach the
+    // old socket first so its close handler can't run and strand the next
+    // request (a speak() racing right after cancel would otherwise flip
+    // isProcessing back to true and make the handler skip reconnection). Then
+    // open a fresh connection immediately, so a speak() that follows awaits the
+    // new initPromise and lands its setup and text on the new socket.
+    const socket = this.socket
+    this.socket = undefined
+    if (socket) {
+      socket.removeAllListeners()
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+        socket.close(1000)
+      }
+    }
+    this.connect()
   }
 
   destroy() {

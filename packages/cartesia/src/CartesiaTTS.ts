@@ -170,11 +170,13 @@ export class CartesiaTTS extends TTS {
         this.socket = undefined
         this.isProcessing = false
 
-        if (code !== 1000) {
-          this.reconnect()
-        } else {
-          this.log('Connection closed', { code, reason })
-        }
+        // Always reconnect: cancel() never closes the socket (it cancels
+        // in-band), and destroy() detaches its listeners before closing, so any
+        // close reaching this handler is server-initiated. Reconnecting even on
+        // a graceful 1000 close keeps the connection ready, otherwise the next
+        // speak() would send on an undefined socket and silently no-op.
+        this.log('Connection closed', { code, reason })
+        this.reconnect()
       })
 
       socket.addEventListener('message', (event) => {
