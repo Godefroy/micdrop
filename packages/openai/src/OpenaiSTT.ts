@@ -1,6 +1,7 @@
 import { STT } from '@micdrop/server'
 import { Readable } from 'stream'
 import WebSocket from 'ws'
+import { Pcm16Resampler } from './utils/Pcm16Resampler'
 
 /**
  * OpenAI Real-time STT
@@ -35,6 +36,7 @@ export class OpenaiSTT extends STT {
   private retryCount = 0
   private transcriptionTimeout?: NodeJS.Timeout
   private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
+  private resampler = new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE)
 
   constructor(private options: OpenaiSTTOptions) {
     super()
@@ -47,6 +49,10 @@ export class OpenaiSTT extends STT {
   }
 
   transcribe(audioStream: Readable) {
+    // New utterance: OpenAI commits and clears its buffer after each one, so
+    // resample this stream independently from the previous one.
+    this.resampler.reset()
+
     // Read audio stream and send to OpenAI
     audioStream.on('data', async (chunk: Buffer) => {
       this.audioChunksPending.push(chunk)
@@ -181,37 +187,16 @@ export class OpenaiSTT extends STT {
   private sendAudioChunk(chunk: Buffer) {
     if (!this.socket) return
 
-    const audioMessage = {
-      type: 'input_audio_buffer.append',
-      audio: this.upsample(chunk).toString('base64'),
-    }
+    // Resample 16kHz -> 24kHz (GA Realtime API requires a rate >= 24kHz)
+    const resampled = this.resampler.process(chunk)
+    if (resampled.length === 0) return
 
-    this.socket.send(JSON.stringify(audioMessage))
-  }
-
-  /**
-   * Linear interpolation upsampling from SAMPLE_RATE to OPENAI_SAMPLE_RATE.
-   * The Micdrop client emits PCM16 mono at 16kHz, but the GA Realtime API
-   * requires a rate >= 24kHz, so the audio has to be resampled before sending.
-   */
-  private upsample(chunk: Buffer): Buffer {
-    const inSamples = Math.floor(chunk.length / 2)
-    if (inSamples === 0) return chunk
-
-    const ratio = SAMPLE_RATE / OPENAI_SAMPLE_RATE
-    const outSamples = Math.floor(inSamples / ratio)
-    const out = Buffer.alloc(outSamples * 2)
-
-    for (let j = 0; j < outSamples; j++) {
-      const srcPos = j * ratio
-      const i = Math.floor(srcPos)
-      const frac = srcPos - i
-      const s0 = chunk.readInt16LE(i * 2)
-      const s1 = i + 1 < inSamples ? chunk.readInt16LE((i + 1) * 2) : s0
-      out.writeInt16LE(Math.round(s0 + (s1 - s0) * frac), j * 2)
-    }
-
-    return out
+    this.socket.send(
+      JSON.stringify({
+        type: 'input_audio_buffer.append',
+        audio: resampled.toString('base64'),
+      })
+    )
   }
 
   private handleMessage(message: any) {
@@ -269,9 +254,12 @@ export class OpenaiSTT extends STT {
           .then(() => {
             this.retryCount = 0
 
-            // Send audio chunks again if reconnecting during transcription
+            // Send audio chunks again if reconnecting during transcription.
+            // The OpenAI buffer is fresh, so replay them through a reset
+            // resampler to reproduce the exact same stream.
             if (this.audioChunksPending.length > 0) {
               this.log('Sending audio chunks again')
+              this.resampler.reset()
               this.audioChunksPending.forEach((chunk) =>
                 this.sendAudioChunk(chunk)
               )

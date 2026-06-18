@@ -63,6 +63,35 @@ new MicdropServer(socket, {
 })
 ```
 
+## OpenAI TTS (Text-to-Speech)
+
+### Usage
+
+```typescript
+import { OpenaiTTS } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new OpenaiTTS({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-4o-mini-tts', // Default model
+  voice: 'alloy', // Default voice
+
+  // Prosody control, only for gpt-4o-mini-tts (optional)
+  instructions: 'Speak in a calm and friendly tone',
+
+  // Speech speed from 0.25 to 4.0, only for tts-1 / tts-1-hd (optional)
+  // speed: 1,
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+> **Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
+
 ## Documentation
 
 Read full [documentation of the OpenAI integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/openai) on the [website](https://micdrop.dev).

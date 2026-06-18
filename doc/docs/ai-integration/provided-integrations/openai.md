@@ -2,7 +2,7 @@
 
 OpenAI implementation for [@micdrop/server](../../server).
 
-This package provides AI agent and speech-to-text implementations using OpenAI's API.
+This package provides AI agent, speech-to-text and text-to-speech implementations using OpenAI's API.
 
 ## Installation
 
@@ -45,7 +45,7 @@ new MicdropServer(socket, {
 | `openai`              | `OpenAI`                                                                                                                          | Optional    | OpenAI instance (alternative to `apiKey`)                                |
 | `model`               | `string`                                                                                                                          | `'gpt-4o'`  | OpenAI model to use                                                      |
 | `systemPrompt`        | `string`                                                                                                                          | Required    | System prompt for the agent                                              |
-| `retryDelay`          | `number`                                                                                                                          | `500`       | Delay in milliseconds between retry attempts                             |
+| `retryDelay`          | `number`                                                                                                                          | `1000`      | Delay in milliseconds between retry attempts                             |
 | `maxRetry`            | `number`                                                                                                                          | `3`         | Maximum number of retries on API failures                                |
 | `maxSteps`            | `number`                                                                                                                          | `5`         | Maximum number of steps (for tool calls)                                 |
 | `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../../server/auto-end-call)    |
@@ -142,3 +142,46 @@ new MicdropServer(socket, {
 | `transcriptionTimeout` | `number` | `4000`                                          | Timeout in milliseconds to wait for transcription result |
 | `retryDelay`           | `number` | `1000`                                          | Delay in milliseconds between reconnection attempts      |
 | `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing   |
+
+## OpenAI TTS (Text-to-Speech)
+
+Text-to-speech implementation using OpenAI's speech API. The incoming text is buffered into sentences and each sentence is synthesized as soon as it is complete, so playback can start without waiting for the whole answer.
+
+### Usage
+
+```typescript
+import { OpenaiTTS } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new OpenaiTTS({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-4o-mini-tts', // Default model
+  voice: 'alloy', // Default voice
+
+  // Prosody control, only for gpt-4o-mini-tts (optional)
+  instructions: 'Speak in a calm and friendly tone',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+### Options
+
+| Option         | Type     | Default             | Description                                                          |
+| -------------- | -------- | ------------------- | -------------------------------------------------------------------- |
+| `apiKey`       | `string` | Required\*          | Your OpenAI API key (required if `openai` not provided)              |
+| `openai`       | `OpenAI` | Optional            | OpenAI instance (alternative to `apiKey`)                            |
+| `model`        | `string` | `'gpt-4o-mini-tts'` | Speech model to use (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`)         |
+| `voice`        | `string` | `'alloy'`           | Voice to use (e.g. `alloy`, `ash`, `ballad`, `coral`, `sage`, ...)   |
+| `instructions` | `string` | `undefined`         | Prosody/accent/tone control. Only works with `gpt-4o-mini-tts`       |
+| `speed`        | `number` | `undefined`         | Speech speed from `0.25` to `4.0`. Only works with `tts-1`/`tts-1-hd` |
+
+:::note
+
+**Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
+
+:::

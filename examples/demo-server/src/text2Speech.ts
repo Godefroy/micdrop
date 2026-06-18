@@ -1,6 +1,7 @@
 import { CartesiaTTS } from '@micdrop/cartesia'
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 import { GradiumTTS } from '@micdrop/gradium'
+import { OpenaiTTS } from '@micdrop/openai'
 import { FallbackTTS, MockTTS } from '@micdrop/server'
 import path from 'path'
 
@@ -34,6 +35,14 @@ const text2speech = {
     new GradiumTTS({
       apiKey: process.env.GRADIUM_API_KEY || '',
       voiceId: process.env.GRADIUM_VOICE_ID || '',
+    }),
+
+  // OpenAI
+  openai: () =>
+    new OpenaiTTS({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      model: 'gpt-4o-mini-tts-2025-12-15',
+      voice: 'alloy',
     }),
 
   // Fallback
