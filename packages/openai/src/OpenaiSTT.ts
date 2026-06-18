@@ -21,8 +21,8 @@ export interface OpenaiSTTOptions {
 
 const DEFAULT_MODEL = 'gpt-4o-transcribe'
 const DEFAULT_LANGUAGE = 'en'
-const SAMPLE_RATE = 16000
-const BIT_DEPTH = 16
+const SAMPLE_RATE = 16000 // Rate of the incoming audio (Micdrop client)
+const OPENAI_SAMPLE_RATE = 24000 // Min rate accepted by the GA Realtime API
 const DEFAULT_CONNECTION_TIMEOUT = 5000
 const DEFAULT_TRANSCRIPTION_TIMEOUT = 4000
 const DEFAULT_RETRY_DELAY = 1000
@@ -35,18 +35,15 @@ export class OpenaiSTT extends STT {
   private retryCount = 0
   private transcriptionTimeout?: NodeJS.Timeout
   private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
-  private ephemeralToken?: string
 
   constructor(private options: OpenaiSTTOptions) {
     super()
 
-    // Setup WebSocket connection (first create session, then connect)
-    this.initPromise = this.createTranscriptionSession()
-      .then(() => this.initWS())
-      .catch((error) => {
-        console.error('[OpenaiSTT] Connection error:', error)
-        this.reconnect()
-      })
+    // Setup WebSocket connection
+    this.initPromise = this.initWS().catch((error) => {
+      console.error('[OpenaiSTT] Connection error:', error)
+      this.reconnect()
+    })
   }
 
   transcribe(audioStream: Readable) {
@@ -62,7 +59,7 @@ export class OpenaiSTT extends STT {
     audioStream.on('end', async () => {
       await this.initPromise
       if (this.audioChunksPending.length === 0) return
-      this.sendSilence(2)
+      this.commitAudio()
 
       // Timeout transcription if no transcript is received
       this.transcriptionTimeout = setTimeout(() => {
@@ -91,71 +88,52 @@ export class OpenaiSTT extends STT {
     this.socket = undefined
   }
 
-  private async createTranscriptionSession(): Promise<void> {
-    const payload = {
-      input_audio_format: 'pcm16',
-      input_audio_transcription: {
-        model: this.options.model || DEFAULT_MODEL,
-        language: this.options.language || DEFAULT_LANGUAGE,
-        prompt:
-          this.options.prompt || 'Transcribe the incoming audio in real time.',
-      },
-      turn_detection: {
-        type: 'server_vad',
-        silence_duration_ms: 1000,
-      },
-      input_audio_noise_reduction: {
-        type: 'near_field',
-      },
-    }
+  private sendSessionUpdate() {
+    if (!this.socket) return
 
-    const response = await fetch(
-      'https://api.openai.com/v1/realtime/transcription_sessions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.options.apiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'realtime=v1',
+    // Configure the transcription session (GA Realtime API schema)
+    this.socket.send(
+      JSON.stringify({
+        type: 'session.update',
+        session: {
+          type: 'transcription',
+          audio: {
+            input: {
+              format: {
+                type: 'audio/pcm',
+                rate: OPENAI_SAMPLE_RATE,
+              },
+              transcription: {
+                model: this.options.model || DEFAULT_MODEL,
+                language: this.options.language || DEFAULT_LANGUAGE,
+                prompt:
+                  this.options.prompt ||
+                  'Transcribe the incoming audio in real time.',
+              },
+              // Disable server-side VAD: the Micdrop client already detects
+              // speech and only streams audio while the user is talking, so we
+              // commit the buffer manually at the end of each utterance.
+              turn_detection: null,
+              noise_reduction: {
+                type: 'near_field',
+              },
+            },
+          },
         },
-        body: JSON.stringify(payload),
-      }
-    )
-
-    if (!response.ok) {
-      const status = response.status
-
-      // Don't retry on 4xx errors
-      if (status >= 400 && status < 500) {
-        throw new Error(
-          `Failed to create transcription session: ${status} ${response.statusText}`
-        )
-      }
-
-      // Retry on other errors
-      this.log('Error creating transcription session, retrying...', {
-        status,
-        text: response.statusText,
       })
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-      )
-      return this.createTranscriptionSession()
-    }
-
-    const data = (await response.json()) as { client_secret: { value: string } }
-    this.ephemeralToken = data.client_secret.value
-    this.log('Transcription session created')
+    )
   }
 
   private async initWS(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket('wss://api.openai.com/v1/realtime', {
-        headers: {
-          Authorization: `Bearer ${this.ephemeralToken}`,
-          'OpenAI-Beta': 'realtime=v1',
-        },
-      })
+      const socket = new WebSocket(
+        'wss://api.openai.com/v1/realtime?intent=transcription',
+        {
+          headers: {
+            Authorization: `Bearer ${this.options.apiKey}`,
+          },
+        }
+      )
       this.socket = socket
 
       const timeout = setTimeout(() => {
@@ -168,6 +146,7 @@ export class OpenaiSTT extends STT {
 
       socket.addEventListener('open', () => {
         clearTimeout(timeout)
+        this.sendSessionUpdate()
         this.log('Connection opened')
         resolve()
       })
@@ -204,10 +183,35 @@ export class OpenaiSTT extends STT {
 
     const audioMessage = {
       type: 'input_audio_buffer.append',
-      audio: chunk.toString('base64'),
+      audio: this.upsample(chunk).toString('base64'),
     }
 
     this.socket.send(JSON.stringify(audioMessage))
+  }
+
+  /**
+   * Linear interpolation upsampling from SAMPLE_RATE to OPENAI_SAMPLE_RATE.
+   * The Micdrop client emits PCM16 mono at 16kHz, but the GA Realtime API
+   * requires a rate >= 24kHz, so the audio has to be resampled before sending.
+   */
+  private upsample(chunk: Buffer): Buffer {
+    const inSamples = Math.floor(chunk.length / 2)
+    if (inSamples === 0) return chunk
+
+    const ratio = SAMPLE_RATE / OPENAI_SAMPLE_RATE
+    const outSamples = Math.floor(inSamples / ratio)
+    const out = Buffer.alloc(outSamples * 2)
+
+    for (let j = 0; j < outSamples; j++) {
+      const srcPos = j * ratio
+      const i = Math.floor(srcPos)
+      const frac = srcPos - i
+      const s0 = chunk.readInt16LE(i * 2)
+      const s1 = i + 1 < inSamples ? chunk.readInt16LE((i + 1) * 2) : s0
+      out.writeInt16LE(Math.round(s0 + (s1 - s0) * frac), j * 2)
+    }
+
+    return out
   }
 
   private handleMessage(message: any) {
@@ -261,8 +265,7 @@ export class OpenaiSTT extends STT {
       this.log('Reconnecting...')
       this.reconnectTimeout = setTimeout(() => {
         this.reconnectTimeout = undefined
-        this.createTranscriptionSession()
-          .then(() => this.initWS())
+        this.initWS()
           .then(() => {
             this.retryCount = 0
 
@@ -283,15 +286,9 @@ export class OpenaiSTT extends STT {
     })
   }
 
-  private sendSilence(durationSeconds: number) {
+  private commitAudio() {
     if (!this.socket) return
-    const numSamples = Math.round(SAMPLE_RATE * durationSeconds)
-    const bytesPerSample = BIT_DEPTH / 8
-    const silenceBuffer = Buffer.alloc(numSamples * bytesPerSample)
-    this.audioChunksPending.push(silenceBuffer)
-    this.sendAudioChunk(silenceBuffer)
-    this.log(
-      `Sent ${durationSeconds * 1000}ms of silence (${silenceBuffer.byteLength} bytes) after stream end`
-    )
+    this.socket.send(JSON.stringify({ type: 'input_audio_buffer.commit' }))
+    this.log('Committed audio buffer')
   }
 }

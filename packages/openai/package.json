@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/openai",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "OpenAI implementation for @micdrop/server",
   "author": "Lonestone",
   "license": "MIT",
