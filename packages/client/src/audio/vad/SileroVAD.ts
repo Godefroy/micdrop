@@ -63,8 +63,11 @@ export class SileroVAD extends VAD {
       submitUserSpeechOnPause: true,
       baseAssetPath:
         'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@latest/dist/',
+      // onnxruntime-web@1.23.2 is not hosted on jsdelivr (its dist exceeds the
+      // CDN size limit, so every file 404s). unpkg serves it, so the ONNX wasm
+      // backend is loaded from there instead.
       onnxWASMBasePath:
-        'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/',
+        'https://unpkg.com/onnxruntime-web@1.23.2/dist/',
       onSpeechStart: () => {
         this.emit('StartSpeaking')
       },
