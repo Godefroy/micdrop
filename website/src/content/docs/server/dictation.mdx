@@ -19,7 +19,7 @@ working the same way.
 
 ## Dictation
 
-With a speech to text alone, the call transcribes and stays quiet. Each sentence
+With a speech to text alone, the server transcribes and stays quiet. Each sentence
 reaches the client as a message, exactly as a user message does in a full
 conversation.
 
@@ -50,6 +50,10 @@ sentence by sentence, at the pauses.
 The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation)
 does exactly this, in a page with a microphone button, a language picker and a
 text area.
+
+Chrome and Safari each ship a recogniser of their own. Read
+[speech to text in JavaScript](/blog/web-speech-api) to see how they compare
+with a dictation server like this one.
 
 ## An assistant that writes instead of speaking
 

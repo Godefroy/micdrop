@@ -198,4 +198,6 @@ npm install @micdrop/client @micdrop/server
 
 The [VAD documentation](/docs/client/vad) covers every option, the combination modes and a React settings panel to tune them live. The [Getting Started guide](/docs/getting-started) gets a working call running in about five minutes.
 
-On a phone, `@micdrop/react-native` runs the volume detector by default, with Silero available as an extra native module. You also choose there where transcription happens, a decision [Speech to text in React Native](/blog/speech-to-text-react-native) compares route by route.
+When a page only has to write down what the user says, the recognisers built into Chrome and Safari do that without a server of your own. Read [speech to text in JavaScript](/blog/web-speech-api) to see what you give up in exchange.
+
+On a phone, `@micdrop/react-native` runs the volume detector by default, with Silero available as an extra native module. You also choose there where transcription happens, on the device or on your server. Read [speech to text in React Native](/blog/speech-to-text-react-native) to compare the two.

@@ -102,7 +102,7 @@ You get a transcript with the network off, audio that never leaves the device, a
 
 ## Streaming to a server keeps web and mobile on the same transcript
 
-Apple's recogniser, Google's and a Whisper build on the device each write the sentence their own way. A transcription service keeps the model in one place instead, so a browser and a phone talking to the same server get one transcript, punctuation and vocabulary included.
+Apple's recogniser, Google's and a Whisper build on the device each write the sentence their own way. A transcription service keeps the model in one place instead, so a browser and a phone talking to the same server get one transcript, punctuation and vocabulary included. You make the same choice on the web, where Chrome and Safari each ship a recogniser of their own. Read [speech to text in JavaScript](/blog/web-speech-api) to see where those recognisers stop.
 
 Gladia, Deepgram, the OpenAI Realtime transcription endpoint and Mistral's Voxtral all expose a streaming WebSocket rather than a file upload, so partial results arrive while the user is still talking. [Pick between them](/docs/ai-integration) on language coverage, latency and where the data is processed. A [Gladia](/docs/ai-integration/provided-integrations/gladia) socket and a [self-hosted Whisper](/docs/ai-integration/provided-integrations/whisper) behave the same from the app's point of view, since the phone only ever talks to your server, whatever the server transcribes with.
 
