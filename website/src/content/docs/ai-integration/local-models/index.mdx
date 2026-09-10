@@ -61,13 +61,31 @@ first. `brew services start` puts it in the background and keeps it across
 reboots. `ollama serve` works too, in a terminal it occupies until you stop it.
 
 <Callout type="warning">
-  Pick a variant without reasoning. `qwen3:4b`, the default tag, writes nine
-  hundred to fifteen hundred tokens of reasoning before answering, which takes
-  between ninety and a hundred and twenty seconds per turn. Neither `/no_think`
-  in the prompt nor Ollama's `think` flag removes it. The flag only stops the
-  reasoning from being separated out, so the reasoning stays in the answer and
-  gets spoken. The `-instruct` tags answer directly.
+  Pick a variant without reasoning. `qwen3:4b`, the default tag, writes 900 to
+  1500 tokens of reasoning before answering, which takes between 90 and 120
+  seconds per turn. Neither `/no_think` in the prompt nor Ollama's `think` flag
+  removes it. The flag only stops the reasoning from being separated out, so the
+  reasoning stays in the answer and gets spoken. The `-instruct` tags answer
+  directly.
 </Callout>
+
+Some models publish one set of weights for both modes and take a flag instead
+of a tag. MiniCPM5-2B reasons for 700 to 1500 ms before a short greeting, and
+answers the same greeting in 180 ms with reasoning off:
+
+```bash
+ollama pull hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M
+```
+
+```typescript
+new AiSdkAgent({
+  model: ollama.chat('hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M'),
+  systemPrompt: 'You are a helpful voice assistant.',
+  // Ollama maps this to its own `think` flag, and a model without a reasoning
+  // mode ignores it
+  providerOptions: { openai: { reasoningEffort: 'none' } },
+})
+```
 
 Install the Micdrop packages:
 

@@ -42,6 +42,11 @@ const agent = new AiSdkAgent({
     temperature: 0.7,
     maxTokens: 150,
   },
+
+  // Provider specific parameters (optional)
+  providerOptions: {
+    openai: { reasoningEffort: 'none' },
+  },
 })
 
 // Use with MicdropServer
@@ -72,14 +77,14 @@ agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 
 ### Events
 
-| Event                   | Payload                   | Description                                                            |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
 | `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
-| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
 | `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
-| `EndCall`               | none                      | The agent decided that the call is over.                               |
-| `Failed`                | none                      | The agent gave up generating an answer after its retries.              |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
 
 See the [Agent interface](../custom-integrations/custom-agent) for the full contract.
 
@@ -93,6 +98,27 @@ The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 - **Mistral**: `mistral('mistral-large-latest')`
 - **And many more**: See [AI SDK Providers](https://sdk.vercel.ai/providers/ai-sdk-providers)
 
+### Provider specific options
+
+`settings` carries the parameters every provider understands, such as the
+temperature. Parameters read by a single provider go in `providerOptions`,
+under the name of that provider. Turning reasoning off is the common case in a
+call, since reasoning delays the first token:
+
+```typescript
+const agent = new AiSdkAgent({
+  model: openai.chat('gpt-5.2'),
+  systemPrompt: 'You are a helpful assistant',
+  providerOptions: {
+    openai: { reasoningEffort: 'none' },
+  },
+})
+```
+
+The same option reaches a [local server](../local-models) behind
+`createOpenAI`. Ollama maps it to its own `think` flag, and a model without a
+reasoning mode ignores it.
+
 ### Options
 
 | Option                | Type                                                                                                                              | Default     | Description                                                              |
@@ -102,10 +128,11 @@ The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 | `maxRetry`            | `number`                                                                                                                          | `3`         | Maximum number of retries on API failures                                |
 | `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../../server/auto-end-call)    |
 | `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`     | [Handle incomplete user sentences](../../server/semantic-turn-detection) |
-| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)      |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)           |
 | `extract`             | [`ExtractJsonOptions`](../../server/extract#json-extraction) \| [`ExtractTagOptions`](../../server/extract#custom-tag-extraction) | `undefined` | Extract structured data from responses                                   |
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined` | Hook called before answer generation - return `true` to skip generation  |
 | `settings`            | `CallSettings`                                                                                                                    | `{}`        | Additional AI SDK parameters                                             |
+| `providerOptions`     | `ProviderOptions`                                                                                                                 | `{}`        | Provider specific parameters, keyed by provider name                     |
 
 The AI SDK Agent supports adding and removing custom tools to extend its capabilities. For detailed information about tool management, see the [Tools documentation](../../server/tools).
 

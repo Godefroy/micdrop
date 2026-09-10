@@ -41,6 +41,11 @@ const agent = new AiSdkAgent({
     temperature: 0.7,
     maxTokens: 150,
   },
+
+  // Provider specific parameters (optional)
+  providerOptions: {
+    openai: { reasoningEffort: 'none' },
+  },
 })
 
 // Use with MicdropServer

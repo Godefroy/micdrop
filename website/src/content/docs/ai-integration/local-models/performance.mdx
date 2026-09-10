@@ -17,15 +17,16 @@ loaded.
 | Whisper `base` on a 3 second sentence    | ~440 ms        |
 | Whisper `french` on a 3 second sentence  | ~1100 ms       |
 | First token from Qwen3 4B Instruct       | ~80 ms         |
+| First token from MiniCPM5-2B             | ~60 ms         |
 | First token when a tool call is answered | 740 to 1200 ms |
 | First sentence from Kokoro               | 900 to 1300 ms |
 | First sentence from Piper                | ~390 ms        |
 | First sentence from Pocket TTS           | 250 to 430 ms  |
 
-A local call therefore answers in about one second with Piper or Pocket TTS,
-and closer to two with Kokoro. When the model answers one of the automatic
-prompts, the turn runs a second pass, and that pass costs more than the
-transcription and the voice put together.
+A local call therefore answers in about 1 second with Piper or Pocket TTS, and
+closer to 2 with Kokoro. When the model answers one of the automatic prompts,
+the turn runs a second pass, and that pass costs more than the transcription
+and the voice put together.
 
 Micdrop keeps the models loaded between turns by sharing one instance per
 configuration, and Ollama does the same through its `keep_alive`, so the models
@@ -67,10 +68,10 @@ That last one deserves its numbers. On the encoder of the `french` checkpoint:
 | coreml             | 1728 ms | 14552 ms     |
 | coreml `MLProgram` | 2975 ms | 12655 ms     |
 
-CoreML is three to five times slower, and needs another twelve seconds to
-compile the model when the session opens. The CoreML log shows why: CoreML covers
-577 of the 873 nodes and splits the graph into 88 partitions, so the run spends
-its time copying tensors back and forth across those boundaries instead of
+CoreML is 3 to 5 times slower, and needs another 12 seconds to compile the
+model when the session opens. The CoreML log shows why: CoreML covers 577 of
+the 873 nodes and splits the graph into 88 partitions, so the run spends its
+time copying tensors back and forth across those boundaries instead of
 computing.
 
 So the CPU is the right answer on a Mac today, and quantized weights are the

@@ -23,14 +23,24 @@ matters more for a local agent than raw writing quality.
 | Model                 | Size in `Q4` | Notes                                                           |
 | --------------------- | ------------ | --------------------------------------------------------------- |
 | **Qwen3 4B Instruct** | ~2.5 GB      | Best balance of tool calling, latency and multilingual coverage |
+| MiniCPM5-2B           | ~1.6 GB      | Twice as fast per turn, English only in practice                |
 | Qwen3 8B Instruct     | ~5 GB        | Better conversation, still comfortable next to the voice models |
 | Gemma 3 4B            | ~3 GB        | Very good at writing, but no native tool call format            |
 | Ministral 8B          | ~5 GB        | Strong in French, check its license for commercial use          |
 
+MiniCPM5-2B fits an English call on a modest machine. It answers a whole turn
+in 340 to 820 ms where Qwen3 4B takes 820 to 1420 ms, and it weighs a gigabyte
+less. It needs `providerOptions: { openai: { reasoningEffort: 'none' } }`,
+since the weights reason before answering otherwise, and it needs an English
+call: in French it mixes English words into its sentences, invents words such
+as `"aujourd'nous"` and stops calling tools. It also answers a plain `"uh"`
+rather than filtering it in 8 runs out of 9, so noise filtering needs a
+fallback. The [explorations](./explorations) page has the numbers.
+
 Llama 3.2 3B is tempting for its size, though its function calling gets shaky
 on the long system prompts Micdrop builds. Mistral 7B was measured against
 Qwen3 and came out behind on every measure. The
-[explorations](./explorations) page has that comparison.
+[explorations](./explorations) page has both comparisons.
 
 ## Speech to text
 
@@ -38,15 +48,15 @@ Whisper is the local option, running inside the Node process through
 [@micdrop/whisper](../provided-integrations/whisper). You pick the checkpoint
 on the language of the call more than on the weight of the file.
 
-Whisper reads a fixed window of thirty seconds whatever the length of the
+Whisper reads a fixed window of 30 seconds whatever the length of the
 utterance, so a heavier checkpoint raises the cost of every sentence, short
 ones included. It also reads English more accurately, and outside English a
 checkpoint fine-tuned on the language does better than a heavier generic one on
 both accuracy and cost. The `french` shorthand costs what `small` costs, reads
 French better than `turbo`, a checkpoint that weighs twice as much and answers
-three times slower, and writes numbers
-in words instead of digits, the form the voice needs. Generic `base`, for
-comparison, misreads a quarter of the words of a French sentence.
+3 times slower, and writes numbers in words instead of digits, the form the
+voice needs. Generic `base`, for comparison, misreads a quarter of the words of
+a French sentence.
 
 Pass `language` explicitly when the call has a known language, which saves the
 detection pass and avoids a wrong guess on a short sentence. The

@@ -140,6 +140,11 @@ const agents: ProviderRegistry<Agent> = {
           apiKey: 'ollama', // Unused, the SDK refuses to start without one
         }).chat(model || 'qwen3:4b-instruct'),
         systemPrompt: getSystemPrompt(lang, prompt),
+        // Several local models reason before answering unless told otherwise,
+        // which delays the first token by a few seconds. Ollama maps this to
+        // its own `think` flag, and a model without a reasoning mode ignores
+        // it.
+        providerOptions: { openai: { reasoningEffort: 'none' } },
         // A small model answers these less reliably than a large one, and they
         // run on every turn. Turning them off from the client is the quickest
         // way to tell which one a model mishandles.

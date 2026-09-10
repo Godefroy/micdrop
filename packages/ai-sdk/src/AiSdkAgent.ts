@@ -1,3 +1,4 @@
+import { ProviderOptions } from '@ai-sdk/provider-utils'
 import { Agent, AgentOptions } from '@micdrop/server'
 import {
   CallSettings,
@@ -14,6 +15,12 @@ import { z } from 'zod'
 export interface AiSdkAgentOptions extends AgentOptions {
   model: LanguageModel
   settings?: CallSettings
+  /**
+   * Parameters read by a single provider, keyed by provider name, for anything
+   * `settings` has no field for. `{ openai: { reasoningEffort: 'none' } }`
+   * turns reasoning off, which a spoken turn needs.
+   */
+  providerOptions?: ProviderOptions
   maxRetry?: number
 }
 
@@ -39,6 +46,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
         messages: this.buildMessages(),
         tools: this.buildTools(),
         maxRetries: this.options.maxRetry ?? DEFAULT_MAX_RETRY,
+        providerOptions: this.options.providerOptions,
         stopWhen: stepCountIs(5),
         onStepFinish: (step) => {
           const tools = step.toolCalls.map((toolCall) =>

@@ -1,17 +1,58 @@
 ---
 title: 'Explorations'
-description: 'Local models that were measured, timed and left out of the stack, with the reason for each.'
+description: 'Local models that were measured, timed and kept out of the default stack, with the reason for each.'
 order: 66
 ---
 
 # Explorations
 
 Every model on this page was installed, run and timed on a MacBook Pro M2 with
-24 GB of memory, then left out of the recommended stack. The measurements are
-written down so nobody has to run them twice, and the verdicts belong to this
-class of machine rather than to the models themselves. A server with a large
-GPU, or a faster runtime on the same weights, can bring any of them back into
-range.
+24 GB of memory, then kept out of the default stack, either entirely or except
+in one situation. The measurements are written down so nobody has to run them
+twice, and the verdicts belong to this class of machine rather than to the
+models themselves. A server with a large GPU, or a faster runtime on the same
+weights, can bring any of them back into range.
+
+## MiniCPM5-2B
+
+MiniCPM5-2B is a 2 billion parameter model from OpenBMB, published as a GGUF,
+so Ollama pulls it from Hugging Face with
+`ollama pull hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M`. The numbers below come
+from `ollama-agent.ts`, run through its `OLLAMA_MODEL` and `OLLAMA_LANG`
+variables against `qwen3:4b-instruct` on the same machine and the same prompt:
+
+| The test                                       | MiniCPM5-2B                       | Qwen3 4B Instruct                           |
+| ---------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| Weights in `Q4_K_M`                            | 1.6 GB                            | 2.5 GB                                      |
+| First token, warm, tools declared              | ~60 ms                            | ~100 ms                                     |
+| A whole turn in English                        | 340 to 820 ms                     | 820 to 1420 ms                              |
+| Asking the time, with a `get_time` tool        | Tool called                       | Tool called                                 |
+| A meaningless `"uh"`, with `ignore_user_noise` | Answered anyway, 1 call in 9 runs | `CancelLastUserMessage` every run           |
+| `"Thanks, goodbye!"`, with `end_call`          | No call, offered more help        | No call, said goodbye                       |
+| Numbers written in full, as the prompt asks    | `"9:14:07 AM"`                    | `"nine fifteen forty-three in the morning"` |
+
+The weights reason before answering unless told otherwise, and Ollama maps
+`providerOptions: { openai: { reasoningEffort: 'none' } }` to its own `think`
+flag. A short greeting costs 700 to 1500 ms with reasoning on and 180 ms with
+it off.
+
+The model answers a plain `"uh"` instead of calling `ignore_user_noise`, once
+in 9 English runs against every run for Qwen3 4B, so noise filtering needs a
+fallback. It also writes the time as `"9:14:07 AM"` although the prompt asks
+for numbers in full.
+
+In French it writes `"Il est currently neuf heures"`, invents words such as
+`"aujourd'nous"` and `"n'hélas"`, and opens every turn with `"Bonjour"`. The
+first line of the default Micdrop prompt, _"If you're first to speak, greet the
+user and ask how you can help"_, also suppresses its tool calls when the prompt
+asks for French. Over 5 identical turns asking the time, `get_time` was called
+0 times with that line in the prompt and 5 times with the line removed. The
+same prompt in English calls the tool 5 times either way. The weights are
+trained on English and Chinese.
+
+Use MiniCPM5-2B for an English call on a modest machine, where it runs twice as
+fast per turn as Qwen3 4B for a gigabyte less. Qwen3 4B Instruct stays the
+default, since it handles the automatic tools and the other languages.
 
 ## The Mistral models
 
@@ -32,8 +73,8 @@ from 2024. `ollama-agent.ts`, run against `mistral:7b-instruct-v0.3-q4_K_M` and
 Ollama does list `tools` among the capabilities of that model, and the model
 still mishandles the format on the long system prompts Micdrop builds. It
 writes broken French too, such as
-`"Comment pouvez-je vous aider"`. Three seconds to the first token is already
-more than the budget of a whole spoken turn, so pick Qwen3 4B Instruct and
+`"Comment pouvez-je vous aider"`. A first token 3 seconds in is already more
+than the budget of a whole spoken turn, so pick Qwen3 4B Instruct and
 reach for the Mistral API when you want a Mistral.
 
 ## Voxtral Mini 3B for transcription
@@ -51,17 +92,16 @@ spoken by Piper, with weights in `q4` on CPU:
 | Whisper `french` | ~1200 ms      | 11 %        |
 
 Voxtral transcribes more accurately than Whisper `base`, and it costs
-thirty-five times more to run, because transcribing with it means generating
-tokens with a three billion parameter model instead of running an encoder and a
-small decoder.
-Whisper `french` does better on both measures for a fourteenth of the time. The
-weights come to 3 GB in `q4`, and Transformers.js downloads them on its own and
-aborts on files that size, so fetch them with `hf download` first.
+35 times more to run, because transcribing with it means generating tokens
+with a 3 billion parameter model instead of running an encoder and a small
+decoder. Whisper `french` does better on both measures for a fourteenth of the
+time. The weights come to 3 GB in `q4`, and Transformers.js downloads them on
+its own and aborts on files that size, so fetch them with `hf download` first.
 
 ## Voxtral TTS 4B for the voice
 
-Voxtral TTS arrived in March 2026, speaks nine languages including French, and
-clones a voice from three seconds of audio. It has no ONNX export, so it runs
+Voxtral TTS arrived in March 2026, speaks 9 languages including French, and
+clones a voice from 3 seconds of audio. It has no ONNX export, so it runs
 through `mlx-audio` in Python on Apple Silicon rather than in Node. With
 `mlx-community/Voxtral-4B-TTS-2603-mlx-4bit` in streaming mode, it loads in
 2.4 seconds and returns its first chunk of audio after 1.0 to 1.5 seconds, then
@@ -80,7 +120,7 @@ through the Mistral API rather than through these weights.
 ## Kyutai
 
 Kyutai publishes streaming speech to text models that cover French and English
-well, and they would remove the fixed cost of Whisper always reading thirty
+well, and they would remove the fixed cost of Whisper always reading 30
 seconds of audio. They have no ONNX export, so running them means a Python or
 Rust server next to Node rather than an npm install. The Voxtral voice runs
 outside Node for the same reason.

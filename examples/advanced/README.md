@@ -96,6 +96,12 @@ Pulling a model talks to the Ollama daemon, so the daemon has to be up first.
 Running `ollama serve` works too, in a terminal of its own, since it holds the
 one it runs in.
 
+Every model pulled on the machine shows up in the agent select, so pull as many
+as you want to compare. `hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M` answers a turn
+about twice as fast as Qwen3 in English. The demo asks every Ollama model to
+answer without reasoning, which Ollama maps to its `think` flag and a model
+without a reasoning mode ignores.
+
 For a voice in another language than English, install Piper and download a voice
 into `examples/advanced/server/voices`, where the demo looks for them:
 
