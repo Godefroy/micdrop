@@ -65,14 +65,14 @@ agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 
 ### Events
 
-| Event                   | Payload                   | Description                                                            |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
 | `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
-| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
 | `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
-| `EndCall`               | none                      | The agent decided that the call is over.                               |
-| `Failed`                | none                      | The agent gave up generating an answer after its retries.              |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
 
 See the [Agent interface](../custom-integrations/custom-agent) for the full contract.
 
@@ -89,7 +89,7 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 | `maxSteps`            | `number`                                                                                                                          | `5`         | Maximum number of steps (for tool calls)                                 |
 | `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../../server/auto-end-call)    |
 | `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`     | [Handle incomplete user sentences](../../server/semantic-turn-detection) |
-| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)      |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)           |
 | `extract`             | [`ExtractJsonOptions`](../../server/extract#json-extraction) \| [`ExtractTagOptions`](../../server/extract#custom-tag-extraction) | `undefined` | Extract structured data from responses                                   |
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined` | Hook called before answer generation - return `true` to skip generation  |
 | `settings`            | `object`                                                                                                                          | `{}`        | Additional OpenAI Responses API parameters                               |
@@ -189,10 +189,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                     |
-| ------------ | ---------- | ------------------------------------------------------------------------------- |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized.   |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.     |
+| Event        | Payload    | Description                                                                    |
+| ------------ | ---------- | ------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 
@@ -257,20 +257,20 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 | Event    | Payload    | Description                                                              |
 | -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.          |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken.  |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option         | Type     | Default             | Description                                                          |
-| -------------- | -------- | ------------------- | -------------------------------------------------------------------- |
-| `apiKey`       | `string` | Required\*          | Your OpenAI API key (required if `openai` not provided)              |
-| `openai`       | `OpenAI` | Optional            | OpenAI instance (alternative to `apiKey`)                            |
-| `model`        | `string` | `'gpt-4o-mini-tts'` | Speech model to use (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`)         |
-| `voice`        | `string` | `'alloy'`           | Voice to use (e.g. `alloy`, `ash`, `ballad`, `coral`, `sage`, ...)   |
-| `instructions` | `string` | `undefined`         | Prosody/accent/tone control. Only works with `gpt-4o-mini-tts`       |
+| Option         | Type     | Default             | Description                                                           |
+| -------------- | -------- | ------------------- | --------------------------------------------------------------------- |
+| `apiKey`       | `string` | Required\*          | Your OpenAI API key (required if `openai` not provided)               |
+| `openai`       | `OpenAI` | Optional            | OpenAI instance (alternative to `apiKey`)                             |
+| `model`        | `string` | `'gpt-4o-mini-tts'` | Speech model to use (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`)          |
+| `voice`        | `string` | `'alloy'`           | Voice to use (e.g. `alloy`, `ash`, `ballad`, `coral`, `sage`, ...)    |
+| `instructions` | `string` | `undefined`         | Prosody/accent/tone control. Only works with `gpt-4o-mini-tts`        |
 | `speed`        | `number` | `undefined`         | Speech speed from `0.25` to `4.0`. Only works with `tts-1`/`tts-1-hd` |
 
 :::note

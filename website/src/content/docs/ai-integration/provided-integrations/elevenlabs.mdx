@@ -65,24 +65,24 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 | Event    | Payload    | Description                                                              |
 | -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.          |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken.  |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option          | Type                                                                     | Default               | Description                                            |
-| --------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------ |
-| `apiKey`        | `string`                                                                 | Required              | Your ElevenLabs API key                                |
-| `voiceId`       | `string`                                                                 | Required              | ElevenLabs voice ID                                    |
-| `modelId`       | `'eleven_multilingual_v2' \| 'eleven_turbo_v2_5' \| 'eleven_flash_v2_5'` | `'eleven_turbo_v2_5'` | Model to use for speech synthesis                      |
-| `language`      | `string`                                                                 | Optional              | Language code (e.g., 'en', 'fr')                       |
-| `outputFormat`  | `TextToSpeechStreamRequestOutputFormat`                                  | `'pcm_16000'`         | Audio output format                                    |
-| `voiceSettings`    | `VoiceSettings`                                                          | Optional              | Voice customization settings                           |
+| Option              | Type                                                                     | Default               | Description                                            |
+| ------------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------ |
+| `apiKey`            | `string`                                                                 | Required              | Your ElevenLabs API key                                |
+| `voiceId`           | `string`                                                                 | Required              | ElevenLabs voice ID                                    |
+| `modelId`           | `'eleven_multilingual_v2' \| 'eleven_turbo_v2_5' \| 'eleven_flash_v2_5'` | `'eleven_turbo_v2_5'` | Model to use for speech synthesis                      |
+| `language`          | `string`                                                                 | Optional              | Language code (e.g., 'en', 'fr')                       |
+| `outputFormat`      | `TextToSpeechStreamRequestOutputFormat`                                  | `'pcm_16000'`         | Audio output format                                    |
+| `voiceSettings`     | `VoiceSettings`                                                          | Optional              | Voice customization settings                           |
 | `connectionTimeout` | `number`                                                                 | `5000`                | Timeout in milliseconds for WebSocket connection       |
-| `retryDelay`    | `number`                                                                 | `1000`                | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`      | `number`                                                                 | `3`                   | Maximum number of reconnection attempts before failing |
+| `retryDelay`        | `number`                                                                 | `1000`                | Delay in milliseconds between reconnection attempts    |
+| `maxRetry`          | `number`                                                                 | `3`                   | Maximum number of reconnection attempts before failing |
 
 ### Voice Settings
 

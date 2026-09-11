@@ -57,14 +57,14 @@ agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 
 ### Events
 
-| Event                   | Payload                   | Description                                                            |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
 | `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
-| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
 | `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
-| `EndCall`               | none                      | The agent decided that the call is over.                               |
-| `Failed`                | none                      | The agent gave up generating an answer after its retries.              |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
 
 See the [Agent interface](../custom-integrations/custom-agent) for the full contract.
 
@@ -80,7 +80,7 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 | `maxSteps`            | `number`                                                                                                                          | `5`                      | Maximum number of steps (for tool calls)                                 |
 | `autoEndCall`         | `boolean \| string`                                                                                                               | `false`                  | [Auto-detect when user wants to end call](../../server/auto-end-call)    |
 | `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`                  | [Handle incomplete user sentences](../../server/semantic-turn-detection) |
-| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`                  | [Filter meaningless user sounds](../../server/noise-filtering)      |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`                  | [Filter meaningless user sounds](../../server/noise-filtering)           |
 | `extract`             | [`ExtractJsonOptions`](../../server/extract#json-extraction) \| [`ExtractTagOptions`](../../server/extract#custom-tag-extraction) | `undefined`              | Extract structured data from responses                                   |
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined`              | Hook called before answer generation - return `true` to skip generation  |
 | `settings`            | `object`                                                                                                                          | `{}`                     | Additional Mistral AI API parameters                                     |
@@ -162,10 +162,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                     |
-| ------------ | ---------- | ------------------------------------------------------------------------------- |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized.   |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.     |
+| Event        | Payload    | Description                                                                    |
+| ------------ | ---------- | ------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 

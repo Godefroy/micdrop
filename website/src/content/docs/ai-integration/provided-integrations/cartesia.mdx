@@ -1,6 +1,6 @@
 ---
 title: 'Cartesia'
-description: 'Stream Cartesia''s Sonic voices from your Node server in TypeScript, and the audio reaches the browser while the agent is still writing its answer.'
+description: "Stream Cartesia's Sonic voices from your Node server in TypeScript, and the audio reaches the browser while the agent is still writing its answer."
 order: 47
 ---
 
@@ -62,23 +62,23 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 | Event    | Payload    | Description                                                              |
 | -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.          |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken.  |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option       | Type                           | Default  | Description                                            |
-| ------------ | ------------------------------ | -------- | ------------------------------------------------------ |
-| `apiKey`     | `string`                       | Required | Your Cartesia API key                                  |
-| `modelId`    | `string`                       | Required | Cartesia model ID to use                               |
-| `voiceId`    | `string`                       | Required | Voice ID for speech synthesis                          |
-| `language`   | `CartesiaLanguage`             | Optional | Language code for speech                               |
+| Option              | Type                           | Default  | Description                                            |
+| ------------------- | ------------------------------ | -------- | ------------------------------------------------------ |
+| `apiKey`            | `string`                       | Required | Your Cartesia API key                                  |
+| `modelId`           | `string`                       | Required | Cartesia model ID to use                               |
+| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                          |
+| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                               |
 | `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Speech speed                                           |
 | `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection       |
 | `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`   | `number`                       | `3`      | Maximum number of reconnection attempts before failing |
+| `maxRetry`          | `number`                       | `3`      | Maximum number of reconnection attempts before failing |
 
 ### Supported Languages
 

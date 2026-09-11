@@ -52,10 +52,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ## Events
 
-| Event        | Payload    | Description                                                                     |
-| ------------ | ---------- | ------------------------------------------------------------------------------- |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized.   |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.     |
+| Event        | Payload    | Description                                                                    |
+| ------------ | ---------- | ------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 

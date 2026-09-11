@@ -1,6 +1,6 @@
 ---
 title: 'Gradium'
-description: 'Run speech to text and text to speech through Gradium''s WebSocket API in a TypeScript voice pipeline, on the EU endpoint by default or on the US one.'
+description: "Run speech to text and text to speech through Gradium's WebSocket API in a TypeScript voice pipeline, on the EU endpoint by default or on the US one."
 order: 50
 ---
 
@@ -59,10 +59,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                     |
-| ------------ | ---------- | ------------------------------------------------------------------------------- |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized.   |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.     |
+| Event        | Payload    | Description                                                                    |
+| ------------ | ---------- | ------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 
@@ -141,37 +141,37 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 | Event    | Payload    | Description                                                              |
 | -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.          |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken.  |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option         | Type                  | Default       | Description                                            |
-| -------------- | --------------------- | ------------- | ------------------------------------------------------ |
-| `apiKey`       | `string`              | Required      | Your Gradium API key                                   |
-| `voiceId`      | `string`              | Required      | Gradium voice ID                                       |
-| `modelName`    | `string`              | `'default'`   | Model name to use for speech synthesis                 |
-| `outputFormat` | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                    |
-| `region`       | `'eu' \| 'us'`       | `'eu'`        | API region (EU or US endpoint)                         |
+| Option              | Type                  | Default       | Description                                            |
+| ------------------- | --------------------- | ------------- | ------------------------------------------------------ |
+| `apiKey`            | `string`              | Required      | Your Gradium API key                                   |
+| `voiceId`           | `string`              | Required      | Gradium voice ID                                       |
+| `modelName`         | `string`              | `'default'`   | Model name to use for speech synthesis                 |
+| `outputFormat`      | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                    |
+| `region`            | `'eu' \| 'us'`        | `'eu'`        | API region (EU or US endpoint)                         |
 | `jsonConfig`        | `GradiumJsonConfig`   | Optional      | Advanced voice configuration                           |
 | `connectionTimeout` | `number`              | `5000`        | Timeout in milliseconds for WebSocket connection       |
 | `retryDelay`        | `number`              | `1000`        | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`     | `number`              | `3`           | Maximum number of reconnection attempts before failing |
+| `maxRetry`          | `number`              | `3`           | Maximum number of reconnection attempts before failing |
 
 ### Output Formats
 
-| Format      | Description                              |
-| ----------- | ---------------------------------------- |
-| `pcm`       | PCM 48kHz, 16-bit signed integer mono    |
-| `pcm_16000` | PCM 16kHz, 16-bit signed integer mono    |
-| `pcm_24000` | PCM 24kHz, 16-bit signed integer mono    |
-| `pcm_8000`  | PCM 8kHz, 16-bit signed integer mono     |
-| `wav`       | WAV format                               |
-| `opus`      | Opus codec wrapped in an Ogg container   |
-| `ulaw_8000` | u-law 8kHz                               |
-| `alaw_8000` | A-law 8kHz                               |
+| Format      | Description                            |
+| ----------- | -------------------------------------- |
+| `pcm`       | PCM 48kHz, 16-bit signed integer mono  |
+| `pcm_16000` | PCM 16kHz, 16-bit signed integer mono  |
+| `pcm_24000` | PCM 24kHz, 16-bit signed integer mono  |
+| `pcm_8000`  | PCM 8kHz, 16-bit signed integer mono   |
+| `wav`       | WAV format                             |
+| `opus`      | Opus codec wrapped in an Ogg container |
+| `ulaw_8000` | u-law 8kHz                             |
+| `alaw_8000` | A-law 8kHz                             |
 
 ### Advanced Voice Configuration
 
@@ -189,11 +189,11 @@ const tts = new GradiumTTS({
 })
 ```
 
-| Parameter       | Type     | Range        | Default | Description                                |
-| --------------- | -------- | ------------ | ------- | ------------------------------------------ |
-| `temp`          | `number` | 0 - 1.4     | 0.7     | Controls randomness in speech generation   |
-| `cfg_coef`      | `number` | 1.0 - 4.0   | 2.0     | Controls similarity to the original voice  |
-| `padding_bonus` | `number` | -4.0 - 4.0  | 0       | Controls speech speed                      |
+| Parameter       | Type     | Range      | Default | Description                               |
+| --------------- | -------- | ---------- | ------- | ----------------------------------------- |
+| `temp`          | `number` | 0 - 1.4    | 0.7     | Controls randomness in speech generation  |
+| `cfg_coef`      | `number` | 1.0 - 4.0  | 2.0     | Controls similarity to the original voice |
+| `padding_bonus` | `number` | -4.0 - 4.0 | 0       | Controls speech speed                     |
 
 ## Getting Started
 
