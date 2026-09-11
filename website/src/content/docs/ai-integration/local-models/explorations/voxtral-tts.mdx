@@ -1,0 +1,30 @@
+---
+title: 'Voxtral TTS 4B'
+description: 'Voxtral TTS 4B tested as the voice of a local call, the best sounding one measured but slower than real time.'
+order: 73
+---
+
+# Voxtral TTS 4B
+
+Tested as the voice. It sounds better than every other local voice measured
+here, but it generates slower than real time, so playback stops in the middle
+of sentences.
+
+Voxtral TTS was released in March 2026. It speaks 9 languages including French,
+and clones a voice from 3 seconds of audio. It has no ONNX export, so it runs
+in Python through `mlx-audio` on Apple Silicon, not in Node. With
+`mlx-community/Voxtral-4B-TTS-2603-mlx-4bit` in streaming mode, it loads in 2.4
+seconds and returns its first chunk of audio after 1.0 to 1.5 seconds, then
+produces about two thirds of a second of speech per second of computation,
+which is slower than real time.
+
+That is too slow: the audio arrives slower than it plays, so playback stops in
+the middle of sentences. The same mlx-audio server now runs
+[Qwen3-TTS](../../provided-integrations/qwen-tts), which also speaks French and
+generates faster than real time. Piper answers in 390 ms on the same machine
+and generates much faster than real time, so every sentence plays without a
+pause. Voxtral TTS sounds better than every other local voice, and on a machine
+two or three times faster it would be the best local option.
+
+Voxtral TTS is also under a `CC BY-NC` license, so commercial use has to go
+through the Mistral API, not these weights.

@@ -16,4 +16,8 @@ export const redirects: Redirects = {
   // Posts are no longer classified by tag. The per-tag URLs need a wildcard,
   // which only Netlify understands, see public/_redirects.
   '/blog/tags': '/blog',
+  // Choosing a local model is now one page per part of the call, and the
+  // overview lists the three.
+  '/docs/ai-integration/local-models/choosing-models':
+    '/docs/ai-integration/local-models',
 }

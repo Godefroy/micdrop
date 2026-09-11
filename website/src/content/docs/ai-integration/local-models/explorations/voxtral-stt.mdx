@@ -1,0 +1,29 @@
+---
+title: 'Voxtral Mini 3B'
+description: 'Voxtral Mini 3B tested as the transcription of a local call, more accurate than Whisper base but 35 times slower.'
+order: 72
+---
+
+# Voxtral Mini 3B
+
+Tested as the transcription, instead of Whisper. It transcribes French more
+accurately, but it takes 35 times longer per utterance, which is too slow for a
+call.
+
+Voxtral Mini transcribes, translates and answers questions about audio. There
+is a community ONNX export, so it runs in Node through Transformers.js, like
+Whisper. `examples/advanced/server/src/tests/voxtral-stt.ts` runs it on French
+sentences spoken by Piper, with weights in `q4` on CPU:
+
+| Model            | Per utterance | Word errors |
+| ---------------- | ------------- | ----------- |
+| Voxtral Mini 3B  | ~16600 ms     | 17 %        |
+| Whisper `base`   | ~470 ms       | 34 %        |
+| Whisper `french` | ~1200 ms      | 11 %        |
+
+Voxtral is more accurate than Whisper `base`, but 35 times slower, because it
+transcribes by generating tokens with a 3 billion parameter model, where
+Whisper runs an encoder and a small decoder. Whisper `french` is more accurate
+than both and takes a fourteenth of Voxtral's time. The weights take 3 GB in
+`q4`. Transformers.js fails when it downloads files that large, so download
+them with `hf download` first.

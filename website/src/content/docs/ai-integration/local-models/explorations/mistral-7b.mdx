@@ -1,0 +1,34 @@
+---
+title: 'Mistral 7B'
+description: 'Mistral 7B tested as the agent of a local call, compared with Qwen3 4B Instruct, the recommended model.'
+order: 71
+---
+
+# Mistral 7B
+
+Tested as the agent, because French projects often ask for a Mistral model.
+Few Mistral models fit a personal computer. Mistral Small 4 is a mixture of
+experts with 119 billion parameters, Mistral Medium and Large are larger, and
+the only open weights that fit are Mistral 7B, last updated in 2024.
+
+Like the other agents in this section, it was compared with the recommended
+model, [Qwen3 4B Instruct](../agent), using `ollama-agent.ts`: the same four
+turns, the same prompt with the automatic prompts on, the same machine, and
+each model loaded before its run. The runs were done in French and in English.
+
+| Turn                                    | Mistral 7B v0.3                                    | Qwen3 4B, recommended                     |
+| --------------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| A greeting                              | First token after 0.1 to 0.3 s, 3 to 7 s of text   | First token after ~145 ms, a short answer |
+| Asking the time, with a `get_time` tool | No call, an invented time, ~3 s to the first token | Tool called, the real time, 1.1 to 1.3 s  |
+| A meaningless `"euh"` or `"uh"`         | Answered every time                                | Skipped 3 times out of 4                  |
+| `"Merci, au revoir !"`                  | Thanked the user for "the instructions"            | Said goodbye without ending the call      |
+
+Ollama lists `tools` among the capabilities of this model, but it never
+produced a valid tool call with the long system prompt Micdrop builds. It made
+up the time instead, 13 h 15 when it was almost midnight. It also treats the
+automatic prompts as user messages, so it answers a goodbye by thanking the
+user for "the detailed instructions".
+
+After the greeting, every turn takes about 3 seconds to start, which is already
+the time budget of a whole spoken turn. Use Qwen3 4B Instruct, or the Mistral
+API if you need a Mistral model.

@@ -1,7 +1,7 @@
 ---
 title: 'Local Models'
 description: 'Run the whole Micdrop pipeline on your own machine, with no API key and no data leaving it.'
-order: 63
+order: 64
 ---
 
 # Local Models
@@ -10,26 +10,21 @@ Micdrop splits a call into an agent, a transcription and a voice, and each one
 has a local counterpart. Run them all locally and the whole conversation stays
 on your machine, with no API key and no network call.
 
-This page sets up a complete local stack. Three other pages cover the rest:
+This page sets up a complete local stack. Five other pages cover the rest:
 
-- [Choosing the models](./choosing-models) compares the candidates for the
-  agent, the transcription and the voice, language by language.
-- [Latency and memory](./performance) gives the numbers a local call costs and
-  explains where the work actually runs.
-- [Explorations](./explorations) collects the models that were measured and set
-  aside, with the reason for each one.
+- [Local LLM](./agent) helps you choose the LLM and lists the mistakes local
+  models make.
+- [Local STT](./speech-to-text) helps you choose the Whisper checkpoint for your
+  language.
+- [Local TTS](./text-to-speech) compares the four local engines.
+- [Latency and memory](./performance) gives the delays and memory of a local
+  call, and explains what runs on the CPU and on the GPU.
+- [Explorations](./explorations) lists the models that were tested and not kept,
+  and why.
 
-## What the numbers assume
-
-Every measurement on these pages comes from a MacBook Pro M2 with 24 GB of
-memory, and the recommendations are calibrated for a good personal computer.
-That is the machine most people develop on, and the one a local call has to
-share with a browser, an editor and the rest of a working day.
-
-A server with a large GPU changes every one of these numbers. It holds a bigger
-model, and it runs the transcription and the voice on the card rather than on
-the CPU. The recommendations here fit a personal machine, so measure again on
-the hardware you deploy to.
+All the figures in this section were measured on one machine, described on the
+[latency and memory](./performance) page, and the recommendations are made for
+that machine.
 
 ## What runs locally
 
@@ -40,11 +35,13 @@ the hardware you deploy to.
 | Text to speech | [@micdrop/kokoro](../provided-integrations/kokoro)         | Kokoro, in your Node process, English only                      |
 | Text to speech | [@micdrop/piper](../provided-integrations/piper)           | Piper, as a subprocess, around forty languages                  |
 | Text to speech | [@micdrop/pocket-tts](../provided-integrations/pocket-tts) | Pocket TTS, in your Node process, English only, cloning a voice |
+| Text to speech | [@micdrop/qwen-tts](../provided-integrations/qwen-tts)     | Qwen3-TTS, on an mlx-audio server, ten languages                |
 
 An npm install is enough for Whisper and Kokoro. They download their weights on
 first use and run inside Node. The LLM needs a server such as
-[Ollama](https://ollama.com), Piper needs its binary, and Pocket TTS needs its
-archive extracted somewhere the server can read.
+[Ollama](https://ollama.com), Qwen3-TTS needs an mlx-audio server, Piper needs
+its binary, and Pocket TTS needs its archive extracted somewhere the server can
+read.
 
 ## Setting it up
 
@@ -58,34 +55,11 @@ ollama pull qwen3:4b-instruct
 
 `ollama pull` sends a request to the Ollama daemon, so the daemon has to be up
 first. `brew services start` puts it in the background and keeps it across
-reboots. `ollama serve` works too, in a terminal it occupies until you stop it.
+reboots. `ollama serve` also works, but it runs in the foreground until you
+stop it.
 
-<Callout type="warning">
-  Pick a variant without reasoning. `qwen3:4b`, the default tag, writes 900 to
-  1500 tokens of reasoning before answering, which takes between 90 and 120
-  seconds per turn. Neither `/no_think` in the prompt nor Ollama's `think` flag
-  removes it. The flag only stops the reasoning from being separated out, so the
-  reasoning stays in the answer and gets spoken. The `-instruct` tags answer
-  directly.
-</Callout>
-
-Some models publish one set of weights for both modes and take a flag instead
-of a tag. MiniCPM5-2B reasons for 700 to 1500 ms before a short greeting, and
-answers the same greeting in 180 ms with reasoning off:
-
-```bash
-ollama pull hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M
-```
-
-```typescript
-new AiSdkAgent({
-  model: ollama.chat('hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M'),
-  systemPrompt: 'You are a helpful voice assistant.',
-  // Ollama maps this to its own `think` flag, and a model without a reasoning
-  // mode ignores it
-  providerOptions: { openai: { reasoningEffort: 'none' } },
-})
-```
+The [local LLM page](./agent) explains why the tag matters, and which small models
+answer without reasoning first.
 
 Install the Micdrop packages:
 
@@ -132,30 +106,25 @@ LM Studio and the llama.cpp server answer on the same routes, so point
 
 ## First run
 
-Each part fetches its weights before it can answer, from 45 MB for the lightest
-transcription checkpoint to several gigabytes for an LLM. Some do it by
-themselves on first use, others expect the download during the install, and each
-integration page says which. Warm the whole stack once before a demo rather than
-discovering the download while somebody is watching.
+Each part downloads its weights before it can answer, from 45 MB for the
+smallest transcription checkpoint to several gigabytes for an LLM. Some
+download on first use, others during the install, and each integration page
+says which. Run one call before a demo, so that the downloads are already done.
 
 ## Licenses
 
-The default stack is built out of permissively licensed models, so a local call
-can be shipped commercially without asking anyone. Take that as a choice made
-when the integrations were written rather than as a property of local models in
-general. Each integration page states the license of its model, so check any
-model you swap in on its own page, since the terms attached to a set of weights
-change over time.
+The recommended stack only uses models with permissive licenses, so you can use
+it commercially. This was a choice made for these integrations, and not every
+local model allows it. Each integration page gives the license of its model.
+Check the license of any model you add, since licenses can change.
 
-Most of the restrictions apply to voice cloning. A permissive license covers the
-weights, while the voice itself stays protected, so cloning someone requires
-their consent. Several of the models that clone best are published for
-non-commercial use only.
+Most restrictions concern voice cloning. A permissive license covers the
+weights, not the voice: cloning someone's voice requires their consent. Several
+of the best cloning models are for non-commercial use only.
 
 ## Trying it
 
 The demo in `examples/advanced` exposes every provider in the selects at the
-top of the page, local ones included. A provider whose key or binary is missing
-appears greyed out rather than failing once the call has started. That makes
-the demo a quick way to compare a local stack with a hosted one on the same
-conversation.
+top of the page, local ones included. A provider whose key, binary or server is
+missing is greyed out, instead of failing during the call. You can use the demo
+to compare a local stack with a hosted one on the same conversation.

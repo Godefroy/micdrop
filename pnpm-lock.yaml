@@ -61,6 +61,9 @@ importers:
       '@micdrop/pocket-tts':
         specifier: '*'
         version: link:../../packages/pocket-tts
+      '@micdrop/qwen-tts':
+        specifier: '*'
+        version: link:../../packages/qwen-tts
       '@micdrop/react':
         specifier: '*'
         version: link:../../packages/react
@@ -508,7 +511,7 @@ importers:
   packages/kokoro:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.3.0'
+        specifier: '>=2.7.0'
         version: link:../server
       kokoro-js:
         specifier: ^1.2.1
@@ -599,11 +602,27 @@ importers:
   packages/pocket-tts:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.4.0'
+        specifier: '>=2.7.0'
         version: link:../server
       sherpa-onnx-node:
         specifier: ^1.13.6
         version: 1.13.6
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.13
+        version: 22.19.13
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/qwen-tts:
+    dependencies:
+      '@micdrop/server':
+        specifier: '>=2.7.0'
+        version: link:../server
     devDependencies:
       '@types/node':
         specifier: ^22.19.13
@@ -732,7 +751,7 @@ importers:
         specifier: ^3.5.1
         version: 3.8.1
       '@micdrop/server':
-        specifier: '>=2.3.0'
+        specifier: '>=2.7.0'
         version: link:../server
     devDependencies:
       '@types/node':

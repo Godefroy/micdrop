@@ -1,0 +1,64 @@
+---
+title: 'Local STT'
+description: 'Which Whisper checkpoint to run locally, and why a checkpoint tied to one language beats a heavier generic one.'
+order: 66
+---
+
+# Local STT
+
+Whisper is the local option, running inside the Node process through
+[@micdrop/whisper](../provided-integrations/whisper). Choose the checkpoint
+mainly by the language of the call, not by its size.
+
+| Checkpoint | Languages        | Download | On a 3 second sentence | Word errors in French |
+| ---------- | ---------------- | -------- | ---------------------- | --------------------- |
+| `tiny`     | Around a hundred | ~45 MB   | ~320 ms                | Not measured          |
+| `base`     | Around a hundred | ~85 MB   | ~440 ms                | 25%                   |
+| `small`    | Around a hundred | ~250 MB  | ~1000 ms               | 22%                   |
+| `turbo`    | Around a hundred | ~850 MB  | ~3800 ms               | 17%                   |
+| `french`   | French           | ~390 MB  | ~1100 ms               | 2%                    |
+
+Word errors were measured on five French sentences with proper nouns, numbers
+and homophones. Latencies were measured on a MacBook Pro M2, on CPU, with the
+model loaded.
+
+## Choosing the checkpoint
+
+Whisper always processes a 30 second window, whatever the length of the
+sentence, so a larger checkpoint makes every sentence slower, short ones
+included. A larger checkpoint is more accurate in English. For other languages,
+a checkpoint fine-tuned on that language is both more accurate and faster than
+a larger generic one.
+
+The `french` checkpoint is as fast as `small`, and more accurate in French than
+`turbo`, which is twice as large and 3 times slower. It also writes numbers in
+words instead of digits, which the voice needs. The generic `base` checkpoint
+gets a quarter of the words of a French sentence wrong.
+
+The [Whisper page](../provided-integrations/whisper) gives the repository
+behind each shorthand, and how to pick a checkpoint fine-tuned on another
+language.
+
+## Naming the language
+
+Set `language` when you know the language of the call. It skips language
+detection and avoids a wrong guess on a short sentence.
+
+```typescript
+new WhisperSTT({
+  model: 'french',
+  language: 'fr',
+})
+```
+
+## Where it runs
+
+On a Mac, transcription runs on the CPU. Transformers.js has no GPU device
+there, and the CoreML provider was slower than the CPU on these models. The
+[latency and memory](./performance) page has the measurements and the options
+for Windows and Linux.
+
+## What was measured and set aside
+
+[Voxtral Mini 3B](./explorations/voxtral-stt) transcribes more accurately than
+Whisper `base`, but is 35 times slower per utterance.

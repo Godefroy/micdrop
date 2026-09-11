@@ -1,0 +1,52 @@
+---
+title: 'MiniCPM5-2B'
+description: 'MiniCPM5-2B tested as the agent of a local call, twice as fast per turn as Qwen3 4B but English only in practice.'
+order: 70
+---
+
+# MiniCPM5-2B
+
+Tested as the agent, the part that writes the answers and decides when to call
+a tool. It is the only model in this section that is recommended, for an
+English call on a machine with little memory.
+
+MiniCPM5-2B is a 2 billion parameter model from OpenBMB, published as a GGUF,
+so Ollama pulls it from Hugging Face with `ollama pull
+hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M`. Like the other agents in this section,
+it was compared with the recommended model, [Qwen3 4B Instruct](../agent),
+using `ollama-agent.ts` with its `OLLAMA_MODEL` and `OLLAMA_LANG` variables, on
+the same machine and with the same prompt:
+
+| The test                                       | MiniCPM5-2B                       | Qwen3 4B, recommended                       |
+| ---------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| Weights in `Q4_K_M`                            | 1.6 GB                            | 2.5 GB                                      |
+| First token, warm, tools declared              | ~60 ms                            | ~100 ms                                     |
+| A whole turn in English                        | 340 to 820 ms                     | 820 to 1420 ms                              |
+| Asking the time, with a `get_time` tool        | Tool called                       | Tool called                                 |
+| A meaningless `"uh"`, with `ignore_user_noise` | Answered anyway, 1 call in 9 runs | `CancelLastUserMessage` every run           |
+| `"Thanks, goodbye!"`, with `end_call`          | No call, offered more help        | No call, said goodbye                       |
+| Numbers written in full, as the prompt asks    | `"9:14:07 AM"`                    | `"nine fifteen forty-three in the morning"` |
+
+The model reasons before answering unless reasoning is turned off. Ollama maps
+`providerOptions: { openai: { reasoningEffort: 'none' } }` to its own `think`
+flag. A short greeting takes 700 to 1500 ms with reasoning on, and 180 ms with
+it off.
+
+The model answers a plain `"uh"` instead of calling `ignore_user_noise`: it
+called the tool once in 9 English runs, while Qwen3 4B called it every time.
+Noise filtering needs a fallback. It also writes the time as `"9:14:07 AM"`
+although the prompt asks for numbers in full.
+
+In French it writes `"Il est currently neuf heures"`, invents words such as
+`"aujourd'nous"` and `"n'hélas"`, and opens every turn with `"Bonjour"`. When
+the prompt asks for French, the first line of the default Micdrop prompt, _"If
+you're first to speak, greet the user and ask how you can help"_, also stops
+its tool calls. Over 5 identical turns asking the time, `get_time` was called 0
+times with that line in the prompt and 5 times with the line removed. The same
+prompt in English calls the tool 5 times either way. The weights are trained on
+English and Chinese.
+
+Use MiniCPM5-2B for an English call on a machine with little memory. It is
+twice as fast per turn as Qwen3 4B and uses 1 GB less. Qwen3 4B Instruct stays
+the recommended model, because it handles the automatic prompts and other
+languages.

@@ -1,3 +1,4 @@
+import { SharedInstances } from '@micdrop/server'
 import { existsSync } from 'fs'
 import sherpa, { type OfflineTts, type Wave } from 'sherpa-onnx-node'
 import { resolveModelFiles } from './modelFiles'
@@ -23,47 +24,35 @@ const VOICE_CACHE_CAPACITY = 10
  * generating at once compete for the same cores whether they share the model
  * or not.
  */
-const synthesizers = new Map<string, Promise<OfflineTts>>()
-
-function cacheKey(options: SynthesizerOptions): string {
-  return JSON.stringify([
-    options.modelDir,
-    options.numThreads ?? null,
-    options.provider ?? null,
-    options.debug ?? null,
-  ])
-}
+const synthesizers = new SharedInstances<OfflineTts>()
 
 export function loadSynthesizer(
   options: SynthesizerOptions
 ): Promise<OfflineTts> {
-  const key = cacheKey(options)
-  const existing = synthesizers.get(key)
-  if (existing) return existing
-
-  // createAsync loads the graphs on a worker thread, so setting a call up does
-  // not hold the event loop for the half second it takes
-  const loading = Promise.resolve().then(() =>
-    sherpa.OfflineTts.createAsync({
-      model: {
-        pocket: {
-          ...resolveModelFiles(options.modelDir),
-          voiceEmbeddingCacheCapacity: VOICE_CACHE_CAPACITY,
+  return synthesizers.load(
+    [
+      options.modelDir,
+      options.numThreads ?? null,
+      options.provider ?? null,
+      options.debug ?? null,
+    ],
+    // createAsync loads the graphs on a worker thread, so setting a call up
+    // does not hold the event loop for the half second it takes
+    () =>
+      sherpa.OfflineTts.createAsync({
+        model: {
+          pocket: {
+            ...resolveModelFiles(options.modelDir),
+            voiceEmbeddingCacheCapacity: VOICE_CACHE_CAPACITY,
+          },
+          numThreads: options.numThreads ?? DEFAULT_NUM_THREADS,
+          provider: options.provider ?? DEFAULT_PROVIDER,
+          debug: options.debug ?? false,
         },
-        numThreads: options.numThreads ?? DEFAULT_NUM_THREADS,
-        provider: options.provider ?? DEFAULT_PROVIDER,
-        debug: options.debug ?? false,
-      },
-      // Sentences are already split upstream, one per synthesis
-      maxNumSentences: 1,
-    })
+        // Sentences are already split upstream, one per synthesis
+        maxNumSentences: 1,
+      })
   )
-
-  // A failed load must not poison the cache, the next call retries it
-  loading.catch(() => synthesizers.delete(key))
-
-  synthesizers.set(key, loading)
-  return loading
 }
 
 /**

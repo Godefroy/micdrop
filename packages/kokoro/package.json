@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/kokoro",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local Kokoro text to speech for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -39,7 +39,7 @@
     "kokoro-js": "^1.2.1"
   },
   "peerDependencies": {
-    "@micdrop/server": ">=2.3.0"
+    "@micdrop/server": ">=2.7.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.13",

@@ -83,6 +83,10 @@ export const footerNav: { title: string; links: NavLink[] }[] = [
         label: 'Pocket TTS',
         href: '/docs/ai-integration/provided-integrations/pocket-tts',
       },
+      {
+        label: 'Qwen3-TTS',
+        href: '/docs/ai-integration/provided-integrations/qwen-tts',
+      },
     ],
   },
   {

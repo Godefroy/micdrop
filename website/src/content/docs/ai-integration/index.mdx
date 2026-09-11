@@ -40,6 +40,7 @@ Ready-to-use implementations for popular AI services:
 - **[Kokoro](./provided-integrations/kokoro)** - Local voice, in your Node process, English only
 - **[Piper](./provided-integrations/piper)** - Local voice, around forty languages
 - **[Pocket TTS](./provided-integrations/pocket-tts)** - Local voice cloning, in your Node process, English only
+- **[Qwen3-TTS](./provided-integrations/qwen-tts)** - Local voice, ten languages, on an mlx-audio server
 
 **AI Agents (LLM):**
 
@@ -128,13 +129,14 @@ new MicdropServer(socket, {
 
 ### Text-to-Speech Comparison
 
-| Provider           | Latency | Quality   | Voices | Cost per hour | Best For                  |
-| ------------------ | ------- | --------- | ------ | ------------- | ------------------------- |
-| **ElevenLabs**     | ~400ms  | Excellent | 1000+  | $9.00         | High-quality voices       |
-| **Cartesia**       | ~150ms  | Good      | 50+    | $1.80         | Low-latency streaming     |
-| **Gradium 🇫🇷**     | ~300ms  | Excellent | 150+   | $2.60         | French, EU data residency |
-| **Kokoro (local)** | ~1000ms | Good      | 28     | Free          | Privacy, English only     |
-| **Piper (local)**  | ~390ms  | Fair      | 100+   | Free          | Privacy, forty languages  |
+| Provider              | Latency | Quality   | Voices | Cost per hour | Best For                  |
+| --------------------- | ------- | --------- | ------ | ------------- | ------------------------- |
+| **ElevenLabs**        | ~400ms  | Excellent | 1000+  | $9.00         | High-quality voices       |
+| **Cartesia**          | ~150ms  | Good      | 50+    | $1.80         | Low-latency streaming     |
+| **Gradium 🇫🇷**        | ~300ms  | Excellent | 150+   | $2.60         | French, EU data residency |
+| **Kokoro (local)**    | ~1000ms | Good      | 28     | Free          | Privacy, English only     |
+| **Piper (local)**     | ~390ms  | Fair      | 100+   | Free          | Privacy, forty languages  |
+| **Qwen3-TTS (local)** | ~400ms  | Very good | 9      | Free          | Privacy, ten languages    |
 
 Costs are the published list price of the entry paid plan in August 2026, per
 hour of audio generated or transcribed. Every provider charges less as the

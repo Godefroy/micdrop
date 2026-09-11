@@ -1,0 +1,34 @@
+---
+title: 'Explorations'
+description: 'Models tested in a Micdrop voice call, with their measurements and the reason each one is not in the recommended stack.'
+order: 69
+---
+
+# Explorations
+
+Each page describes one model tested in a Micdrop call, as the agent, the
+transcription or the voice. A voice assistant needs things that general
+benchmarks do not measure: a short wait before the first word, speech generated
+faster than it plays, and tool calls in the right format during a
+conversation.
+
+The tests run with the demo in `examples/advanced`. Its `server/src/tests`
+folder has one script per model, so each result can be reproduced on another
+machine or with a newer release.
+
+| Model                            | Tested as      | Why it was left out                                     |
+| -------------------------------- | -------------- | ------------------------------------------------------- |
+| [MiniCPM5-2B](./minicpm)         | The agent      | Twice as fast as Qwen3 4B, but English only in practice |
+| [Mistral 7B](./mistral-7b)       | The agent      | Slower than Qwen3 4B, and its tool calls fail           |
+| [Voxtral Mini 3B](./voxtral-stt) | Speech to text | More accurate than Whisper `base`, 35 times slower      |
+| [Voxtral TTS 4B](./voxtral-tts)  | The voice      | Generates slower than real time                         |
+| [AuK and AuK-Flash](./auk)       | The voice      | Nine times slower than real time, even with a memory fix |
+
+All measurements were made on the machine described on the
+[latency and memory](../performance) page. The results apply to that machine,
+not to the models in general. A server with a large GPU, or a faster runtime
+for the same weights, can make any of them usable.
+
+MiniCPM5-2B is the exception. It is not in the recommended stack, but it is
+recommended for an English call on a machine with little memory, as the [local
+LLM page](../agent) explains.

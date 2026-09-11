@@ -1,4 +1,5 @@
 import { pipeline } from '@huggingface/transformers'
+import { SharedInstances } from '@micdrop/server'
 import { resolveModel } from './models'
 
 /**
@@ -24,39 +25,26 @@ export interface TranscriberOptions {
  * LLM needs. Every call sharing a configuration therefore shares one instance,
  * which stays loaded for the lifetime of the process.
  */
-const transcribers = new Map<string, Promise<Transcriber>>()
-
-function cacheKey(options: TranscriberOptions): string {
-  return JSON.stringify([
-    resolveModel(options.model),
-    options.dtype ?? null,
-    options.device ?? null,
-    options.cacheDir ?? null,
-  ])
-}
+const transcribers = new SharedInstances<Transcriber>()
 
 export function loadTranscriber(
   options: TranscriberOptions
 ): Promise<Transcriber> {
-  const key = cacheKey(options)
-  const existing = transcribers.get(key)
-  if (existing) return existing
-
-  const loading = pipeline(
-    'automatic-speech-recognition',
-    resolveModel(options.model),
-    {
-      dtype: options.dtype,
-      device: options.device,
-      cache_dir: options.cacheDir,
-    } as any
-  ).then((transcriber) => transcriber as unknown as Transcriber)
-
-  // A failed download must not poison the cache, the next call retries it
-  loading.catch(() => transcribers.delete(key))
-
-  transcribers.set(key, loading)
-  return loading
+  const model = resolveModel(options.model)
+  return transcribers.load(
+    [
+      model,
+      options.dtype ?? null,
+      options.device ?? null,
+      options.cacheDir ?? null,
+    ],
+    () =>
+      pipeline('automatic-speech-recognition', model, {
+        dtype: options.dtype,
+        device: options.device,
+        cache_dir: options.cacheDir,
+      } as any).then((transcriber) => transcriber as unknown as Transcriber)
+  )
 }
 
 /**

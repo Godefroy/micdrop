@@ -126,6 +126,17 @@ tar xf sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
 rm sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
 ```
 
+For a local voice that speaks ten languages and takes a style instruction,
+start an mlx-audio server next to the demo, on a Mac with Apple Silicon:
+
+```bash
+uv run --with "mlx-audio[server]" python -m mlx_audio.server --port 8000
+```
+
+The Qwen3-TTS entry stays greyed out until that server answers. Set
+`QWEN_URL` to use another address. The 2.6 GB checkpoint is downloaded on the
+first sentence, so run one call before a demo.
+
 The [local models guide](https://micdrop.dev/docs/ai-integration/local-models)
 covers the models worth picking and what they cost in latency and memory.
 

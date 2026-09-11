@@ -1,14 +1,67 @@
 ---
 title: 'Latency and Memory'
 description: 'What a local call costs per turn, how much memory it holds, and why transcription and the voice stay on the CPU.'
-order: 65
+order: 68
 ---
 
 # Latency and Memory
 
-Latency limits a local call long before memory does. These measurements come
-from a MacBook Pro M2 with 24 GB of memory, on CPU, with the models already
-loaded.
+For a local call, latency is a bigger problem than memory.
+
+## The machine behind the numbers
+
+Every measurement on this page, and every figure quoted elsewhere in this
+section, comes from a MacBook Pro M2 with 24 GB of memory, with the models
+already loaded. Many developers work on this kind of machine, and a local call
+has to share it with a browser, an editor and other apps. The recommendations
+are made for it.
+
+A server with a large GPU changes all of these numbers. It can run a bigger
+agent, run transcription and the voice on the GPU instead of the CPU, and make
+some models from the [explorations](./explorations) fast enough. The figures
+below describe this machine, not the models in general, so measure again on the
+hardware you deploy to.
+
+## Choosing a stack
+
+Four combinations cover most cases. Pick a row by the language of the call and
+the machine it runs on. Each part links to its page if you want to replace it.
+
+| What you need                 | Agent       | Speech to text   | Voice                                             | First word   | Held    |
+| ----------------------------- | ----------- | ---------------- | ------------------------------------------------- | ------------ | ------- |
+| English, the least setup      | Qwen3 4B    | Whisper `base`   | [Kokoro](../provided-integrations/kokoro)         | 1.4 to 1.9 s | ~4 GB   |
+| English, the shortest wait    | MiniCPM5-2B | Whisper `base`   | [Pocket TTS](../provided-integrations/pocket-tts) | 0.8 to 1 s   | ~3.5 GB |
+| Another language, on any CPU  | Qwen3 4B    | Whisper `french` | [Piper](../provided-integrations/piper)           | ~1.6 s       | ~4.5 GB |
+| Ten languages, the best voice | Qwen3 4B    | Whisper `french` | [Qwen3-TTS](../provided-integrations/qwen-tts)    | ~1.6 s       | ~6.5 GB |
+
+`First word` is the sum of the three steps of a turn, taken from the tables
+below. It is the time between the end of the user's sentence and the first
+audio. It assumes the automatic prompts are off. Each automatic prompt the
+model answers adds a second pass of 740 to 1200 ms.
+
+One figure was measured end to end, in the demo. With the assistant speaking
+first, so without transcription, the first audio reached the browser 1.1 to 1.3
+seconds after the call opened with Qwen3-TTS, and after 1.66 seconds with
+Piper.
+
+### Depending on the machine
+
+Which rows fit depends on the machine.
+
+- **8 GB.** The first three rows fit, with little memory left. Use MiniCPM5-2B
+  instead of Qwen3 4B for an English call, or Piper, the voice that uses the
+  least memory.
+- **16 GB.** Every row fits. The last one needs Apple Silicon.
+- **24 GB, Apple Silicon.** Every row fits with room to spare. Qwen3-TTS runs on
+  the GPU through the mlx-audio server, and everything else stays on the CPU.
+- **A server with an NVIDIA card.** These numbers do not apply. Run a larger
+  agent, move transcription and the voice to the GPU, and check the
+  [explorations](./explorations) again, since two of the voices were left out
+  only because they were too slow.
+
+Each part also has its own install: Ollama for the agent, an npm install for
+Whisper and Kokoro, a binary and a voice file for Piper, an extracted archive
+for Pocket TTS, and a running mlx-audio server for Qwen3-TTS.
 
 ## Latency
 
@@ -16,51 +69,58 @@ loaded.
 | ---------------------------------------- | -------------- |
 | Whisper `base` on a 3 second sentence    | ~440 ms        |
 | Whisper `french` on a 3 second sentence  | ~1100 ms       |
-| First token from Qwen3 4B Instruct       | ~80 ms         |
+| First token from Qwen3 4B Instruct       | 100 to 150 ms  |
 | First token from MiniCPM5-2B             | ~60 ms         |
 | First token when a tool call is answered | 740 to 1200 ms |
 | First sentence from Kokoro               | 900 to 1300 ms |
 | First sentence from Piper                | ~390 ms        |
 | First sentence from Pocket TTS           | 250 to 430 ms  |
+| First sentence from Qwen3-TTS            | ~400 ms        |
 
-A local call therefore answers in about 1 second with Piper or Pocket TTS, and
-closer to 2 with Kokoro. When the model answers one of the automatic prompts,
-the turn runs a second pass, and that pass costs more than the transcription
-and the voice put together.
+So a local call answers in about 1 second with Piper, Pocket TTS or Qwen3-TTS,
+and in about 2 seconds with Kokoro. When the model answers an automatic prompt,
+the turn needs a second pass, which takes longer than transcription and voice
+together.
 
-Micdrop keeps the models loaded between turns by sharing one instance per
-configuration, and Ollama does the same through its `keep_alive`, so the models
-load once and stay loaded. Run the warm-up at startup, and the first inference happens
-while the call is being set up rather than while the user waits for the first
-sentence.
+Micdrop keeps each model loaded between turns and shares it between calls, and
+Ollama does the same with its `keep_alive`, so each model loads only once. With
+the warm-up at startup, the first inference runs while the call is being set
+up, not while the user waits.
 
 ## Memory
 
-Qwen3 4B in `Q4`, Whisper `base` and Kokoro together take around 4 GB
-including the key value cache, which leaves plenty of room on a 16 GB machine
-and is comfortable on 24 GB. Pocket TTS in place of Kokoro adds about half a
-gigabyte, since Pocket TTS holds 600 MB while it generates, against 80 MB for
-Kokoro.
-Latency is the binding constraint here, so spend the spare memory on a larger
-LLM rather than on a larger transcription model.
+Qwen3 4B in `Q4`, Whisper `base` and Kokoro together take around 4 GB including
+the key value cache, which leaves enough room on a 16 GB machine and plenty on
+24 GB. Pocket TTS in place of Kokoro adds about half a gigabyte, since Pocket
+TTS holds 600 MB while it generates, against 80 MB for Kokoro. Qwen3-TTS runs
+in the mlx-audio server, outside the Node process. With the default checkpoint,
+that server uses 2.5 GB on top of the rest of the call. A 16 GB machine can run
+it next to a 4B agent, with little memory left.
+
+Since latency matters more than memory, use spare memory for a larger LLM, not
+for a larger transcription model.
 
 ## Why transcription and the voice stay on the CPU
+
+Qwen3-TTS is the exception. It runs in mlx-audio, a Python process that uses
+the Apple Silicon GPU through MLX. Everything that runs inside Node stays on
+the CPU, for the reasons below.
 
 The language model, by far the heaviest part of a call, already runs on the GPU.
 Ollama uses Metal on a Mac and CUDA on a machine with an NVIDIA card, and
 `ollama ps` shows `100% GPU` while a call is in progress.
 
-The runtime is what keeps transcription and the voice on the CPU:
+Transcription and the voice stay on the CPU because of the runtime:
 
 - Transformers.js declares no GPU device on macOS. Windows gets DirectML and
   Linux on x64 gets CUDA, both reachable through the `device` option of
   `WhisperSTT` and `KokoroTTS`.
 - WebGPU, the fast path Transformers.js uses in a browser, does not exist in
   Node, with or without a flag.
-- The CoreML provider is compiled into the ONNX Runtime that ships with Node
-  and can be reached directly, so it was measured rather than assumed.
+- The ONNX Runtime package for Node includes the CoreML provider, so it was
+  tested.
 
-That last one deserves its numbers. On the encoder of the `french` checkpoint:
+Here are the CoreML results on the encoder of the `french` checkpoint:
 
 | Provider           | Encoder | Session load |
 | ------------------ | ------- | ------------ |
@@ -69,20 +129,18 @@ That last one deserves its numbers. On the encoder of the `french` checkpoint:
 | coreml `MLProgram` | 2975 ms | 12655 ms     |
 
 CoreML is 3 to 5 times slower, and needs another 12 seconds to compile the
-model when the session opens. The CoreML log shows why: CoreML covers 577 of
-the 873 nodes and splits the graph into 88 partitions, so the run spends its
-time copying tensors back and forth across those boundaries instead of
-computing.
+model when the session opens. The CoreML log shows why: CoreML handles 577 of
+the 873 nodes and splits the graph into 88 partitions, so most of the time goes
+into copying tensors between partitions.
 
-So the CPU is the right answer on a Mac today, and quantized weights are the
-fastest setting measured on it, which is why `q8` is the default. On Linux with
-an NVIDIA card, try `device: 'cuda'`, and measure a server built around such a
-card yourself, since these numbers describe a personal machine.
+So on a Mac, the CPU is the best option today, and quantized weights are the
+fastest setting on it, which is why `q8` is the default. On Linux with an
+NVIDIA card, try `device: 'cuda'` and measure on your own server.
 
 `src/tests/onnx-device-bench.ts` in the demo server runs this comparison
-against any encoder from the Transformers.js cache. Run it to see what a
-different machine does.
+against any encoder from the Transformers.js cache. Run it to measure another
+machine.
 
-Piper stays on the CPU for a different reason. Its command line has a `--cuda`
-flag, with no Metal equivalent. Piper is fast enough that the missing GPU path
-rarely matters, since almost all of its cost is loading the voice once.
+Piper stays on the CPU for another reason: it has a `--cuda` flag but no Metal
+equivalent. It is fast enough on the CPU, since most of its cost is loading the
+voice once.

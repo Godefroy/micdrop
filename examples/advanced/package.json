@@ -27,6 +27,7 @@
     "@micdrop/openai": "*",
     "@micdrop/piper": "*",
     "@micdrop/pocket-tts": "*",
+    "@micdrop/qwen-tts": "*",
     "@micdrop/react": "*",
     "@micdrop/server": "*",
     "@micdrop/smart-turn": "*",

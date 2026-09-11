@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/ai-sdk",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI SDK implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

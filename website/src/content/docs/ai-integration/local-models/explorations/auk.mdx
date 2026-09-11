@@ -1,0 +1,77 @@
+---
+title: 'AuK and AuK-Flash'
+description: 'AuK and AuK-Flash tested as the voice of a local call, and why they run seven times slower than they should on a 24 GB machine.'
+order: 74
+---
+
+# AuK and AuK-Flash
+
+Tested as the voice. AuK first looked very slow, but most of that came from its
+inference script using too much memory. Once that is fixed, the same weights
+run seven times faster.
+
+AuK is a speech model released by Tencent in September 2026, with 1.5 billion
+parameters, under an MIT license that covers the weights. Besides text to
+speech, it edits recordings (emotion, accent, spoken words), separates music
+from voice, and generates a voice from an instruction. AuK-Flash is the
+distilled version. Tencent says it is 4.5 times faster, with four sampling
+steps instead of thirty-two and no classifier-free guidance.
+
+It needs Python, PyTorch and three checkpoints, because it reads its
+instruction through a multimodal encoder that it does not ship:
+
+| Checkpoint      | On disk |
+| --------------- | ------- |
+| AuK             | 6.3 GB  |
+| AuK-Flash       | 6.3 GB  |
+| Qwen2.5-Omni-3B | 11 GB   |
+
+A Mac has no CUDA, so both models ran with `--device mps` on a MacBook Pro M2,
+on the same three second sentence. With the code as published, AuK-Flash took
+3 minutes 27 and AuK took 3 minutes 11. The distilled model was slower although
+it does a quarter of the sampling work. The expected cost is much lower: the
+sampling network has 1.1 billion parameters and runs over 190 tokens for four
+steps, about 3.4 TFLOP, which a GPU rated at 3.6 TFLOPS in `fp32` should
+process in about one second.
+
+Profiling showed the time moving between phases from one run to the next: 110
+seconds in the text encoder in one run, 86 seconds in the VAE decoder in
+another, for the same total. This points to memory pressure rather than to one
+slow operation. The pipeline used **21.3 GB** of memory on a 24 GB laptop.
+
+The cause is one line in `AukInfer`. The Qwen encoder is loaded in `bf16`,
+then the constructor converts the whole model, encoder included, to `fp32`:
+
+```python
+thinker = Qwen2_5OmniThinkerForConditionalGeneration.from_pretrained(
+    text_encoder_config.text_encoder_path,
+    torch_dtype=torch.bfloat16,
+)
+# ... later, over the whole CFMEdit, encoder included
+model = model.to(torch.float32)
+```
+
+Keeping the 3 billion parameter encoder in `bf16` brings memory down to
+13.8 GB and makes generation 7 times faster. Whisper still transcribes both
+outputs word for word:
+
+| Model     | Sampling      | Held    | Generation, as shipped | Generation, encoder in `bf16` |
+| --------- | ------------- | ------- | ---------------------- | ----------------------------- |
+| AuK       | 32 steps, CFG | 21.3 GB | 3 min 11               | 54 s                          |
+| AuK-Flash | 4 steps       | 21.3 GB | 3 min 27               | 27 s                          |
+
+With the memory fixed, AuK-Flash is twice as fast as AuK. One sampling step
+takes 1 to 1.5 seconds, and the first step also compiles the Metal kernels.
+Forcing the `bf16` autocast that the code reserves for CUDA made generation
+slower, 48 seconds instead of 27, and `fp16` produced NaN in the latent. On
+Metal, `fp32` is the fastest option.
+
+Three seconds of speech in 27 seconds is still 9 times slower than real time,
+so AuK is not usable for a call on this machine. The next test would be a GPU
+with enough memory to run the whole model in `fp32`, as the code expects.
+
+Two limits would remain on such a GPU. AuK needs the duration of the audio
+before generating it, through `gen_seconds` or an estimate from a reference
+text, while a call only knows the sentence. And it returns the whole utterance
+at once, without streaming, so the wait before the first word equals the time
+to generate the whole answer.

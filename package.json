@@ -8,7 +8,7 @@
     "website"
   ],
   "scripts": {
-    "build": "pnpm build:server && pnpm build:client && pnpm build:web && concurrently -n \"ai-sdk,cartesia,elevenlabs,gladia,gradium,kokoro,mistral,openai,piper,pocket-tts,react,react-native,whisper\" -c \"blue,green,yellow,magenta,white,cyan,red,green,blue,cyan,yellow,green,magenta\" \"pnpm --filter ai-sdk build\" \"pnpm --filter cartesia build\" \"pnpm --filter elevenlabs build\" \"pnpm --filter gladia build\" \"pnpm --filter gradium build\" \"pnpm --filter kokoro build\" \"pnpm --filter mistral build\" \"pnpm --filter openai build\" \"pnpm --filter piper build\" \"pnpm --filter pocket-tts build\" \"pnpm --filter react build\" \"pnpm --filter @micdrop/react-native build\" \"pnpm --filter whisper build\"",
+    "build": "pnpm build:server && pnpm build:client && pnpm build:web && concurrently -n \"ai-sdk,cartesia,elevenlabs,gladia,gradium,kokoro,mistral,openai,piper,pocket-tts,qwen-tts,react,react-native,whisper\" -c \"blue,green,yellow,magenta,white,cyan,red,green,blue,cyan,magenta,yellow,green,magenta\" \"pnpm --filter ai-sdk build\" \"pnpm --filter cartesia build\" \"pnpm --filter elevenlabs build\" \"pnpm --filter gladia build\" \"pnpm --filter gradium build\" \"pnpm --filter kokoro build\" \"pnpm --filter mistral build\" \"pnpm --filter openai build\" \"pnpm --filter piper build\" \"pnpm --filter pocket-tts build\" \"pnpm --filter qwen-tts build\" \"pnpm --filter react build\" \"pnpm --filter @micdrop/react-native build\" \"pnpm --filter whisper build\"",
     "build:server": "pnpm --filter server build",
     "build:client": "pnpm --filter client build",
     "build:web": "pnpm --filter @micdrop/web build",

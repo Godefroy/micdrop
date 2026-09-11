@@ -1,3 +1,4 @@
+import { SharedInstances } from '@micdrop/server'
 import { KokoroTTS as KokoroModel } from 'kokoro-js'
 
 export type KokoroDtype = 'fp32' | 'fp16' | 'q8' | 'q4' | 'q4f16'
@@ -16,33 +17,19 @@ export interface SynthesizerOptions {
  * hold it twice, and inference is single threaded anyway: two calls loading
  * their own copy would compete for the same cores while doubling the memory.
  */
-const synthesizers = new Map<string, Promise<KokoroModel>>()
-
-function cacheKey(options: SynthesizerOptions): string {
-  return JSON.stringify([
-    options.model,
-    options.dtype ?? null,
-    options.device ?? null,
-  ])
-}
+const synthesizers = new SharedInstances<KokoroModel>()
 
 export function loadSynthesizer(
   options: SynthesizerOptions
 ): Promise<KokoroModel> {
-  const key = cacheKey(options)
-  const existing = synthesizers.get(key)
-  if (existing) return existing
-
-  const loading = KokoroModel.from_pretrained(options.model, {
-    dtype: options.dtype,
-    device: options.device,
-  })
-
-  // A failed download must not poison the cache, the next call retries it
-  loading.catch(() => synthesizers.delete(key))
-
-  synthesizers.set(key, loading)
-  return loading
+  return synthesizers.load(
+    [options.model, options.dtype ?? null, options.device ?? null],
+    () =>
+      KokoroModel.from_pretrained(options.model, {
+        dtype: options.dtype,
+        device: options.device,
+      })
+  )
 }
 
 /**

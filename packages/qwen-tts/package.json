@@ -1,7 +1,7 @@
 {
-  "name": "@micdrop/pocket-tts",
-  "version": "1.1.0",
-  "description": "Local Pocket TTS text to speech for @micdrop/server",
+  "name": "@micdrop/qwen-tts",
+  "version": "1.0.0",
+  "description": "Local Qwen3-TTS text to speech for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Godefroy/micdrop.git",
-    "directory": "packages/pocket-tts"
+    "directory": "packages/qwen-tts"
   },
   "publishConfig": {
     "access": "public"
@@ -30,15 +30,12 @@
     "audio",
     "voice",
     "conversation",
-    "pocket-tts",
-    "kyutai",
+    "qwen",
+    "qwen3-tts",
     "local",
     "offline",
     "tts"
   ],
-  "dependencies": {
-    "sherpa-onnx-node": "^1.13.6"
-  },
   "peerDependencies": {
     "@micdrop/server": ">=2.7.0"
   },

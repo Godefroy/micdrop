@@ -1,0 +1,83 @@
+---
+title: 'Local TTS'
+description: 'The four local text to speech engines, what each one asks for, and which to pick for the language of your call.'
+order: 67
+---
+
+# Local TTS
+
+Four engines generate speech locally. Choose by the language of the call first,
+then by what you can install next to your app.
+
+| Engine                                            | Runs                   | Languages    | Voice comes from                        | First audio    |
+| ------------------------------------------------- | ---------------------- | ------------ | --------------------------------------- | -------------- |
+| [Piper](../provided-integrations/piper)           | In a subprocess        | Around forty | A voice file downloaded next to the app | ~390 ms        |
+| [Pocket TTS](../provided-integrations/pocket-tts) | In the Node process    | English      | A bundled voice, or a sample to clone   | 250 to 430 ms  |
+| [Kokoro](../provided-integrations/kokoro)         | In the Node process    | English      | A bundled voice                         | 900 to 1300 ms |
+| [Qwen3-TTS](../provided-integrations/qwen-tts)    | On an mlx-audio server | Ten          | Nine speakers, a description, a sample  | ~400 ms        |
+
+## In English
+
+Pocket TTS and Kokoro only need an npm install. Pocket TTS starts speaking
+sooner and can clone a voice from a few seconds of audio, but uses 600 MB while
+it generates. Kokoro needs the least setup of the four, but starts about a
+second later, which the user notices. Qwen3-TTS sounds better than both, but it
+needs a server and a GPU.
+
+## In the other languages
+
+Piper covers around forty languages, with voice files of a few dozen megabytes,
+and generates much faster than real time on any CPU. Its voices are small VITS
+models and sound less natural than the other engines.
+
+Qwen3-TTS covers ten languages, including French, German, Spanish, Italian and
+Portuguese. It sounds close to a hosted voice. It accepts an instruction such
+as `"speak slowly and warmly"` that changes how a sentence is read, and it can
+design or clone a voice. It needs an mlx-audio server next to your app, a GPU,
+and 2.5 GB of memory once the checkpoint is loaded.
+
+On a MacBook Pro M2 with the default checkpoint, the first audio of a sentence
+arrives after about 400 ms. The rest takes about 0.75 seconds of computation
+per second of speech, so playback never waits for generation. Whisper
+transcribes its English and French test sentences back word for word, apart
+from an occasional mispronounced word.
+
+<Callout type="tip">
+  The voice and the agent must use the same language. An English voice reading
+  French text uses English pronunciation and is hard to understand. Name the
+  language of the voice in the system prompt.
+</Callout>
+
+## Why Kokoro and Pocket TTS only speak English
+
+Kokoro and Pocket TTS are limited to English by their tooling, not by their
+models. Kokoro includes Spanish, French, Italian, Japanese, Portuguese and
+Chinese voices, but `kokoro-js` converts all text to phonemes with English
+rules, so these voices speak other languages with an English accent. Pocket TTS
+has French, German, Spanish, Italian and Portuguese checkpoints, but they have
+no ONNX export yet, so the addon uses the English one.
+
+## Choosing the voice
+
+Each engine names its voices its own way:
+
+- [Kokoro](../provided-integrations/kokoro) takes shorthands such as
+  `americanFemale` or `britishFemale`, and any voice id the model ships.
+- [Piper](../provided-integrations/piper) names its voices after their language,
+  their speaker and their quality, such as `fr_FR-siwis-medium`, and publishes
+  samples to listen to before downloading one.
+- [Pocket TTS](../provided-integrations/pocket-tts) uses a bundled voice or any
+  wav recording of someone speaking. Its license requires the consent of that
+  person.
+- [Qwen3-TTS](../provided-integrations/qwen-tts) has nine named speakers, `Ryan`
+  and `Aiden` in English, and reads the ten languages with any of them. A
+  VoiceDesign checkpoint generates a voice from a description instead, and a
+  Base checkpoint clones one from three seconds of audio.
+
+## What was measured and set aside
+
+Two other voices were tested and left out, each with its own page. [Voxtral TTS
+4B](./explorations/voxtral-tts) generates slower than real time on this
+machine, so playback stops in the middle of sentences. [AuK and
+AuK-Flash](./explorations/auk) are nine times slower than real time, even after
+fixing a memory issue in their inference code.

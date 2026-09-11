@@ -1,0 +1,225 @@
+---
+title: 'Local LLM'
+description: 'Choose and set up a local LLM for a Micdrop voice call: which model to run with Ollama, how to configure it, and how well it handles tool calls.'
+order: 65
+---
+
+# Local LLM
+
+The LLM is the part of a call that reads what the user said and writes the
+answer. Running it on your own machine keeps the conversation there and removes
+the per-token cost of an API. Micdrop runs a local LLM through
+[@micdrop/ai-sdk](../provided-integrations/ai-sdk), connected to
+[Ollama](https://ollama.com) or another local server that speaks the OpenAI
+protocol, so you can use any model that server can load.
+
+This page helps you choose a model and set it up. It also covers the two things
+that matter most for a local model in a voice call: turning reasoning off so
+the answer starts quickly, and [tool calls](#tool-calls), which is where local
+models fail most often.
+
+| Model                 | Size in `Q4` | Languages                      | First token  |
+| --------------------- | ------------ | ------------------------------ | ------------ |
+| **Qwen3 4B Instruct** | 2.5 GB       | Multilingual, French included  | ~145 ms      |
+| MiniCPM5-2B           | 1.6 GB       | English in practice            | 80 to 140 ms |
+| Qwen3 8B Instruct     | 5 GB         | Multilingual                   | Not measured |
+| Gemma 3 4B            | 3 GB         | Multilingual                   | Not measured |
+| Ministral 8B          | 5 GB         | Multilingual, strong in French | Not measured |
+
+`First token` is the delay before the first token on a turn without a tool
+call, with the model already loaded, measured with `ollama-agent.ts` in the demo
+on the machine described on the [latency and memory](./performance) page.
+
+## Choosing the model
+
+We recommend Qwen3 4B Instruct. It speaks French, fits in 2.5 GB, and handles
+tool calls best among the models measured. It sometimes writes numbers in
+digits although the prompt asks for words, which the voice then reads
+inconsistently.
+
+MiniCPM5-2B suits an English call on a machine with little memory. It weighs
+1 GB less than Qwen3 4B and answers faster. It only works in English: in French
+it mixes in English words, invents words such as `"aujourd'nous"` and starts
+every turn with `"Bonjour"`. The [MiniCPM5-2B page](./explorations/minicpm)
+has the numbers.
+
+Qwen3 8B Instruct is an option on a machine with more memory, and Ministral 8B
+is worth trying for a French call if its license fits your use. Gemma 3 4B
+writes well, and Llama 3.2 3B is small, but both have limits with tool calls,
+described below. [Mistral 7B](./explorations/mistral-7b) did worse than
+Qwen3 4B on every test.
+
+## Running it with Micdrop
+
+### Installation
+
+Install [Ollama](https://ollama.com), start its daemon and pull the model:
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull qwen3:4b-instruct
+```
+
+Then install the agent and the OpenAI provider of the AI SDK, which works with
+Ollama:
+
+```bash
+npm install @micdrop/ai-sdk @ai-sdk/openai
+```
+
+### Usage with MicdropServer
+
+```typescript
+import { createOpenAI } from '@ai-sdk/openai'
+import { AiSdkAgent } from '@micdrop/ai-sdk'
+import { MicdropServer } from '@micdrop/server'
+
+// Ollama serves the OpenAI protocol on /v1
+const ollama = createOpenAI({
+  baseURL: 'http://localhost:11434/v1',
+  apiKey: 'ollama', // Unused, the SDK refuses to start without one
+})
+
+const agent = new AiSdkAgent({
+  // .chat() rather than the provider itself: the default of the OpenAI
+  // provider is the Responses API, which a local server does not serve
+  model: ollama.chat('qwen3:4b-instruct'),
+  systemPrompt: 'You are a helpful voice assistant.',
+
+  // Turns reasoning off for the models that have it
+  providerOptions: { openai: { reasoningEffort: 'none' } },
+
+  // Each one costs the model a tool call on every turn, see Tool calls
+  autoEndCall: true,
+  autoSemanticTurn: true,
+  autoIgnoreUserNoise: true,
+})
+
+new MicdropServer(socket, {
+  agent,
+  // ... stt, tts and other options
+})
+```
+
+### Usage without MicdropServer
+
+The agent also runs on its own, which is useful to test a model with your
+prompt before adding speech:
+
+```typescript
+const agent = new AiSdkAgent({
+  model: ollama.chat('qwen3:4b-instruct'),
+  systemPrompt: 'You are a helpful voice assistant.',
+  providerOptions: { openai: { reasoningEffort: 'none' } },
+})
+
+agent.addTool({
+  name: 'get_time',
+  description: 'Get the current time',
+  execute: () => new Date().toLocaleTimeString('en-US'),
+})
+
+agent.addUserMessage('What time is it?')
+
+// The answer is a text stream, written as the model generates it
+agent.answer().on('data', (chunk) => process.stdout.write(chunk))
+```
+
+`examples/advanced/server/src/tests/ollama-agent.ts` sends four turns this way
+and prints the delay before the first token of each. The measurements on this
+page come from it. Set `OLLAMA_MODEL` and `OLLAMA_LANG` to the model and the
+language to test.
+
+### Options that matter locally
+
+| Option            | Default  | Why it matters for a local model                                                        |
+| ----------------- | -------- | --------------------------------------------------------------------------------------- |
+| `model`           | Required | `ollama.chat('<tag>')`, with the exact tag `ollama list` shows                          |
+| `providerOptions` | `{}`     | `{ openai: { reasoningEffort: 'none' } }` turns reasoning off where the model has it    |
+| `settings`        | `{}`     | `maxOutputTokens` keeps a small model from rambling, `temperature` steadies its answers |
+
+The automatic prompts are covered in [Tool calls](#tool-calls), and the
+[AI SDK page](../provided-integrations/ai-sdk) lists every option and every
+event.
+
+### Other local servers
+
+LM Studio and the llama.cpp server answer on the same routes. Only `baseURL`
+changes: `http://localhost:1234/v1` for LM Studio and
+`http://localhost:8080/v1` for `llama-server`, on their default ports.
+
+## Answering without reasoning first
+
+<Callout type="warning">
+  Pick a variant without reasoning. `qwen3:4b`, the default tag, writes 900 to
+  1500 tokens of reasoning before answering, which takes between 90 and 120
+  seconds per turn. Neither `/no_think` in the prompt nor Ollama's `think` flag
+  removes it. The flag only stops the reasoning from being separated out, so the
+  reasoning stays in the answer and gets spoken. The `-instruct` tags answer
+  directly.
+</Callout>
+
+Some models use the same weights with and without reasoning, and switch with a
+flag instead of a separate tag. MiniCPM5-2B reasons for 700 to 1500 ms before a
+short greeting, and answers the same greeting in 180 ms with reasoning off:
+
+```bash
+ollama pull hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M
+```
+
+```typescript
+new AiSdkAgent({
+  model: ollama.chat('hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M'),
+  systemPrompt: 'You are a helpful voice assistant.',
+  // Ollama maps this to its own `think` flag, and a model without a reasoning
+  // mode ignores it
+  providerOptions: { openai: { reasoningEffort: 'none' } },
+})
+```
+
+## Tool calls
+
+Micdrop uses tool calls in two ways: for the [tools](../../server/tools) you
+declare, and for three automatic prompts,
+[auto end call](../../server/auto-end-call),
+[semantic turn detection](../../server/semantic-turn-detection) and
+[noise filtering](../../server/noise-filtering). When they are on, Micdrop asks
+the model for a tool call on every turn.
+
+Tool calls are where local models fail most often, because the model has to
+decide when to call a tool and write the call in an exact format. Every model
+tested here missed some of them, and size is not a reliable guide: Mistral 7B
+missed more than Qwen3 4B. A tool call also adds a second pass before the first
+word, and that pass is most of the delay of a local call.
+
+### Measured behavior
+
+`ollama-agent.ts` plays the same turns to each model, with the automatic
+prompts on and the model loaded, in French and in English:
+
+| Turn                                    | Qwen3 4B, recommended                 | MiniCPM5-2B                          | Mistral 7B                              |
+| --------------------------------------- | ------------------------------------- | ------------------------------------ | --------------------------------------- |
+| Asking the time, with a `get_time` tool | Called it, 1.1 to 1.3 s to the answer | Called it, ~440 ms to the answer     | No call, invented a time, ~3 s          |
+| A meaningless `"euh"` or `"uh"`         | Skipped it 3 times out of 4           | Answered it every time               | Answered it every time                  |
+| `"Merci, au revoir !"`                  | Said goodbye without ending the call  | Said goodbye without ending the call | Thanked the user for "the instructions" |
+
+The reasoning variant of Qwen3 4B did end the call on goodbye, but it takes 90
+to 120 seconds per turn.
+
+Qwen3 8B Instruct and Ministral 8B support tool calls natively, and were not
+measured. Gemma 3 4B has no native tool call format, which the automatic
+prompts need. Llama 3.2 3B makes unreliable tool calls with the long system
+prompts Micdrop builds.
+
+### Choosing the automatic prompts
+
+| Option                | What to expect with a local model                                           |
+| --------------------- | --------------------------------------------------------------------------- |
+| `autoEndCall`         | No measured model triggers it, so add a goodbye button or a silence timeout |
+| `autoSemanticTurn`    | A tool call on every turn, the first one to turn off on a slow machine      |
+| `autoIgnoreUserNoise` | Qwen3 4B filters noise 3 times out of 4, MiniCPM5-2B never does             |
+
+When the assistant behaves badly, turn the automatic prompts off one at a time
+to find the one the model mishandles, then shorten or clarify that instruction
+instead of the whole prompt.
