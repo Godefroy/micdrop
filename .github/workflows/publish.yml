@@ -1,0 +1,90 @@
+name: Publish packages
+
+# Publishes every package in packages/ whose version is not on npm yet.
+# Auth goes through npm trusted publishing (OIDC). NPM_TOKEN is only needed
+# for a package that has no trusted publisher yet, such as a first release.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/*/package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      # Trusted publishing needs npm 11.5.1 or later
+      - run: npm install -g npm@latest
+
+      - name: Find versions missing from npm
+        id: pending
+        run: |
+          dirs=""
+          filters=""
+          for manifest in packages/*/package.json; do
+            [ "$(jq -r '.private // false' "$manifest")" = true ] && continue
+            name=$(jq -r .name "$manifest")
+            version=$(jq -r .version "$manifest")
+            published=$(npm view "$name@$version" version 2>/dev/null || true)
+            if [ -z "$published" ]; then
+              echo "$name@$version will be published"
+              dirs="$dirs $(dirname "$manifest")"
+              filters="$filters --filter $name"
+            fi
+          done
+          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
+          echo "filters=$filters" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: steps.pending.outputs.dirs != ''
+        run: pnpm install --frozen-lockfile --filter "./packages/**"
+
+      # Other packages only declare server and client as peers, which pnpm
+      # ignores when ordering builds, so these two go first
+      - name: Build
+        if: steps.pending.outputs.dirs != ''
+        run: |
+          pnpm --filter @micdrop/server run build
+          pnpm --filter @micdrop/client run build
+          pnpm ${{ steps.pending.outputs.filters }} run build
+
+      - name: Publish
+        if: steps.pending.outputs.dirs != ''
+        env:
+          DIRS: ${{ steps.pending.outputs.dirs }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          failed=0
+          for dir in $DIRS; do
+            name=$(jq -r .name "$dir/package.json")
+            version=$(jq -r .version "$dir/package.json")
+            tag=latest
+            case "$version" in *-*) tag=next ;; esac
+            if (cd "$dir" && npm publish --provenance --access public --tag "$tag" --ignore-scripts); then
+              echo "Published \`$name@$version\` with tag \`$tag\`" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Failed to publish \`$name@$version\`" >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+            fi
+          done
+          exit $failed
