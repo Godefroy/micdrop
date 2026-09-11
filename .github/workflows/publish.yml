@@ -60,13 +60,15 @@ jobs:
         run: pnpm install --frozen-lockfile --filter "./packages/**"
 
       # Other packages only declare server and client as peers, which pnpm
-      # ignores when ordering builds, so these two go first
+      # ignores when ordering builds, so these two go first. They are left out
+      # of the last run: rebuilding them would clean their dist while the
+      # others read it.
       - name: Build
         if: steps.pending.outputs.dirs != ''
         run: |
           pnpm --filter @micdrop/server run build
           pnpm --filter @micdrop/client run build
-          pnpm ${{ steps.pending.outputs.filters }} run build
+          pnpm ${{ steps.pending.outputs.filters }} --filter '!@micdrop/server' --filter '!@micdrop/client' run build
 
       - name: Publish
         if: steps.pending.outputs.dirs != ''
