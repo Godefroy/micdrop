@@ -82,8 +82,11 @@ jobs:
             version=$(jq -r .version "$dir/package.json")
             tag=latest
             case "$version" in *-*) tag=next ;; esac
-            if (cd "$dir" && npm publish --provenance --access public --tag "$tag" --ignore-scripts); then
+            if (cd "$dir" && npm publish --provenance --access public --tag "$tag" --ignore-scripts 2>&1 | tee /tmp/publish.log; exit "${PIPESTATUS[0]}"); then
               echo "Published \`$name@$version\` with tag \`$tag\`" >> "$GITHUB_STEP_SUMMARY"
+            # npm view can lag behind a publish made just before this run
+            elif grep -q "cannot publish over the previously published version" /tmp/publish.log; then
+              echo "\`$name@$version\` was already published" >> "$GITHUB_STEP_SUMMARY"
             else
               echo "Failed to publish \`$name@$version\`" >> "$GITHUB_STEP_SUMMARY"
               failed=1
