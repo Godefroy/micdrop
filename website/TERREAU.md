@@ -413,3 +413,14 @@ comparatives :
 - **Analytics** : Umami, chargé uniquement dans les builds de production
   (`PUBLIC_UMAMI_WEBSITE_ID` dans `.env`).
 - **Commit** : jamais sans validation humaine.
+
+---
+
+## 12. Checks d'audit acceptés
+
+Checks de l'audit on-page que les revues ne corrigent pas et ne rapportent plus.
+
+- `has_render_blocking_resources` : il vient de l'unique feuille `/_astro/BaseLayout.*.css` (57 Ko,
+  11 Ko gzip, servie en cache `immutable` un an). L'inliner fait passer le HTML de
+  `/docs/getting-started` de 10 à 21 Ko gzip, et chaque page vue retélécharge alors le CSS au lieu de
+  le lire en cache.

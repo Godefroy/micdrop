@@ -243,4 +243,13 @@ All three plug into the same pipeline as the hosted providers, speech to text th
     Pocket TTS takes `provider: 'cuda'` and Piper has a `--cuda` flag. Measure
     all three on the hardware you deploy to.
   </FaqItem>
+  <FaqItem question="What is the best local TTS model?">
+    It comes down to the language of the call and the hardware you deploy to.
+    On a CPU, pick Piper for any language other than English, Pocket TTS for an
+    English call that needs a specific voice, and Kokoro when you want the
+    shortest setup. [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)
+    sounds more natural than all three and reads ten languages with one
+    checkpoint. In exchange it needs a GPU, an mlx-audio server running next to
+    your app, and 2.5 GB of memory once the checkpoint is loaded.
+  </FaqItem>
 </FaqList>
