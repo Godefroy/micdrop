@@ -8,6 +8,8 @@ order: 63
 
 The `FallbackTTS` class provides automatic failover between multiple TTS providers for improved reliability. When one provider fails after exhausting its retries, it automatically switches to the next provider in the list.
 
+Cartesia, Gradium, OpenAI and the local engines are all [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript) that you can put in the provider list.
+
 ## Features
 
 - **Automatic failover**: Seamlessly switches between providers when failures occur

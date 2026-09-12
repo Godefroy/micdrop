@@ -33,11 +33,11 @@ Pocket TTS speaks first, 250 to 430 ms after it is handed a sentence. Piper is t
 
 ## What runs locally in Node today
 
-| Engine                                                              | Runs                | Languages | First sound    | Voice comes from                     |
-| ------------------------------------------------------------------- | ------------------- | --------- | -------------- | ------------------------------------ |
-| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | In the Node process | English   | 250 to 430 ms  | A few seconds of reference audio     |
-| [Piper](/docs/ai-integration/provided-integrations/piper)           | In a subprocess     | 43        | ~390 ms        | A voice file you download            |
-| [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | In the Node process | English   | 900 to 1300 ms | A catalog bundled with the model     |
+| Engine                                                              | Runs                | Languages | First sound    | Voice comes from                 |
+| ------------------------------------------------------------------- | ------------------- | --------- | -------------- | -------------------------------- |
+| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | In the Node process | English   | 250 to 430 ms  | A few seconds of reference audio |
+| [Piper](/docs/ai-integration/provided-integrations/piper)           | In a subprocess     | 43        | ~390 ms        | A voice file you download        |
+| [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | In the Node process | English   | 900 to 1300 ms | A catalog bundled with the model |
 
 Two familiar options stay out of this comparison. The Web Speech API lives in the browser rather than in Node, and it is rarely local even there, since most platforms send the text to a server. The macOS `say` command ties you to one operating system and to the voices Apple ships with it.
 
@@ -146,12 +146,12 @@ Constructing an engine starts loading it, so a `speak` called on the very next l
 
 ## Latency, measured
 
-| Measure                       | Pocket TTS           | Piper                     | Kokoro                    |
-| ----------------------------- | -------------------- | ------------------------- | ------------------------- |
-| First sound, model loaded     | 250 to 430 ms        | ~390 ms                   | 900 to 1300 ms            |
-| Loading the model or voice    | ~470 ms              | ~1 s                      | ~1.5 s in `q8`            |
-| Compute per second of audio   | ~0.2 s               | Far below real time       | 0.4 to 0.9 s              |
-| Rest of a multi-sentence answer | Streamed as written | Almost free               | Same cost as the first    |
+| Measure                         | Pocket TTS          | Piper               | Kokoro                 |
+| ------------------------------- | ------------------- | ------------------- | ---------------------- |
+| First sound, model loaded       | 250 to 430 ms       | ~390 ms             | 900 to 1300 ms         |
+| Loading the model or voice      | ~470 ms             | ~1 s                | ~1.5 s in `q8`         |
+| Compute per second of audio     | ~0.2 s              | Far below real time | 0.4 to 0.9 s           |
+| Rest of a multi-sentence answer | Streamed as written | Almost free         | Same cost as the first |
 
 The three engines reach their first sound by different routes. Pocket TTS emits chunks while it is still generating the end of the sentence, so the user hears the opening words early. Piper spends almost all of its time on loading the voice. Micdrop pays that cost when you construct the `PiperTTS` instance, so every sentence after it costs almost nothing. Kokoro synthesizes a whole sentence before emitting it, which is why its first sound arrives about a second later than the other two.
 
@@ -173,8 +173,8 @@ Piper handles languages one voice at a time. Each voice is a small VITS model of
 
 <Callout type="tip" title="Keep the voice and the agent in the same language">
   Pairing an English voice with an agent writing French leaves the voice reading
-  French words with English phonemes, and nobody understands the result. Make the
-  system prompt name the language the voice speaks.
+  French words with English phonemes, and nobody understands the result. Make
+  the system prompt name the language the voice speaks.
 </Callout>
 
 ## Memory and the CPU
@@ -205,21 +205,42 @@ Pick **Kokoro** for an English call when you want the shortest setup. One npm de
 
 Run more than one when the language changes from one call to the next. Micdrop takes a TTS instance per call, so an application serving English and French can hand each conversation the engine that suits its language.
 
-All three plug into the same pipeline as the hosted providers, speech to text then agent then voice, so swapping between them, or from ElevenLabs to a local voice, changes one constructor. The [AI integrations page](/docs/ai-integration) lists every option side by side. The [getting started guide](/docs/getting-started) walks through a working call in about five minutes.
+All three plug into the same pipeline as the hosted providers, speech to text then agent then voice, so swapping between them, or from ElevenLabs to a local voice, only means replacing the line that creates the engine. Cartesia, Gradium and OpenAI are the hosted [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript), billed per character instead of running on your machine. You can [compare every voice provider side by side](/docs/ai-integration) and [run a first voice call in about five minutes](/docs/getting-started).
 
 ## Frequently asked questions
 
 <FaqList>
   <FaqItem question="Is Piper TTS free?">
-    Yes, and the terms changed in 2025. The engine now lives at OHF-Voice/piper1-gpl under GPL-3.0, after it absorbed espeak-ng, while the archived rhasspy/piper repository was MIT. Using it costs nothing either way. The GPL affects redistribution. Driving the binary as a subprocess, which is how Micdrop uses it, keeps your application separate from the engine, while shipping the engine inside your own distribution brings the GPL terms with it. The voices are licensed one by one and some are restrictive, so read the model card of the voice you download.
+    Yes, and the terms changed in 2025. The engine now lives at
+    OHF-Voice/piper1-gpl under GPL-3.0, after it absorbed espeak-ng, while the
+    archived rhasspy/piper repository was MIT. Using it costs nothing either
+    way. The GPL affects redistribution. Driving the binary as a subprocess,
+    which is how Micdrop uses it, keeps your application separate from the
+    engine, while shipping the engine inside your own distribution brings the
+    GPL terms with it. The voices are licensed one by one and some are
+    restrictive, so read the model card of the voice you download.
   </FaqItem>
   <FaqItem question="Can Kokoro speak French?">
-    The upstream Kokoro-82M model holds French voices, and `kokoro-js` never lists them. It catalogs 28 voices, all American or British English, and it throws on any other id instead of mispronouncing the language. Pocket TTS is English only too, since its French checkpoint has no ONNX conversion. Use Piper for French. It covers 43 languages with voices trained one language at a time, such as `fr_FR-siwis-medium`.
+    The upstream Kokoro-82M model holds French voices, and `kokoro-js` never
+    lists them. It catalogs 28 voices, all American or British English, and it
+    throws on any other id instead of mispronouncing the language. Pocket TTS is
+    English only too, since its French checkpoint has no ONNX conversion. Use
+    Piper for French. It covers 43 languages with voices trained one language at
+    a time, such as `fr_FR-siwis-medium`.
   </FaqItem>
   <FaqItem question="What is the fastest local TTS?">
-    Pocket TTS puts out its first sound after 250 to 430 ms, Piper after around 390 ms and Kokoro after 900 to 1300 ms, measured on a MacBook Pro M2 on CPU with the model loaded. Pocket TTS also loads fastest, in about 470 ms. Speed alone rarely settles the choice, since Pocket TTS and Kokoro speak English only, so a call in another language goes to Piper whatever the numbers say.
+    Pocket TTS puts out its first sound after 250 to 430 ms, Piper after around
+    390 ms and Kokoro after 900 to 1300 ms, measured on a MacBook Pro M2 on CPU
+    with the model loaded. Pocket TTS also loads fastest, in about 470 ms. Speed
+    alone rarely settles the choice, since Pocket TTS and Kokoro speak English
+    only, so a call in another language goes to Piper whatever the numbers say.
   </FaqItem>
   <FaqItem question="Does local text to speech need a GPU?">
-    None of the three needs one. Every measurement in this article comes from a laptop CPU, and on a Mac the CPU is the fastest path available, since Transformers.js exposes no GPU device on macOS and CoreML ran three to five times slower. On Linux with an NVIDIA card, Kokoro takes `device: 'cuda'`, Pocket TTS takes `provider: 'cuda'` and Piper has a `--cuda` flag. Measure all three on the hardware you deploy to.
+    None of the three needs one. Every measurement in this article comes from a
+    laptop CPU, and on a Mac the CPU is the fastest path available, since
+    Transformers.js exposes no GPU device on macOS and CoreML ran three to five
+    times slower. On Linux with an NVIDIA card, Kokoro takes `device: 'cuda'`,
+    Pocket TTS takes `provider: 'cuda'` and Piper has a `--cuda` flag. Measure
+    all three on the hardware you deploy to.
   </FaqItem>
 </FaqList>
