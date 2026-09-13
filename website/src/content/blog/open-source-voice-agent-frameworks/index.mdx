@@ -99,7 +99,7 @@ The framework is Python only, and its own README says so in the first line. Ever
 
 ### 3. Micdrop
 
-![Screenshot of the Micdrop homepage, a TypeScript SDK for real-time voice conversations with AI in the browser](../../../assets/screenshots/micdrop-homepage.png)
+![Screenshot of the Micdrop homepage, presenting real-time voice conversations with AI for web and React Native apps in TypeScript](../../../assets/screenshots/micdrop-homepage.png)
 
 [Micdrop](https://micdrop.dev) is here because of a gap that almost every other project leaves open. Adding a voice mode to a web application normally costs at least one of three things: a second service to deploy, a media plane to operate, or a per-minute fee stacked on your provider bills. Micdrop asks for none of the three. The browser calls `Micdrop.start({ url })`, the server hands its existing socket to `new MicdropServer(socket, options)`, and the conversation runs inside the application you already ship, on the providers you already pay.
 
@@ -159,9 +159,9 @@ It has not moved since November 2024. The last stable release is from June 2024,
 
 ## Hosted platforms, for comparison
 
-These four are rented rather than run. None of them is open source. Three ship what the documentation calls a server SDK, a typed REST client rather than an orchestrator, and Synthflow ships only a REST API you call yourself. The voice loop stays on their infrastructure.
+Vapi, Retell AI, Bland and Synthflow are closed source platforms you rent rather than run. Three ship what the documentation calls a server SDK, a typed REST client rather than an orchestrator, while Synthflow ships only a REST API you call yourself. The voice loop stays on their infrastructure. Telnyx and the managed clouds of LiveKit and Pipecat also rent out that loop. Twilio ConversationRelay rents out speech-to-text and text-to-speech and leaves the model to your own server. Hosted voice agent platforms differ widely on [price per minute and EU hosting](/blog/top-ai-voice-agent-platforms).
 
-Most of the seven criteria cannot be applied to a platform with no repository to read, so these four are ordered on the one axis that stays measurable: how much of the stack you keep control of, from Vapi where you can supply your own model keys down to Synthflow where there is no self-hosting and no SDK at all.
+Most of the seven criteria cannot be applied to a platform with no repository to read, so Vapi, Retell AI, Bland and Synthflow are ordered on the one axis that stays measurable: how much of the stack you keep control of, from Vapi where you can supply your own model keys down to Synthflow where there is no self-hosting and no SDK at all.
 
 ### 10. Vapi
 
