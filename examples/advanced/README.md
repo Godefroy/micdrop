@@ -57,6 +57,11 @@ Providers live in `server/src/providers`, one file per part of a call. Adding
 one means adding one entry to the matching registry, and it shows up in the
 client on the next page load.
 
+The tabs above the selects switch between two ways of running a call.
+Multi-providers picks the agent, the transcription and the voice apart.
+Realtime picks a single model, OpenAI Realtime or Gemini Live, that hears the
+user and answers with its own voice.
+
 The checkboxes under the selects turn the agent prompts on and off for the next
 call: ending the call on its own, waiting on an unfinished sentence, and
 skipping an answer when the transcript carries no speech. The client sends them

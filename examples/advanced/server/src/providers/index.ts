@@ -1,10 +1,12 @@
-import { Agent, STT, TTS } from '@micdrop/server'
+import { Agent, Realtime, STT, TTS } from '@micdrop/server'
 import agents, { DEFAULT_SYSTEM_PROMPT } from './agents'
+import realtime from './realtime'
 import speech2Text from './speech2Text'
 import text2Speech from './text2Speech'
 import {
   AutoOptions,
   AutoSelection,
+  CallMode,
   Catalog,
   DEFAULT_AUTO_OPTIONS,
   ModelOption,
@@ -16,19 +18,23 @@ import {
 } from './types'
 
 export * from './types'
-export { agents, speech2Text, text2Speech }
+export { agents, realtime, speech2Text, text2Speech }
 
 /** Used when the client picks nothing, and when what it picked cannot run. */
 const DEFAULT_PROVIDERS = {
   agent: 'mistral',
   stt: 'gladia',
   tts: 'gradium',
+  realtime: 'openai',
 } as const
 
 export interface CallSelection {
+  /** Multi-providers when the client omits it */
+  mode?: CallMode
   agent?: ProviderSelection
   stt?: ProviderSelection
   tts?: ProviderSelection
+  realtime?: ProviderSelection
   /** The automatic prompts, left to their defaults when the client omits them. */
   auto?: AutoSelection
   /** System prompt written in the client, absent when it kept the default. */
@@ -36,9 +42,13 @@ export interface CallSelection {
 }
 
 export interface CallProviders {
+  /** The realtime model itself in a realtime call, since it is an agent too */
   agent: Agent
-  stt: STT
-  tts: TTS
+  /** Absent in a realtime call, the model hears and speaks itself */
+  stt?: STT
+  tts?: TTS
+  /** Present in a realtime call only */
+  realtime?: Realtime
   /** Language of the conversation, which a single-language voice can impose. */
   lang: string
   /** The automatic prompts the agent was built with. */
@@ -106,14 +116,21 @@ async function describeRegistry<T>(
   }
 }
 
-/** Everything the client needs to fill its three selects. */
+/** Everything the client needs to fill its selects. */
 export async function getCatalog(): Promise<Catalog> {
-  const [agent, stt, tts] = await Promise.all([
+  const [agent, stt, tts, realtimeCatalog] = await Promise.all([
     describeRegistry(agents, DEFAULT_PROVIDERS.agent),
     describeRegistry(speech2Text, DEFAULT_PROVIDERS.stt),
     describeRegistry(text2Speech, DEFAULT_PROVIDERS.tts),
+    describeRegistry(realtime, DEFAULT_PROVIDERS.realtime),
   ])
-  return { agent, stt, tts, defaultPrompt: DEFAULT_SYSTEM_PROMPT }
+  return {
+    agent,
+    stt,
+    tts,
+    realtime: realtimeCatalog,
+    defaultPrompt: DEFAULT_SYSTEM_PROMPT,
+  }
 }
 
 interface Resolved<T> {
@@ -157,7 +174,8 @@ async function resolve<T>(
 }
 
 /**
- * Builds the three parts of a call from what the client picked.
+ * Builds the three parts of a call from what the client picked, or its
+ * realtime model.
  *
  * A voice, and a transcription model tied to one language, both constrain the
  * conversation: an English voice has to be paired with an agent answering in
@@ -170,6 +188,23 @@ export async function createProviders(
   lang: string
 ): Promise<CallProviders> {
   const auto: AutoOptions = { ...DEFAULT_AUTO_OPTIONS, ...selection.auto }
+
+  // A realtime model is the whole call, the three parts do not apply
+  if (selection.mode === 'realtime') {
+    const picked = await resolve(
+      realtime,
+      selection.realtime,
+      DEFAULT_PROVIDERS.realtime
+    )
+    const model = picked.definition.create({
+      lang,
+      model: picked.model,
+      auto,
+      prompt: selection.prompt,
+    })
+    return { lang, auto, agent: model, realtime: model }
+  }
+
   const [agent, stt, tts] = await Promise.all([
     resolve(agents, selection.agent, DEFAULT_PROVIDERS.agent),
     resolve(speech2Text, selection.stt, DEFAULT_PROVIDERS.stt),

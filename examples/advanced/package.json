@@ -20,6 +20,7 @@
     "@micdrop/ai-sdk": "*",
     "@micdrop/cartesia": "*",
     "@micdrop/elevenlabs": "*",
+    "@micdrop/gemini": "*",
     "@micdrop/gladia": "*",
     "@micdrop/gradium": "*",
     "@micdrop/kokoro": "*",

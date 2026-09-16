@@ -103,6 +103,9 @@ export class MicdropClient
   private _isMuted = false
   private _isPaused = false
   private _isReconnecting = false
+  // From start() until the connection opens, the microphone included: opening
+  // it can take a while, for the permission prompt or the browser itself
+  private _isStartingCall = false
   private reconnectAttempt = 0
   private reconnectTimer?: ReturnType<typeof setTimeout>
   private connectionTimer?: ReturnType<typeof setTimeout>
@@ -131,7 +134,10 @@ export class MicdropClient
 
   get isStarting(): boolean {
     return (
-      (this.isWSStarting || this.micRecorder?.state.isStarting || false) &&
+      (this._isStartingCall ||
+        this.isWSStarting ||
+        this.micRecorder?.state.isStarting ||
+        false) &&
       !this._isReconnecting
     )
   }
@@ -230,11 +236,13 @@ export class MicdropClient
     this._isMuted = false
     this._isPaused = false
     this._isReconnecting = false
+    this._isStartingCall = true
     this.reconnectAttempt = 0
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = undefined
     }
+    this.notifyStateChange()
 
     // Start mic if not already started
     if (!this.micRecorder || options?.vad) {
@@ -243,10 +251,17 @@ export class MicdropClient
 
     // Start websocket
     await this.startWS()
+
+    // Already connected, the socket was kept from a previous start
+    if (this.isWSStarted && this._isStartingCall) {
+      this._isStartingCall = false
+      this.notifyStateChange()
+    }
   }
 
   stop = async () => {
     this.partialAssistantMessage = ''
+    this._isStartingCall = false
     this._isProcessing = false
     this._isMuted = false
     this._isPaused = false
@@ -510,6 +525,7 @@ export class MicdropClient
       this.connectionTimer = undefined
     }
     this._isReconnecting = false
+    this._isStartingCall = false
     this.reconnectAttempt = 0
     this.error = undefined
     this.notifyStateChange()

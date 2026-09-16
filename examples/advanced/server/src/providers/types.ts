@@ -1,10 +1,10 @@
 /**
  * Description of the providers the demo can assemble a call from.
  *
- * The same catalog serves two purposes: the client reads it to fill the three
+ * The same catalog serves two purposes: the client reads it to fill the
  * selects at the top of the page, and the server reads it to build the agent,
- * the speech to text and the text to speech the client picked. Adding a
- * provider therefore means adding one entry, nothing else.
+ * the speech to text and the text to speech the client picked, or its realtime
+ * model. Adding a provider therefore means adding one entry, nothing else.
  */
 
 export interface ModelOption {
@@ -82,10 +82,17 @@ export interface PartCatalog {
   defaultProvider: string
 }
 
+/**
+ * How the call runs: an agent, a speech to text and a text to speech picked
+ * apart, or a realtime model that hears and speaks on its own.
+ */
+export type CallMode = 'multi' | 'realtime'
+
 export interface Catalog {
   agent: PartCatalog
   stt: PartCatalog
   tts: PartCatalog
+  realtime: PartCatalog
   /** What the prompt editor of the client starts from, and resets to. */
   defaultPrompt: string
 }

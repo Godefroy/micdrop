@@ -10,7 +10,7 @@ OpenAI implementation for [@micdrop/server](../../server).
 
 This package provides AI agent, speech-to-text and text-to-speech implementations using OpenAI's API.
 
-Each of the three is a separate argument, so any of them can move to another provider. [The OpenAI Realtime API](/blog/openai-realtime-api-vs-pipeline) handles all three in one connection, which changes what you can swap and what you pay.
+Each of the three is a separate argument, so any of them can move to another provider. [`OpenaiRealtime`](#openai-realtime) runs all three in one connection to the Realtime API, which changes what you can swap and what you pay.
 
 ## Installation
 
@@ -278,3 +278,68 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 **Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
 
 :::
+
+## OpenAI Realtime
+
+A [realtime model](../../server/realtime) running on the OpenAI Realtime API. It hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
+
+### Usage with MicdropServer
+
+```typescript
+import { OpenaiRealtime } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new OpenaiRealtime({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-realtime-2.1', // Default model
+  voice: 'marin', // Default voice
+  systemPrompt: 'You are a helpful assistant',
+  language: 'en', // Optional, helps the transcription of the user
+
+  // Advanced features (optional)
+  autoEndCall: true, // Automatically end call when user requests
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+The Micdrop client detects when the user speaks, so the turn detection of the Realtime API is turned off. The audio of each turn is committed when the client closes it, and the answer is asked for right after. Tools are added with `addTool()`, as with `OpenaiAgent`.
+
+When the user interrupts, the answer is cancelled and the conversation of the model is cut where the user most likely stopped hearing it.
+
+### Events
+
+`OpenaiRealtime` emits the events of an agent, and two of its own.
+
+| Event                   | Payload                   | Description                                                            |
+| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| `Audio`                 | `Buffer`                  | A chunk of the voice of the model, PCM 16 bits, 16 kHz, mono.          |
+| `PartialMessage`        | `string`                  | The transcript of the answer so far.                                   |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation. |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output. |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `SkipAnswer`            | none                      | The model gave no spoken answer.                                       |
+| `EndCall`               | none                      | The model decided that the call is over.                               |
+| `Failed`                | none                      | The connection could not be restored after its retries.                |
+
+### Options
+
+| Option                | Type                | Default               | Description                                                              |
+| --------------------- | ------------------- | --------------------- | ------------------------------------------------------------------------ |
+| `apiKey`              | `string`            | Required              | Your OpenAI API key                                                      |
+| `systemPrompt`        | `string`            | Required              | Instructions of the model                                                |
+| `model`               | `string`            | `'gpt-realtime-2.1'`  | Realtime model to use (`gpt-realtime-2.1`, `gpt-realtime-mini`, ...)     |
+| `voice`               | `string`            | `'marin'`             | Voice of the model                                                       |
+| `language`            | `string`            | `undefined`           | Language of the user, as an ISO 639-1 code, for the transcription        |
+| `transcriptionModel`  | `string`            | `'gpt-4o-transcribe'` | Model transcribing the user                                              |
+| `autoEndCall`         | `boolean \| string` | `false`               | Ends the call when the user asks for it                                  |
+| `autoSemanticTurn`    | `boolean \| string` | `false`               | Lets the model wait silently when the user did not finish their sentence |
+| `autoIgnoreUserNoise` | `boolean \| string` | `false`               | Drops the turn when it carries no meaning                                |
+| `connectionTimeout`   | `number`            | `5000`                | Time to open the connection, in milliseconds                             |
+| `retryDelay`          | `number`            | `1000`                | Delay before reconnecting, in milliseconds                               |
+| `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                   |
+
+A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session.

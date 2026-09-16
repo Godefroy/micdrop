@@ -177,6 +177,30 @@ See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrati
 
 > **Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
 
+## OpenAI Realtime
+
+`OpenaiRealtime` is a [realtime model](https://micdrop.dev/docs/server/realtime) running on the OpenAI Realtime API. It hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
+
+```typescript
+import { OpenaiRealtime } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new OpenaiRealtime({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-realtime-2.1', // Default model
+  voice: 'marin', // Default voice
+  systemPrompt: 'You are a helpful assistant',
+  language: 'en', // Optional, helps the transcription of the user
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+It emits the events of an agent, plus `Audio` (the voice of the model, PCM 16 bits, 16 kHz, mono) and `PartialMessage` (the transcript of the answer so far).
+
 ## Documentation
 
 Read full [documentation of the OpenAI integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/openai) on the [website](https://micdrop.dev).

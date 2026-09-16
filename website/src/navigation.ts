@@ -42,6 +42,10 @@ export const footerNav: { title: string; links: NavLink[] }[] = [
         href: '/docs/ai-integration/provided-integrations/openai',
       },
       {
+        label: 'Gemini',
+        href: '/docs/ai-integration/provided-integrations/gemini',
+      },
+      {
         label: 'ElevenLabs',
         href: '/docs/ai-integration/provided-integrations/elevenlabs',
       },

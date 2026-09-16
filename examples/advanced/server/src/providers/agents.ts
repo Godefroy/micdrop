@@ -1,5 +1,6 @@
 import { createOpenAI, openai } from '@ai-sdk/openai'
 import { AiSdkAgent } from '@micdrop/ai-sdk'
+import { GeminiAgent } from '@micdrop/gemini'
 import { MistralAgent } from '@micdrop/mistral'
 import { OpenaiAgent } from '@micdrop/openai'
 import { Agent, FallbackAgent, MockAgent } from '@micdrop/server'
@@ -38,7 +39,7 @@ Your role is to help the user with their questions and requests.
  * locked to one language decides it here, so the line is appended after the
  * prompt rather than written into it.
  */
-function getSystemPrompt(lang: string, prompt?: string) {
+export function getSystemPrompt(lang: string, prompt?: string) {
   const base = prompt?.trim() || DEFAULT_SYSTEM_PROMPT.trim()
   return `${base}\n- Write every message in ${lang} language.\n`
 }
@@ -119,6 +120,27 @@ const agents: ProviderRegistry<Agent> = {
       new MistralAgent({
         apiKey: process.env.MISTRAL_API_KEY || '',
         model,
+        systemPrompt: getSystemPrompt(lang, prompt),
+        ...auto,
+      }),
+  },
+
+  gemini: {
+    label: 'Gemini',
+    requiredEnv: ['GEMINI_API_KEY'],
+    models: [
+      { id: 'gemini-3.5-flash-lite', label: 'gemini-3.5-flash-lite' },
+      { id: 'gemini-3.8-flash', label: 'gemini-3.8-flash' },
+      { id: 'gemini-3.1-flash-lite', label: 'gemini-3.1-flash-lite' },
+    ],
+    // Answers in about a second, where gemini-3.8-flash takes four
+    defaultModel: 'gemini-3.5-flash-lite',
+    create: ({ lang, model, auto, prompt }) =>
+      new GeminiAgent({
+        apiKey: process.env.GEMINI_API_KEY || '',
+        model,
+        // The least thinking gemini-3.8-flash accepts, for its first word
+        thinkingLevel: model === 'gemini-3.8-flash' ? 'low' : undefined,
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),

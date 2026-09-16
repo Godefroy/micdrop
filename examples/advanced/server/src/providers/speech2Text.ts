@@ -1,3 +1,4 @@
+import { GeminiSTT } from '@micdrop/gemini'
 import { GladiaSTT } from '@micdrop/gladia'
 import { GradiumSTT } from '@micdrop/gradium'
 import { MistralSTT } from '@micdrop/mistral'
@@ -65,6 +66,17 @@ const speech2Text: ProviderRegistry<STT> = {
       new MistralSTT({
         apiKey: process.env.MISTRAL_API_KEY || '',
         model,
+      }),
+  },
+
+  gemini: {
+    label: 'Gemini',
+    requiredEnv: ['GEMINI_API_KEY'],
+    create: ({ lang }) =>
+      new GeminiSTT({
+        apiKey: process.env.GEMINI_API_KEY || '',
+        language: lang,
+        vocabulary: ['Micdrop'],
       }),
   },
 

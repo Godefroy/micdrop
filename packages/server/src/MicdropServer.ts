@@ -4,6 +4,7 @@ import { WebSocket } from 'ws'
 import type { Agent } from './agent'
 import { pcm16ToFloat32 } from './audio'
 import { Logger } from './Logger'
+import type { Realtime } from './realtime'
 import type { STT } from './stt'
 import type { TTS } from './tts'
 import {
@@ -64,12 +65,12 @@ export interface MicdropConfig {
 
   /**
    * Turns what the user says into text, the one component a call cannot do
-   * without.
+   * without, unless a realtime model hears the user itself.
    *
    * It is fed the audio of each turn as it arrives, and the transcripts it
    * returns drive everything that follows.
    */
-  stt: STT
+  stt?: STT
 
   /**
    * Gives the answers a voice.
@@ -101,6 +102,15 @@ export interface MicdropConfig {
 
   /** How long to wait for the rest of a sentence, 4000 ms by default */
   turnMaxWait?: number
+
+  /**
+   * Hears the user and answers with its own voice, in place of `stt`, `agent`
+   * and `tts`, which are then ignored.
+   *
+   * The client does not change: it still detects when the user speaks, and the
+   * turn it sends goes to the model as audio.
+   */
+  realtime?: Realtime
 }
 
 export class MicdropServer extends EventEmitter<MicdropServerEvents> {
@@ -133,14 +143,29 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.config = config
     this.log(`Call started`)
 
-    // Setup STT
-    config.stt.on('Transcript', this.onTranscriptSTT)
+    const { realtime } = config
+    if (realtime) {
+      // Setup realtime model
+      realtime.on('Audio', this.onAssistantAudio)
+      if (config.partialMessages) {
+        realtime.on('PartialMessage', (content) =>
+          this.sendPartialAnswer(content)
+        )
+      }
+    } else {
+      if (!config.stt) {
+        throw new Error('MicdropServer needs an stt, or a realtime model')
+      }
 
-    // Setup TTS
-    config.tts?.on('Audio', this.onAudioTTS)
+      // Setup STT
+      config.stt.on('Transcript', this.onTranscriptSTT)
 
-    // Setup agent
-    const agent = config.agent
+      // Setup TTS
+      config.tts?.on('Audio', this.onAssistantAudio)
+    }
+
+    // Setup agent, which a realtime model is too
+    const agent = this.agent
     if (agent) {
       agent.on('Message', this.onMessageAgent)
       agent.on('CancelLastUserMessage', () =>
@@ -171,7 +196,13 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   /** Everything said so far, whether an agent or the server keeps it */
   get conversation(): MicdropConversation {
-    return this.config?.agent?.conversation ?? this.ownConversation
+    return this.agent?.conversation ?? this.ownConversation
+  }
+
+  /** What holds the conversation and answers, a realtime model included */
+  private get agent(): Agent | undefined {
+    if (!this.config) return undefined
+    return this.config.realtime ?? this.config.agent
   }
 
   private log(...message: any[]) {
@@ -204,7 +235,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   public cancel() {
     this.config?.tts?.cancel()
-    this.config?.agent?.cancel()
+    this.agent?.cancel()
     // Clear the queue
     this.operationQueue = []
   }
@@ -217,8 +248,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     const conversation = this.conversation
 
     // Destroy instances
-    this.config.agent?.destroy()
-    this.config.stt.destroy()
+    this.agent?.destroy()
+    this.config.stt?.destroy()
     this.config.tts?.destroy()
 
     // Emit End event
@@ -276,6 +307,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.currentUserStream?.end()
     this.currentUserStream = undefined
     this.cancel()
+    this.config?.realtime?.discardTurn()
   }
 
   private onStartSpeaking() {
@@ -287,8 +319,13 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.turnComplete = undefined
     // The rest of the sentence is arriving, so the deadline can go
     this.releaseHeldTurn()
-    this.config.stt.transcribe(this.currentUserStream)
-    this.cancel()
+    if (this.config.realtime) {
+      this.cancel()
+      this.config.realtime.startTurn(this.currentUserStream)
+    } else {
+      this.config.stt?.transcribe(this.currentUserStream)
+      this.cancel()
+    }
   }
 
   private onStopSpeaking() {
@@ -306,6 +343,12 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
     // Weigh the stretch of audio that just ended, before the next one starts
     this.turnComplete = this.predictTurnComplete()
+
+    // A realtime model answers the audio, with no transcript to wait for
+    if (this.config?.realtime) {
+      this.answerUserTurn()
+      return
+    }
 
     const conversation = this.conversation
     const lastMessage = conversation[conversation.length - 1]
@@ -344,7 +387,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     }
     this.releaseHeldTurn()
     this.cancel()
-    this.answer()
+    this.answerTurn()
   }
 
   /**
@@ -359,8 +402,18 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       this.heldTurnTimer = undefined
       this.log('Nothing more came, answering')
       this.cancel()
-      this.answer()
+      this.answerTurn()
     }, this.config?.turnMaxWait ?? DEFAULT_TURN_MAX_WAIT)
+  }
+
+  /** Answers what the user just said */
+  private answerTurn() {
+    const realtime = this.config?.realtime
+    if (realtime) {
+      realtime.endTurn()
+    } else {
+      this.answer()
+    }
   }
 
   private releaseHeldTurn() {
@@ -388,7 +441,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     }
   }
 
-  private onAudioTTS = (audio: Buffer) => {
+  private onAssistantAudio = (audio: Buffer) => {
     if (!this.socket) return
     this.log(`Send audio chunk (${audio.byteLength} bytes)`)
     this.socket.send(audio)
@@ -401,8 +454,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   /** Adds a message to the conversation and sends it to the client */
   public addUserMessage(text: string, metadata?: MicdropAnswerMetadata) {
-    if (this.config?.agent) {
-      this.config.agent.addUserMessage(text, metadata)
+    if (this.agent) {
+      this.agent.addUserMessage(text, metadata)
     } else {
       this.addOwnMessage('user', text, metadata)
     }
@@ -410,8 +463,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   /** Adds a message to the conversation and sends it to the client */
   public addAssistantMessage(text: string, metadata?: MicdropAnswerMetadata) {
-    if (this.config?.agent) {
-      this.config.agent.addAssistantMessage(text, metadata)
+    if (this.agent) {
+      this.agent.addAssistantMessage(text, metadata)
     } else {
       this.addOwnMessage('assistant', text, metadata)
     }
@@ -456,9 +509,9 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     if (this.config.firstMessage) {
       // Send first message
       // Without an agent, speak() is the one adding it to the conversation
-      this.config.agent?.addAssistantMessage(this.config.firstMessage)
+      this.agent?.addAssistantMessage(this.config.firstMessage)
       this.speak(this.config.firstMessage)
-    } else if (this.config.generateFirstMessage && this.config.agent) {
+    } else if (this.config.generateFirstMessage && this.agent) {
       // Generate first message
       this.answer()
     } else {
@@ -476,6 +529,12 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   private async _answer() {
     if (!this.config) return
+
+    // A realtime model speaks its answer itself
+    if (this.config.realtime) {
+      this.config.realtime.respond()
+      return
+    }
 
     // Nothing generates an answer, hand the turn back to the user
     if (!this.config.agent) {
@@ -544,6 +603,14 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   private async _speak(message: string | Readable) {
     if (!this.socket || !this.config) return
 
+    // A realtime model reads the text in its own voice
+    if (this.config.realtime) {
+      const text =
+        typeof message === 'string' ? message : await readText(message)
+      if (text.trim() !== '') this.config.realtime.say(text)
+      return
+    }
+
     // Convert message to stream if needed
     let textStream: Readable
     if (typeof message === 'string') {
@@ -596,6 +663,16 @@ function hasContent(stream: Readable): Promise<boolean> {
     }
     stream.on('readable', onReadable)
     stream.on('end', onEnd)
+  })
+}
+
+/** Reads a text stream to its end */
+function readText(stream: Readable): Promise<string> {
+  return new Promise((resolve) => {
+    let text = ''
+    stream.on('data', (chunk) => (text += chunk.toString()))
+    stream.once('end', () => resolve(text))
+    stream.once('error', () => resolve(text))
   })
 }
 

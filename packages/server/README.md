@@ -72,11 +72,15 @@ A server given a speech to text alone transcribes and stays quiet, which is all
 a dictation tool needs. One given an agent and no voice answers in writing. See
 [dictation and text-only calls](https://micdrop.dev/docs/server/dictation).
 
+A `realtime` model hears the user and answers with its own voice, in place of
+all three. See [realtime models](https://micdrop.dev/docs/server/realtime).
+
 ### Available implementations
 
 Micdrop provides ready-to-use implementations for the following AI providers:
 
 - [@micdrop/openai](https://micdrop.dev/docs/ai-integration/provided-integrations/openai)
+- [@micdrop/gemini](https://micdrop.dev/docs/ai-integration/provided-integrations/gemini)
 - [@micdrop/ai-sdk](https://micdrop.dev/docs/ai-integration/provided-integrations/ai-sdk)
 - [@micdrop/elevenlabs](https://micdrop.dev/docs/ai-integration/provided-integrations/elevenlabs)
 - [@micdrop/cartesia](https://micdrop.dev/docs/ai-integration/provided-integrations/cartesia)
@@ -90,6 +94,7 @@ You can use provided abstractions to write your own implementation:
 - **[Agent](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-agent)** - Abstract class for answer generation
 - **[STT](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt)** - Abstract class for speech-to-text
 - **[TTS](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts)** - Abstract class for text-to-speech
+- **[Realtime](https://micdrop.dev/docs/server/realtime#writing-your-own)** - Abstract class for speech-to-speech models
 
 ## Documentation
 

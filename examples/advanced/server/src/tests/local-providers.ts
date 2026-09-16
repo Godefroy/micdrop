@@ -15,8 +15,8 @@ async function main() {
   )
   console.log({
     agent: agent.constructor.name,
-    stt: stt.constructor.name,
-    tts: tts.constructor.name,
+    stt: stt?.constructor.name,
+    tts: tts?.constructor.name,
     lang,
   })
 
@@ -26,8 +26,8 @@ async function main() {
     'fr-FR'
   )
   console.log({
-    tts: fallback.tts.constructor.name,
-    stt: fallback.stt.constructor.name,
+    tts: fallback.tts?.constructor.name,
+    stt: fallback.stt?.constructor.name,
     lang: fallback.lang,
   })
   process.exit(0)

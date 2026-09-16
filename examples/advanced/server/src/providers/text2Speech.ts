@@ -1,5 +1,6 @@
 import { CartesiaLanguage, CartesiaTTS } from '@micdrop/cartesia'
 import { ElevenLabsTTS, ElevenLabsTTSOptions } from '@micdrop/elevenlabs'
+import { GeminiTTS } from '@micdrop/gemini'
 import { GradiumTTS } from '@micdrop/gradium'
 import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
 import { OpenaiTTS } from '@micdrop/openai'
@@ -103,6 +104,24 @@ const text2speech: ProviderRegistry<TTS> = {
         modelId: model || 'sonic-turbo',
         voiceId: process.env.CARTESIA_VOICE_ID || '',
         language: lang.split('-')[0] as CartesiaLanguage,
+      }),
+  },
+
+  gemini: {
+    label: 'Gemini',
+    requiredEnv: ['GEMINI_API_KEY'],
+    models: [
+      { id: 'gemini-2.5-flash-preview-tts', label: 'gemini-2.5-flash-tts' },
+      // Starts sooner, then streams slower than it is spoken, so the audio
+      // comes in pieces
+      { id: 'gemini-3.1-flash-tts-preview', label: 'gemini-3.1-flash-tts' },
+      { id: 'gemini-2.5-pro-preview-tts', label: 'gemini-2.5-pro-tts' },
+    ],
+    defaultModel: 'gemini-2.5-flash-preview-tts',
+    create: ({ model }) =>
+      new GeminiTTS({
+        apiKey: process.env.GEMINI_API_KEY || '',
+        model,
       }),
   },
 

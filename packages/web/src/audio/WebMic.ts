@@ -4,6 +4,24 @@ import { initPcmProcessor } from './pcm-processor'
 import { stopStream } from './stopStream'
 
 /**
+ * How long Firefox needs to let go of a microphone it released.
+ *
+ * A microphone requested again before that comes back without its processing:
+ * no echo cancellation, no noise suppression and a raw gain some 30 dB higher,
+ * while its settings still report them on. The room then sounds like speech,
+ * and the assistant hears its own voice. No event tells when the device is
+ * free, so a new stream waits for this delay to pass.
+ */
+const FIREFOX_RELEASE_DELAY = 15000 // ms
+
+const isFirefox =
+  typeof navigator !== 'undefined' && /Firefox\//.test(navigator.userAgent)
+
+// The last stream released, outside the class: the browser holds the device
+// whichever WebMic opened it
+let lastRelease: { at: number; deviceId: string | undefined } | undefined
+
+/**
  * Records the microphone with the Web Audio API.
  *
  * An audio worklet delivers the samples at a steady pace, and everything that
@@ -29,6 +47,8 @@ export class WebMic extends MicDriver {
       if (this._deviceId === deviceId) return
       await this.stop()
     }
+
+    await waitForRelease(deviceId)
 
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -76,6 +96,7 @@ export class WebMic extends MicDriver {
     if (this.stream) {
       stopStream(this.stream)
       this.stream = undefined
+      lastRelease = { at: Date.now(), deviceId: this._deviceId }
     }
   }
 
@@ -91,6 +112,21 @@ export class WebMic extends MicDriver {
 
   private onDeviceChange = () => {
     this.emit('DeviceChange')
+  }
+}
+
+/**
+ * Waits until Firefox let go of the microphone, see FIREFOX_RELEASE_DELAY
+ * @param deviceId - The device about to be opened
+ */
+async function waitForRelease(deviceId?: string) {
+  if (!isFirefox || !lastRelease) return
+  if (deviceId && lastRelease.deviceId && deviceId !== lastRelease.deviceId) {
+    return
+  }
+  const remaining = lastRelease.at + FIREFOX_RELEASE_DELAY - Date.now()
+  if (remaining > 0) {
+    await new Promise((resolve) => setTimeout(resolve, remaining))
   }
 }
 

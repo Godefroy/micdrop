@@ -17,7 +17,7 @@ Micdrop provides a modular AI architecture allowing you to:
 - **Run everything locally**, with no API key and no data leaving your machine
 - **Build custom integrations** using abstract base classes
 
-Splitting transcription, the agent and the voice into three services is one of two architectures. The other sends audio straight to a speech-to-speech model such as [the OpenAI Realtime API](/blog/openai-realtime-api-vs-pipeline), where one connection comes with a fixed voice and a single provider.
+Splitting transcription, the agent and the voice into three services is one of two architectures. The other sends audio straight to a [realtime model](../server/realtime) such as Gemini Live or [the OpenAI Realtime API](/blog/openai-realtime-api-vs-pipeline), where one connection comes with a faster answer, the voice of that provider and a single bill.
 
 ## Provider Categories
 
@@ -28,6 +28,7 @@ Ready-to-use implementations for popular AI services:
 **Speech-to-Text (STT):**
 
 - **[Gladia](./provided-integrations/gladia)** - Fast, accurate multilingual transcription
+- **[Gemini Transcribe](./provided-integrations/gemini#gemini-stt-speech-to-text)** - Streaming transcription, 85+ languages
 - **[OpenAI Whisper](./provided-integrations/openai)** - High-quality speech recognition
 - **[Mistral Voxtral](./provided-integrations/mistral)** - Real-time transcription
 - **[Gradium](./provided-integrations/gradium)** - Real-time transcription
@@ -37,6 +38,7 @@ Ready-to-use implementations for popular AI services:
 
 - **[ElevenLabs](./provided-integrations/elevenlabs)** - High-quality voice synthesis
 - **[Cartesia](./provided-integrations/cartesia)** - Low-latency streaming TTS
+- **[Gemini TTS](./provided-integrations/gemini#gemini-tts-text-to-speech)** - 30 voices, directed with plain instructions
 - **[Kokoro](./provided-integrations/kokoro)** - Local voice, in your Node process, English only
 - **[Piper](./provided-integrations/piper)** - Local voice, around forty languages
 - **[Pocket TTS](./provided-integrations/pocket-tts)** - Local voice cloning, in your Node process, English only
@@ -47,6 +49,12 @@ Ready-to-use implementations for popular AI services:
 - **[AI SDK](./provided-integrations/ai-sdk)** - Universal provider using Vercel AI SDK
 - **[OpenAI](./provided-integrations/openai)** - GPT models for conversation
 - **[Mistral](./provided-integrations/mistral)** - Open-source and commercial LLMs
+- **[Gemini](./provided-integrations/gemini#gemini-agent)** - Gemini Flash models for conversation
+
+**Realtime models (speech to speech):**
+
+- **[Gemini Live](./provided-integrations/gemini#gemini-live)** - Hears and speaks in one connection
+- **[OpenAI Realtime](./provided-integrations/openai#openai-realtime)** - Hears and speaks in one connection
 
 ### Running Locally
 

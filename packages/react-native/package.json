@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React Native audio for Micdrop: real-time voice conversations with AI on iOS and Android",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -42,7 +42,7 @@
     "react-native-audio-api": ">=0.13.0"
   },
   "dependencies": {
-    "@micdrop/client": "^3.0.0"
+    "@micdrop/client": "^3.2.1"
   },
   "devDependencies": {
     "onnxruntime-react-native": "^1.24.3",

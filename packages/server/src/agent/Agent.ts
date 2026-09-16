@@ -76,7 +76,8 @@ export interface ExtractTagOptions extends ExtractOptions {
 
 export abstract class Agent<
   Options extends AgentOptions = AgentOptions,
-> extends EventEmitter<AgentEvents> {
+  Events extends AgentEvents = AgentEvents,
+> extends EventEmitter<Events> {
   public logger?: Logger
   public conversation: MicdropConversation
   public tools: Tool[]
@@ -101,7 +102,9 @@ export abstract class Agent<
 
     Promise.resolve()
       // Call hook onBeforeAnswer
-      .then(() => this.options.onBeforeAnswer?.bind(this)(stream))
+      .then(() =>
+        this.options.onBeforeAnswer?.bind(this as unknown as Agent)(stream)
+      )
       // Generate answer (if not skipped)
       .then((skip) => {
         if (skip) return
@@ -164,7 +167,7 @@ export abstract class Agent<
       metadata,
     }
     this.conversation.push(message)
-    this.emit('Message', message)
+    this.emitAgentEvent('Message', message)
   }
 
   addToolMessage(
@@ -172,12 +175,12 @@ export abstract class Agent<
   ) {
     this.log('Adding tool message:', message)
     this.conversation.push(message)
-    this.emit('Message', message)
+    this.emitAgentEvent('Message', message)
   }
 
   protected endCall() {
     this.log('Ending call')
-    this.emit('EndCall')
+    this.emitAgentEvent('EndCall')
   }
 
   protected cancelLastUserMessage() {
@@ -188,12 +191,12 @@ export abstract class Agent<
     if (lastMessageIndex !== -1) {
       this.conversation.splice(lastMessageIndex, 1)
     }
-    this.emit('CancelLastUserMessage')
+    this.emitAgentEvent('CancelLastUserMessage')
   }
 
   protected skipAnswer() {
     this.log('Skipping answer')
-    this.emit('SkipAnswer')
+    this.emitAgentEvent('SkipAnswer')
   }
 
   protected getDefaultTools() {
@@ -258,7 +261,7 @@ export abstract class Agent<
 
       // Emit output
       if (tool.emitOutput) {
-        this.emit('ToolCall', {
+        this.emitAgentEvent('ToolCall', {
           name: toolCall.toolName,
           parameters,
           output,
@@ -333,6 +336,20 @@ export abstract class Agent<
       }
     }
     return { message, metadata }
+  }
+
+  /**
+   * Emits one of the events every agent has.
+   *
+   * A subclass can add events of its own, and TypeScript then no longer knows
+   * the shared ones are among them.
+   */
+  protected emitAgentEvent<Name extends keyof AgentEvents>(
+    event: Name,
+    ...args: AgentEvents[Name]
+  ) {
+    const emitter = this as unknown as EventEmitter<AgentEvents>
+    emitter.emit(event, ...(args as any))
   }
 
   protected log(...message: any[]) {

@@ -39,6 +39,9 @@ export const callParamsSchema = z.object({
   // System prompt written in the client. Absent, or empty, means the default
   // one the server exposes in its catalog.
   prompt: z.string().max(10000).optional(),
+  // An agent, a speech to text and a text to speech, or a realtime model.
+  // Absent means the first.
+  mode: z.enum(['multi', 'realtime']).optional(),
   // Absent when the client did not read the catalog, the server then falls
   // back to the providers it considers its defaults
   providers: z
@@ -46,6 +49,7 @@ export const callParamsSchema = z.object({
       agent: providerSelectionSchema.optional(),
       stt: providerSelectionSchema.optional(),
       tts: providerSelectionSchema.optional(),
+      realtime: providerSelectionSchema.optional(),
     })
     .optional(),
 })
@@ -70,6 +74,7 @@ export async function checkParams(socket: WebSocket): Promise<{
   return {
     lang: params.lang,
     selection: {
+      mode: params.mode,
       ...params.providers,
       auto: params.auto,
       prompt: params.prompt,

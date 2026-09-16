@@ -1,0 +1,327 @@
+---
+title: 'Gemini'
+description: 'Run a voice agent on Google Gemini from your Node server: Gemini models as the agent, Gemini Transcribe and Gemini TTS, or Gemini Live for the whole call.'
+order: 48.5
+---
+
+# Gemini
+
+Google Gemini implementation for [@micdrop/server](../../server).
+
+This package provides an agent, a speech-to-text and a text-to-speech running
+on the Gemini API. Each one can be combined with any other provider.
+`GeminiLive` goes further: it is a [realtime model](../../server/realtime) that
+hears the user and answers with its own voice, in place of the three.
+
+## Installation
+
+```bash
+npm install @micdrop/gemini
+```
+
+## Gemini Agent
+
+Answers with Gemini models through the Interactions API. The conversation is
+sent on every turn, nothing is stored on Google's side.
+
+### Usage with MicdropServer
+
+```typescript
+import { GeminiAgent } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const agent = new GeminiAgent({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-3.8-flash', // Default model
+  thinkingLevel: 'low', // Optional, the lower the sooner the first word
+  systemPrompt: 'You are a helpful assistant',
+
+  // Advanced features (optional)
+  autoEndCall: true, // Automatically end call when user requests
+  autoSemanticTurn: true, // Handle incomplete sentences
+  autoIgnoreUserNoise: true, // Filter out meaningless sounds
+})
+
+new MicdropServer(socket, {
+  agent,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { GeminiAgent } from '@micdrop/gemini'
+
+const agent = new GeminiAgent({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  systemPrompt: 'You are a helpful assistant',
+})
+
+agent.on('Message', (message) => console.log('Message:', message))
+
+agent.addUserMessage('Hello, what can you do?')
+
+// The answer is a text stream, written as the model generates it
+agent.answer().on('data', (chunk) => process.stdout.write(chunk))
+```
+
+### Events
+
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
+| `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
+
+See the [Agent interface](../custom-integrations/custom-agent) for the full contract.
+
+### Options
+
+| Option          | Type                      | Default              | Description                                                   |
+| --------------- | ------------------------- | -------------------- | ------------------------------------------------------------- |
+| `apiKey`        | `string`                  | Required\*           | Your Gemini API key (required if `genai` not provided)        |
+| `genai`         | `GoogleGenAI`             | Optional             | Client of `@google/genai` (alternative to `apiKey`)           |
+| `model`         | `string`                  | `'gemini-3.8-flash'` | Model to use (`gemini-3.8-flash`, `gemini-3.5-flash-lite`...) |
+| `thinkingLevel` | `string`                  | Model default        | How long the model thinks (`low`, `medium`, `high`)           |
+| `settings`      | `Record<string, unknown>` | `undefined`          | Other generation settings, such as `temperature`              |
+| `maxRetry`      | `number`                  | `3`                  | Attempts after a failed request                               |
+| `retryDelay`    | `number`                  | `1000`               | Delay between two attempts, in milliseconds                   |
+| `maxSteps`      | `number`                  | `5`                  | Requests in a row when the model keeps calling tools          |
+
+For a voice call, the delay before the first word matters most.
+`gemini-3.5-flash-lite` answers in about a second, and `gemini-3.8-flash`, more
+capable, takes several seconds even with `thinkingLevel: 'low'`.
+
+## Gemini STT (Speech-to-Text)
+
+Streams the voice of the user to Gemini Transcribe over the Live API, and emits
+the transcript of each utterance a fraction of a second after it ends.
+
+### Usage with MicdropServer
+
+```typescript
+import { GeminiSTT } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const stt = new GeminiSTT({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  language: 'en-US', // Optional, detected when left out
+  vocabulary: ['Micdrop'], // Optional, words to recognize
+})
+
+new MicdropServer(socket, {
+  stt,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { GeminiSTT } from '@micdrop/gemini'
+import { createReadStream } from 'fs'
+
+const stt = new GeminiSTT({ apiKey: process.env.GEMINI_API_KEY || '' })
+
+stt.on('Transcript', (transcript) => console.log('Transcript:', transcript))
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+stt.transcribe(createReadStream('speech.pcm'))
+```
+
+### Events
+
+| Event        | Payload    | Description                                                                 |
+| ------------ | ---------- | --------------------------------------------------------------------------- |
+| `Transcript` | `string`   | The transcript of an utterance, empty when nothing was understood.          |
+| `Failed`     | `Buffer[]` | The connection could not be restored, with the audio of the utterance left. |
+
+See the [STT interface](../custom-integrations/custom-stt) for the full contract.
+
+### Options
+
+| Option                 | Type                    | Default                        | Description                                         |
+| ---------------------- | ----------------------- | ------------------------------ | --------------------------------------------------- |
+| `apiKey`               | `string`                | Required                       | Your Gemini API key                                 |
+| `model`                | `string`                | `'gemini-3.5-transcribe-live'` | Transcription model                                 |
+| `language`             | `string`                | `undefined`                    | Language of the user, as a BCP-47 code like `fr-FR` |
+| `vocabulary`           | `string[]`              | `undefined`                    | Words to recognize, up to 1,000                     |
+| `mode`                 | `'SMART' \| 'VERBATIM'` | Model default                  | Cleans up hesitations, or keeps every word as said  |
+| `transcriptionTimeout` | `number`                | `4000`                         | How long to wait for a transcript, in milliseconds  |
+| `connectionTimeout`    | `number`                | `5000`                         | Time to open the connection, in milliseconds        |
+| `retryDelay`           | `number`                | `1000`                         | Delay before reconnecting, in milliseconds          |
+| `maxRetry`             | `number`                | `3`                            | Reconnection attempts before giving up              |
+
+## Gemini TTS (Text-to-Speech)
+
+Gives the answers a Gemini voice. The model reads a whole text at once, so the
+answer is cut into sentences, and the audio of each one is sent as the model
+streams it.
+
+### Usage with MicdropServer
+
+```typescript
+import { GeminiTTS } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new GeminiTTS({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-2.5-flash-preview-tts', // Default model
+  voice: 'Kore', // Default voice
+
+  // Direction put before each sentence (optional)
+  instructions: 'Say in a calm and friendly tone',
+})
+
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { GeminiTTS } from '@micdrop/gemini'
+import { Readable } from 'stream'
+
+const tts = new GeminiTTS({ apiKey: process.env.GEMINI_API_KEY || '' })
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+### Events
+
+| Event    | Payload    | Description                                                           |
+| -------- | ---------- | --------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.      |
+| `Failed` | `string[]` | Synthesis gave up after an error, with the text that stayed unspoken. |
+
+See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
+
+### Options
+
+| Option         | Type          | Default                          | Description                                              |
+| -------------- | ------------- | -------------------------------- | -------------------------------------------------------- |
+| `apiKey`       | `string`      | Required\*                       | Your Gemini API key (required if `genai` not provided)   |
+| `genai`        | `GoogleGenAI` | Optional                         | Client of `@google/genai` (alternative to `apiKey`)      |
+| `model`        | `string`      | `'gemini-2.5-flash-preview-tts'` | Speech model to use                                      |
+| `voice`        | `string`      | `'Kore'`                         | One of the 30 prebuilt voices, such as `Puck` or `Aoede` |
+| `instructions` | `string`      | `undefined`                      | How to say the text, such as `Say cheerfully`            |
+| `maxRetry`     | `number`      | `2`                              | Attempts after Gemini blocked a sentence by mistake      |
+
+The voice follows the language of the text, in about ninety languages.
+
+Gemini now and then blocks an ordinary sentence as if its content were
+forbidden, then accepts the very same sentence on the next request.
+`GeminiTTS` asks again, up to `maxRetry` times, as long as no audio of that
+sentence has been played.
+
+`gemini-3.1-flash-tts-preview` starts speaking after about a second, then
+streams the rest slower than it is spoken, which leaves gaps in a long
+sentence. `gemini-2.5-flash-preview-tts` takes about three seconds and sends
+each sentence whole, so it plays without a gap.
+
+## Gemini Live
+
+A [realtime model](../../server/realtime) running on the Gemini Live API. It
+hears the user and answers with its own voice, in place of a speech to text, an
+agent and a text to speech.
+
+### Usage with MicdropServer
+
+```typescript
+import { GeminiLive } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new GeminiLive({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-3.8-live', // Default model
+  systemPrompt: 'You are a helpful assistant',
+  voice: 'Kore', // Optional, a prebuilt voice
+
+  // Advanced features (optional)
+  autoEndCall: true, // Automatically end call when user requests
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+The Micdrop client detects when the user speaks, so the automatic activity
+detection of Gemini is turned off. Each turn is sent between an `activityStart`
+and an `activityEnd`, and the model answers once the turn ends.
+
+### Tools
+
+Tools are added as with any agent, and run on your server:
+
+```typescript
+import { z } from 'zod'
+
+realtime.addTool({
+  name: 'get_weather',
+  description: 'Get the current weather in a city',
+  inputSchema: z.object({ city: z.string() }),
+  execute: async ({ city }) => fetchWeather(city),
+})
+```
+
+Gemini ends its turn when it calls a tool, then speaks about the result once it
+has it. The client keeps waiting for the answer in between. A tool declared
+with `skipAnswer` gives its result to the model silently.
+
+Gemini reads the tools when the session opens, so add them right after creating
+the model, before the connection is established.
+
+### Events
+
+`GeminiLive` emits the events of an agent, and two of its own.
+
+| Event                   | Payload                   | Description                                                            |
+| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| `Audio`                 | `Buffer`                  | A chunk of the voice of the model, PCM 16 bits, 16 kHz, mono.          |
+| `PartialMessage`        | `string`                  | The transcript of the answer so far.                                   |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation. |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output. |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `SkipAnswer`            | none                      | The model gave no spoken answer.                                       |
+| `EndCall`               | none                      | The model decided that the call is over.                               |
+| `Failed`                | none                      | The connection could not be restored after its retries.                |
+
+### Options
+
+| Option                | Type                | Default             | Description                                                              |
+| --------------------- | ------------------- | ------------------- | ------------------------------------------------------------------------ |
+| `apiKey`              | `string`            | Required            | Your Gemini API key                                                      |
+| `systemPrompt`        | `string`            | Required            | Instructions of the model                                                |
+| `model`               | `string`            | `'gemini-3.8-live'` | Live model to use                                                        |
+| `voice`               | `string`            | `undefined`         | Name of a prebuilt voice, such as `Kore` or `Puck`                       |
+| `thinkingLevel`       | `string`            | `undefined`         | Reasoning level, required by `gemini-3.8-live-extended-thinking`         |
+| `autoEndCall`         | `boolean \| string` | `false`             | Ends the call when the user asks for it                                  |
+| `autoSemanticTurn`    | `boolean \| string` | `false`             | Lets the model wait silently when the user did not finish their sentence |
+| `autoIgnoreUserNoise` | `boolean \| string` | `false`             | Drops the turn when it carries no meaning                                |
+| `connectionTimeout`   | `number`            | `5000`              | Time to open the connection, in milliseconds                             |
+| `retryDelay`          | `number`            | `1000`              | Delay before reconnecting, in milliseconds                               |
+| `maxRetry`            | `number`            | `3`                 | Reconnection attempts before giving up                                   |
+
+`gemini-3.8-live-extended-thinking` reasons before answering, for questions that
+take several steps. It refuses to start without a `thinkingLevel`, such as
+`'low'`, while `gemini-3.8-live` refuses any.
+
+### Long calls
+
+A Gemini connection lasts a few minutes. `GeminiLive` keeps the handle Gemini
+sends to resume the session, and moves to a new connection at the first silence
+once Gemini announces the end of the current one. Context window compression is
+on, which lifts the fifteen minutes limit of an audio session.

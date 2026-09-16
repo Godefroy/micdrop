@@ -1,7 +1,7 @@
 import { MicdropStorageKeys, storage } from '../../storage'
 import { concatFloat32, resample } from '../pcm'
 import { MicSource } from '../types'
-import { VAD } from './VAD'
+import { VAD, VADStatus } from './VAD'
 
 /** Rate and window the Silero v5 model expects */
 export const SILERO_SAMPLE_RATE = 16000
@@ -91,6 +91,9 @@ export class SileroVAD extends VAD {
   private speechFrames = 0
   private silenceFrames = 0
   private processing = false
+  // Bumped whenever the state is reset, so a window scored before that is
+  // dropped rather than reopening a turn
+  private round = 0
 
   constructor(options?: Partial<SileroVADOptions>) {
     super()
@@ -125,6 +128,8 @@ export class SileroVAD extends VAD {
 
     this.model = await loadModel()
     this.resetState()
+    // A call starts in silence, whatever the previous one ended on
+    this.setStatus(VADStatus.Silence)
     this.mic = mic
     mic.on('Frames', this.onFrames)
   }
@@ -194,11 +199,16 @@ export class SileroVAD extends VAD {
         this.bufferLength = rest.length
 
         const frame = resample(window, this.bufferRate, SILERO_SAMPLE_RATE)
+        const round = this.round
         const probability = await this.model.process(
           frame.length === SILERO_FRAME_SAMPLES
             ? frame
             : fit(frame, SILERO_FRAME_SAMPLES)
         )
+        // Stopped or paused while the window was being scored. Its speech would
+        // put the VAD back in a turn nobody listens to any more, and that stale
+        // status would keep the next call from ever going silent.
+        if (round !== this.round) break
         this.onProbability(probability)
       }
     } catch (error) {
@@ -248,6 +258,7 @@ export class SileroVAD extends VAD {
   }
 
   private resetState() {
+    this.round++
     this.model?.reset()
     this.buffer = []
     this.bufferLength = 0

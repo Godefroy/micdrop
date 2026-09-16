@@ -1,7 +1,7 @@
 {
-  "name": "@micdrop/openai",
-  "version": "1.5.0",
-  "description": "OpenAI implementation for @micdrop/server",
+  "name": "@micdrop/gemini",
+  "version": "1.0.0",
+  "description": "Google Gemini implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Godefroy/micdrop.git",
-    "directory": "packages/openai"
+    "directory": "packages/gemini"
   },
   "publishConfig": {
     "access": "public"
@@ -31,10 +31,16 @@
     "browser",
     "voice",
     "conversation",
-    "openai"
+    "gemini",
+    "google",
+    "llm",
+    "stt",
+    "tts",
+    "realtime"
   ],
   "dependencies": {
-    "openai": "^6.0.0",
+    "@google/genai": "^2.22.0",
+    "eventemitter3": "^5",
     "ws": "^8.19.0"
   },
   "peerDependencies": {

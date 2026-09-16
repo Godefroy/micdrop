@@ -100,7 +100,7 @@ export abstract class VAD extends EventEmitter<VADEvents> {
    * Sets the status of the VAD
    * @param status - The status to set
    */
-  private setStatus(status: VADStatus) {
+  protected setStatus(status: VADStatus) {
     if (this.status === status) return
     this.status = status
     super.emit('ChangeStatus', status)

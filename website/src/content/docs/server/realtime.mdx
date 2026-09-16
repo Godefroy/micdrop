@@ -1,0 +1,107 @@
+---
+title: 'Realtime Models'
+description: 'Run a call on a speech-to-speech model such as Gemini Live or the OpenAI Realtime API, in place of speech to text, an agent and a voice, with the same client.'
+order: 33.5
+---
+
+# Realtime Models
+
+A realtime model hears the user and answers with its own voice. One connection
+replaces the three parts of a regular call, the speech to text, the agent and
+the text to speech, which cuts the delay before the answer and keeps the tone of
+the voice in what the model understands.
+
+Micdrop ships two of them, [`GeminiLive`](../ai-integration/provided-integrations/gemini)
+and [`OpenaiRealtime`](../ai-integration/provided-integrations/openai#openai-realtime).
+
+## Usage
+
+Pass the model as `realtime`, instead of `stt`, `agent` and `tts`:
+
+```typescript
+import { GeminiLive } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+new MicdropServer(socket, {
+  generateFirstMessage: true,
+  realtime: new GeminiLive({
+    apiKey: process.env.GEMINI_API_KEY || '',
+    systemPrompt: 'You are a helpful assistant',
+    autoEndCall: true,
+  }),
+})
+```
+
+The client stays the same. It still detects when the user speaks, and the turn
+it sends goes to the model as audio rather than to a transcription service.
+
+## What keeps working
+
+A realtime model is an [agent](../ai-integration/custom-integrations/custom-agent):
+it holds the conversation, takes tools and emits the same events. So the rest
+of the server works as it does with three separate parts.
+
+- The conversation is written from the transcripts of both voices, in the order
+  they were spoken, and reaches the client as messages.
+- [Tools](./tools) are added with `addTool()` and run on your server.
+- [`firstMessage` and `generateFirstMessage`](./first-message) open the call.
+  A fixed first message is read out by the model in its own voice.
+- `server.speak(text)` has the model read a text, word for word.
+- [Partial messages](./partial-messages) follow the transcript of the answer.
+- An interruption stops the answer, and OpenAI also forgets the part the user
+  did not hear.
+- [Turn detection](../client/turn-detection) and the
+  [server-side turn detector](./semantic-turn-detection) decide when the turn
+  goes to the model.
+- [Recording](./recording-audio) and [saving messages](./save-messages) read
+  the same events.
+- [`autoEndCall`](./auto-end-call), `autoSemanticTurn` and
+  `autoIgnoreUserNoise` are available as options.
+
+## What changes
+
+The model speaks on its own, so the options that edit the text before it is
+spoken belong to text agents only. `extract` and `onBeforeAnswer` are absent
+from the options of a realtime model, and the voice is one of the provider's.
+
+The transcript of an answer is written by the provider as the model speaks. It
+can differ slightly from the words heard, and it lands in the conversation once
+the answer ends.
+
+Each provider limits the length of a session. `GeminiLive` resumes the session
+on a new connection when Gemini asks for it, and `OpenaiRealtime` reconnects
+with the conversation written so far.
+
+## Writing your own
+
+Extend the `Realtime` class of `@micdrop/server`. It keeps what every provider
+shares: when a turn opens, which answer the output belongs to, dropping the
+output of an interrupted answer, and the order of the conversation. A provider
+implements the calls to its API.
+
+| Method               | Called when                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| `openTurn()`         | The user starts speaking, right before the first audio.     |
+| `appendAudio(chunk)` | Audio of the user arrives, PCM 16 bits, 16 kHz, mono.       |
+| `closeTurn()`        | The turn ends, and the model has to answer it.              |
+| `clearTurn()`        | The turn is dropped, when the user mutes the call.          |
+| `generate()`         | The model speaks first, with no turn of the user to answer. |
+| `speakText(text)`    | The model reads a text, word for word.                      |
+| `cancelAnswer()`     | The user interrupts the answer.                             |
+| `updateTools()`      | A tool was added or removed.                                |
+| `injectMessage(...)` | The application adds a message the model did not hear.      |
+
+The provider reports what the model does with these protected methods:
+
+| Method                      | Call it when                                            |
+| --------------------------- | ------------------------------------------------------- |
+| `emitAudio(chunk)`          | Audio of the answer arrives, PCM 16 bits, 16 kHz, mono. |
+| `addAnswerTranscript(text)` | A piece of the transcript of the answer arrives.        |
+| `endAnswer()`               | The model finished its answer.                          |
+| `addUserTranscript(text)`   | A piece of the transcript of the user arrives.          |
+| `commitUserTranscript()`    | The transcript of the user is complete.                 |
+| `runTool(toolCall)`         | The model calls a tool, to run it and record it.        |
+
+The sources of [`GeminiLive`](https://github.com/Godefroy/micdrop/blob/main/packages/gemini/src/GeminiLive.ts)
+and [`OpenaiRealtime`](https://github.com/Godefroy/micdrop/blob/main/packages/openai/src/OpenaiRealtime.ts)
+show both ways a provider can handle tools and interruptions.

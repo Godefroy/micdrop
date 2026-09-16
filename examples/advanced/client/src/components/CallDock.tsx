@@ -6,6 +6,7 @@ import {
 } from '@micdrop/react'
 import { Micdrop, MicdropState, Speaker } from '@micdrop/web'
 import {
+  PiCircleNotchBold,
   PiPauseFill,
   PiPhoneDisconnectFill,
   PiPlayFill,
@@ -21,6 +22,7 @@ import {
 import {
   getAutoOptions,
   getLang,
+  getMode,
   getPrompt,
   getSelections,
   getToolOptions,
@@ -59,6 +61,7 @@ export default function CallDock() {
         authorization: '1234',
         // Language, providers, agent prompts and tools picked in the rail
         lang: getLang(),
+        mode: getMode(),
         providers: getSelections(),
         auto: getAutoOptions(),
         tools: getToolOptions(),
@@ -126,8 +129,20 @@ export default function CallDock() {
           ) : (
             <Button
               variant="primary"
+              // Held until the call is up, the microphone taking a while to
+              // open included
               disabled={isStarting}
-              icon={<PiPlayFill aria-hidden="true" className="h-3.5 w-3.5" />}
+              aria-busy={isStarting}
+              icon={
+                isStarting ? (
+                  <PiCircleNotchBold
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 motion-safe:animate-spin"
+                  />
+                ) : (
+                  <PiPlayFill aria-hidden="true" className="h-3.5 w-3.5" />
+                )
+              }
               onClick={handleStart}
             >
               {isStarting ? 'Connecting' : 'Start call'}

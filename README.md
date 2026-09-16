@@ -17,6 +17,7 @@ Both client packages are built on [`@micdrop/client`](./packages/client/README.m
 ### AI Implementations
 
 - [`@micdrop/openai`](./packages/openai/README.md) - OpenAI integration providing LLM agent and speech-to-text capabilities
+- [`@micdrop/gemini`](./packages/gemini/README.md) - Google Gemini agent, speech-to-text, text-to-speech, and Gemini Live realtime model
 - [`@micdrop/ai-sdk`](./packages/ai-sdk/README.md) - AI SDK agent compatible with a lot of LLM providers.
 - [`@micdrop/elevenlabs`](./packages/elevenlabs/README.md) - ElevenLabs text-to-speech integration with streaming support
 - [`@micdrop/cartesia`](./packages/cartesia/README.md) - Cartesia text-to-speech integration for real-time voice synthesis

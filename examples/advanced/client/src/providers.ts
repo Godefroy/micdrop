@@ -2,7 +2,13 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react'
 
 export const SERVER_URL = 'http://localhost:8081'
 
-export type PartName = 'agent' | 'stt' | 'tts'
+export type PartName = 'agent' | 'stt' | 'tts' | 'realtime'
+
+/**
+ * How the call runs: an agent, a speech to text and a text to speech picked
+ * apart, or a realtime model that hears and speaks on its own.
+ */
+export type CallMode = 'multi' | 'realtime'
 
 export interface ModelOption {
   id: string
@@ -161,12 +167,31 @@ export const LANGUAGE_OPTIONS = LANGUAGES.some(
   ? LANGUAGES
   : [{ id: BROWSER_LANGUAGE, label: BROWSER_LANGUAGE }, ...LANGUAGES]
 
-export const PARTS: PartName[] = ['agent', 'stt', 'tts']
+export const MODES: { id: CallMode; label: string }[] = [
+  { id: 'multi', label: 'Multi-providers' },
+  { id: 'realtime', label: 'Realtime' },
+]
+
+/** The parts each mode picks a provider for */
+export const MODE_PARTS: Record<CallMode, PartName[]> = {
+  multi: ['agent', 'stt', 'tts'],
+  realtime: ['realtime'],
+}
+
+const PARTS: PartName[] = ['agent', 'stt', 'tts', 'realtime']
+
+const DEFAULT_SELECTIONS: Selections = {
+  agent: {},
+  stt: {},
+  tts: {},
+  realtime: {},
+}
 
 export const PART_LABELS: Record<PartName, string> = {
   agent: 'Agent',
   stt: 'Speech to text',
   tts: 'Text to speech',
+  realtime: 'Model',
 }
 
 const STORAGE_KEY = 'micdrop-demo-providers'
@@ -176,6 +201,7 @@ interface State {
   error?: string
   /** Language of the conversation, which a monolingual model can override. */
   lang: string
+  mode: CallMode
   selections: Selections
   auto: AutoOptions
   tools: ToolOptions
@@ -196,7 +222,8 @@ interface State {
  */
 let state: State = {
   lang: storedLanguage(),
-  selections: readStored('selections', { agent: {}, stt: {}, tts: {} }),
+  mode: readStoredString('mode') === 'realtime' ? 'realtime' : 'multi',
+  selections: readStored('selections', DEFAULT_SELECTIONS),
   auto: readStored('auto', DEFAULT_AUTO),
   tools: readStored('tools', DEFAULT_TOOLS),
   prompt: readStoredString('prompt'),
@@ -233,7 +260,7 @@ function storedLanguage(): string {
  * Reads one of the settings stored as plain text. Nothing stored means the
  * default, which for the prompt only arrives with the catalog.
  */
-function readStoredString(key: 'prompt' | 'lang'): string | undefined {
+function readStoredString(key: 'prompt' | 'lang' | 'mode'): string | undefined {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return undefined
@@ -250,6 +277,7 @@ function persist() {
       STORAGE_KEY,
       JSON.stringify({
         lang: state.lang,
+        mode: state.mode,
         selections: state.selections,
         auto: state.auto,
         tools: state.tools,
@@ -332,7 +360,7 @@ function completeSelection(
 }
 
 export function useProviders() {
-  const { catalog, error, lang, selections, auto, tools, prompt } =
+  const { catalog, error, lang, mode, selections, auto, tools, prompt } =
     useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
   useEffect(() => {
@@ -361,6 +389,11 @@ export function useProviders() {
 
   const resetAll = useCallback(resetSettings, [])
 
+  const selectMode = useCallback((next: CallMode) => {
+    setState({ mode: next })
+    persist()
+  }, [])
+
   const selectLang = useCallback((next: string) => {
     setState({ lang: next })
     persist()
@@ -376,6 +409,8 @@ export function useProviders() {
     error,
     lang,
     selectLang,
+    mode,
+    selectMode,
     selections,
     select,
     auto,
@@ -393,15 +428,15 @@ export function useProviders() {
  * the providers it prefers, its prompts, its tools and its system prompt.
  */
 function resetSettings() {
-  const empty: Selections = { agent: {}, stt: {}, tts: {} }
   const catalog = state.catalog
   setState({
     lang: BROWSER_LANGUAGE,
+    mode: 'multi',
     selections: catalog
       ? (Object.fromEntries(
           PARTS.map((part) => [part, completeSelection(catalog, part, {})])
         ) as Selections)
-      : empty,
+      : DEFAULT_SELECTIONS,
     auto: DEFAULT_AUTO,
     tools: DEFAULT_TOOLS,
     prompt: catalog?.defaultPrompt,
@@ -412,6 +447,11 @@ function resetSettings() {
 /** The language sent to the server when a call starts. */
 export function getLang(): string {
   return state.lang
+}
+
+/** How the call runs, sent to the server when a call starts. */
+export function getMode(): CallMode {
+  return state.mode
 }
 
 /** The selection sent to the server when a call starts. */

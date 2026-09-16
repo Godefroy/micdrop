@@ -56,6 +56,11 @@ alike, and both are published together.
 - Manages conversation flow and audio streaming
 - Supports interruption and cancellation
 
+**Realtime** (`packages/server/src/realtime/Realtime.ts`):
+
+- Agent for speech-to-speech models (`GeminiLive`, `OpenaiRealtime`), passed to `MicdropServer` as `realtime` in place of `stt`, `agent` and `tts`
+- Adds the `Audio` and `PartialMessage` events, and handles turns, interruptions and the order of transcripts for every provider
+
 **Agent** (`packages/server/src/agent/Agent.ts`):
 
 - Abstract base class for AI agents with conversation management
@@ -75,6 +80,7 @@ When working on AI integrations, follow the established patterns:
 - STT implements the `STT` interface with `transcribe()` method
 - TTS implements the `TTS` interface with `speak()` method
 - Agents extend the `Agent` base class and implement `answer()` and `cancel()`
+- Realtime models extend the `Realtime` base class and implement its protected turn and answer methods
 
 ## Website (`website/`)
 

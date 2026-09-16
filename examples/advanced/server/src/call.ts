@@ -15,16 +15,19 @@ export default async (app: FastifyInstance) => {
       const { lang, selection, tools, smartTurn } = await checkParams(socket)
 
       // Build the providers picked in the client (see the providers folder)
-      const { agent, stt, tts, ...call } = await createProviders(
+      const { agent, stt, tts, realtime, ...call } = await createProviders(
         selection,
         lang
       )
       const off = Object.entries(call.auto)
         .filter(([, on]) => !on)
         .map(([name]) => name)
+      const parts = realtime
+        ? `${realtime.constructor.name}, a realtime model`
+        : `${agent.constructor.name}, ${stt?.constructor.name} and ` +
+          tts?.constructor.name
       console.log(
-        `Call in ${call.lang} with ${agent.constructor.name}, ` +
-          `${stt.constructor.name} and ${tts.constructor.name}` +
+        `Call in ${call.lang} with ${parts}` +
           (off.length ? `, without ${off.join(' and ')}` : '')
       )
       if (selection.prompt) {
@@ -41,9 +44,8 @@ export default async (app: FastifyInstance) => {
       const server = new MicdropServer(socket, {
         // firstMessage: 'Hello!',
         generateFirstMessage: true,
-        agent,
-        stt,
-        tts,
+        // A realtime model hears and speaks itself, in place of the three parts
+        ...(realtime ? { realtime } : { agent, stt, tts }),
         turnDetector,
         // The transcript shows the answer as the agent writes it, ahead of the
         // voice that reads it out
@@ -69,8 +71,8 @@ export default async (app: FastifyInstance) => {
       // Enable debug logs
       server.logger = new Logger('MicdropServer')
       agent.logger = new Logger(agent.constructor.name)
-      stt.logger = new Logger(stt.constructor.name)
-      tts.logger = new Logger(tts.constructor.name)
+      if (stt) stt.logger = new Logger(stt.constructor.name)
+      if (tts) tts.logger = new Logger(tts.constructor.name)
     } catch (error) {
       handleError(socket, error)
     }
