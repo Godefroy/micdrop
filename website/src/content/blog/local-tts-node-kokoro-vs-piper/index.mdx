@@ -181,7 +181,7 @@ Piper handles languages one voice at a time. Each voice is a small VITS model of
 
 Kokoro holds about 80 MB once loaded. Pocket TTS, a 100 million parameter model, holds 350 MB once loaded and rises to around 600 MB while it generates. Piper keeps its memory in a separate process, roughly the size of the voice file, a few dozen megabytes for a `medium` voice.
 
-Put a whole stack together, with a 4B language model in `Q4`, Whisper `base` and Kokoro, and you hold around 4 GB. Latency limits a local call long before memory does on a 16 GB machine, so spend the spare gigabytes on a larger LLM rather than on a heavier transcription model.
+Put a whole stack together, with a 4B language model in `Q4`, Whisper `base` and Kokoro, and you hold around 4 GB. Some models for [local speech to text in Node](/blog/local-speech-to-text-node) are smaller than Whisper, such as the small English Vosk model, a 40 MB download against 85 MB for Whisper `base`. Latency limits a local call long before memory does on a 16 GB machine, so spend the spare gigabytes on a larger LLM rather than on a heavier transcription model.
 
 Kokoro's `q8` quantized weights load in around a second and a half against 5.8 seconds for `fp32`, and they generate at the same speed, so quantization buys a faster start rather than faster speech.
 

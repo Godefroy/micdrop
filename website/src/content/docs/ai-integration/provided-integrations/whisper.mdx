@@ -95,7 +95,9 @@ holding an ONNX export of Whisper works too.
 Latencies were measured on a MacBook Pro M2 with 24 GB of memory, on CPU. Most
 of each latency is fixed. Whisper reads thirty seconds of audio whatever the
 length of the utterance, so a one second sentence costs nearly as much as a ten
-second one. Only the decoding scales with what is being said.
+second one. Only the decoding scales with what is being said. Moonshine and
+Parakeet read audio at its real length and [run in Node through
+sherpa-onnx](/blog/local-speech-to-text-node).
 
 ## Picking a model for another language
 

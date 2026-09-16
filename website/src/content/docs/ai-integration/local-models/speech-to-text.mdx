@@ -62,3 +62,10 @@ for Windows and Linux.
 
 [Voxtral Mini 3B](./explorations/voxtral-stt) transcribes more accurately than
 Whisper `base`, but is 35 times slower per utterance.
+
+## Alternatives to Whisper
+
+Vosk, Moonshine, NVIDIA Parakeet and Kyutai STT skip Whisper's 30 second
+window and are still to be measured on this machine. You can [run them from
+Node](/blog/local-speech-to-text-node) through a native addon, the `vosk` npm
+package or a separate server.
