@@ -93,10 +93,14 @@ source) aux affirmations génériques.
 2. **Open source MIT, BYOK, sans service hébergé.** Le code tourne sur l'infrastructure de
    l'utilisateur avec ses propres clés fournisseurs : pas de facturation à la minute, pas de
    dépendance à un intermédiaire. Preuve : dépôt public https://github.com/Godefroy/micdrop.
-3. **Agnostique aux fournisseurs IA, avec fallback intégré.** OpenAI, Mistral, ElevenLabs,
-   Cartesia, Gladia, Gradium, AI SDK, plus des interfaces abstraites pour brancher les siens ; les
+3. **Agnostique aux fournisseurs IA, avec fallback intégré.** OpenAI, Gemini, Mistral,
+   ElevenLabs, Cartesia, Gladia, Gradium, AI SDK, des moteurs locaux (Whisper, Kokoro, Piper,
+   Pocket TTS, Qwen3-TTS), plus des interfaces abstraites pour brancher les siens ; les
    classes `FallbackTTS` / fallback agent et STT basculent sur un second fournisseur en cas de
    panne. Preuve : `/docs/ai-integration/fallback-strategies/*`.
+   Un appel peut aussi tourner sur un modèle speech to speech (OpenAI Realtime, Gemini Live) passé
+   en option `realtime` à la place du STT, de l'agent et du TTS, avec le même client. On change de
+   mode sans toucher au front. Preuve : `/docs/server/realtime`.
 4. **Stack souveraine possible à 100 %.** Combiner Mistral, Gladia et Gradium garde la donnée en
    Europe, sans changer une ligne d'orchestration. Preuve :
    `/docs/ai-integration/sovereign-voice-ai`.
@@ -164,9 +168,11 @@ cadrer un classement.
   fournit ni infrastructure, ni SLA, ni numéros de téléphone.
 - **API temps réel des fournisseurs de modèles** (OpenAI Realtime API, Gemini Live) : couvrent le
   modèle vocal de bout en bout dans un seul appel, sans choix de STT ni de TTS. Micdrop ne
-  remplace pas ces API, il sait les utiliser tout en gardant le contrôle du pipeline et la
-  possibilité de mélanger les fournisseurs.
-- **Fournisseurs de briques** (ElevenLabs, Cartesia, Deepgram, Gladia, Gradium, Mistral) : ce sont
+  remplace pas ces API, il les fait tourner derrière son client et son serveur (option
+  `realtime`), et garde la possibilité de revenir à un pipeline qui mélange les fournisseurs. Ce
+  sont des intégrations, jamais des alternatives à Micdrop.
+- **Fournisseurs de briques** (ElevenLabs, Cartesia, Deepgram, Gladia, Gradium, Mistral, Google
+  Gemini) : ce sont
   des intégrations, pas des concurrents. Ne jamais les cadrer comme des alternatives à Micdrop.
 - **Widgets de chat vocal clés en main** (assistants embarqués propriétaires) : couvrent un cas
   d'usage figé sans code ; ils ne couvrent pas la personnalisation de l'UX ni les appels d'outils
@@ -194,19 +200,27 @@ contenu qui traite le thème doit la lire avant de rédiger et lier vers elle.
 | Navigateur, micro, haut-parleur, VAD, périphériques | `/docs/client` |
 | Serveur, orchestration, protocole, interruptions | `/docs/server` |
 | Choix et branchement des fournisseurs IA | `/docs/ai-integration` |
-| Un fournisseur donné (OpenAI, Mistral, ElevenLabs, Cartesia, Gladia, Gradium, AI SDK) | `/docs/ai-integration/provided-integrations/<fournisseur>` |
+| Un fournisseur ou moteur donné (OpenAI, Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium, AI SDK, Whisper, Kokoro, Piper, Pocket TTS, Qwen3-TTS) | `/docs/ai-integration/provided-integrations/<fournisseur>` |
+| Modèles speech to speech (OpenAI Realtime, Gemini Live), mode realtime | `/docs/server/realtime` |
+| Modèles locaux, mesures de performance | `/docs/ai-integration/local-models` |
 | Écrire sa propre intégration agent / STT / TTS | `/docs/ai-integration/custom-integrations/*` |
 | Résilience, bascule de fournisseur | `/docs/ai-integration/fallback-strategies/*` |
 | Souveraineté, RGPD, hébergement européen | `/docs/ai-integration/sovereign-voice-ai` |
 | React | `/docs/client/react-hooks` |
 | Appels d'outils (tools) | `/docs/server/tools` et `/docs/client/handling-tool-calls` |
 | Fin de tour, filtrage du bruit, reprise de conversation | `/docs/server/semantic-turn-detection`, `/docs/server/noise-filtering`, `/docs/server/resume-conversation` |
+| Smart Turn, fin de tour au son de la voix | `/docs/client/turn-detection` |
 | Intégration à un framework serveur | `/docs/server/with-fastify`, `/docs/server/with-nestjs` |
 | Page produit générale | `/` (source : `src/content/pages/index.mdx`) |
 
 **Ciblage keyword d'un article** : un article informationnel cible sa propre page ; un keyword
 transactionnel pointe vers la page canonique du thème que l'article booste (le plus souvent
 `/docs/getting-started` ou la page d'intégration du fournisseur concerné).
+
+Le nom d'un service ou d'un moteur intégré (« gemini live api », « cartesia tts », « pocket tts »)
+va à sa page d'intégration dans la doc, dont le titre porte ce nom : sur ces requêtes, ce sont les
+pages de doc d'intégration des frameworks (Pipecat, LiveKit, Vision Agents) qui se classent. Une
+comparaison de modèles (« gpt live », « cartesia vs elevenlabs ») va à un article de blog.
 
 Une page « alternative à » fait exception et garde ses propres keywords transactionnels
 (`<concurrent> alternative`, `<concurrent> typescript`, `<concurrent> vs micdrop`, `<concurrent>
