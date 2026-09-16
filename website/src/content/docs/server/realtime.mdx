@@ -6,17 +6,16 @@ order: 33.5
 
 # Realtime Models
 
-A realtime model hears the user and answers with its own voice. One connection
-replaces the three parts of a regular call, the speech to text, the agent and
-the text to speech, which cuts the delay before the answer and keeps the tone of
-the voice in what the model understands.
+A realtime model hears the user and answers with its own voice, over a single
+connection. The answer starts sooner, and the model understands the tone of the
+voice as well as the words.
 
 Micdrop ships two of them, [`GeminiLive`](../ai-integration/provided-integrations/gemini)
 and [`OpenaiRealtime`](../ai-integration/provided-integrations/openai#openai-realtime).
 
 ## Usage
 
-Pass the model as `realtime`, instead of `stt`, `agent` and `tts`:
+Pass the model to the server as `realtime`:
 
 ```typescript
 import { GeminiLive } from '@micdrop/gemini'
@@ -32,45 +31,113 @@ new MicdropServer(socket, {
 })
 ```
 
-The client stays the same. It still detects when the user speaks, and the turn
-it sends goes to the model as audio rather than to a transcription service.
+`OpenaiRealtime` takes the same place, with the same options:
 
-## What keeps working
+```typescript
+import { OpenaiRealtime } from '@micdrop/openai'
 
-A realtime model is an [agent](../ai-integration/custom-integrations/custom-agent):
-it holds the conversation, takes tools and emits the same events. So the rest
-of the server works as it does with three separate parts.
+new MicdropServer(socket, {
+  generateFirstMessage: true,
+  realtime: new OpenaiRealtime({
+    apiKey: process.env.OPENAI_API_KEY || '',
+    systemPrompt: 'You are a helpful assistant',
+  }),
+})
+```
 
-- The conversation is written from the transcripts of both voices, in the order
-  they were spoken, and reaches the client as messages.
-- [Tools](./tools) are added with `addTool()` and run on your server.
-- [`firstMessage` and `generateFirstMessage`](./first-message) open the call.
-  A fixed first message is read out by the model in its own voice.
-- `server.speak(text)` has the model read a text, word for word.
-- [Partial messages](./partial-messages) follow the transcript of the answer.
-- An interruption stops the answer, and OpenAI also forgets the part the user
-  did not hear.
-- [Turn detection](../client/turn-detection) and the
-  [server-side turn detector](./semantic-turn-detection) decide when the turn
-  goes to the model.
-- [Recording](./recording-audio) and [saving messages](./save-messages) read
-  the same events.
-- [`autoEndCall`](./auto-end-call), `autoSemanticTurn` and
-  `autoIgnoreUserNoise` are available as options.
+On the browser side, the [client](../client) connects to this server like to
+any other.
 
-## What changes
+## Options
 
-The model speaks on its own, so the options that edit the text before it is
-spoken belong to text agents only. `extract` and `onBeforeAnswer` are absent
-from the options of a realtime model, and the voice is one of the provider's.
+Every realtime model accepts these options, next to the ones of its provider
+(API key, model, voice).
 
-The transcript of an answer is written by the provider as the model speaks. It
-can differ slightly from the words heard, and it lands in the conversation once
-the answer ends.
+| Option                                     | Type                | Default  | Description                                                      |
+| ------------------------------------------ | ------------------- | -------- | ---------------------------------------------------------------- |
+| `systemPrompt`                             | `string`            | Required | Instructions of the model                                        |
+| [`autoEndCall`](./auto-end-call)           | `boolean \| string` | `false`  | Ends the call when the user asks for it                          |
+| `autoSemanticTurn`                         | `boolean \| string` | `false`  | Lets the model wait silently for the end of a sentence           |
+| [`autoIgnoreUserNoise`](./noise-filtering) | `boolean \| string` | `false`  | Drops a turn that carries no meaning, such as a cough or a "hmm" |
 
-Each provider limits the length of a session. `GeminiLive` resumes the session
-on a new connection when Gemini asks for it, and `OpenaiRealtime` reconnects
-with the conversation written so far.
+## How a turn runs
+
+The client listens to the microphone and tells the server when the user starts
+and stops speaking. The provider's own voice detection stays off, so the call
+behaves the same whatever the model.
+
+1. The user starts speaking. The server opens a turn and streams the audio to
+   the model as it arrives.
+2. The user stops speaking. The server closes the turn, and the model answers.
+3. The voice of the model streams to the client, which plays it.
+4. The transcripts of both voices land in the conversation, the question first
+   and the answer after it.
+
+When the user speaks over the answer, the model stops, and the server opens the
+next turn. `OpenaiRealtime` also cuts its own memory of the answer where the
+user most likely stopped hearing it.
+
+[Turn detection in the client](../client/turn-detection) and the
+[server-side turn detector](./semantic-turn-detection) hold the turn open while
+the sentence sounds unfinished, so the model answers whole sentences.
+
+## Conversation
+
+The model hears audio, and Micdrop writes the conversation from the
+transcripts the provider sends for each voice. The client receives it as
+messages, and [`Message` events](./save-messages) let you save it.
+
+The transcript of an answer is written as the model speaks. It follows the
+words heard closely, sometimes with small differences, and joins the
+conversation when the answer ends. Until then, [partial messages](./partial-messages)
+show it word by word.
+
+[Recording](./recording-audio) keeps the audio of each message, the voice of the
+user as well as the voice of the model.
+
+## Tools
+
+[Tools](./tools) are added with `addTool()` and run on your server. The model
+calls them in the middle of an answer and speaks about their result, and each
+call is written in the conversation.
+
+```typescript
+import { z } from 'zod'
+
+realtime.addTool({
+  name: 'get_weather',
+  description: 'Get the current weather of a city',
+  inputSchema: z.object({ city: z.string() }),
+  execute: async ({ city }) => ({ city, temperature: 21 }),
+})
+```
+
+## Steering the call
+
+The model can open the call. With `generateFirstMessage`, it greets the user as
+its instructions say, and a fixed [`firstMessage`](./first-message) is read out
+in its voice.
+
+`server.speak(text)` has the model read a text word for word, for an
+announcement decided by your application.
+
+`realtime.addMessage(role, text)` adds a message to the conversation and passes
+it to the model, which takes it into account from its next answer on. It also
+rebuilds a [previous conversation](./resume-conversation) before the call
+starts.
+
+## Voice and instructions
+
+The model produces its answer directly as audio. Its voice is one of the
+provider's, chosen with the `voice` option, and the system prompt is where you
+shape what it says and how it says it: length, tone, pace, language.
+
+## Session length
+
+Each provider limits the length of a session, and the model reconnects on its
+own when it ends. `GeminiLive` resumes the session on a new connection
+when Gemini asks for it, and `OpenaiRealtime` opens a new session with the
+conversation written so far.
 
 ## Writing your own
 
