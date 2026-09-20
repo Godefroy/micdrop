@@ -71,6 +71,26 @@ développeurs et d'équipes techniques, on les nomme ainsi.
 - **Pages informationnelles** : les articles de `/blog`, qui expliquent un concept, comparent des
   approches techniques ou déroulent un cas d'usage, et renvoient vers la page commerciale du thème.
 
+**Portée d'un article informationnel** : le lecteur visé est tout développeur qui traite le sujet,
+y compris celui qui ne connaît pas Micdrop et n'a aucune raison de l'installer. L'article répond
+d'abord à sa question, puis Micdrop arrive comme la façon la plus rapide de mettre en œuvre la
+réponse.
+
+- **Couvrir le sujet avant le produit.** Un comparatif nomme les acteurs qui comptent sur le marché,
+  y compris ceux que Micdrop n'intègre pas. Cadrer un article sur les seules briques intégrées
+  revient à laisser croire que le reste n'existe pas, et un lecteur qui connaît les autres referme
+  la page.
+- **Approfondir ce que Micdrop fait tourner, citer le reste.** Deux ou trois options portent la
+  comparaison détaillée, avec chiffres, code et limites. Les autres tiennent dans une section courte
+  qui dit ce qu'elles sont et à qui elles conviennent. L'article annonce ce périmètre au lieu de le
+  laisser deviner, en disant pourquoi ces options-là sont développées.
+- **Amener à Micdrop par l'usage.** Le produit apparaît là où il résout le problème du lecteur, dans
+  une section qui montre le code, puis dans la conclusion qui renvoie vers la page canonique du
+  thème. Une mention dans chaque section transforme l'article en brochure.
+- **Se lire sans connaître Micdrop.** À sa première mention, l'article dit ce qu'est Micdrop
+  (bibliothèque TypeScript open source pour les conversations vocales temps réel) et le lie vers
+  `/`.
+
 **Action de conversion** (utilisée par `terreau-write-product-landing`) :
 
 - **Principale** : commencer l'intégration, vers `/docs/getting-started` (libellé du hero :

@@ -283,6 +283,8 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 
 A [realtime model](../../server/realtime) running on the OpenAI Realtime API. It hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
 
+GPT-Live-1, OpenAI's full-duplex voice model, needs its own endpoint and events, which `OpenaiRealtime` does not implement. GPT-Live-1 [differs from GPT-Realtime-2.1 and Gemini 3.8 Live](/blog/gpt-live-vs-gpt-realtime-vs-gemini-live) in price, turn-taking and tools.
+
 ### Usage with MicdropServer
 
 ```typescript
