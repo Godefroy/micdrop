@@ -41,11 +41,11 @@ export interface AgentOptions {
   extract?: ExtractJsonOptions | ExtractTagOptions
 
   // Function called before any answer is generated
-  // Return true to skip generation
+  // Return true to skip generation, or a text to answer it instead
   onBeforeAnswer?: (
     this: Agent,
     stream: Writable
-  ) => void | boolean | Promise<boolean>
+  ) => void | boolean | string | Promise<void | boolean | string>
 }
 
 export interface AgentEvents {
@@ -105,9 +105,14 @@ export abstract class Agent<
       .then(() =>
         this.options.onBeforeAnswer?.bind(this as unknown as Agent)(stream)
       )
-      // Generate answer (if not skipped)
-      .then((skip) => {
-        if (skip) return
+      // Generate answer (if not skipped or given)
+      .then((result) => {
+        if (typeof result === 'string') {
+          stream.write(result)
+          this.addAssistantMessage(result)
+          return
+        }
+        if (result) return
         return this.generateAnswer(stream)
       })
       // End stream

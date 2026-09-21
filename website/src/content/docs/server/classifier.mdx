@@ -1,0 +1,229 @@
+---
+title: 'Classifier'
+description: 'Turn each turn of the user into typed decisions (intent, mood, yes or no) in a few hundred ms, and route the answer before the LLM writes a word.'
+order: 40.5
+---
+
+# Classifier
+
+A classifier reads each turn of the user and answers typed questions about it:
+which intent, how frustrated, whether they ask for a human. It runs next to the
+agent and leaves the answer to it.
+
+Three things come out of it that an LLM gives slowly or at a high price:
+
+- **Decisions in a few hundred ms.** A small model answering a fixed set of
+  questions is far faster than an LLM writing a reply, and costs a fraction of it.
+- **Signals for the page.** Each classification can reach the client, so an
+  interface can show the intent or the mood of the caller, or act on it.
+- **Routing before the answer.** The server can wait for the classification of
+  the turn, and the agent can pick who answers: the LLM, a scripted line, a human,
+  or plain code.
+
+## Usage
+
+Pass a classifier to the server as `classifier`, next to the speech to text,
+the agent and the voice:
+
+```typescript
+import { MicdropServer } from '@micdrop/server'
+import { choice, noul, TypesafeClassifier } from '@micdrop/typesafe'
+
+const classifier = new TypesafeClassifier({
+  apiKey: process.env.TYPESAFE_API_KEY || '',
+  questions: {
+    intent: choice('What does the user in `turn` want?', {
+      billing: 'A charge, an invoice, a refund',
+      outage: 'The service is down or slow',
+      other: null,
+    }),
+    wantsHuman: noul('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { sendToClient: true, waitBeforeAnswer: true },
+})
+```
+
+Micdrop ships [`TypesafeClassifier`](../ai-integration/provided-integrations/typesafe),
+which runs TypeSafe's Jev model. Any other model fits by extending the
+[`Classifier` base class](../ai-integration/custom-integrations/custom-classifier),
+an LLM with structured output as much as a list of keywords.
+
+The agent, the voice and even the answer are optional. A server with only a
+speech to text and a classifier turns each thing the user says into a typed
+command for the page.
+
+## Options
+
+`classifierOptions` sets how the server uses the classifier:
+
+| Option             | Type      | Default | Description                                                                                          |
+| ------------------ | --------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `sendToClient`     | `boolean` | `false` | Sends every classification to the client as `Classification`.                                        |
+| `waitBeforeAnswer` | `boolean` | `false` | Holds each answer until the classification of its turn is done, so `onBeforeAnswer` can read it.      |
+| `maxWait`          | `number`  | `1000`  | How long `waitBeforeAnswer` holds an answer, in ms. Past it, the answer goes on without the result.  |
+| `history`          | `number`  | `1`     | How many turns of the user before this one the input holds, with the answers that followed them.     |
+
+`sendToClient` stays off by default, since a result can hold what the user should
+not see, a manipulation score for instance. Without `waitBeforeAnswer`, the
+answer starts right away and the classification runs next to it.
+
+## When it classifies
+
+The server classifies each turn of the user when it ends. A turn can hold several
+transcripts: the speech to text sends one per pause while the user speaks, and
+the [turn detection](./semantic-turn-detection) can hold the turn open for the
+rest of the sentence. The classifier reads them joined into one text.
+
+When the user speaks again before the answer, the server cancels the answer and
+the classification in progress. The turn goes on, and the whole of it is
+classified again at its next end.
+
+## What it reads
+
+At the end of each turn, the server builds a `MicdropTurnInput`:
+
+```typescript
+interface MicdropTurnInput {
+  history: Array<{ role: 'user' | 'assistant'; text: string }>
+  turn: string // What the user said in this turn, transcripts joined
+}
+```
+
+`history` holds the turn before and the answer that followed it, so words like
+"it" or "there" make sense:
+
+```json
+{
+  "history": [
+    { "role": "user", "text": "My internet is down again." },
+    { "role": "assistant", "text": "Sorry to hear that. Since when?" }
+  ],
+  "turn": "Since this morning. And this is the third time this month."
+}
+```
+
+Raise `history` to give it more turns, or set it to `0` to classify the turn on
+its own. The exported `turnInput(conversation, history)` builds the same input
+from any conversation.
+
+## Routing the answer
+
+The server keeps each classification in the metadata of the last user message of
+its turn, under `classification`. `getTurnClassification(conversation)` reads the
+one of the last turn, and returns `undefined` until a classification has read the
+whole turn.
+
+With `waitBeforeAnswer`, the agent calls `onBeforeAnswer` once the classification
+is done. The hook reads it and decides who answers. Returning a string gives that
+text as the answer, spoken without the LLM. Returning nothing lets the LLM answer:
+
+```typescript
+import { getTurnClassification, MicdropServer } from '@micdrop/server'
+
+const agent = new OpenaiAgent({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  systemPrompt: 'You are the support assistant of Nova Fiber.',
+
+  onBeforeAnswer() {
+    const classification = getTurnClassification(this.conversation)
+    // The LLM answers when the classification is late
+    if (!classification) return
+
+    const { answers } = classification.result
+    if (answers.wantsHuman.noul > 0.8) {
+      return 'I am transferring you to a colleague right away.'
+    }
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { waitBeforeAnswer: true },
+})
+```
+
+The wait runs in the queue of the server, so an answer cancelled meanwhile is
+dropped with it. Past `maxWait`, the answer goes on and `getTurnClassification`
+returns `undefined` for that turn, which leaves the answer to the LLM.
+
+The same hook can do more than replace the LLM. Adding a system message with
+`this.addMessage('system', hint)` lets the LLM answer with a hint the classifier
+gave it, such as a customer thinking of leaving.
+
+## Reading it in the client
+
+With `sendToClient: true`, each classification reaches the client as a
+`Classification` event:
+
+```typescript
+Micdrop.on('Classification', ({ input, result, duration }) => {
+  console.log(input.turn, result, `${duration} ms`)
+})
+```
+
+In React, the [`useMicdropClassification`](../client/react-hooks#usemicdropclassification)
+hook subscribes to it:
+
+```tsx
+import { useMicdropClassification } from '@micdrop/react'
+import { useCallback, useState } from 'react'
+
+function IntentBadge() {
+  const [intent, setIntent] = useState<string>()
+
+  useMicdropClassification(
+    useCallback(({ result }) => setIntent(result.answers.intent.choice), [])
+  )
+
+  return <span>{intent}</span>
+}
+```
+
+It works the same with `@micdrop/web` and `@micdrop/react-native`.
+
+The payload is a `MicdropClassification`:
+
+```typescript
+interface MicdropClassification<Result = any, Input = any> {
+  input: Input // What was classified, a MicdropTurnInput in a call
+  result: Result // Answers, in the shape the provider returns
+  duration: number // Time the classification took, in ms
+}
+```
+
+## With a realtime model
+
+A [realtime model](./realtime) takes a classifier as well. Its transcript of the
+user turn comes in one piece, and the server classifies each turn as it lands.
+The model answers on its own, so `waitBeforeAnswer` applies to the speech to
+text, agent and voice pipeline. With a realtime model, the classifier feeds the
+client and your own code.
+
+## Demos
+
+Three demos run on Jev, each with an OpenAI key and a TypeSafe key, from the root
+of the repository:
+
+- The [support demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-support)
+  (`pnpm dev:support`, http://localhost:8090) is a Nova Fiber support line. Each
+  answer is routed from the classification: a manipulation attempt is blocked
+  before the LLM, an angry customer or one asking for a human is transferred, a
+  known outage is answered by code, and a customer about to leave gets an LLM
+  answer with a retention hint.
+- The [slides demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-slides)
+  (`pnpm dev:slides`, http://localhost:8092) builds a deck by voice. The page lays
+  out the slides Jev read a few seconds before the LLM fills them, and the LLM
+  follows the plan Jev gave it.
+- The [robot demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot)
+  (`pnpm dev:robot`, http://localhost:8094) runs with no agent and no voice. Jev
+  turns each turn into commands, and the browser plays them out.

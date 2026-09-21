@@ -89,3 +89,4 @@ The server can send the following commands to the client:
 - `MicdropServerCommands.SkipAnswer` - Notify that the last generated answer was ignored, it's listening again.
 - `MicdropServerCommands.EndCall` - End the call.
 - `MicdropServerCommands.ToolCall` - A tool the agent called, with its result.
+- `MicdropServerCommands.Classification` - What the [classifier](./classifier) made of the user turn, as JSON. Sent when the server has a classifier and `classifierOptions.sendToClient` is on.

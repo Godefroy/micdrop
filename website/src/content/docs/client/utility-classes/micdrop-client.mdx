@@ -86,6 +86,7 @@ The `MicdropClient` emits the following events:
 - `Message`: Emitted for each message added to the conversation, provides a `MicdropConversationItem` object
 - `PartialAssistantMessage`: Emitted while the answer is being written, provides the text so far. Sent by servers running with [`partialMessages`](../../server/partial-messages)
 - `ToolCall`: Emitted when the agent calls a tool the client should know about, provides a `MicdropToolCall` object
+- `Classification`: Emitted when the [classifier](../../server/classifier) of the server has a result for the user turn, provides a `MicdropClassification` object. Sent by servers running with `classifierOptions: { sendToClient: true }`
 
 ## Properties
 

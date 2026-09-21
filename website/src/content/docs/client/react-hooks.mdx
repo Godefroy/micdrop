@@ -1,6 +1,6 @@
 ---
 title: 'React Hooks'
-description: 'Read the state, errors and audio levels of a Micdrop call in your React components with five hooks, then copy a complete call component that uses them.'
+description: 'Read the state, errors and audio levels of a Micdrop call in your React components with six hooks, then copy a complete call component that uses them.'
 order: 4
 ---
 
@@ -123,6 +123,35 @@ function CallContainer() {
   return <div>Call in progress...</div>
 }
 ```
+
+### useMicdropClassification
+
+Receive what the [classifier](../server/classifier) of the server made of the
+user turn, once the server is configured with
+`classifierOptions: { sendToClient: true }`:
+
+```tsx
+import { useMicdropClassification } from '@micdrop/react'
+import { useCallback, useState } from 'react'
+
+function IntentBadge() {
+  const [intent, setIntent] = useState<string>()
+
+  const handleClassification = useCallback(({ result }) => {
+    setIntent(result.answers.intent.choice)
+  }, [])
+
+  useMicdropClassification(handleClassification)
+
+  return <span className="intent">{intent}</span>
+}
+```
+
+The callback receives a `MicdropClassification`, with the `input` classified
+(the turn and its history), the `result` in the shape the classifier returns,
+and the `duration` in ms. Pass a stable callback (`useCallback`), since the hook
+subscribes again whenever it changes. Type the result with
+`useMicdropClassification<MyResult>(...)`.
 
 ### useMicVolume
 

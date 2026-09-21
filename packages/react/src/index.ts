@@ -1,3 +1,4 @@
+export { useMicdropClassification } from './useMicdropClassification'
 export { useMicdropEndCall } from './useMicdropEndCall'
 export { useMicdropError } from './useMicdropError'
 export { useMicdropState } from './useMicdropState'

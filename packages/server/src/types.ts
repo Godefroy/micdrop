@@ -11,6 +11,7 @@ export enum MicdropServerCommands {
   SkipAnswer = 'SkipAnswer',
   EndCall = 'EndCall',
   ToolCall = 'ToolCall',
+  Classification = 'Classification',
 }
 
 /**
@@ -74,6 +75,16 @@ export interface MicdropConversationToolResult {
   output: string
 }
 
+/** What a classifier made of an input, a turn of the user in a call */
+export interface MicdropClassification<Result = any, Input = any> {
+  /** What was classified */
+  input: Input
+  /** Answers of the classifier, in the shape its provider returns */
+  result: Result
+  /** Time the classification took, in ms */
+  duration: number
+}
+
 export interface MicdropToolCall {
   name: string
   parameters: any
@@ -85,3 +96,38 @@ export type DeepPartial<T> = T extends object
       [P in keyof T]?: DeepPartial<T[P]>
     }
   : T
+
+/**
+ * The turn of the user so far: the user messages at the end of the
+ * conversation, one per transcript, joined with a space. It starts after the
+ * last answer, or after the last user message already classified, which is
+ * what tells two turns apart when no agent answers them.
+ */
+export function currentTurn(conversation: MicdropConversation) {
+  let start = conversation.length
+  while (start > 0) {
+    const item = conversation[start - 1]
+    if (item.role !== 'user' || item.metadata?.classification) break
+    start--
+  }
+  const messages = conversation.slice(start) as MicdropConversationMessage[]
+  return {
+    transcript: messages.map((message) => message.content).join(' '),
+    messages,
+    before: conversation.slice(0, start),
+  }
+}
+
+/**
+ * The classification of the last turn of the user, which the server keeps in
+ * the metadata of its last message. Undefined until one read the whole turn.
+ */
+export function getTurnClassification<Result = any>(
+  conversation: MicdropConversation
+): MicdropClassification<Result> | undefined {
+  for (let index = conversation.length - 1; index >= 0; index--) {
+    const item = conversation[index]
+    if (item.role === 'user') return item.metadata?.classification
+  }
+  return undefined
+}

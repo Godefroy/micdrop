@@ -1,0 +1,250 @@
+---
+title: 'TypeSafe'
+description: 'Classify each turn of the user with TypeSafe Jev: typed questions (choice, score, yes or no) answered with calibrated probabilities in a few hundred ms, to route the answer before the LLM.'
+order: 56.5
+---
+
+# TypeSafe
+
+TypeSafe implementation of the [classifier](../../server/classifier) for
+[@micdrop/server](../../server).
+
+It runs [Jev](https://docs.typesafe.ai), a "System One" model from TypeSafe AI.
+Where an LLM writes an answer token by token, Jev answers a set of typed
+questions at once: pick a label, give a score, say yes or no. Each answer comes
+with calibrated probabilities, in a few hundred ms, which is fast enough to route
+the answer before the LLM starts.
+
+## Installation
+
+```bash
+npm install @micdrop/typesafe
+```
+
+## Usage with MicdropServer
+
+```typescript
+import { MicdropServer } from '@micdrop/server'
+import { choice, noul, score, TypesafeClassifier } from '@micdrop/typesafe'
+
+const classifier = new TypesafeClassifier({
+  apiKey: process.env.TYPESAFE_API_KEY || '',
+  questions: {
+    intent: choice(
+      'What does the user in `turn` want? Read `history` for context.',
+      {
+        billing: 'A charge, an invoice, a refund',
+        outage: 'The service is down or slow',
+        cancel: 'Cancel the subscription or switch provider',
+        other: null,
+      }
+    ),
+    frustration: score('How frustrated is the user in `turn`?', [
+      'Calm',
+      'Annoyed',
+      'Angry',
+    ]),
+    wantsHuman: noul('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: {
+    // The client receives each classification
+    sendToClient: true,
+    // The answer waits for the classification of its turn, up to 1 s
+    waitBeforeAnswer: true,
+  },
+})
+```
+
+The server classifies each turn of the user when it ends. It works with any
+speech to text, and with [realtime models](../../server/realtime). See
+[Classifier](../../server/classifier) for the server options, routing the answer
+in `onBeforeAnswer`, and reading the results in the client.
+
+## Usage without MicdropServer
+
+`classify()` takes a text or any JSON, and resolves with the classification:
+
+```typescript
+import { noul, TypesafeClassifier } from '@micdrop/typesafe'
+
+const classifier = new TypesafeClassifier({
+  apiKey: process.env.TYPESAFE_API_KEY || '',
+  questions: { urgent: noul('Does the user in `turn` sound urgent?') },
+})
+
+const classification = await classifier.classify({
+  history: [],
+  turn: 'My internet has been down since yesterday!',
+})
+console.log(classification?.result.answers.urgent.noul)
+```
+
+A plain text works too, with questions that read it as a whole:
+
+```typescript
+const classifier = new TypesafeClassifier({
+  questions: { urgent: noul('Does this message sound urgent?') },
+})
+
+await classifier.classify('My internet is down!')
+```
+
+## State
+
+Jev reads a JSON state and answers the questions about it. The input is sent as
+the state as is, so in a call Jev reads the `MicdropTurnInput` of the server:
+
+```json
+{
+  "history": [
+    { "role": "user", "text": "My internet is down again." },
+    { "role": "assistant", "text": "Sorry to hear that. Since when?" }
+  ],
+  "turn": "Since this morning. And this is the third time this month."
+}
+```
+
+Questions point at these fields by name, between backticks: "Does the user in
+`turn` ask for a human?", or "Read `history` to know what words like it stand
+for." `turn` holds every transcript of the turn, joined with a space. The
+[`history`](../../server/classifier#options) option of the server sets how many
+turns before it come along.
+
+To send more, pass `state`. It receives the input, and returns what Jev reads,
+the input with your own fields next to it for instance:
+
+```typescript
+new TypesafeClassifier({
+  questions,
+  state: (input) => ({
+    ...(input as object),
+    customer: { plan: 'Fiber 1 Gb', outageInArea: true },
+  }),
+})
+```
+
+The questions can then point at `customer` as well.
+
+## Questions
+
+Three helpers, re-exported from the TypeSafe SDK, build the questions. The key of
+each question names its answer.
+
+| Helper                          | Answers                                   | Example                                        |
+| ------------------------------- | ----------------------------------------- | ---------------------------------------------- |
+| `choice(instructions, labels)`  | One label out of several                  | The intent, the topic, the language            |
+| `score(instructions, rubric)`   | A position on an ordered scale, from zero | Frustration, urgency, how sure the user sounds |
+| `noul(instructions, criteria?)` | The probability of a yes                  | Asks for a human, wants to cancel              |
+
+`choice()` takes an object of labels, each with a description, or `null` to leave
+it undescribed. `score()` takes an array of at least two descriptions, from the
+lowest level up. `noul()` can describe what yes and no mean with
+`{ true, false }`.
+
+Ask every question in one request. Jev answers them in parallel, so a question
+that only matters now and then (a manipulation attempt, a known outage) costs
+little more to ask every time, and your code reads the answers it needs. TypeSafe
+calls this pattern a speculative fan-out.
+
+To pick the questions per input, pass a function. It receives the input:
+
+```typescript
+import { MicdropTurnInput } from '@micdrop/server'
+
+new TypesafeClassifier({
+  // Asks the opening questions on the first turn of the user only
+  questions: (input) =>
+    (input as MicdropTurnInput).history.some((item) => item.role === 'user')
+      ? questions
+      : { ...questions, ...openingQuestions },
+})
+```
+
+## Reading the answers
+
+The result is the `SystemOneResult` of the TypeSafe SDK, typed from your
+questions:
+
+```typescript
+const { answers, usage } = getTurnClassification(this.conversation)!.result
+
+answers.intent.choice // 'billing', typed as one of your labels
+answers.intent.confidence // 0.92
+answers.intent.probabilities // { billing: 0.92, outage: 0.03, cancel: 0.04, other: 0.01 }
+
+answers.frustration.score // 1.4, the expected score, between two levels
+answers.frustration.probabilities // { 0: 0.1, 1: 0.4, 2: 0.5 }
+
+answers.wantsHuman.noul // 0.07, the probability of a yes
+
+usage.input_tokens // 412
+```
+
+The probabilities are calibrated, so a threshold means what it says: route on
+`noul > 0.8` or `confidence > 0.6`, and let the LLM handle the turns below it.
+A `score` is an expectation over the rubric, so it can fall between two levels.
+On a rubric of four levels from calm to angry, `score > 2.5` reads as "closer to
+angry than to frustrated".
+
+## Options
+
+| Option      | Type                                | Default            | Description                                                                          |
+| ----------- | ----------------------------------- | ------------------ | ------------------------------------------------------------------------------------ |
+| `apiKey`    | `string`                            | `TYPESAFE_API_KEY` | Your TypeSafe API key, read from the environment when left out                       |
+| `model`     | `string`                            | `'jev-latest'`     | Model answering the questions                                                        |
+| `questions` | `Questions \| (input) => Questions` | Required           | Questions built with `choice()`, `score()` and `noul()`, or a function of the input  |
+| `state`     | `(input) => EntryType`              | The input          | Builds what Jev reads from the input, to add fields next to it                       |
+| `timeout`   | `number`                            | `3000`             | Timeout of each request in ms                                                        |
+
+When to wait for the result, whether to send it to the client and how much
+history to include are options of the server, in
+[`classifierOptions`](../../server/classifier#options).
+
+## Events
+
+| Event            | Payload                                  | Description                                          |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------- |
+| `Classification` | `MicdropClassification<SystemOneResult>` | Answers of Jev about an input, with their duration.  |
+
+See the [Classifier interface](../custom-integrations/custom-classifier) for the full contract.
+
+## Latency and price
+
+TypeSafe announces 70 to 500 ms end to end, depending on the length of the state
+and the number of questions. Measured on the real API in the Micdrop demos, with
+a turn and its history as the state, each request took about 250 to 700 ms.
+
+Input costs $0.042 per million tokens, and output is free. A request of a
+thousand tokens costs about $0.00004, so classifying every turn of a long call
+stays well under a cent.
+
+## Limitations
+
+- Jev understands English best. Other languages work, with less accurate answers.
+- It reads text only, so the tone of the voice reaches it through the words alone.
+- The state and the longest question share a budget of 32k tokens.
+- It picks, scores and answers yes or no. Counting, extracting a value or writing
+  text stays with the LLM, or with [extraction](../../server/extract).
+
+## Demos
+
+- The [support demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-support)
+  asks Jev six questions about each turn of a caller, shows the answers on the
+  page, and routes each turn between the LLM, a scripted line, a human and plain
+  code.
+- The [slides demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-slides)
+  builds its questions from the deck on screen, and adds the deck to the state.
+- The [robot demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot)
+  runs without an agent, and turns each turn into commands for the browser.
+
+## Documentation
+
+Read the [TypeSafe documentation](https://docs.typesafe.ai) for the questions,
+the models and the API.

@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/openai",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "OpenAI implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

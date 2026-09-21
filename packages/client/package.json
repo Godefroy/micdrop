@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/client",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "\ud83d\udd90\ufe0f\ud83c\udfa4 Micdrop: real-time voice conversations with AI, the platform agnostic core",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

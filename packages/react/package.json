@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/react",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "React hooks for Micdrop, in the browser and in React Native",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "conversation"
   ],
   "peerDependencies": {
-    "@micdrop/client": ">=3.0.0",
+    "@micdrop/client": ">=3.3.0",
     "react": ">=16.8.0"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3'
 import { Duplex, PassThrough, Readable, Transform } from 'stream'
 import { WebSocket } from 'ws'
 import type { Agent } from './agent'
+import { type Classifier, turnInput } from './classifier'
 import { pcm16ToFloat32 } from './audio'
 import { Logger } from './Logger'
 import type { Realtime } from './realtime'
@@ -28,6 +29,9 @@ const USER_SAMPLE_RATE = 16000
  * answer instead of a call that goes quiet.
  */
 const DEFAULT_TURN_MAX_WAIT = 4000 // ms
+
+/** How long an answer waits for the classification of its turn, by default */
+const DEFAULT_CLASSIFICATION_MAX_WAIT = 1000 // ms
 
 export interface MicdropServerEvents {
   End: [MicdropCallSummary]
@@ -111,6 +115,50 @@ export interface MicdropConfig {
    * turn it sends goes to the model as audio.
    */
   realtime?: Realtime
+
+  /**
+   * Classifies each turn of the user when it ends, with a `MicdropTurnInput`:
+   * the turn, and the turn before with its answer.
+   *
+   * It works next to the agent and leaves the answer to it. A classification
+   * of the turn goes in the metadata of its last user message, under
+   * `classification`, where `getTurnClassification()` reads it.
+   */
+  classifier?: Classifier<any, any>
+
+  /** How the server uses the classifier */
+  classifierOptions?: MicdropClassifierOptions
+}
+
+export interface MicdropClassifierOptions {
+  /**
+   * Sends every classification to the client, which emits it as
+   * `Classification`.
+   *
+   * Off by default, since a result can hold what the user should not see, a
+   * manipulation score for instance.
+   */
+  sendToClient?: boolean
+
+  /**
+   * Holds each answer until the classification of its turn is done, so the
+   * agent can read it in `onBeforeAnswer`. Off by default: the answer starts
+   * right away and the classification runs next to it.
+   */
+  waitBeforeAnswer?: boolean
+
+  /**
+   * How long `waitBeforeAnswer` holds an answer, 1000 ms by default. A
+   * classification that takes longer lets the answer go without it.
+   */
+  maxWait?: number
+
+  /**
+   * How many turns of the user before this one the input holds, with the
+   * answers that followed them. 1 by default: the turn before, its answer,
+   * and this turn.
+   */
+  history?: number
 }
 
 export class MicdropServer extends EventEmitter<MicdropServerEvents> {
@@ -184,6 +232,15 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       )
     }
 
+    // Setup classifier
+    if (config.classifierOptions?.sendToClient) {
+      config.classifier?.on('Classification', (classification) =>
+        this.socket?.send(
+          `${MicdropServerCommands.Classification} ${JSON.stringify(classification)}`
+        )
+      )
+    }
+
     // Assistant speaks first
     // Deferred so consumers (e.g. MicdropRecorder) can subscribe to the server
     // events before the first message is added to the conversation.
@@ -234,6 +291,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   }
 
   public cancel() {
+    // The user speaks again: the turn goes on, and is classified again whole
+    this.config?.classifier?.cancel()
     this.config?.tts?.cancel()
     this.agent?.cancel()
     // Clear the queue
@@ -251,6 +310,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.agent?.destroy()
     this.config.stt?.destroy()
     this.config.tts?.destroy()
+    this.config.classifier?.destroy()
 
     // Emit End event
     this.emit('End', {
@@ -412,6 +472,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     if (realtime) {
       realtime.endTurn()
     } else {
+      // The turn is over, with or without an agent to answer it
+      this.classifyTurn()
       this.answer()
     }
   }
@@ -494,6 +556,11 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       `${MicdropServerCommands.Message} ${JSON.stringify(message)}`
     )
     this.emit('Message', message)
+
+    // A transcript landed, or the application added a user message
+    // A realtime model answers on its own, so its turn ends with its
+    // transcript, which comes in one piece
+    if (message.role === 'user' && this.config?.realtime) this.classifyTurn()
   }
 
   private sendPartialAnswer(content: string) {
@@ -522,6 +589,11 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   }
 
   public answer() {
+    // The answer waits in the queue behind the classification of its turn, so
+    // a cancel meanwhile, which empties the queue, drops it
+    if (this.config?.classifierOptions?.waitBeforeAnswer) {
+      this.queueOperation(() => this.waitForClassification())
+    }
     this.queueOperation(async () => {
       await this._answer()
     })
@@ -591,6 +663,41 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       },
     })
     return stream.pipe(forward)
+  }
+
+  /**
+   * Classifies the turn that just ended, with the one before, and keeps the
+   * result in the metadata of its last message
+   */
+  private classifyTurn() {
+    const classifier = this.config?.classifier
+    if (!classifier) return
+    const { input, message } = turnInput(
+      this.conversation,
+      this.config?.classifierOptions?.history
+    )
+    if (!message || input.turn.trim() === '') return
+    classifier.classify(input).then((classification) => {
+      if (!classification) return
+      message.metadata = { ...message.metadata, classification }
+    })
+  }
+
+  /** Waits for the classification in progress, never longer than its limit */
+  private async waitForClassification() {
+    const pending = this.config?.classifier?.pending
+    if (!pending) return
+    const limit =
+      this.config?.classifierOptions?.maxWait ?? DEFAULT_CLASSIFICATION_MAX_WAIT
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.log(`Classification took over ${limit} ms, answering without it`)
+        resolve()
+      }, limit)
+    })
+    await Promise.race([pending, timeout])
+    clearTimeout(timer)
   }
 
   // Run text-to-speech and send to client

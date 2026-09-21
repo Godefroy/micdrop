@@ -1,4 +1,5 @@
 export * from './agent'
+export * from './classifier'
 export * from './audio'
 export * from './errors'
 export * from './Logger'

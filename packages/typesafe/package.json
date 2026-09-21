@@ -1,0 +1,49 @@
+{
+  "name": "@micdrop/typesafe",
+  "version": "1.0.0",
+  "description": "TypeSafe (Jev) implementation for @micdrop/server",
+  "author": "Godefroy de Compreignac",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Godefroy/micdrop.git",
+    "directory": "packages/typesafe"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "microphone",
+    "audio",
+    "browser",
+    "voice",
+    "conversation",
+    "typesafe",
+    "jev",
+    "classification"
+  ],
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0"
+  },
+  "peerDependencies": {
+    "@micdrop/server": ">=2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.13",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -4,6 +4,7 @@ import { pcm16ToArrayBuffer } from '../audio/pcm'
 import { MicdropDevice } from '../audio/types'
 import { MicdropStorageKeys, storage } from '../storage'
 import {
+  MicdropClassification,
   MicdropClientCommands,
   MicdropConversation,
   MicdropConversationItem,
@@ -28,6 +29,8 @@ export interface MicdropEvents {
   Message: [MicdropConversationItem]
   /** What the assistant is answering, before it is finished */
   PartialAssistantMessage: [string]
+  /** What the classifier of the server made of what the user says */
+  Classification: [MicdropClassification]
 }
 
 export interface MicdropReconnectOptions {
@@ -603,6 +606,20 @@ export class MicdropClient
         this.emit('ToolCall', toolCall)
       } catch (error) {
         console.error('[MicdropClient] Error parsing tool call:', data, error)
+      }
+    } else if (data.startsWith(MicdropServerCommands.Classification)) {
+      // Received what the classifier made of the user turn
+      try {
+        const classification = JSON.parse(
+          data.substring(MicdropServerCommands.Classification.length + 1)
+        )
+        this.emit('Classification', classification)
+      } catch (error) {
+        console.error(
+          '[MicdropClient] Error parsing classification:',
+          data,
+          error
+        )
       }
     }
   }

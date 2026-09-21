@@ -255,6 +255,13 @@ export class OpenaiTTS extends TTS {
         const output = resampler.process(Buffer.from(value))
         if (output.length > 0) this.emitAudio(output)
       }
+    } catch (error) {
+      // A cancel aborts the body being read, which is expected. Anything else
+      // is logged rather than left unhandled, where it would stop the server.
+      if (!item.controller.signal.aborted) {
+        this.log('Error reading synthesized speech:', error)
+        this.emit('Failed', [item.text])
+      }
     } finally {
       this.abortControllers.delete(item.controller)
     }

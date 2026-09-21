@@ -1,0 +1,224 @@
+---
+title: 'Classifier'
+description: 'The Classifier class turns an input into typed decisions. Extend it to plug in any model, from an LLM with structured output to a list of keywords, in a call or on its own.'
+order: 60.5
+---
+
+# Classifier
+
+The `Classifier` class is the abstraction behind the [`classifier`](../../server/classifier)
+option of the server. It reads an input and returns a typed result: an intent, a
+score, a yes or no.
+
+In a call, the server classifies each turn of the user when it ends. The class
+works on its own just as well: call `classify()` with any text or JSON.
+
+The base class keeps track of the classifications in progress, so the server can
+wait for them or cancel them. A provider implements a single method,
+`evaluate()`.
+
+## Available Implementations
+
+- [TypesafeClassifier](https://github.com/Godefroy/micdrop/blob/main/packages/typesafe/src/TypesafeClassifier.ts) from [@micdrop/typesafe](../provided-integrations/typesafe)
+
+## Overview
+
+```typescript
+// What a classifier reads: a text, or JSON with named fields
+export type ClassifierInput = string | { [key: string]: any } | any[]
+
+export abstract class Classifier<
+  Result = any,
+  Input extends ClassifierInput = ClassifierInput,
+> extends EventEmitter<ClassifierEvents<Result, Input>> {
+  public logger?: Logger
+
+  // The last classification
+  public lastClassification?: MicdropClassification<Result, Input>
+
+  // Answers the questions of this classifier about an input
+  protected abstract evaluate(input: Input, signal: AbortSignal): Promise<Result>
+
+  // Classifies an input, and emits the result as Classification
+  classify(input: Input): Promise<MicdropClassification<Result, Input> | undefined>
+
+  // The last classification started, until it is done
+  get pending(): Promise<MicdropClassification<Result, Input> | undefined> | undefined
+
+  // Drops every classification in progress, which then emit nothing
+  cancel(): void
+
+  destroy(): void
+}
+```
+
+`classify()` resolves with the classification, or with `undefined` when it was
+cancelled or failed. A failure goes to the logger, and the call carries on
+without it.
+
+The `signal` of `evaluate()` is aborted once the result is no longer wanted:
+the user spoke again and the turn will be classified whole at its next end, or
+the call ended. Pass it to your HTTP client so the request stops too.
+
+The constructor takes no options. A provider declares its own, and the server
+reads its settings from [`classifierOptions`](../../server/classifier#options).
+
+## The input in a call
+
+`MicdropServer` classifies a `MicdropTurnInput`:
+
+```typescript
+interface MicdropTurnInput {
+  // The turn before, and the answer that followed it
+  history: Array<{ role: 'user' | 'assistant'; text: string }>
+  // What the user said in this turn, transcripts joined
+  turn: string
+}
+```
+
+A classifier made for calls types its input with it, and reads `turn` and
+`history` by name. A classifier accepting any `ClassifierInput` receives the same
+object, and can pass it as is to a model that reads JSON.
+
+## The result
+
+`Result` is whatever `evaluate()` returns. Each classification wraps it:
+
+```typescript
+interface MicdropClassification<Result = any, Input = any> {
+  input: Input // What was classified
+  result: Result // What evaluate() returned
+  duration: number // Time the classification took, in ms
+}
+```
+
+In a call, the server keeps it in the metadata of the last user message of the
+turn, and can send it to the client as JSON, so keep `Result` serializable.
+
+## Events
+
+### Classification
+
+Emitted for each classification that completes. A cancelled one emits nothing.
+
+```typescript
+classifier.on('Classification', ({ input, result, duration }) => {
+  console.log(input, result, `${duration} ms`)
+})
+```
+
+## Debug Logging
+
+```typescript
+classifier.logger = new Logger('Classifier')
+```
+
+Each classification is then logged with its input and duration.
+
+## Custom Classifier Implementation
+
+### With an LLM and structured output
+
+Any LLM able to return a typed object makes a classifier. This one uses the
+[AI SDK](https://ai-sdk.dev) with a zod schema, and reads the turn and its
+history:
+
+```typescript
+import { openai } from '@ai-sdk/openai'
+import { Classifier, MicdropTurnInput } from '@micdrop/server'
+import { generateText, Output } from 'ai'
+import { z } from 'zod'
+
+const schema = z.object({
+  intent: z.enum(['billing', 'outage', 'cancel', 'other']),
+  frustrated: z.boolean(),
+})
+
+type Decision = z.infer<typeof schema>
+
+export class LlmClassifier extends Classifier<Decision, MicdropTurnInput> {
+  protected async evaluate(
+    { history, turn }: MicdropTurnInput,
+    signal: AbortSignal
+  ): Promise<Decision> {
+    const context = history
+      .map(({ role, text }) => `${role}: ${text}`)
+      .join('\n')
+
+    const { output } = await generateText({
+      model: openai('gpt-5-mini'),
+      output: Output.object({ schema }),
+      system:
+        'Classify the last turn of a customer calling an internet provider.',
+      prompt: `${context}\n\nCustomer: ${turn}`,
+      abortSignal: signal,
+    })
+    return output
+  }
+}
+```
+
+```typescript
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier: new LlmClassifier(),
+  classifierOptions: { waitBeforeAnswer: true, maxWait: 1500 },
+})
+```
+
+A general LLM takes longer than a dedicated classification model, often over a
+second. Pick a small model, and give `maxWait` a limit that matches its latency.
+
+### With keywords
+
+A classifier needs no model at all. This one flags a few words, in well under a
+millisecond, and accepts a plain text as well as a turn:
+
+```typescript
+import { Classifier, MicdropTurnInput } from '@micdrop/server'
+
+export class KeywordClassifier extends Classifier<
+  { wantsHuman: boolean },
+  string | MicdropTurnInput
+> {
+  protected async evaluate(input: string | MicdropTurnInput) {
+    const text = typeof input === 'string' ? input : input.turn
+    return {
+      wantsHuman: /\b(human|agent|advisor|manager|real person)\b/i.test(text),
+    }
+  }
+}
+```
+
+Keywords miss every sentence phrased another way, which is where a model earns
+its place. They make a fine first layer, or a test double.
+
+## Usage without MicdropServer
+
+`classify()` takes any input the classifier accepts, and resolves with its
+classification:
+
+```typescript
+const classifier = new KeywordClassifier()
+
+const classification = await classifier.classify('Can I talk to a human?')
+console.log(classification?.result.wantsHuman) // true
+
+await classifier.classify({
+  history: [],
+  turn: 'My internet is down, get me a manager.',
+})
+```
+
+To classify a conversation you hold yourself, `turnInput(conversation, history)`
+from `@micdrop/server` builds the same `MicdropTurnInput` as the server. It
+returns the input, and the last message of the turn:
+
+```typescript
+import { turnInput } from '@micdrop/server'
+
+const { input } = turnInput(conversation, 1)
+await classifier.classify(input)
+```

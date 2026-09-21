@@ -3,12 +3,15 @@ import assert from 'node:assert/strict'
 import { PassThrough, Readable } from 'node:stream'
 import { describe, it } from 'node:test'
 import type { WebSocket } from 'ws'
-import { Agent } from '../src/agent'
+import { Agent, AgentOptions } from '../src/agent'
 import {
+  Classifier,
+  getTurnClassification,
   MicdropCallSummary,
   MicdropConfig,
   MicdropServer,
   MicdropServerCommands,
+  MicdropTurnInput,
   STT,
   TTS,
 } from '../src/index'
@@ -92,8 +95,11 @@ class TestAgent extends Agent {
   public cancelled = 0
   public destroyed = false
 
-  constructor(private words: string[] = ['Hello', ' there']) {
-    super({ systemPrompt: 'Be brief' })
+  constructor(
+    private words: string[] = ['Hello', ' there'],
+    options: Partial<AgentOptions> = {}
+  ) {
+    super({ systemPrompt: 'Be brief', ...options })
   }
 
   protected async generateAnswer(stream: PassThrough): Promise<void> {
@@ -444,5 +450,269 @@ describe('MicdropServer turn handling', () => {
     assert.equal(agent.destroyed, true)
     assert.equal(stt.destroyed, true)
     assert.equal(tts.destroyed, true)
+  })
+})
+
+/**
+ * Answers with the turn it was given, after a delay the test picks, and keeps
+ * every input so a test can tell which ones were classified
+ */
+class TestClassifier extends Classifier<string, MicdropTurnInput> {
+  public inputs: MicdropTurnInput[] = []
+  public destroyed = false
+
+  constructor(private delay = 0) {
+    super()
+  }
+
+  protected async evaluate(input: MicdropTurnInput): Promise<string> {
+    this.inputs.push(input)
+    if (this.delay === Infinity) return new Promise(() => {})
+    await new Promise((resolve) => setTimeout(resolve, this.delay))
+    return input.turn.toUpperCase()
+  }
+
+  destroy() {
+    this.destroyed = true
+    super.destroy()
+  }
+}
+
+/** Plays a turn whose transcript lands in pieces, while the user speaks */
+async function speakInPieces(
+  socket: FakeSocket,
+  stt: TestSTT,
+  transcripts: string[]
+) {
+  socket.startSpeaking()
+  socket.sendAudio()
+  transcripts.forEach((transcript) => stt.hear(transcript))
+  socket.stopSpeaking()
+  await new Promise((resolve) => setTimeout(resolve, 10))
+}
+
+describe('MicdropServer with an onBeforeAnswer hook', () => {
+  it('speaks the text the hook returns instead of generating', async () => {
+    const stt = new TestSTT()
+    const tts = new TestTTS()
+    const agent = new TestAgent(undefined, {
+      onBeforeAnswer: () => 'Scripted',
+    })
+    const { socket } = startCall({ stt, agent, tts })
+
+    await speakTo(socket, stt, 'Hello')
+
+    assert.equal(agent.answers, 0)
+    assert.deepEqual(tts.spoken, ['Scripted'])
+    const last = agent.conversation[agent.conversation.length - 1]
+    assert.equal(last.role, 'assistant')
+    assert.equal('content' in last && last.content, 'Scripted')
+  })
+})
+
+describe('MicdropServer with a classifier', () => {
+  it('classifies each turn and sends the result to the client', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    const classifier = new TestClassifier()
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      firstMessage: 'How can I help?',
+      classifierOptions: { sendToClient: true },
+    })
+    // The first message is said once the call has started
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await speakTo(socket, stt, 'Hi there')
+
+    const [classification] = socket.payloads(
+      MicdropServerCommands.Classification
+    )
+    assert.deepEqual(classification.input, {
+      history: [{ role: 'assistant', text: 'How can I help?' }],
+      turn: 'Hi there',
+    })
+    assert.equal(classification.result, 'HI THERE')
+  })
+
+  it('classifies a turn once, with all its transcripts', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    const classifier = new TestClassifier()
+    const { socket } = startCall({ stt, agent, classifier })
+
+    await speakInPieces(socket, stt, ['I have a problem', 'with my bill'])
+    await waitFor(() => agent.answers === 1, 'the answer')
+
+    assert.deepEqual(
+      classifier.inputs.map((input) => input.turn),
+      ['I have a problem with my bill']
+    )
+  })
+
+  it('reads the turn before and its answer as history', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent(['Got it'])
+    const classifier = new TestClassifier()
+    const { socket } = startCall({ stt, agent, classifier })
+
+    await speakTo(socket, stt, 'Take the ball')
+    await speakTo(socket, stt, 'Now bring it to the cat')
+    await speakTo(socket, stt, 'Thanks')
+
+    assert.deepEqual(classifier.inputs[2], {
+      history: [
+        { role: 'user', text: 'Now bring it to the cat' },
+        { role: 'assistant', text: 'Got it' },
+      ],
+      turn: 'Thanks',
+    })
+  })
+
+  it('reads as many turns before as asked', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent(['Got it'])
+    const classifier = new TestClassifier()
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      classifierOptions: { history: 2 },
+    })
+
+    await speakTo(socket, stt, 'Take the ball')
+    await speakTo(socket, stt, 'Now bring it to the cat')
+    await speakTo(socket, stt, 'Thanks')
+
+    assert.deepEqual(
+      classifier.inputs[2].history.map((item) => item.text),
+      ['Take the ball', 'Got it', 'Now bring it to the cat', 'Got it']
+    )
+  })
+
+  it('holds the answer until the classification of its turn is done', async () => {
+    const stt = new TestSTT()
+    const order: string[] = []
+    const classifier = new TestClassifier(30)
+    classifier.on('Classification', () => order.push('classification'))
+    const agent = new TestAgent()
+    agent.on('Message', (message) => {
+      if (message.role === 'assistant') order.push('answer')
+    })
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      classifierOptions: { waitBeforeAnswer: true },
+    })
+
+    await speakInPieces(socket, stt, ['Hello'])
+    await waitFor(() => order.length === 2, 'the answer')
+    assert.deepEqual(order, ['classification', 'answer'])
+  })
+
+  it('keeps the classification of the turn in its last message', async () => {
+    const stt = new TestSTT()
+    let seen: any
+    const agent = new TestAgent(undefined, {
+      onBeforeAnswer() {
+        seen = getTurnClassification(this.conversation)
+      },
+    })
+    const classifier = new TestClassifier(10)
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      classifierOptions: { waitBeforeAnswer: true },
+    })
+
+    await speakInPieces(socket, stt, ['I have a problem', 'with my bill'])
+    await waitFor(() => agent.answers === 1, 'the answer')
+
+    assert.equal(seen?.result, 'I HAVE A PROBLEM WITH MY BILL')
+    const [first] = agent.conversation.filter((item) => item.role === 'user')
+    assert.equal('metadata' in first && first.metadata, undefined)
+  })
+
+  it('answers anyway when the classification takes too long', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    const classifier = new TestClassifier(Infinity)
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      classifierOptions: { waitBeforeAnswer: true, maxWait: 20 },
+    })
+
+    await speakInPieces(socket, stt, ['Hello'])
+    await waitFor(() => agent.answers === 1, 'the answer')
+  })
+
+  it('drops the answer and the classification when the user speaks again', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    const classifier = new TestClassifier(40)
+    const results: string[] = []
+    classifier.on('Classification', ({ result }) => results.push(result))
+    const { socket } = startCall({
+      stt,
+      agent,
+      classifier,
+      classifierOptions: { waitBeforeAnswer: true },
+    })
+
+    await speakInPieces(socket, stt, ['I have a problem'])
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    // The user goes on before the answer: the turn is classified again whole
+    await speakInPieces(socket, stt, ['with my bill'])
+    await waitFor(() => agent.answers === 1, 'the answer')
+
+    assert.equal(agent.answers, 1)
+    assert.deepEqual(results, ['I HAVE A PROBLEM WITH MY BILL'])
+  })
+
+  it('keeps turns apart without an agent to answer them', async () => {
+    const stt = new TestSTT()
+    const classifier = new TestClassifier()
+    const { socket } = startCall({ stt, classifier })
+
+    for (const transcript of ['Take the ball', 'Bring it to the cat']) {
+      await speakInPieces(socket, stt, [transcript])
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+
+    assert.deepEqual(classifier.inputs[1], {
+      history: [{ role: 'user', text: 'Take the ball' }],
+      turn: 'Bring it to the cat',
+    })
+  })
+
+  it('keeps the results on the server unless told to send them', async () => {
+    const stt = new TestSTT()
+    const classifier = new TestClassifier()
+    const results: string[] = []
+    classifier.on('Classification', ({ result }) => results.push(result))
+    const { socket } = startCall({ stt, agent: new TestAgent(), classifier })
+
+    await speakTo(socket, stt, 'Secret')
+
+    assert.deepEqual(results, ['SECRET'])
+    assert.equal(
+      socket.payloads(MicdropServerCommands.Classification).length,
+      0
+    )
+  })
+
+  it('destroys the classifier when the call ends', () => {
+    const classifier = new TestClassifier()
+    const { socket } = startCall({ stt: new TestSTT(), classifier })
+
+    socket.close()
+
+    assert.equal(classifier.destroyed, true)
   })
 })

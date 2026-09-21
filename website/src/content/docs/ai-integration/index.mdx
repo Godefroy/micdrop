@@ -9,6 +9,8 @@ order: 45
 
 Integrate speech-to-text, text-to-speech, and AI agents from multiple providers or build custom implementations.
 
+A [classifier](../server/classifier) can run next to them, to turn what the user says into typed decisions.
+
 ## Overview
 
 Micdrop provides a modular AI architecture allowing you to:
@@ -56,6 +58,10 @@ Ready-to-use implementations for popular AI services:
 - **[Gemini Live](./provided-integrations/gemini#gemini-live)** - Hears and speaks in one connection
 - **[OpenAI Realtime](./provided-integrations/openai#openai-realtime)** - Hears and speaks in one connection
 
+**Classifiers:**
+
+- **[TypeSafe Jev](./provided-integrations/typesafe)**, typed decisions about what the user says, in a few hundred ms
+
 ### Running Locally
 
 The three parts above all have a local counterpart, so a whole conversation can
@@ -68,6 +74,7 @@ Build your own integrations using abstract base classes:
 - **[Custom Agent](./custom-integrations/custom-agent)** - Create custom AI agents
 - **[Custom STT](./custom-integrations/custom-stt)** - Implement speech-to-text services
 - **[Custom TTS](./custom-integrations/custom-tts)** - Build text-to-speech providers
+- **[Custom Classifier](./custom-integrations/custom-classifier)**, classify each turn of the user with any model
 
 ## Quick Start
 

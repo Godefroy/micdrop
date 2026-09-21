@@ -69,11 +69,11 @@ export interface AgentOptions {
   extract?: ExtractJsonOptions | ExtractTagOptions
 
   // Function called before any answer is generated
-  // Return true to skip generation
+  // Return true to skip generation, or a text to answer it instead
   onBeforeAnswer?: (
     this: Agent,
     stream: Writable
-  ) => void | boolean | Promise<boolean>
+  ) => void | boolean | string | Promise<void | boolean | string>
 }
 
 export interface AgentEvents {
@@ -163,6 +163,7 @@ Generates a streaming response based on the current conversation history.
 
 - Calls `onBeforeAnswer` hook if provided
 - If hook returns `true`, skips answer generation
+- If hook returns a text, speaks it and adds it to the conversation as the answer, without generating
 - Otherwise calls `generateAnswer()` implementation
 - Handles cancellation and cleanup automatically
 
