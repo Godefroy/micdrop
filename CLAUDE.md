@@ -38,7 +38,9 @@ This is a pnpm monorepo with packages in `packages/`, examples in `examples/`, a
 
 `@micdrop/web` and `@micdrop/react-native` are the two platform layers over the
 same client. Any improvement to one goes to the other, packages and examples
-alike, and both are published together.
+alike. Bump their versions only when their own code changes, or when their
+`@micdrop/client` range no longer reaches the version that exposes the API
+they document.
 
 ### Key Components
 
