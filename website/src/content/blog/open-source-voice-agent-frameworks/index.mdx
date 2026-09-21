@@ -235,6 +235,9 @@ Two questions get skipped at selection time and asked in production. What happen
   <FaqItem question="Are open source voice agent frameworks really free?">
     The framework is free, and the conversation is not. Every project here calls speech-to-text, a language model and text-to-speech that bill per minute or per token, so your running cost follows those providers rather than the framework. Two things to check in the licence: TEN Framework adds conditions that forbid deployment on end-user devices and uses that compete with Agora, and LiveKit's turn-detection models may only be used inside LiveKit Agents even though the framework itself is Apache 2.0.
   </FaqItem>
+  <FaqItem question="Is Pipecat free?">
+    Yes. Pipecat is BSD 2-Clause, and its smart-turn detection model carries the same licence, so you can run that model outside Pipecat too. Run the framework on your own servers and Pipecat adds nothing to the bill. A call costs what your speech-to-text, model and text-to-speech providers charge at their list price. Daily, the company behind Pipecat, also sells Pipecat Cloud, a managed version generally available since January 2026 at $0.01 to $0.03 per agent minute, with phone calls at $0.018. Those rates pay for Daily's hosting, while the framework you run yourself stays free.
+  </FaqItem>
   <FaqItem question="Can I keep voice data inside the European Union?">
     With a self-hosted framework, yes, since you choose both where the server runs and which providers it calls. A fully European pipeline is available today by combining Mistral for the model, Gladia for speech-to-text and Gradium for text-to-speech. Among hosted platforms, Synthflow publishes an EU hosting region, while Retell's own compliance documentation states that it operates no services within the European Union.
   </FaqItem>

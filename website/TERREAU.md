@@ -313,6 +313,9 @@ pas de backend.
   `BlogPost.astro` émet le `BlogPosting`, `Breadcrumb.astro` le `BreadcrumbList`, `FaqList.astro`
   la `FAQPage`, `SiteJsonLd.astro` les `Organization` / `WebSite` / `SoftwareApplication` de la page
   d'accueil. Les tags Open Graph / Twitter sont dans `SocialPreview.astro`.
+  Un JSON-LD propre à une page passe par un composant appelé depuis son MDX, jamais par une prop ni
+  par un slot de layout : les composants de `src/components/` sont auto-découverts, et le script
+  sort dans le body, que les moteurs lisent aussi bien.
 - **Navigation** : `website/src/navigation.ts` (header et footer), valeurs de marque dans
   `website/website.config.ts`.
 - **Redirections** : renommer ou supprimer une page implique une redirection, dans
@@ -447,14 +450,3 @@ comparatives :
 - **Analytics** : Umami, chargé uniquement dans les builds de production
   (`PUBLIC_UMAMI_WEBSITE_ID` dans `.env`).
 - **Commit** : jamais sans validation humaine.
-
----
-
-## 12. Checks d'audit acceptés
-
-Checks de l'audit on-page que les revues ne corrigent pas et ne rapportent plus.
-
-- `has_render_blocking_resources` : il vient de l'unique feuille `/_astro/BaseLayout.*.css` (57 Ko,
-  11 Ko gzip, servie en cache `immutable` un an). L'inliner fait passer le HTML de
-  `/docs/getting-started` de 10 à 21 Ko gzip, et chaque page vue retélécharge alors le CSS au lieu de
-  le lire en cache.

@@ -233,6 +233,9 @@ The weights download on first use and every call in the process then shares them
   <FaqItem question="How does the Web Speech API work?">
     You create a `SpeechRecognition` object, set `lang`, `continuous` and `interimResults`, and call `start()`. The browser asks for microphone permission, captures the audio and sends it to its recognition service, or keeps it on the device when `processLocally` is `true` and the language pack is installed. Results come back through the `result` event, where `isFinal` marks the settled ones.
   </FaqItem>
+  <FaqItem question="Which browsers support the Web Speech API?">
+    Chrome has shipped speech recognition since version 25 on desktop and Android, and Safari since 14.1 on macOS and 14.5 on iOS, both under the `webkitSpeechRecognition` prefix. Edge ships the same Chromium interface. Firefox opened recognition to web pages in version 142, though it stays off by default, so a Firefox user reaches it only by turning on `media.webspeech.recognition.enable` in about:config. Caniuse puts global coverage at about 88% and marks every browser as partial rather than full support.
+  </FaqItem>
   <FaqItem question="Does the Web Speech API work in Safari?">
     Yes, it has worked since Safari 14.1 on macOS and 14.5 on iOS and iPadOS, under the `webkitSpeechRecognition` prefix. Expect behaviour differences from Chrome. `continuous` keeps the microphone open on iPhone without returning the final text. WebKit's documentation tracker still has an open question about `interimResults`.
   </FaqItem>

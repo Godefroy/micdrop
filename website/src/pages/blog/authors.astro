@@ -24,7 +24,7 @@ const withPosts = authors.map((author) => ({
             {author.imageUrl && (
               <img
                 src={author.imageUrl}
-                alt=""
+                alt={`Profile picture of ${author.name}`}
                 width="56"
                 height="56"
                 loading="lazy"
