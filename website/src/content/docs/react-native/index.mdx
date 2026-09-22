@@ -8,7 +8,7 @@ order: 20
 
 `@micdrop/react-native` runs a Micdrop call on a phone. It records the microphone, plays the assistant voice, detects who is speaking and streams both ways over a WebSocket, against the same [server](/docs/server) a browser talks to.
 
-The server holds the transcription, the agent and the voice, so no speech model ships in the app. [Speech to text in React Native](/blog/speech-to-text-react-native) compares server-side transcription with the iOS and Android recognisers and with running Whisper on the device.
+The server holds the transcription, the agent and the voice, so no speech model ships in the app. [Speech to text in React Native](/blog/speech-to-text-react-native) compares server-side transcription with the iOS and Android recognisers and with running Whisper on the device. The server can also hold a speech-to-speech session, which is how a phone [reaches the OpenAI Realtime API without WebRTC](/blog/openai-realtime-api-react-native).
 
 ## Installation
 
