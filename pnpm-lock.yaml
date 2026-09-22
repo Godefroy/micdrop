@@ -391,6 +391,76 @@ importers:
         specifier: ^7.3.1
         version: 7.3.6(@types/node@22.19.13)(tsx@4.23.12)
 
+  examples/demo-twenty-questions:
+    dependencies:
+      '@fastify/websocket':
+        specifier: ^11.2.0
+        version: 11.2.0
+      '@micdrop/openai':
+        specifier: '*'
+        version: link:../../packages/openai
+      '@micdrop/react':
+        specifier: '*'
+        version: link:../../packages/react
+      '@micdrop/server':
+        specifier: '*'
+        version: link:../../packages/server
+      '@micdrop/typesafe':
+        specifier: '*'
+        version: link:../../packages/typesafe
+      '@micdrop/web':
+        specifier: '*'
+        version: link:../../packages/web
+      dotenv:
+        specifier: ^17.0.0
+        version: 17.3.1
+      fastify:
+        specifier: ^5.7.4
+        version: 5.7.4
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.13
+        version: 22.19.13
+      '@types/react':
+        specifier: ^18.3.28
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.3.7
+        version: 18.3.7(@types/react@18.3.28)
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      '@vitejs/plugin-react':
+        specifier: ^5.1.4
+        version: 5.1.4(vite@7.3.6)
+      autoprefixer:
+        specifier: ^10.4.27
+        version: 10.4.27(postcss@8.5.26)
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^3.4.19
+        version: 3.4.19
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@22.19.13)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.1
+        version: 7.3.6(@types/node@22.19.13)(tsx@4.23.12)
+
   examples/demo-world:
     dependencies:
       '@fastify/websocket':

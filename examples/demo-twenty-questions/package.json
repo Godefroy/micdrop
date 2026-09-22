@@ -1,0 +1,42 @@
+{
+  "name": "@micdrop/demo-twenty-questions",
+  "version": "1.0.0",
+  "author": "Godefroy de Compreignac",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"server,client\" -c \"blue,green\" \"pnpm dev:server\" \"pnpm dev:client\"",
+    "dev:server": "ts-node-dev --respawn --transpile-only -P tsconfig.server.json src/server/index.ts",
+    "dev:client": "vite",
+    "build": "tsc -p tsconfig.server.json && vite build",
+    "start": "node dist/server/index.js",
+    "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.2.0",
+    "@micdrop/openai": "*",
+    "@micdrop/react": "*",
+    "@micdrop/server": "*",
+    "@micdrop/typesafe": "*",
+    "@micdrop/web": "*",
+    "dotenv": "^17.0.0",
+    "fastify": "^5.7.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.13",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^5.1.4",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

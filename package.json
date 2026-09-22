@@ -25,6 +25,7 @@
     "dev:support": "pnpm --filter @micdrop/demo-support dev",
     "dev:slides": "pnpm --filter @micdrop/demo-slides dev",
     "dev:robot": "pnpm --filter @micdrop/demo-robot dev",
+    "dev:twenty-questions": "pnpm --filter @micdrop/demo-twenty-questions dev",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
