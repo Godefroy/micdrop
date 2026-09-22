@@ -1,19 +1,19 @@
 ---
-title: 'TypeSafe'
-description: 'Classify each turn of the user with TypeSafe Jev: typed questions (choice, score, yes or no) answered with calibrated probabilities in a few hundred ms, to route the answer before the LLM.'
+title: 'Jev (TypeSafe)'
+description: 'Classify each turn of the user with Jev, the System One model of TypeSafe: typed questions (choice, score, yes or no) answered with calibrated probabilities in a few hundred ms, to route the answer before the LLM.'
 order: 56.5
 ---
 
-# TypeSafe
+# Jev (TypeSafe)
 
-TypeSafe implementation of the [classifier](../../server/classifier) for
+Jev implementation of the [classifier](../../server/classifier) for
 [@micdrop/server](../../server).
 
-It runs [Jev](https://docs.typesafe.ai), a "System One" model from TypeSafe AI.
-Where an LLM writes an answer token by token, Jev answers a set of typed
-questions at once: pick a label, give a score, say yes or no. Each answer comes
-with calibrated probabilities, in a few hundred ms, which is fast enough to route
-the answer before the LLM starts.
+[Jev](https://docs.typesafe.ai) is the "System One" model of TypeSafe AI. Where
+an LLM writes an answer token by token, Jev answers a set of typed questions at
+once: pick a label, give a score, say yes or no. Each answer comes with
+calibrated probabilities, in a few hundred ms, which is fast enough to route the
+answer before the LLM starts.
 
 ## Installation
 
@@ -240,5 +240,5 @@ The demos that run on Jev are listed with the other examples, in
 
 ## Documentation
 
-Read the [TypeSafe documentation](https://docs.typesafe.ai) for the questions,
-the models and the API.
+Read the [Jev documentation](https://docs.typesafe.ai) from TypeSafe for the
+questions, the models and the API.

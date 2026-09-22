@@ -1,7 +1,7 @@
 {
   "name": "@micdrop/typesafe",
-  "version": "1.0.0",
-  "description": "TypeSafe (Jev) implementation for @micdrop/server",
+  "version": "1.0.1",
+  "description": "Jev (TypeSafe) classifier for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
   "main": "./dist/index.js",
