@@ -16,6 +16,25 @@ const CHUNK_INTERVAL = 100 // ms
  */
 export const DEFAULT_TURN_MAX_WAIT = 4000 // ms
 
+/**
+ * How much longer than the VAD delay a turn may wait for its confirmation.
+ *
+ * The audio heard before the speech is confirmed is held back, and only its
+ * most recent part is kept: a VAD that stays unsure for a long time (a noisy
+ * room keeps the volume VAD up) would otherwise send everything since then.
+ */
+export const CONFIRM_MARGIN = 300 // ms
+
+/**
+ * How long the microphone stays deaf after the speaker went quiet, when the
+ * user may not interrupt the assistant.
+ *
+ * Without echo cancellation, what the speaker plays comes back through the
+ * microphone. The sound leaves the speaker a little after it was played, and
+ * lingers in the room.
+ */
+export const ECHO_TAIL = 300 // ms
+
 export interface MicRecorderState {
   isStarting: boolean
   isStarted: boolean
@@ -58,7 +77,9 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   private reserveLength = 0
   private buffer: Float32Array[] = []
   private bufferLength = 0
-  private queuedChunks: Int16Array[] = []
+  // Samples left before the echo of the speaker has died out
+  private echoSamples = 0
+  private speakerPlaying = false
 
   // The turn is open between the first confirmed word and the moment the
   // server is told to answer, which can span several pauses
@@ -175,7 +196,34 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
     }
   }
 
+  /**
+   * Leaves out what the microphone hears while the speaker plays, so the
+   * assistant is never sent back to the server as if the user had said it.
+   *
+   * Only for calls the user may not interrupt: an interruption relies on echo
+   * cancellation, and needs every word the user says over the assistant.
+   * @param playing - True while the assistant is heard
+   */
+  setSpeakerPlaying = (playing: boolean) => {
+    if (playing === this.speakerPlaying) return
+    this.speakerPlaying = playing
+    if (!playing) {
+      this.echoSamples = Math.round((ECHO_TAIL / 1000) * this.sourceSampleRate)
+    }
+  }
+
   private onFrames = (frames: Float32Array, sampleRate: number) => {
+    // What the microphone hears while the speaker plays may be the speaker
+    // itself, so it is dropped, reserve included
+    if (this.speakerPlaying || this.echoSamples > 0) {
+      this.echoSamples = Math.max(0, this.echoSamples - frames.length)
+      this.reserve = []
+      this.reserveLength = 0
+      this.buffer = []
+      this.bufferLength = 0
+      return
+    }
+
     // The detector hears the turn as it was spoken, pauses included, where the
     // stream sent to the server has the silences cut out of it
     if (this.turnListening) {
@@ -190,37 +238,42 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
       this.reserveLength = 0
     }
 
-    if (this.isRecording) {
-      this.buffer.push(frames)
-      this.bufferLength += frames.length
+    // Keep the last moments of audio, the VAD needs some of them to make up
+    // its mind and the beginning of the sentence lives there. It keeps rolling
+    // while recording, so a false start the VAD cancels leaves it intact for
+    // the real one that often follows.
+    this.reserve.push(frames)
+    this.reserveLength += frames.length
+    this.reserveLength = trimFrames(
+      this.reserve,
+      this.reserveLength,
+      Math.round((this.vad.delay / 1000) * sampleRate)
+    )
+
+    if (!this.isRecording) return
+    this.buffer.push(frames)
+    this.bufferLength += frames.length
+    if (this.speakingConfirmed) {
       this.flushChunks()
       return
     }
 
-    // Keep the last moments of audio, the VAD needs some of them to make up
-    // its mind and the beginning of the sentence lives there
-    this.reserve.push(frames)
-    this.reserveLength += frames.length
-    const reserveMax = Math.round((this.vad.delay / 1000) * sampleRate)
-    while (
-      this.reserve.length > 1 &&
-      this.reserveLength - this.reserve[0].length >= reserveMax
-    ) {
-      this.reserveLength -= this.reserve[0].length
-      this.reserve.shift()
-    }
+    // Held back until the speech is confirmed, keeping only what may belong
+    // to its beginning
+    this.bufferLength = trimFrames(
+      this.buffer,
+      this.bufferLength,
+      Math.round(((this.vad.delay + CONFIRM_MARGIN) / 1000) * sampleRate)
+    )
   }
 
   private onStartSpeaking = () => {
     this.speakingConfirmed = false
-    this.queuedChunks.length = 0
 
     // Start recording, from the reserve so nothing is cut off
     this.isRecording = true
-    this.buffer = this.reserve
+    this.buffer = [...this.reserve]
     this.bufferLength = this.reserveLength
-    this.reserve = []
-    this.reserveLength = 0
 
     // A new turn starts on the reserve too, so the model hears the first
     // syllable. An open turn keeps the audio it already has.
@@ -231,8 +284,6 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
         this.turnDetector.push(frames, this.sourceSampleRate)
       }
     }
-
-    this.flushChunks()
   }
 
   private onConfirmSpeaking = () => {
@@ -248,10 +299,7 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
     }
 
     // Send what was recorded before the speech was confirmed
-    for (const chunk of this.queuedChunks) {
-      this.emit('Chunk', chunk)
-    }
-    this.queuedChunks.length = 0
+    this.flushChunks()
   }
 
   private onCancelSpeaking = () => {
@@ -334,7 +382,6 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   private stopRecording() {
     this.isRecording = false
     this.speakingConfirmed = false
-    this.queuedChunks.length = 0
     this.buffer = []
     this.bufferLength = 0
   }
@@ -348,7 +395,8 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
       (CHUNK_INTERVAL / 1000) * this.sourceSampleRate
     )
 
-    if (this.bufferLength === 0) return
+    // Nothing leaves before the speech is confirmed
+    if (!this.speakingConfirmed || this.bufferLength === 0) return
     if (this.bufferLength < chunkLength && !final) return
 
     const merged = concatFloat32(this.buffer)
@@ -374,12 +422,6 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
       resample(samples, this.sourceSampleRate, SAMPLE_RATE)
     )
 
-    if (!this.speakingConfirmed) {
-      // Queue the chunk until speech is confirmed
-      this.queuedChunks.push(pcm)
-      return
-    }
-
     this.emit('Chunk', pcm)
   }
 
@@ -392,7 +434,6 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
     this.reserveLength = 0
     this.buffer = []
     this.bufferLength = 0
-    this.queuedChunks.length = 0
   }
 
   private changeState(state: Partial<MicRecorderState>) {
@@ -405,4 +446,16 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
     this.state = { ...this.state, ...state }
     this.emit('StateChange', this.state)
   }
+}
+
+/**
+ * Drops the oldest frames while the rest still covers `max` samples
+ * @returns The number of samples left
+ */
+function trimFrames(frames: Float32Array[], length: number, max: number) {
+  while (frames.length > 1 && length - frames[0].length >= max) {
+    length -= frames[0].length
+    frames.shift()
+  }
+  return length
 }

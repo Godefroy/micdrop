@@ -67,6 +67,11 @@ export class MicController extends EventEmitter<MicEvents> {
     return this.driver?.deviceId
   }
 
+  /** Whether echo cancellation is on, undefined when nobody knows */
+  get echoCancellation(): boolean | undefined {
+    return this.driver?.echoCancellation
+  }
+
   /**
    * Asks for the microphone permission and starts capturing
    * @param deviceId - Input device to record from, defaults to the system one

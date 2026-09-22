@@ -27,9 +27,11 @@ export class VolumeVAD extends VAD {
 
   // The microphone reports a level about every 100 ms, and two consecutive loud
   // ones are needed before a turn opens. Speech can therefore begin up to two
-  // reports before it is noticed, and a third is kept as a margin: without that
-  // reserve the first syllable of a sentence never reaches the server.
-  public delay = 300 // ms
+  // reports before it is noticed. A quiet onset (a soft consonant, a word
+  // spoken low) stays under the threshold for a while too, so the reserve adds
+  // a margin: without it the first syllable of a sentence never reaches the
+  // server.
+  public delay = 500 // ms
 
   private mic: MicSource | undefined
   private running = false

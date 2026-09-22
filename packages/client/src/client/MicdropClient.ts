@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3'
-import { Mic, MicRecorder, Speaker, VAD, VADConfig } from '../audio'
+import { ECHO_TAIL, Mic, MicRecorder, Speaker, VAD, VADConfig } from '../audio'
 import { pcm16ToArrayBuffer } from '../audio/pcm'
 import { MicdropDevice } from '../audio/types'
 import { MicdropStorageKeys, storage } from '../storage'
@@ -51,6 +51,10 @@ export interface MicdropOptions {
   turnDetector?: TurnDetector
   /** How long a turn may stay open after the detector asked to wait */
   turnMaxWait?: number
+  /**
+   * Keeps the user from interrupting the assistant, whose voice they cannot
+   * speak over. Forced on when the microphone has no echo cancellation.
+   */
   disableInterruption?: boolean
   debugLog?: boolean
   reconnect?: MicdropReconnectOptions
@@ -196,6 +200,15 @@ export class MicdropClient
     return Speaker.isPlaying
   }
 
+  /**
+   * Whether the user is kept from speaking over the assistant. Without echo
+   * cancellation the microphone hears the assistant, which would interrupt
+   * itself and end up in the transcript.
+   */
+  get isInterruptionDisabled(): boolean {
+    return !!this.options.disableInterruption || Mic.echoCancellation === false
+  }
+
   get micDeviceId(): string | undefined {
     return Mic.deviceId
   }
@@ -299,10 +312,7 @@ export class MicdropClient
   }
 
   unmute = () => {
-    if (
-      !this.isPaused &&
-      !(this.options.disableInterruption && Speaker.isPlaying)
-    ) {
+    if (!this.isPaused && !(this.isInterruptionDisabled && Speaker.isPlaying)) {
       this.vad?.resume()
     }
     this._isMuted = false
@@ -354,6 +364,9 @@ export class MicdropClient
           this.options.turnDetector,
           this.options.turnMaxWait
         )
+        this.micRecorder.setSpeakerPlaying(
+          this.isInterruptionDisabled && Speaker.isPlaying
+        )
 
         // Notify mic recorder state change
         this.micRecorder.on('StateChange', () => {
@@ -398,6 +411,10 @@ export class MicdropClient
         storage.setItem(MicdropStorageKeys.MicDevice, Mic.deviceId)
       } else {
         storage.removeItem(MicdropStorageKeys.MicDevice)
+      }
+
+      if (Mic.echoCancellation === false && !this.options.disableInterruption) {
+        this.log('No echo cancellation, interruptions are disabled')
       }
 
       // Start recorder
@@ -693,7 +710,10 @@ export class MicdropClient
 
   private onSpeakerStartPlaying = () => {
     this.log('Speaker started')
-    if (this.options.disableInterruption) {
+    // Interrupting relies on echo cancellation to keep the assistant out of
+    // the recording. Without it, what the speaker plays is left out.
+    if (this.isInterruptionDisabled) {
+      this.micRecorder?.setSpeakerPlaying(true)
       this.vad?.pause()
     }
     this.notifyStateChange()
@@ -701,14 +721,15 @@ export class MicdropClient
 
   private onSpeakerStopPlaying = () => {
     this.log('Speaker stopped')
-    if (this.options.disableInterruption) {
+    this.micRecorder?.setSpeakerPlaying(false)
+    if (this.isInterruptionDisabled) {
       setTimeout(() => {
         if (!this.isMuted) {
           this.vad?.resume()
           this.notifyStateChange()
         }
-        // Wait a bit to avoid recording the speaker output
-      }, 200)
+        // Wait for the echo of the speaker to die out
+      }, ECHO_TAIL)
     } else {
       this.notifyStateChange()
     }

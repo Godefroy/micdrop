@@ -12,6 +12,8 @@ For the concepts behind these options, how volume detection compares with a Sile
 
 Whichever VAD decides, Micdrop keeps the last moments of audio in reserve, so the syllable spoken before it reacted is sent along with the rest of the sentence.
 
+When the user can interrupt the assistant, everything they say over it is recorded, and echo cancellation keeps the assistant voice out of it. When interruptions are disabled, what the microphone hears while the assistant speaks, and for 300 ms after, is never sent to the server. Micdrop disables interruptions by itself when the browser reports that echo cancellation is off.
+
 ## Supported VAD Types
 
 Micdrop supports the following VADs by name:
@@ -155,6 +157,8 @@ Combining multiple VADs is useful to get more accurate speech detection:
 - Volume to ignore low voice
 - Silero to detect human speech
 
+A turn opens once every VAD has heard the speech and at least one of them is sure of it. A short word like "No" is over before the volume VAD confirms it, and still gets through as long as it was loud enough to be noticed.
+
 You can combine multiple VADs by passing an array of VAD names:
 
 ```typescript
@@ -272,7 +276,7 @@ See [VolumeVAD](https://github.com/Godefroy/micdrop/blob/main/packages/client/sr
 
 ## VAD Delay
 
-All VADs have a `delay` property (default: 100ms) that controls the interval for speech detection checks. You can adjust this in custom VADs if needed.
+Every VAD declares in `delay` the longest time it may take to notice that someone started speaking, in milliseconds. Micdrop keeps that much audio in reserve and sends it with the turn, so the first word arrives whole. Silero asks for about 320 ms, the volume VAD for 500 ms, and a combination of VADs for the largest of its members. A custom VAD that needs several samples before it reacts should raise it (the default is 100 ms).
 
 ## Tuning VAD Performance
 

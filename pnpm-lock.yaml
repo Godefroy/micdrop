@@ -1065,7 +1065,7 @@ importers:
   packages/web:
     dependencies:
       '@micdrop/client':
-        specifier: ^3.2.1
+        specifier: ^3.3.1
         version: link:../client
       onnxruntime-web:
         specifier: ^1.23.2

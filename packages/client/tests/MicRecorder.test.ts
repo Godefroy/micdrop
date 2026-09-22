@@ -101,6 +101,51 @@ describe('MicRecorder', () => {
     assert.ok(level > 0.3, `expected the reserve to hold speech, got ${level}`)
   })
 
+  it('keeps the reserve through a false start', () => {
+    // A breath opens a turn that the VAD then cancels, and the real sentence
+    // follows at once. It still gets the moment before the VAD reacted.
+    feed(1, false)
+    vad.emit('StartSpeaking')
+    vad.emit('CancelSpeaking')
+    feed(0.05, true)
+
+    vad.emit('StartSpeaking')
+    vad.emit('ConfirmSpeaking')
+    const sent = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+    assert.equal(sent, CHUNK_SAMPLES, 'a full reserve was sent')
+  })
+
+  it('holds back only the recent audio while the speech is unconfirmed', () => {
+    // A VAD that stays unsure for seconds, in a noisy room, only sends what may
+    // be the beginning of the sentence: the reserve and CONFIRM_MARGIN
+    vad.emit('StartSpeaking')
+    feed(3, true)
+    vad.emit('ConfirmSpeaking')
+    const sent = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+    assert.equal(
+      sent,
+      4 * CHUNK_SAMPLES,
+      '100 ms of delay and 300 ms of margin'
+    )
+  })
+
+  it('leaves out what the speaker plays when asked to', () => {
+    recorder.setSpeakerPlaying(true)
+    feed(1, true)
+    vad.emit('StartSpeaking')
+    vad.emit('ConfirmSpeaking')
+    feed(0.5, true)
+    assert.equal(chunks.length, 0, 'nothing is sent while the speaker plays')
+
+    // The echo lingers after the speaker stops
+    recorder.setSpeakerPlaying(false)
+    feed(0.3, true)
+    assert.equal(chunks.length, 0, 'nothing is sent while the echo dies out')
+
+    feed(0.1, true)
+    assert.equal(chunks.length, 1, 'the microphone is heard again')
+  })
+
   it('cuts the audio into 100 ms chunks', () => {
     vad.emit('StartSpeaking')
     vad.emit('ConfirmSpeaking')

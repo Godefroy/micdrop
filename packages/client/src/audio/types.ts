@@ -48,6 +48,14 @@ export abstract class MicDriver extends EventEmitter<MicDriverEvents> {
   abstract get deviceId(): string | undefined
 
   /**
+   * Whether the system removes the speaker from what the microphone hears.
+   * False when it is known to be off, undefined when the system does not say.
+   */
+  get echoCancellation(): boolean | undefined {
+    return undefined
+  }
+
+  /**
    * Asks for the microphone permission and starts capturing
    * @param deviceId - Input device to record from, defaults to the system one
    */

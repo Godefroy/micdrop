@@ -76,10 +76,11 @@ export class SileroVAD extends VAD {
   public readonly name = 'SileroVAD'
   public options = defaultOptions
 
-  // The model decides on the first window it hears speech in, so it is quick.
-  // The reserve still covers a few windows, since scoring runs asynchronously
-  // and may lag behind the audio on a busy device.
-  public delay = 3 * MS_PER_FRAME // about 100 ms
+  // The model scores a window as speech a few windows after the voice began:
+  // a soft consonant or a breathy onset stays under the threshold until the
+  // vowel comes. Scoring also runs asynchronously and may lag behind the audio
+  // on a busy device, so the reserve covers about a third of a second.
+  public delay = 10 * MS_PER_FRAME // about 320 ms
 
   private model: SileroModel | undefined
   private mic: MicSource | undefined

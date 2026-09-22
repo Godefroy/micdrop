@@ -69,7 +69,7 @@ You can pass options to `MicdropClient` constructor or to the `start` method:
 - `url`: URL of the WebSocket server (using @micdrop/server)
 - `params`: Parameters (optional) to check auth or provide other data
 - `vad`: VAD configuration (see [VAD](../vad) section)
-- `disableInterruption`: If true, disables automatic mic muting when the assistant is speaking (default: false)
+- `disableInterruption`: If true, the microphone stops listening while the assistant speaks, so the user cannot interrupt it (default: false). It is forced on when the browser reports that echo cancellation is off, and `isInterruptionDisabled` tells whether it applies
 - `debugLog`: Boolean flag to enable/disable debug logging
 - `reconnect`: Automatic reconnection configuration
   - `maxAttempts`: Maximum number of reconnection attempts (default: Infinity)

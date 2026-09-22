@@ -12,6 +12,9 @@ export class MultipleVAD extends VAD {
   constructor(vads: Array<VAD | VADConfigName>) {
     super()
     this.vads = vads.map((vad) => getVAD(vad))
+    // The first VAD to hear something opens the turn, but any of them may be
+    // the one that notices, so the reserve has to cover the slowest
+    this.delay = Math.max(...this.vads.map((vad) => vad.delay))
   }
 
   get isStarted(): boolean {
@@ -23,29 +26,35 @@ export class MultipleVAD extends VAD {
   }
 
   async start(mic: MicSource): Promise<void> {
+    // A call starts in silence, whatever the previous one ended on
+    this.setStatus(VADStatus.Silence)
     for (const vad of this.vads) {
-      if (vad.isStarted) {
-        continue
-      }
+      // A VAD already running elsewhere is listened to all the same
+      vad.off('ChangeStatus', this.onStatusChange)
       vad.on('ChangeStatus', this.onStatusChange)
-      await vad.start(mic)
+      if (!vad.isStarted) {
+        await vad.start(mic)
+      }
     }
   }
 
+  // Every VAD has to hear the speech, but only one has to be sure of it. A
+  // short word like "No" is over before the volume VAD gathers the loud
+  // reports it needs to confirm, while Silero confirms it right away.
   private onStatusChange = () => {
     const isAllSilence = this.vads.every(
       (vad) => vad.status === VADStatus.Silence
     )
-    const isAllSpeaking = this.vads.every(
-      (vad) => vad.status === VADStatus.Speaking
-    )
+    const isConfirmed =
+      this.vads.every((vad) => vad.status !== VADStatus.Silence) &&
+      this.vads.some((vad) => vad.status === VADStatus.Speaking)
 
     // Ensure events are called in order
     switch (this.status) {
       case VADStatus.Silence:
         if (isAllSilence) break
         this.emit('StartSpeaking')
-        if (isAllSpeaking) {
+        if (isConfirmed) {
           this.emit('ConfirmSpeaking')
         }
         break
@@ -54,7 +63,7 @@ export class MultipleVAD extends VAD {
           this.emit('CancelSpeaking')
           break
         }
-        if (isAllSpeaking) {
+        if (isConfirmed) {
           this.emit('ConfirmSpeaking')
         }
         break
@@ -67,9 +76,10 @@ export class MultipleVAD extends VAD {
   }
 
   async stop(): Promise<void> {
+    // Stopped before they are left, so the turn they close closes here too
     for (const vad of this.vads) {
-      vad.off('ChangeStatus', this.onStatusChange)
       await vad.stop()
+      vad.off('ChangeStatus', this.onStatusChange)
     }
   }
 

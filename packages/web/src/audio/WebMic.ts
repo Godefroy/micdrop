@@ -41,6 +41,15 @@ export class WebMic extends MicDriver {
     return this._deviceId
   }
 
+  // Asking for echo cancellation is not getting it: some browsers and devices
+  // do without, and the settings of the track say so
+  get echoCancellation(): boolean | undefined {
+    const track = this.stream?.getAudioTracks()[0]
+    const setting = track?.getSettings?.().echoCancellation as unknown
+    if (setting === undefined) return undefined
+    return setting !== false
+  }
+
   async start(deviceId?: string): Promise<void> {
     if (this.stream) {
       // Same device, keep recording
