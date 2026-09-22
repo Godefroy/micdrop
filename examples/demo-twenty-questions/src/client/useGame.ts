@@ -60,18 +60,19 @@ export function useGame(): GameView {
   )
   const won = end?.type === 'won' ? 1 : 0
 
-  // The last turn waits for its answer, unless it was not meant for the game
-  const last = lines[lines.length - 1]
+  // The last turn waits for its answer, unless it was not meant for the game.
+  // Keyed on the message count, since the lines are rebuilt at each render.
+  const lastRole = lines[lines.length - 1]?.role
   const [waiting, setWaiting] = useState(false)
   useEffect(() => {
-    if (last?.role !== 'user') {
+    if (lastRole !== 'user') {
       setWaiting(false)
       return
     }
     setWaiting(true)
     const timer = setTimeout(() => setWaiting(false), WAIT)
     return () => clearTimeout(timer)
-  }, [last, lines.length])
+  }, [lastRole, messages.length])
 
   return {
     lines,

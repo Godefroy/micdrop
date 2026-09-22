@@ -44,12 +44,17 @@ export default function Transcript({ game }: { game: GameView }) {
           className={`px-4 text-sm ${pending ? 'animate-pulse text-slate-300' : 'text-slate-500'}`}
         >
           “{line.text}”{pending && ' …'}
+          {reply?.type === 'ignored' && (
+            <span className="ml-2 rounded-full bg-white/5 px-2 py-0.5 text-xs">
+              not a question
+            </span>
+          )}
         </li>
       )
       return
     }
     // The answers are shown next to their question
-    if (line.reply?.type === 'answer') return
+    if (line.reply?.type === 'answer' || line.reply?.type === 'ignored') return
     const tone =
       line.reply?.type === 'won'
         ? 'bg-emerald-500 font-bold text-emerald-950'

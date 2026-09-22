@@ -41,3 +41,5 @@ export type Reply =
   | { type: 'hint'; hint: string }
   /** Anything that is not a question for the game, and why */
   | { type: 'note' }
+  /** A turn Jev did not read as meant for the game */
+  | { type: 'ignored'; question: string }

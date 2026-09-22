@@ -123,7 +123,13 @@ export class Game {
           ],
         ]
       default:
-        return []
+        // Said, so the turn does not look like it is still waiting
+        return [
+          [
+            'Not taken as a question for the game.',
+            { type: 'ignored', question },
+          ],
+        ]
     }
   }
 
