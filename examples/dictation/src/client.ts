@@ -5,6 +5,7 @@
 
 import { Micdrop, MicdropState } from '@micdrop/web'
 import { LANGUAGES, toSupportedLanguage } from './languages'
+import '@micdrop/web/silero'
 
 // Address of the server started by src/server.ts
 const SERVER_URL = 'ws://localhost:8088'
@@ -49,6 +50,7 @@ async function start() {
   try {
     await Micdrop.start({
       url: SERVER_URL,
+      vad: ['volume', 'silero'],
       params: { language: languageSelect.value },
     })
   } catch {
