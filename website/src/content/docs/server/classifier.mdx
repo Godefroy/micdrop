@@ -211,24 +211,5 @@ client and your own code.
 
 ## Demos
 
-Three demos run on Jev, each with an OpenAI key and a TypeSafe key, from the root
-of the repository:
-
-- The [support demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-support)
-  (`pnpm dev:support`, http://localhost:8090) is a Nova Fiber support line. Each
-  answer is routed from the classification: a manipulation attempt is blocked
-  before the LLM, an angry customer or one asking for a human is transferred, a
-  known outage is answered by code, and a customer about to leave gets an LLM
-  answer with a retention hint.
-- The [slides demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-slides)
-  (`pnpm dev:slides`, http://localhost:8092) builds a deck by voice. The page lays
-  out the slides Jev read a few seconds before the LLM fills them, and the LLM
-  follows the plan Jev gave it.
-- The [robot demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot)
-  (`pnpm dev:robot`, http://localhost:8094) runs with no agent and no voice. Jev
-  turns each turn into commands, and the browser plays them out.
-- The [twenty questions demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-twenty-questions)
-  (`pnpm dev:twenty-questions`, http://localhost:8096) runs with no agent and
-  no voice either. Jev answers each question about a secret it reads in its
-  state, and its probability of a yes gives "yes", "probably", "I don't know",
-  "probably not" or "no".
+The demos that run on a classifier are listed with the other examples, in
+[Examples and demos](../examples#classifier-demos).

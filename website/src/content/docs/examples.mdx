@@ -1,0 +1,70 @@
+---
+title: 'Examples and demos'
+description: 'Every example app and demo of Micdrop, what each one shows, and the command that runs it.'
+order: 1.5
+---
+
+# Examples and demos
+
+Every example lives in the
+[examples folder](https://github.com/Godefroy/micdrop/tree/main/examples) of the
+repository, with a README that tells what it needs and where it runs. Clone the
+repository, run `pnpm install` at its root, copy the `.env.example` of the
+example to `.env` with your API keys, then run its command from the root.
+
+## Start here
+
+- The [basic example](https://github.com/Godefroy/micdrop/tree/main/examples/basic)
+  (`pnpm dev:basic`) is the shortest way to hear Micdrop work: one button, one
+  WebSocket server, and OpenAI for the agent, the transcription and the voice.
+  Around 150 lines to read.
+- The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation)
+  (`pnpm dev:dictation`) is a call with ears only. With no agent and no voice,
+  it fills a text area as you speak, in the language picked on the page, and
+  shows how a call parameter reaches the server.
+- The [advanced example](https://github.com/Godefroy/micdrop/tree/main/examples/advanced)
+  (`pnpm dev:advanced`) puts a React client and a Fastify server in one folder,
+  with every provider wired in and picked from the browser.
+
+## Mobile
+
+- The [React Native example](https://github.com/Godefroy/micdrop/tree/main/examples/react-native)
+  (`pnpm dev:react-native`) is a voice call on iOS and Android: an Expo app with
+  the conversation, level meters and call controls, and the Node server it
+  talks to.
+
+## Demos
+
+- The [world demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-world)
+  (`pnpm dev:world`) is an immersive 3D scene, where a newborn planet talks to
+  you and reshapes itself as the conversation goes.
+- The [form demo](https://github.com/Godefroy/micdrop-form-demo), in its own
+  repository, fills a form by voice with OpenAI and tool calling.
+
+## Classifier demos
+
+These demos run on [Jev](./ai-integration/provided-integrations/typesafe),
+TypeSafe's System One model, through the [classifier](./server/classifier) of
+the server. Each one needs an OpenAI key and a TypeSafe key.
+
+- The [support demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-support)
+  (`pnpm dev:support`) is the support line of an internet provider. Jev answers
+  six questions about each turn of the caller, shown on the page, and each
+  answer is routed from them: a manipulation attempt is blocked before the LLM,
+  an angry customer or one asking for a human is transferred, a known outage is
+  answered by code, and a customer about to leave gets an LLM answer with a
+  retention hint.
+- The [slides demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-slides)
+  (`pnpm dev:slides`) builds a deck by voice. Its questions are built from the
+  deck on screen, which Jev reads in its state. The page lays out the slides
+  Jev read a few seconds before the LLM fills them, and the LLM follows the
+  plan Jev gave it.
+- The [robot demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot)
+  (`pnpm dev:robot`) runs with no agent and no voice. Jev turns each turn into
+  commands, and the browser plays them out.
+- The [twenty questions demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-twenty-questions)
+  (`pnpm dev:twenty-questions`) runs with no agent and no voice either. Jev
+  answers each question about a secret it reads in its state, and its
+  probability of a yes gives "yes", "probably", "I don't know", "probably not"
+  or "no". The server writes the answers with `addAssistantMessage()`, so Jev
+  reads the last one in `history`.
