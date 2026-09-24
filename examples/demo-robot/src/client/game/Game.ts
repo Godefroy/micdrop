@@ -412,8 +412,8 @@ export class Game {
       case 'chest': {
         if (goal.on) return this.say('Already open! 🧰')
         this.setEntity(goal.id, { on: true })
-        const spot = this.freeNeighbor(goal) ?? goal
-        const star: Entity = { id: 'star', kind: 'star', ...spot }
+        // The star rises out of the chest, on its tile
+        const star: Entity = { id: 'star', kind: 'star', x: goal.x, y: goal.y }
         this.set({ entities: [...this.state.entities, star] })
         this.effect('✨', goal)
         sound.success()
@@ -715,12 +715,6 @@ export class Game {
   private release(id: string, patch: Partial<Entity>) {
     this.setEntity(id, { held: false, ...patch })
     this.setRobot({ holding: undefined })
-  }
-
-  private freeNeighbor(position: Position) {
-    return Object.values(MOVES)
-      .map((move) => add(position, move))
-      .find((next) => this.walkable(next))
   }
 
   private petAt(position: Position) {

@@ -20,15 +20,22 @@
     "@micdrop/server": "*",
     "@micdrop/typesafe": "*",
     "@micdrop/web": "*",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/postprocessing": "^2.19.1",
+    "camera-controls": "^2.10.1",
     "dotenv": "^17.0.0",
     "fastify": "^5.7.4",
+    "postprocessing": "^6.39.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.171.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.13",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
+    "@types/three": "^0.171.0",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.27",

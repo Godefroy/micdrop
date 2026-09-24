@@ -1,5 +1,5 @@
 /**
- * The garden: a grid seen from above, the things in it, and the quests.
+ * The garden: a grid of tiles, the things in it, and the quests.
  */
 
 export const WIDTH = 16
@@ -10,16 +10,16 @@ export const HEIGHT = 10
  * walked through.
  */
 export const TERRAIN = [
-  'HHHH......~~~~..',
-  'HHHH......~~~~..',
-  'HHHH=.....~~~...',
-  '....=...........',
-  '....==========..',
-  '........=.......',
-  '........=.......',
-  '........=.......',
-  '........=.......',
-  '................',
+  'HHH.......~~~...',
+  'HHH......~~~~~..',
+  'HHH......~~~~~..',
+  '.=........~~~...',
+  '.==.......=.....',
+  '..====..===.....',
+  '.....====.......',
+  '.......=........',
+  '.......=........',
+  '.......=........',
 ]
 
 export type Tile = '.' | '=' | '~' | 'H'
@@ -57,23 +57,6 @@ export interface Entity {
   on?: boolean
 }
 
-export const EMOJI: Record<Kind, string> = {
-  flower: '🌻',
-  bucket: '🪣',
-  ball: '⚽',
-  cat: '🐈',
-  dog: '🐕',
-  apple_tree: '🌳',
-  apple: '🍎',
-  banana: '🍌',
-  tree: '🌲',
-  wood: '🪵',
-  fish: '🐟',
-  lamp: '💡',
-  chest: '🧰',
-  star: '⭐',
-}
-
 export const PETS: Kind[] = ['cat', 'dog']
 export const PICKABLE: Kind[] = [
   'bucket',
@@ -93,19 +76,19 @@ export const LIKES: Partial<Record<Kind, Kind[]>> = {
 
 export function initialEntities(): Entity[] {
   return [
-    { id: 'flower', kind: 'flower', x: 7, y: 5 },
-    { id: 'bucket', kind: 'bucket', x: 9, y: 3 },
-    { id: 'ball', kind: 'ball', x: 13, y: 7 },
+    { id: 'flower', kind: 'flower', x: 5, y: 2 },
+    { id: 'bucket', kind: 'bucket', x: 8, y: 3 },
+    { id: 'ball', kind: 'ball', x: 12, y: 7 },
     { id: 'cat', kind: 'cat', x: 4, y: 8 },
-    { id: 'dog', kind: 'dog', x: 11, y: 6 },
-    { id: 'apple_tree', kind: 'apple_tree', x: 2, y: 7 },
-    { id: 'banana', kind: 'banana', x: 5, y: 5 },
-    { id: 'tree-1', kind: 'tree', x: 15, y: 0 },
-    { id: 'tree-2', kind: 'tree', x: 0, y: 5 },
-    { id: 'tree-3', kind: 'tree', x: 15, y: 7 },
+    { id: 'dog', kind: 'dog', x: 10, y: 7 },
+    { id: 'apple_tree', kind: 'apple_tree', x: 1, y: 7 },
+    { id: 'banana', kind: 'banana', x: 5, y: 7 },
+    { id: 'tree-1', kind: 'tree', x: 15, y: 1 },
+    { id: 'tree-2', kind: 'tree', x: 15, y: 5 },
+    { id: 'tree-3', kind: 'tree', x: 13, y: 9 },
     { id: 'tree-4', kind: 'tree', x: 0, y: 9 },
-    { id: 'lamp', kind: 'lamp', x: 5, y: 1 },
-    { id: 'chest', kind: 'chest', x: 14, y: 9 },
+    { id: 'lamp', kind: 'lamp', x: 3, y: 4 },
+    { id: 'chest', kind: 'chest', x: 15, y: 8 },
   ]
 }
 

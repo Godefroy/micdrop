@@ -1,6 +1,6 @@
 # Bip, the robot you talk to
 
-A small robot in a garden seen from above, that does what you tell it. There
+A small robot on a floating garden island, in 3D, that does what you tell it. There
 is no agent and no voice: `MicdropServer` transcribes each turn, and
 [Jev](https://docs.typesafe.ai), TypeSafe's System One model, reads it as a
 command through the `classifier` of the server, in a few hundred ms. The
@@ -15,12 +15,17 @@ Eight quests wait in the garden: water the flower, cut down a tree, catch a
 fish, open the chest, and a few more. The cat and the dog both love the ball
 and fish, and only the dog eats apples and bananas.
 
-| File                        | What it holds                                        |
-| --------------------------- | ---------------------------------------------------- |
-| `src/shared/commands.ts`    | The actions and targets, the questions asked to Jev  |
-| `src/server/call.ts`        | A speech to text and a classifier, nothing else      |
-| `src/client/game/world.ts`  | The garden, the things in it, the quests             |
-| `src/client/game/Game.ts`   | What Bip does: paths, actions, reactions             |
+| File                       | What it holds                                            |
+| -------------------------- | -------------------------------------------------------- |
+| `src/shared/commands.ts`   | The actions and targets, the questions asked to Jev      |
+| `src/server/call.ts`       | A speech to text and a classifier, nothing else          |
+| `src/client/App.tsx`       | The Micdrop side: start the call, turn Jev into commands |
+| `src/client/game/world.ts` | The garden, the things in it, the quests                 |
+| `src/client/game/Game.ts`  | What Bip does: paths, actions, reactions                 |
+| `src/client/display/`      | Only display: the 3D scene, the top bar, the sidebar     |
+
+The display draws the state of the game and nothing else. To see how Micdrop
+drives Bip, read `App.tsx`, then `Game.ts`; `display/` can be skipped.
 
 ## Run it
 
