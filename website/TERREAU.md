@@ -2,7 +2,7 @@
 
 Ce fichier centralise **tout ce qui est spécifique à ce site** pour les skills `terreau-*` :
 identité, positionnement, ICP, angles différenciants, concurrents à exclure, pages canoniques,
-ciblage des mots-clés, organisation du contenu, conventions visuelles et pages evergreen.
+ciblage des mots-clés, organisation du contenu et conventions visuelles.
 
 Les skills `terreau-*` sont génériques et partagées entre tous les sites : elles ne contiennent
 aucune valeur de ce fichier, elles le lisent.
@@ -411,27 +411,7 @@ référence en chemin relatif dans le frontmatter `image`, jamais dans `public/`
 
 ---
 
-## 10. Pages evergreen
-
-Pages à garder factuellement à jour, avec leur cadence. La skill `terreau-update-evergreen`
-respecte la fenêtre de cooldown.
-
-**Trimestriel (1 refresh max par 90 jours)** — pages définitionnelles / conceptuelles, et pages
-comparatives :
-
-- `/blog/voice-activity-detection-browser`
-- `/blog/open-source-voice-agent-frameworks`
-- `/blog/alternative-to-vapi`
-- `/blog/alternative-to-pipecat`
-- `/blog/alternative-to-livekit-agents`
-
-**Mensuel (1 refresh max par 30 jours)** — pages dont les chiffres bougent très vite :
-
-- (aucune pour l'instant)
-
----
-
-## 11. Publication et vérifications
+## 10. Publication et vérifications
 
 - **Build** : `pnpm --filter @micdrop/website build` depuis la racine du dépôt (ou `pnpm build`
   depuis `website/`). Typecheck : `pnpm --filter @micdrop/website typecheck` (`astro check`).
