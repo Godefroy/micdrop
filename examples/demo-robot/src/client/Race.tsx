@@ -7,10 +7,9 @@ import {
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { Brain, RaceResult, toCommand } from '../shared/commands'
 import { callOf, startCall } from './call'
-import type { Call } from './display/Display'
 import { Hint } from './display/Display'
+import type { Call } from './display/Display'
 import Scene from './display/scene/Scene'
-import TopBar from './display/TopBar'
 import { Game } from './game/Game'
 
 /** Two gardens where nothing moves on its own, heard left and right */
@@ -70,14 +69,8 @@ export default function Race() {
   useMicdropClassification(handleClassification)
 
   return (
-    <div className="flex h-full flex-col">
-      <TopBar
-        call={call}
-        subtitle="Same sentence, same speech to text, two brains. Left: Jev. Right: Claude."
-        onStart={startCall}
-        onStop={() => Micdrop.stop()}
-      />
-      <div className="relative grid min-h-0 flex-1 grid-cols-2 gap-px bg-white/10">
+    <div className="relative h-full">
+      <div className="absolute inset-0 grid grid-cols-2 gap-px bg-white/10">
         {BRAINS.map((brain) => (
           <Side
             key={brain}
@@ -87,18 +80,29 @@ export default function Race() {
             call={call}
           />
         ))}
-        {transcript && (
-          <p className="pointer-events-none absolute left-1/2 top-24 max-w-[70%] -translate-x-1/2 rounded-2xl bg-slate-950/70 px-5 py-2 text-center text-lg text-white shadow-xl backdrop-blur">
-            “{transcript}”
-          </p>
-        )}
-        {call.error && (
-          <p className="absolute left-1/2 top-40 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur">
-            {call.error}
-          </p>
-        )}
-        <Hint call={call} />
       </div>
+      {transcript && (
+        <p className="pointer-events-none absolute left-1/2 top-24 max-w-[70%] -translate-x-1/2 rounded-2xl bg-slate-950/70 px-5 py-2 text-center text-lg text-white shadow-xl backdrop-blur">
+          “{transcript}”
+        </p>
+      )}
+      {call.error && (
+        <p className="absolute left-1/2 top-40 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur">
+          {call.error}
+        </p>
+      )}
+      <Hint call={call} />
+      {!call.started && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0c1222]/80 backdrop-blur-sm">
+          <button
+            className="rounded-full bg-gradient-to-r from-orange-400 to-rose-500 px-10 py-4 text-xl font-bold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110 disabled:opacity-60"
+            onClick={startCall}
+            disabled={call.starting}
+          >
+            {call.starting ? 'Starting…' : 'Start'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

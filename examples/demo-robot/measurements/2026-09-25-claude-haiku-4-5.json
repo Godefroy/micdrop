@@ -1,0 +1,3497 @@
+{
+  "date": "2026-09-25T14:09:13.684Z",
+  "model": "claude-haiku-4-5",
+  "rounds": 3,
+  "results": {
+    "jev": {
+      "count": 90,
+      "failed": 0,
+      "median": 233,
+      "p95": 270,
+      "mean": 238,
+      "min": 214,
+      "max": 283
+    },
+    "claude": {
+      "count": 90,
+      "failed": 0,
+      "median": 1971,
+      "p95": 2181,
+      "mean": 1891,
+      "min": 1459,
+      "max": 2366
+    }
+  },
+  "agreement": {
+    "same": 65,
+    "of": 90
+  },
+  "disagreements": [
+    {
+      "sentence": "Go switch on the lamp, please",
+      "jev": "go lamp, [polite]",
+      "claude": "go lamp, use lamp, [polite]"
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "jev": "put dog",
+      "claude": "pick up ball, put dog"
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "jev": "fish fish, put cat",
+      "claude": "fish pond, put cat"
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "jev": "move left ×3, move left ×3",
+      "claude": "move left ×3"
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "jev": "go pond, fish fish",
+      "claude": "go pond, fish pond"
+    },
+    {
+      "sentence": "Drop it",
+      "jev": "drop, [stop], [rude]",
+      "claude": "drop"
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "jev": "pick up wood, [polite]",
+      "claude": "put house, [polite]"
+    },
+    {
+      "sentence": "Go right four times",
+      "jev": "go, go, go",
+      "claude": "move right ×4"
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "jev": "use lamp, [stop]",
+      "claude": "use lamp"
+    }
+  ],
+  "samples": [
+    {
+      "sentence": "Hello Bip!",
+      "durations": {
+        "jev": 249,
+        "claude": 1972
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "durations": {
+        "jev": 254,
+        "claude": 1538
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            },
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "durations": {
+        "jev": 259,
+        "claude": 1663
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "receiver": "flower",
+              "amount": 2
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "receiver": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "durations": {
+        "jev": 247,
+        "claude": 1668
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "ball",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "durations": {
+        "jev": 219,
+        "claude": 2077
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "durations": {
+        "jev": 279,
+        "claude": 2077
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "cat",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "durations": {
+        "jev": 281,
+        "claude": 1694
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "durations": {
+        "jev": 223,
+        "claude": 1995
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "durations": {
+        "jev": 219,
+        "claude": 1488
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "durations": {
+        "jev": 231,
+        "claude": 2164
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "durations": {
+        "jev": 233,
+        "claude": 1727
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            },
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "durations": {
+        "jev": 241,
+        "claude": 2081
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "durations": {
+        "jev": 231,
+        "claude": 1576
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "durations": {
+        "jev": 270,
+        "claude": 2022
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "durations": {
+        "jev": 233,
+        "claude": 2165
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "durations": {
+        "jev": 231,
+        "claude": 2009
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "dog",
+              "receiver": "dog",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "durations": {
+        "jev": 223,
+        "claude": 1971
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "durations": {
+        "jev": 223,
+        "claude": 1968
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 2
+            },
+            {
+              "action": "fish",
+              "target": "fish",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "durations": {
+        "jev": 237,
+        "claude": 1914
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "drop",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": true,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "drop",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "durations": {
+        "jev": 224,
+        "claude": 2021
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "durations": {
+        "jev": 217,
+        "claude": 2197
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "durations": {
+        "jev": 230,
+        "claude": 1983
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "receiver": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "durations": {
+        "jev": 233,
+        "claude": 2018
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "durations": {
+        "jev": 262,
+        "claude": 2018
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "durations": {
+        "jev": 229,
+        "claude": 2011
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "durations": {
+        "jev": 267,
+        "claude": 1527
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "durations": {
+        "jev": 258,
+        "claude": 1618
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "durations": {
+        "jev": 238,
+        "claude": 1982
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 1
+            },
+            {
+              "action": "dance",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 1
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "durations": {
+        "jev": 227,
+        "claude": 1539
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "durations": {
+        "jev": 241,
+        "claude": 2181
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Hello Bip!",
+      "durations": {
+        "jev": 238,
+        "claude": 2211
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "durations": {
+        "jev": 241,
+        "claude": 2059
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            },
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "durations": {
+        "jev": 239,
+        "claude": 2019
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "receiver": "flower",
+              "amount": 2
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "receiver": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "durations": {
+        "jev": 220,
+        "claude": 1530
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "ball",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "durations": {
+        "jev": 231,
+        "claude": 2030
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "durations": {
+        "jev": 283,
+        "claude": 2066
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "cat",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "durations": {
+        "jev": 239,
+        "claude": 1715
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "durations": {
+        "jev": 235,
+        "claude": 2007
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "durations": {
+        "jev": 252,
+        "claude": 1459
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "durations": {
+        "jev": 232,
+        "claude": 2045
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "durations": {
+        "jev": 216,
+        "claude": 1555
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            },
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "durations": {
+        "jev": 228,
+        "claude": 1909
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "durations": {
+        "jev": 247,
+        "claude": 1581
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "durations": {
+        "jev": 245,
+        "claude": 2001
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "durations": {
+        "jev": 258,
+        "claude": 1748
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "durations": {
+        "jev": 234,
+        "claude": 1937
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "dog",
+              "receiver": "dog",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "durations": {
+        "jev": 268,
+        "claude": 1984
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "durations": {
+        "jev": 231,
+        "claude": 2114
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 2
+            },
+            {
+              "action": "fish",
+              "target": "fish",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "durations": {
+        "jev": 225,
+        "claude": 1901
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "drop",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": true,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "drop",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "durations": {
+        "jev": 244,
+        "claude": 2226
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "durations": {
+        "jev": 269,
+        "claude": 2138
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "durations": {
+        "jev": 214,
+        "claude": 1960
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "durations": {
+        "jev": 222,
+        "claude": 1956
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "wood",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "durations": {
+        "jev": 214,
+        "claude": 1957
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "durations": {
+        "jev": 220,
+        "claude": 1839
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "durations": {
+        "jev": 220,
+        "claude": 1568
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "durations": {
+        "jev": 233,
+        "claude": 1533
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "durations": {
+        "jev": 253,
+        "claude": 2110
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 1
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "durations": {
+        "jev": 270,
+        "claude": 1549
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "durations": {
+        "jev": 228,
+        "claude": 1988
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Hello Bip!",
+      "durations": {
+        "jev": 237,
+        "claude": 1911
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "durations": {
+        "jev": 228,
+        "claude": 1738
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "lamp",
+              "amount": 1
+            },
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "durations": {
+        "jev": 225,
+        "claude": 1947
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "receiver": "flower",
+              "amount": 2
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "receiver": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            },
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "durations": {
+        "jev": 232,
+        "claude": 1534
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "ball",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "ball",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "durations": {
+        "jev": 270,
+        "claude": 1963
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "banana",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "durations": {
+        "jev": 270,
+        "claude": 2076
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "cat",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "durations": {
+        "jev": 272,
+        "claude": 1553
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "cut",
+              "target": "tree",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "durations": {
+        "jev": 226,
+        "claude": 1948
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": true,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "durations": {
+        "jev": 241,
+        "claude": 1496
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "durations": {
+        "jev": 230,
+        "claude": 1992
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "durations": {
+        "jev": 230,
+        "claude": 1547
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            },
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "left",
+              "amount": 3
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "durations": {
+        "jev": 237,
+        "claude": 1979
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "up",
+              "amount": 2
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "durations": {
+        "jev": 239,
+        "claude": 2366
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "chest",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "durations": {
+        "jev": 227,
+        "claude": 2062
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pet",
+              "target": "cat",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "durations": {
+        "jev": 246,
+        "claude": 1706
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "kick",
+              "target": "ball",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "durations": {
+        "jev": 225,
+        "claude": 2031
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 2
+            },
+            {
+              "action": "put",
+              "target": "dog",
+              "receiver": "dog",
+              "amount": 2
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "apple",
+              "amount": 1
+            },
+            {
+              "action": "put",
+              "target": "apple",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "durations": {
+        "jev": 236,
+        "claude": 1993
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "spin",
+              "amount": 1
+            },
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "durations": {
+        "jev": 236,
+        "claude": 1971
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 2
+            },
+            {
+              "action": "fish",
+              "target": "fish",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "pond",
+              "amount": 1
+            },
+            {
+              "action": "fish",
+              "target": "pond",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "durations": {
+        "jev": 221,
+        "claude": 1995
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "drop",
+              "direction": "down",
+              "amount": 1
+            }
+          ],
+          "stop": true,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "drop",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "durations": {
+        "jev": 262,
+        "claude": 2040
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "durations": {
+        "jev": 262,
+        "claude": 2034
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "go",
+              "target": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "durations": {
+        "jev": 229,
+        "claude": 2058
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "water",
+              "target": "flower",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": true,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "durations": {
+        "jev": 217,
+        "claude": 2075
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "wood",
+              "receiver": "house",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": true,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "durations": {
+        "jev": 223,
+        "claude": 2018
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "wave",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "durations": {
+        "jev": 236,
+        "claude": 2096
+      },
+      "commands": {
+        "jev": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "durations": {
+        "jev": 220,
+        "claude": 1559
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            },
+            {
+              "action": "go",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "move",
+              "direction": "right",
+              "amount": 4
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "durations": {
+        "jev": 229,
+        "claude": 1505
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "pick_up",
+              "target": "bucket",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "durations": {
+        "jev": 235,
+        "claude": 1959
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 1
+            },
+            {
+              "action": "dance",
+              "receiver": "dog",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "put",
+              "target": "fish",
+              "receiver": "dog",
+              "amount": 1
+            },
+            {
+              "action": "dance",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "durations": {
+        "jev": 234,
+        "claude": 1531
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "use",
+              "target": "lamp",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": false
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "durations": {
+        "jev": 221,
+        "claude": 1964
+      },
+      "commands": {
+        "jev": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        },
+        "claude": {
+          "steps": [
+            {
+              "action": "jump",
+              "amount": 1
+            }
+          ],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": true,
+          "hello": false
+        }
+      }
+    }
+  ]
+}

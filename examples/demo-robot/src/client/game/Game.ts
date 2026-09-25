@@ -47,6 +47,9 @@ export interface GameState {
 type Place = 'pond' | 'house'
 type Position = { x: number; y: number }
 
+/** The moods Bip shows to the user, turning to it to be seen */
+const EMOTIONS: Mood[] = ['happy', 'sad', 'confused']
+
 const STEP_MS = 170
 const MAX_PATH = 80
 
@@ -173,7 +176,7 @@ export class Game {
       this.setRobot({ trick: undefined })
     } else if (command.polite) {
       this.effect('❤️')
-      this.setRobot({ mood: 'happy' })
+      this.setRobot({ mood: 'happy', facing: 'down' })
     }
 
     if (command.hello && !command.steps.some((s) => s.action === 'wave')) {
@@ -544,7 +547,8 @@ export class Game {
 
   private async trick(trick: Trick | string, pause: Pause) {
     const name = trick as Trick
-    this.setRobot({ trick: name, mood: 'happy' })
+    // A trick is played for the user: Bip turns to face it
+    this.setRobot({ trick: name, mood: 'happy', facing: 'down' })
     if (name === 'wave') {
       this.say('Hello! Beep boop! 👋', 'happy')
       this.progress('hello')
@@ -764,7 +768,12 @@ export class Game {
   // Feedback
 
   private say(text: string, mood: Mood = 'neutral') {
-    this.setRobot({ bubble: text, mood })
+    // An emotion is for the user: Bip turns to show it
+    this.setRobot(
+      EMOTIONS.includes(mood)
+        ? { bubble: text, mood, facing: 'down' }
+        : { bubble: text, mood }
+    )
     this.sound.talk(
       mood === 'happy' ? 'happy' : mood === 'sad' ? 'sad' : 'neutral'
     )
