@@ -180,6 +180,9 @@ importers:
 
   examples/demo-robot:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.116.0
+        version: 0.116.0(zod@4.3.6)
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0

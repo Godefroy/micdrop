@@ -2,6 +2,7 @@ import { describeStep } from '../../shared/commands'
 import type { Heard } from '../App'
 import type { GameState } from '../game/Game'
 import { Quest, QUESTS } from '../game/world'
+import { BRAIN_NAME } from '../mode'
 
 const SUGGESTIONS = [
   'Hello Bip!',
@@ -14,7 +15,7 @@ const SUGGESTIONS = [
   'Stop!',
 ]
 
-/** The quests, what Jev heard last, and a few things to say */
+/** The quests, what the model heard last, and a few things to say */
 export default function Sidebar({
   state,
   heard,
@@ -67,7 +68,7 @@ export default function Sidebar({
       </section>
 
       <section className="rounded-2xl bg-white/[0.04] p-4">
-        <h2 className="mb-2 font-semibold">What Jev heard</h2>
+        <h2 className="mb-2 font-semibold">What {BRAIN_NAME} heard</h2>
         {heard ? (
           <>
             <p className="text-sm italic text-slate-200">
@@ -100,8 +101,8 @@ export default function Sidebar({
           </>
         ) : (
           <p className="text-sm text-slate-400">
-            Jev reads every sentence as up to three steps: an action, a target,
-            a direction, a number of steps.
+            {BRAIN_NAME} reads every sentence as up to three steps: an action, a
+            target, a direction, a number of steps.
           </p>
         )}
       </section>

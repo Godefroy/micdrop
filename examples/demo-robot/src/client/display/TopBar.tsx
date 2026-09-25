@@ -1,12 +1,20 @@
+import { BRAIN } from '../mode'
 import type { Call } from './Display'
+
+const SUBTITLE =
+  BRAIN === 'claude'
+    ? 'Speech to text, then Claude reads each sentence as a command. No voice: Bip answers in beeps.'
+    : 'Speech to text, then Jev from TypeSafe reads each sentence as a command in a few hundred ms. No LLM, no voice: Bip answers in beeps.'
 
 /** The name of the demo, how it works, and the button to start the call */
 export default function TopBar({
   call,
+  subtitle = SUBTITLE,
   onStart,
   onStop,
 }: {
   call: Call
+  subtitle?: string
   onStart: () => void
   onStop: () => void
 }) {
@@ -19,10 +27,7 @@ export default function TopBar({
         <h1 className="text-lg font-bold leading-tight">
           Bip, the robot you talk to
         </h1>
-        <p className="truncate text-sm text-slate-400">
-          Speech to text, then Jev from TypeSafe reads each sentence as a
-          command in a few hundred ms. No LLM, no voice: Bip answers in beeps.
-        </p>
+        <p className="truncate text-sm text-slate-400">{subtitle}</p>
       </div>
       {call.started ? (
         <button

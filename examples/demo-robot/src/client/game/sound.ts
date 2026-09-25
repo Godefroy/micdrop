@@ -5,6 +5,7 @@ import { audioContext } from '@micdrop/web'
  * context the call already opened.
  */
 function tone(
+  output: AudioNode,
   frequency: number,
   start: number,
   duration: number,
@@ -17,21 +18,40 @@ function tone(
   oscillator.frequency.setValueAtTime(frequency, start)
   gain.gain.setValueAtTime(volume, start)
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-  oscillator.connect(gain).connect(audioContext.destination)
+  oscillator.connect(gain).connect(output)
   oscillator.start(start)
   oscillator.stop(start + duration)
 }
 
-function play(notes: Array<[number, number]>, type?: OscillatorType) {
-  if (audioContext.state !== 'running') return
-  let time = audioContext.currentTime
-  for (const [frequency, duration] of notes) {
-    tone(frequency, time, duration, type)
-    time += duration * 0.9
+/**
+ * The sounds of one robot, placed left or right: with two robots side by
+ * side, each is heard on its own side
+ * @param pan - From -1, left, to 1, right
+ */
+export function createSound(pan = 0) {
+  let output: AudioNode | undefined
+  const play = (notes: Array<[number, number]>, type?: OscillatorType) => {
+    if (audioContext.state !== 'running') return
+    if (!output) {
+      const panner = audioContext.createStereoPanner()
+      panner.pan.value = pan
+      panner.connect(audioContext.destination)
+      output = panner
+    }
+    let time = audioContext.currentTime
+    for (const [frequency, duration] of notes) {
+      tone(output, frequency, time, duration, type)
+      time += duration * 0.9
+    }
   }
+  return sounds(play)
 }
 
-export const sound = {
+export type Sound = ReturnType<typeof createSound>
+
+type Play = (notes: Array<[number, number]>, type?: OscillatorType) => void
+
+const sounds = (play: Play) => ({
   step: () => play([[220, 0.04]], 'triangle'),
   /** A random beep-boop, a few notes long, when Bip says something */
   talk: (mood: 'happy' | 'sad' | 'neutral' = 'neutral') => {
@@ -104,4 +124,4 @@ export const sound = {
       ],
       'sine'
     ),
-}
+})

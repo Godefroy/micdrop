@@ -7,8 +7,10 @@ import { HEIGHT, WIDTH } from '../../game/world'
 import { toWorld } from './grid'
 
 const ELEVATION = 0.9
+/** How much closer than the whole island the camera starts */
+const ZOOM = 2
 /** How much the camera leans towards Bip as it moves around */
-const FOLLOW = 0.2
+const FOLLOW = 0.8
 
 interface CameraProps {
   /** The tile Bip stands on */
@@ -19,10 +21,10 @@ interface CameraProps {
 }
 
 /**
- * Frames the whole island whatever the shape of the window, flying in on
- * load. It then leans softly towards Bip, moves closer for a moment when a
- * quest is done, and circles the garden once they all are. The user can turn
- * and zoom a little, never lose the island.
+ * Frames the island whatever the shape of the window, flying in on load,
+ * twice closer than the whole of it. It then follows Bip, moves closer for a
+ * moment when a quest is done, and circles the garden once they all are. The
+ * user can turn, and zoom out up to the whole island.
  */
 export default function Camera({ focus, quests, won }: CameraProps) {
   const controls = useRef<CameraControlsImpl>(null)
@@ -61,10 +63,12 @@ export default function Camera({ focus, quests, won }: CameraProps) {
     camera.updateProjectionMatrix()
     framing.current = frame(camera)
     const { distance } = framing.current
-    c.minDistance = distance * 0.5
+    c.minDistance = distance * 0.3
     c.maxDistance = distance * 1.15
     const target = aim(FOLLOW)
-    const position = target.clone().addScaledVector(direction(0), distance)
+    const position = target
+      .clone()
+      .addScaledVector(direction(0), distance / ZOOM)
 
     if (!flewIn.current) {
       // Start far away and turned, then glide into place
@@ -97,11 +101,11 @@ export default function Camera({ focus, quests, won }: CameraProps) {
     if (!done || !framing.current) return
     const c = controls.current!
     const { distance } = framing.current
-    c.moveTo(...aim(0.6).toArray(), true)
-    c.dollyTo(distance * 0.72, true)
+    c.moveTo(...aim(1).toArray(), true)
+    c.dollyTo((distance / ZOOM) * 0.72, true)
     const timer = setTimeout(() => {
       c.moveTo(...aim(FOLLOW).toArray(), true)
-      c.dollyTo(distance, true)
+      c.dollyTo(distance / ZOOM, true)
     }, 2400)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps

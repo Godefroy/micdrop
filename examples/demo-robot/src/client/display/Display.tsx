@@ -1,5 +1,6 @@
 import type { Heard } from '../App'
 import type { GameState } from '../game/Game'
+import type { Look } from '../mode'
 import Scene from './scene/Scene'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
@@ -17,6 +18,7 @@ interface DisplayProps {
   state: GameState
   call: Call
   heard?: Heard
+  look: Look
   onStart: () => void
   onStop: () => void
 }
@@ -26,6 +28,7 @@ export default function Display({
   state,
   call,
   heard,
+  look,
   onStart,
   onStop,
 }: DisplayProps) {
@@ -36,6 +39,7 @@ export default function Display({
         <main className="relative min-h-[60vh] flex-1 lg:min-h-0">
           <Scene
             state={state}
+            look={look}
             asleep={!call.started}
             listening={call.listening}
           />
@@ -53,7 +57,7 @@ export default function Display({
 }
 
 /** A line at the bottom of the garden, saying what Bip is waiting for */
-function Hint({ call }: { call: Call }) {
+export function Hint({ call }: { call: Call }) {
   const text = !call.started
     ? 'Bip is asleep. Wake it up, then talk to it in English.'
     : call.listening

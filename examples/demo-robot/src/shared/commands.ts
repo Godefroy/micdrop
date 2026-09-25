@@ -49,6 +49,9 @@ export type Action = keyof typeof ACTIONS
 export type Target = keyof typeof TARGETS
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
+/** The model reading each turn: Jev, or Claude to race it */
+export type Brain = 'jev' | 'claude'
+
 const DIRECTIONS = {
   up: 'Up, north, forward',
   down: 'Down, south, backward',
@@ -157,8 +160,14 @@ export type JevResult = SystemOneResult<Record<string, any>> & {
   answers: Record<string, NoulResponse | ChoiceResponse>
 }
 
-/** Reads the answers of Jev as a command for Bip */
-export function toCommand(result: JevResult): Command {
+/** An answer in race mode: which brain gave it, and the model behind it */
+export type RaceResult = Pick<JevResult, 'answers'> & {
+  brain: Brain
+  model: string
+}
+
+/** Reads the answers of Jev, or of Claude in their shape, as a command for Bip */
+export function toCommand(result: Pick<JevResult, 'answers'>): Command {
   const answers = result.answers
   const noul = (key: string) =>
     ((answers[key] as NoulResponse | undefined)?.noul ?? 0) > 0.5

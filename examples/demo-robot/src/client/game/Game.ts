@@ -1,5 +1,5 @@
 import { Command, Direction, Step, Target } from '../../shared/commands'
-import { sound } from './sound'
+import { createSound } from './sound'
 import {
   Entity,
   initialEntities,
@@ -70,11 +70,26 @@ const CARRIABLE: Target[] = [
 /** Thrown by a pause once a stop cancelled what was playing */
 class Stopped extends Error {}
 
+export interface GameOptions {
+  /** The cat and the dog walk around on their own, true by default */
+  wander?: boolean
+  /** Where the sounds of this garden come from, from -1 left to 1 right */
+  pan?: number
+}
+
 /**
  * The garden and everything Bip does in it. Commands from Jev queue up and
  * play one after the other, step by step, and a stop cancels them at once.
  */
 export class Game {
+  private sound
+  private wander
+
+  constructor(options: GameOptions = {}) {
+    this.sound = createSound(options.pan)
+    this.wander = options.wander ?? true
+  }
+
   private state: GameState = {
     robot: { x: 8, y: 5, facing: 'down', mood: 'neutral' },
     entities: initialEntities(),
@@ -104,7 +119,9 @@ export class Game {
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
-    if (!this.petTimer) this.petTimer = setInterval(this.wanderPets, 3000)
+    if (this.wander && !this.petTimer) {
+      this.petTimer = setInterval(this.wanderPets, 3000)
+    }
     return () => {
       this.listeners.delete(listener)
     }
@@ -181,7 +198,7 @@ export class Game {
       !command.stop
     ) {
       this.say("Beep? I didn't get that. 🤔", 'confused')
-      sound.error()
+      this.sound.error()
       await pause(800)
     }
   }
@@ -250,11 +267,11 @@ export class Game {
       const next = add(this.state.robot, MOVES[direction])
       this.setRobot({ facing: direction })
       if (!this.walkable(next)) {
-        sound.error()
+        this.sound.error()
         return this.say('Bonk! Something is in the way. 🤕', 'confused')
       }
       this.setRobot(next)
-      sound.step()
+      this.sound.step()
       await pause(STEP_MS * 1.5)
     }
   }
@@ -284,11 +301,11 @@ export class Game {
       }
       this.set({ entities: [...this.state.entities, apple] })
       this.setRobot({ holding: apple.id })
-      sound.pick()
+      this.sound.pick()
       return this.say('Picked a shiny apple! 🍎', 'happy')
     }
     if (!PICKABLE.includes(goal.kind)) {
-      sound.error()
+      this.sound.error()
       return this.say("That's way too heavy for me! 😅", 'confused')
     }
     if (this.state.robot.holding === goal.id)
@@ -297,13 +314,13 @@ export class Game {
     if (!this.dropHeld()) return
     this.setEntity(goal.id, { held: true })
     this.setRobot({ holding: goal.id })
-    sound.pick()
+    this.sound.pick()
     this.say(`Got the ${label(goal.kind)}!`, 'happy')
   }
 
   private drop() {
     if (!this.state.robot.holding) return this.say('My hands are empty. 🤷')
-    if (this.dropHeld()) sound.drop()
+    if (this.dropHeld()) this.sound.drop()
   }
 
   private async put(target: Target | undefined, pause: Pause) {
@@ -317,7 +334,7 @@ export class Game {
       if (held.kind === 'bucket')
         return this.say('Bucket refilled! 💧', 'happy')
       this.release(held.id, { gone: true })
-      sound.splash()
+      this.sound.splash()
       this.effect('💦')
       return this.say('Splash! Gone with the fishes. 🐟')
     }
@@ -326,7 +343,7 @@ export class Game {
       if (held.kind !== 'wood') return this.drop()
       this.release(held.id, { gone: true })
       this.effect('🔥')
-      sound.success()
+      this.sound.success()
       return this.say('A cozy fire in the chimney! 🔥', 'happy')
     }
     if (goal.kind === 'flower' && held.kind === 'bucket') {
@@ -338,12 +355,12 @@ export class Game {
     switch (goal.kind) {
       case 'chest':
         this.release(held.id, { gone: true })
-        sound.drop()
+        this.sound.drop()
         return this.say('Safely stored in the chest. 🔒')
 
       default:
         this.dropHeld(goal)
-        sound.drop()
+        this.sound.drop()
     }
   }
 
@@ -386,12 +403,12 @@ export class Game {
     }
     if (!(await this.walkTo(goal.id, pause))) return
     if (goal.on) return this.say('This one is already fresh! 🌸')
-    sound.splash()
+    this.sound.splash()
     this.effect('💧', goal)
     await pause(500)
     this.setEntity(goal.id, { on: true })
     this.effect('🌟', goal)
-    sound.success()
+    this.sound.success()
     this.progress('flower')
     this.say('Look how happy it is! 🌸', 'happy')
   }
@@ -405,7 +422,7 @@ export class Game {
       case 'lamp': {
         const on = !goal.on
         this.setEntity(goal.id, { on })
-        sound.pick()
+        this.sound.pick()
         if (on) this.progress('lamp')
         return this.say(on ? 'Let there be light! 💡' : 'Lights out. 🌙')
       }
@@ -416,7 +433,7 @@ export class Game {
         const star: Entity = { id: 'star', kind: 'star', x: goal.x, y: goal.y }
         this.set({ entities: [...this.state.entities, star] })
         this.effect('✨', goal)
-        sound.success()
+        this.sound.success()
         this.progress('chest')
         return this.say('A golden star! ⭐', 'happy')
       }
@@ -452,13 +469,13 @@ export class Game {
     if (!(await this.walkTo(tree.id, pause))) return
     this.setRobot({ trick: 'chop' })
     for (let i = 0; i < 3; i++) {
-      sound.chop()
+      this.sound.chop()
       this.effect('🪓', tree)
       await pause(350)
     }
     this.setRobot({ trick: undefined })
     this.setEntity(tree.id, { kind: 'wood' })
-    sound.success()
+    this.sound.success()
     this.progress('tree')
     this.say('Timber! 🌲 Some wood for later.', 'happy')
   }
@@ -478,7 +495,7 @@ export class Game {
     }
     this.set({ entities: [...this.state.entities, fish] })
     this.setRobot({ holding: fish.id })
-    sound.splash()
+    this.sound.splash()
     this.effect('💦')
     this.say('Got one! 🐟', 'happy')
   }
@@ -502,7 +519,7 @@ export class Game {
         y: Math.sign(ball.y - robot.y),
       }
     }
-    sound.kick()
+    this.sound.kick()
     this.say('Goooal! ⚽', 'happy')
     for (let i = 0; i < 5; i++) {
       const next = add(this.find('ball')!, direction)
@@ -578,13 +595,13 @@ export class Game {
       }
       const next = this.nextStep(isGoal)
       if (!next) {
-        sound.error()
+        this.sound.error()
         this.say("I can't get there! 😵", 'confused')
         return false
       }
       this.face(next)
       this.setRobot(next)
-      sound.step()
+      this.sound.step()
       await pause(STEP_MS)
     }
     return false
@@ -737,8 +754,8 @@ export class Game {
   }
 
   private petSays(pet: Entity, text: string, emoji?: string) {
-    if (pet.kind === 'cat') sound.meow()
-    else sound.woof()
+    if (pet.kind === 'cat') this.sound.meow()
+    else this.sound.woof()
     this.effect(emoji ?? '💬', pet, text)
     this.busyPets.add(pet.id)
     setTimeout(() => this.busyPets.delete(pet.id), 4000)
@@ -748,7 +765,9 @@ export class Game {
 
   private say(text: string, mood: Mood = 'neutral') {
     this.setRobot({ bubble: text, mood })
-    sound.talk(mood === 'happy' ? 'happy' : mood === 'sad' ? 'sad' : 'neutral')
+    this.sound.talk(
+      mood === 'happy' ? 'happy' : mood === 'sad' ? 'sad' : 'neutral'
+    )
     clearTimeout(this.bubbleTimer)
     this.bubbleTimer = setTimeout(
       () => this.setRobot({ bubble: undefined }),
@@ -757,7 +776,7 @@ export class Game {
   }
 
   private confused(text: string) {
-    sound.error()
+    this.sound.error()
     this.say(text, 'confused')
   }
 
@@ -788,7 +807,7 @@ export class Game {
     if (won && !this.state.won) {
       this.set({ won: true })
       setTimeout(() => {
-        sound.success()
+        this.sound.success()
         this.say("All quests done! You're a robot whisperer! 🏆", 'happy')
         this.setRobot({ trick: 'dance' })
         setTimeout(() => this.setRobot({ trick: undefined }), 2500)

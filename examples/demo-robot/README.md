@@ -19,6 +19,7 @@ and fish, and only the dog eats apples and bananas.
 | -------------------------- | -------------------------------------------------------- |
 | `src/shared/commands.ts`   | The actions and targets, the questions asked to Jev      |
 | `src/server/call.ts`       | A speech to text and a classifier, nothing else          |
+| `src/server/brains.ts`     | Jev by default, Claude for the hidden modes              |
 | `src/client/App.tsx`       | The Micdrop side: start the call, turn Jev into commands |
 | `src/client/game/world.ts` | The garden, the things in it, the quests                 |
 | `src/client/game/Game.ts`  | What Bip does: paths, actions, reactions                 |
@@ -37,3 +38,28 @@ pnpm dev:robot # from the root of the repository
 
 Open http://localhost:8094, wake Bip up, and talk to it. Jev understands
 English best, so Bip does too.
+
+## Race Jev against Claude
+
+A few options hide in the URL. They need `ANTHROPIC_API_KEY` in `.env`, and
+`CLAUDE_MODEL` picks the model, `claude-haiku-4-5` by default.
+
+| URL                           | What it shows                                                          |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `/?race`                      | Two robots side by side, one on Jev, one on Claude, a clock under each |
+| `/?brain=claude`              | Bip on Claude instead of Jev                                           |
+| `/?look=jev`, `/?look=claude` | Bip dressed as the robot of Jev or of Claude                           |
+
+In the race, each sentence goes to both models at the same moment, with the
+same questions, and each answer plays on its own robot as soon as it lands.
+The clocks run in the browser, from the transcript to the command.
+
+To time both models on the same 30 sentences, without the microphone:
+
+```bash
+pnpm measure                              # 3 rounds
+ROUNDS=5 CLAUDE_MODEL=claude-sonnet-5 pnpm measure
+```
+
+It prints the median, the p95 and the sentences where the two models read a
+different command, and saves everything in `measurements/`.

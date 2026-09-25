@@ -14,6 +14,7 @@ import { ToneMappingMode } from 'postprocessing'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Color, InstancedMesh, Object3D } from 'three'
 import type { GameState } from '../../game/Game'
+import type { Look } from '../../mode'
 import { HEIGHT, WIDTH } from '../../game/world'
 import Bip from './Bip'
 import Camera from './Camera'
@@ -25,12 +26,25 @@ import Things from './Things'
 
 interface SceneProps {
   state: GameState
+  look: Look
+  /**
+   * Two scenes side by side keep a steady quality: no soft shadows, which
+   * patch the shaders of three.js for the whole page, and no drop in quality
+   * on a slow machine, which resizes the canvas and flashes it
+   */
+  steady?: boolean
   asleep: boolean
   listening: boolean
 }
 
 /** The garden in 3D, drawn from the state of the game and nothing else */
-export default function Scene({ state, asleep, listening }: SceneProps) {
+export default function Scene({
+  state,
+  look,
+  steady = false,
+  asleep,
+  listening,
+}: SceneProps) {
   const held = state.entities.find((e) => e.id === state.robot.holding)
   // A machine that cannot keep up drops to one pixel per point, without the
   // costliest effects
@@ -43,8 +57,8 @@ export default function Scene({ state, asleep, listening }: SceneProps) {
       camera={{ fov: 30, near: 0.5, far: 400 }}
       gl={{ antialias: false }}
     >
-      <PerformanceMonitor onDecline={() => setLow(true)} />
-      <SoftShadows size={16} samples={low ? 6 : 12} focus={0.5} />
+      {!steady && <PerformanceMonitor onDecline={() => setLow(true)} />}
+      {!steady && <SoftShadows size={16} samples={low ? 6 : 12} focus={0.5} />}
       <Lights />
       <Camera
         focus={state.robot}
@@ -58,6 +72,7 @@ export default function Scene({ state, asleep, listening }: SceneProps) {
       <Things entities={state.entities} effects={state.effects} />
       <Bip
         robot={state.robot}
+        look={look}
         held={held}
         asleep={asleep}
         listening={listening}

@@ -1,4 +1,4 @@
-import { Html, RoundedBox } from '@react-three/drei'
+import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -8,16 +8,32 @@ import {
   MathUtils,
   Mesh,
   MeshStandardMaterial,
+  NearestFilter,
   SRGBColorSpace,
 } from 'three'
 import type { Mood, Robot } from '../../game/Game'
 import type { Entity } from '../../game/world'
+import type { Look } from '../../mode'
 import { dampAngle, FACING, toWorld } from './grid'
 import Model from './models/Model'
 import { MOOD_LIGHT, PALETTE } from './palette'
+import {
+  BipBody,
+  CLAUDE_ORANGE,
+  CLAWD,
+  CLAWD_FACE,
+  ClawdBody,
+  drawClawdFace,
+  JEV_DARK,
+  JEV_MAGENTA,
+  JEV_TEAL,
+  JevBody,
+} from './Robots'
 
 interface BipProps {
   robot: Robot
+  /** Bip, or dressed as the brain that drives it in the race */
+  look?: Look
   held?: Entity
   /** No call yet: Bip dozes */
   asleep: boolean
@@ -25,11 +41,24 @@ interface BipProps {
   listening: boolean
 }
 
+/** The colors of the arms of each robot */
+const LOOKS = {
+  bip: { arm: PALETTE.robot, hand: PALETTE.robotAccent },
+  jev: { arm: JEV_DARK, hand: JEV_MAGENTA },
+  claude: { arm: CLAUDE_ORANGE, hand: CLAUDE_ORANGE },
+}
+
 /**
  * Bip hovers from tile to tile. Its face shows its mood, its arms carry what
  * it holds, and its tricks are played from the moment they start.
  */
-export default function Bip({ robot, held, asleep, listening }: BipProps) {
+export default function Bip({
+  robot,
+  look = 'bip',
+  held,
+  asleep,
+  listening,
+}: BipProps) {
   const root = useRef<Group>(null)
   const body = useRef<Group>(null)
   const leftArm = useRef<Group>(null)
@@ -40,7 +69,8 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
   const trickStart = useRef(0)
   const startTrick = useRef(true)
   const mood: Mood = asleep ? 'sleepy' : robot.mood
-  const face = useFace(mood)
+  const face = useFace(mood, look)
+  const colors = LOOKS[look]
   const light = useMemo(() => new Color(), [])
 
   useLayoutEffect(() => {
@@ -72,7 +102,13 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
 
     // Hover, and play the trick on the body
     const b = body.current!
-    const hover = asleep ? 0.02 : 0.06 + Math.sin(now * 2.4) * 0.03
+    // Clawd walks on its legs, with a small bob as it goes
+    const hover =
+      look === 'claude'
+        ? Math.abs(Math.sin(now * 14)) * Math.min(speed, 0.1) * 0.4
+        : asleep
+          ? 0.02
+          : 0.06 + Math.sin(now * 2.4) * 0.03
     b.position.y =
       hover +
       (trick === 'jump' || trick === 'wave'
@@ -90,8 +126,9 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
     // Arms: carry, wave, chop, dance
     const la = leftArm.current!
     const ra = rightArm.current!
-    let left = { x: 0, z: 0.15 }
-    let right = { x: 0, z: -0.15 }
+    const rest = look === 'claude' ? 0 : 0.15
+    let left = { x: 0, z: rest }
+    let right = { x: 0, z: -rest }
     if (held) {
       left = { x: -1.25, z: 0.1 }
       right = { x: -1.25, z: -0.1 }
@@ -114,8 +151,10 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
     const pulse = listening
       ? 4 + Math.sin(now * 14) * 2
       : 1.6 + Math.sin(now * 3) * 0.6
-    antenna.current!.emissive.copy(light)
-    antenna.current!.emissiveIntensity = asleep ? 0.4 : pulse
+    if (antenna.current) {
+      antenna.current.emissive.copy(light)
+      antenna.current.emissiveIntensity = asleep ? 0.4 : pulse
+    }
 
     const r = ring.current!
     const ringScale = listening ? 1 + ((now * 1.4) % 1) * 0.8 : 1
@@ -140,132 +179,47 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
       </mesh>
 
       <group ref={body}>
-        {/* Thruster */}
-        <mesh position={[0, 0.16, 0]}>
-          <cylinderGeometry args={[0.14, 0.08, 0.1, 20]} />
-          <meshStandardMaterial
-            color={PALETTE.robotDark}
-            metalness={0.6}
-            roughness={0.3}
-          />
-        </mesh>
-        <mesh position={[0, 0.1, 0]} rotation-x={Math.PI / 2}>
-          <torusGeometry args={[0.08, 0.02, 8, 24]} />
-          <meshStandardMaterial
-            color="#9ff3ff"
-            emissive="#56e1ff"
-            emissiveIntensity={asleep ? 0.3 : 3}
-            toneMapped={false}
-          />
-        </mesh>
-
-        {/* Body */}
-        <mesh position={[0, 0.42, 0]} castShadow>
-          <capsuleGeometry args={[0.23, 0.12, 8, 20]} />
-          <meshStandardMaterial
-            color={PALETTE.robot}
-            roughness={0.35}
-            metalness={0.1}
-          />
-        </mesh>
-        <mesh position={[0, 0.43, 0.215]} rotation-x={Math.PI / 2}>
-          <cylinderGeometry args={[0.1, 0.1, 0.03, 24]} />
-          <meshStandardMaterial color={PALETTE.robotAccent} roughness={0.4} />
-        </mesh>
-        <mesh position={[0, 0.43, 0.235]}>
-          <sphereGeometry args={[0.035, 12, 10]} />
-          <meshStandardMaterial
-            color="#ffffff"
-            emissive={MOOD_LIGHT[mood]}
-            emissiveIntensity={asleep ? 0.3 : 2.5}
-            toneMapped={false}
-          />
-        </mesh>
-
-        {/* Head */}
-        <mesh position={[0, 0.66, 0]}>
-          <cylinderGeometry args={[0.07, 0.09, 0.08, 16]} />
-          <meshStandardMaterial color={PALETTE.robotDark} metalness={0.5} />
-        </mesh>
-        <group position={[0, 0.88, 0]}>
-          <RoundedBox
-            args={[0.6, 0.44, 0.46]}
-            radius={0.12}
-            smoothness={4}
-            castShadow
-          >
-            <meshStandardMaterial
-              color={PALETTE.robot}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </RoundedBox>
-          <RoundedBox
-            args={[0.5, 0.33, 0.04]}
-            radius={0.06}
-            position={[0, 0, 0.215]}
-          >
-            <meshStandardMaterial
-              color={PALETTE.robotDark}
-              roughness={0.15}
-              metalness={0.4}
-            />
-          </RoundedBox>
-          <mesh position={[0, 0, 0.237]}>
-            <planeGeometry args={[0.44, 0.275]} />
-            <meshBasicMaterial
-              map={face}
-              color={[1.7, 1.7, 1.7]}
-              toneMapped={false}
-              transparent
-            />
-          </mesh>
-          {[-1, 1].map((side) => (
-            <mesh
-              key={side}
-              position={[side * 0.31, 0, 0]}
-              rotation-z={Math.PI / 2}
-            >
-              <cylinderGeometry args={[0.1, 0.1, 0.06, 20]} />
-              <meshStandardMaterial
-                color={PALETTE.robotAccent}
-                roughness={0.4}
-              />
-            </mesh>
-          ))}
-          {/* Antenna */}
-          <mesh position={[0, 0.3, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.16, 6]} />
-            <meshStandardMaterial color={PALETTE.robotDark} />
-          </mesh>
-          <mesh position={[0, 0.4, 0]}>
-            <sphereGeometry args={[0.05, 16, 12]} />
-            <meshStandardMaterial
-              ref={antenna}
-              color="#ffffff"
-              toneMapped={false}
-            />
-          </mesh>
-        </group>
+        {look === 'claude' ? (
+          <ClawdBody face={face} />
+        ) : look === 'jev' ? (
+          <JevBody face={face} antenna={antenna} asleep={asleep} />
+        ) : (
+          <BipBody face={face} antenna={antenna} asleep={asleep} mood={mood} />
+        )}
 
         {/* Arms, pivoting at the shoulders */}
         {[-1, 1].map((side) => (
           <group
             key={side}
             ref={side < 0 ? rightArm : leftArm}
-            position={[side * 0.28, 0.5, 0]}
+            position={
+              look === 'claude'
+                ? [side * CLAWD.shoulder, CLAWD.arm, 0]
+                : [side * 0.28, 0.5, 0]
+            }
           >
-            <mesh position={[side * 0.02, -0.12, 0]} castShadow>
-              <capsuleGeometry args={[0.05, 0.14, 4, 10]} />
-              <meshStandardMaterial color={PALETTE.robot} roughness={0.35} />
-            </mesh>
-            <mesh position={[side * 0.02, -0.25, 0]}>
-              <sphereGeometry args={[0.065, 14, 10]} />
-              <meshStandardMaterial
-                color={PALETTE.robotAccent}
-                roughness={0.4}
-              />
-            </mesh>
+            {look === 'claude' ? (
+              // Clawd's arms: a block sticking out of each side
+              <mesh position={[side * CLAWD.unit, 0, 0]} castShadow>
+                <boxGeometry args={CLAWD.armSize} />
+                <meshStandardMaterial color={colors.arm} roughness={0.85} />
+              </mesh>
+            ) : (
+              <>
+                <mesh position={[side * 0.02, -0.12, 0]} castShadow>
+                  <capsuleGeometry args={[0.05, 0.14, 4, 10]} />
+                  <meshStandardMaterial color={colors.arm} roughness={0.35} />
+                </mesh>
+                <mesh position={[side * 0.02, -0.25, 0]}>
+                  {look === 'jev' ? (
+                    <boxGeometry args={[0.1, 0.1, 0.1]} />
+                  ) : (
+                    <sphereGeometry args={[0.065, 14, 10]} />
+                  )}
+                  <meshStandardMaterial color={colors.hand} roughness={0.4} />
+                </mesh>
+              </>
+            )}
             {side < 0 && (
               <group ref={axe} position={[-0.02, -0.28, 0]} visible={false}>
                 <mesh position={[0, -0.1, 0]}>
@@ -323,16 +277,47 @@ export default function Bip({ robot, held, asleep, listening }: BipProps) {
   )
 }
 
-/** Bip's face, drawn on a canvas: eyes that blink and glance, a mouth */
-function useFace(mood: Mood) {
+/** How Bip and Jev draw their face, Clawd has its own */
+const FACES: Record<
+  Exclude<Look, 'claude'>,
+  {
+    color: (mood: Mood) => string
+    glow: boolean
+    eyes: 'pill' | 'pixel'
+    mouth: boolean
+  }
+> = {
+  bip: {
+    color: (mood) => MOOD_LIGHT[mood],
+    glow: true,
+    eyes: 'pill',
+    mouth: true,
+  },
+  jev: {
+    color: (mood) => (mood === 'neutral' ? JEV_TEAL : MOOD_LIGHT[mood]),
+    glow: true,
+    eyes: 'pixel',
+    mouth: true,
+  },
+}
+
+/** The face, drawn on a canvas: eyes that blink and glance, a mouth */
+function useFace(mood: Mood, look: Look) {
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas')
-    canvas.width = 256
-    canvas.height = 160
+    const clawd = look === 'claude'
+    canvas.width = clawd ? CLAWD_FACE.width : 256
+    canvas.height = clawd ? CLAWD_FACE.height : 160
     const t = new CanvasTexture(canvas)
     t.colorSpace = SRGBColorSpace
+    // Clawd's pixels stay sharp
+    if (clawd) {
+      t.magFilter = NearestFilter
+      t.minFilter = NearestFilter
+      t.generateMipmaps = false
+    }
     return t
-  }, [])
+  }, [look])
   const [blink, setBlink] = useState(false)
   const [glance, setGlance] = useState(0)
 
@@ -350,9 +335,11 @@ function useFace(mood: Mood) {
   }, [])
 
   useEffect(() => {
-    drawFace(texture.image as HTMLCanvasElement, mood, blink, glance)
+    const canvas = texture.image as HTMLCanvasElement
+    if (look === 'claude') drawClawdFace(canvas, mood, blink, glance)
+    else drawFace(canvas, mood, blink, glance, FACES[look])
     texture.needsUpdate = true
-  }, [texture, mood, blink, glance])
+  }, [texture, mood, blink, glance, look])
 
   return texture
 }
@@ -361,24 +348,30 @@ function drawFace(
   canvas: HTMLCanvasElement,
   mood: Mood,
   blink: boolean,
-  glance: number
+  glance: number,
+  style: (typeof FACES)['bip']
 ) {
   const ctx = canvas.getContext('2d')!
-  const color = MOOD_LIGHT[mood]
+  const color = style.color(mood)
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = color
   ctx.strokeStyle = color
-  ctx.lineCap = 'round'
+  ctx.lineCap = style.eyes === 'pixel' ? 'square' : 'round'
   ctx.lineWidth = 11
   ctx.shadowColor = color
-  ctx.shadowBlur = 18
+  ctx.shadowBlur = style.glow ? 18 : 0
 
   const eyes = [84 + glance, 172 + glance]
   const eyeY = 66
 
+  // An eye: a pill for Bip, a square pixel for Jev
   const pill = (x: number, y: number, w: number, h: number) => {
+    if (style.eyes === 'pixel') {
+      h = Math.min(h, w + 4)
+    }
+    const radius = style.eyes === 'pixel' ? 3 : Math.min(w, h) / 2
     ctx.beginPath()
-    ctx.roundRect(x - w / 2, y - h / 2, w, h, w / 2)
+    ctx.roundRect(x - w / 2, y - h / 2, w, h, radius)
     ctx.fill()
   }
   const arc = (x: number, y: number, r: number, from: number, to: number) => {
@@ -416,6 +409,7 @@ function drawFace(
     eyes.forEach((x) => pill(x, eyeY, 32, 50))
   }
 
+  if (!style.mouth) return
   ctx.lineWidth = 9
   if (mood === 'happy') {
     arc(128, 100, 30, 0.12, 0.88)

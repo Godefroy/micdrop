@@ -11,9 +11,11 @@
     "build": "tsc -p tsconfig.server.json && vite build",
     "start": "node dist/server/index.js",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "measure": "ts-node-dev --transpile-only -P tsconfig.server.json src/server/measure.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
     "@fastify/websocket": "^11.2.0",
     "@micdrop/openai": "*",
     "@micdrop/react": "*",
