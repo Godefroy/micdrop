@@ -8,7 +8,7 @@ order: 12
 
 Micdrop uses a VAD (Voice Activity Detection) to detect speech and silence and send chunks of audio to the server only when speech is detected.
 
-For the concepts behind these options, how volume detection compares with a Silero model and how to tune latency against false positives, read [Voice Activity Detection in the Browser](/blog/voice-activity-detection-browser).
+Each VAD setting trades latency against false positives. [Silero VAD, WebRTC VAD and a volume threshold](/blog/voice-activity-detection-browser) misfire on background noise at very different rates, so the detector you pick limits how far you can tune for speed.
 
 Whichever VAD decides, Micdrop keeps the last moments of audio in reserve, so the syllable spoken before it reacted is sent along with the rest of the sentence.
 
