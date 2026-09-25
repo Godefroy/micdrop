@@ -112,12 +112,15 @@ Each voice ships as `<name>.onnx` and `<name>.onnx.json`. The JSON file gives
 the sample rate the model generates at, and Micdrop reads that file at startup
 so the audio reaches the client at the rate it expects.
 
-## One process per sentence
+## One process for the whole call
 
-The exit of each Piper process marks the end of a sentence's audio, and killing
-it makes an interruption immediate. Loading a voice costs on the order of a
-hundred milliseconds, paid while the client is still playing the previous
-sentence.
+Loading a voice takes about a second, and synthesizing a sentence adds almost
+nothing on top of it. `PiperTTS` starts the process as soon as you construct it
+and keeps it alive across sentences, so the voice loads once per call.
+
+An interruption kills the process, which cuts the audio at once, and starts its
+replacement right away. The new process loads its voice while the user is still
+speaking and is ready by the time the next answer begins.
 
 <Callout type="tip">
   The whole answer is usually ready before the user has finished hearing its
@@ -127,9 +130,14 @@ sentence.
 ## Documentation
 
 Read the [guide on running Micdrop with local models](../local-models) to see
-how Piper fits with a local LLM and local speech to text.
+how Piper fits with a local LLM and local speech to text. The
+[comparison of local TTS engines in Node](/blog/local-tts-node-kokoro-vs-piper)
+measures Piper against Kokoro and Pocket TTS on latency, memory and languages.
 
 ## License
 
-Piper is released under the MIT license, and each voice under its own
-permissive license.
+The Piper engine is released under GPL-3.0 since it embedded espeak-ng. The
+archived `rhasspy/piper` repository was MIT. Micdrop drives the binary as a
+separate process, and redistributing that binary yourself brings the GPL terms
+with it. Each voice carries its own license, some of them restrictive, so read
+the model card of the voice you pick.
