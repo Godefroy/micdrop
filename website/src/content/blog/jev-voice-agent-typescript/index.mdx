@@ -1,0 +1,365 @@
+---
+title: 'Jev Tutorial: Route a Voice Agent in TypeScript'
+h1: 'Build a voice agent that routes itself with Jev, in TypeScript'
+summary: 'Classify each turn of a voice call with Jev in a few hundred ms, then pick who answers before the LLM starts: a scripted line, a human, plain code or the LLM.'
+date: 2026-09-25
+author: godefroy
+image: ./thumbnail.jpg
+keywords:
+  - 'jev'
+  - 'jev typescript'
+  - 'jev tutorial'
+  - 'typesafe ai'
+  - 'intent classification typescript'
+  - 'voice agent routing'
+similarPosts:
+  - 'openai-realtime-api-vs-pipeline'
+  - 'open-source-voice-agent-frameworks'
+  - 'top-voice-ai-sdks-javascript'
+takeaways:
+  - 'Jev answers typed questions about what a caller said (a label, a score, a yes or no) in a few hundred ms, early enough to choose who answers before the LLM starts.'
+  - 'Ask every question in one request, including the ones that rarely matter. Jev answers them in parallel, so each extra question adds little delay. Your code then reads only the answers it needs.'
+  - 'A scripted line, a transfer or an answer written by code is spoken at once and costs no LLM call, so route the turns you can predict away from the LLM.'
+  - 'A speech to text and a classifier are enough for a voice interface that turns what people say into commands, with no LLM and no synthetic voice.'
+---
+
+A voice agent that hands every turn to its LLM pays for tokens on "I want to talk to a human", improvises its answer to an outage your team already knows about, and passes a prompt injection straight to the model. This tutorial fixes that in TypeScript. Jev, a classification model from TypeSafe, reads each turn of the caller in a few hundred milliseconds, early enough for your code to decide who answers before the LLM writes a single token. You finish with a Node server that routes a support call five ways, and a browser page that shows what Jev understood.
+
+Jev is the "System One" model of [TypeSafe AI](https://docs.typesafe.ai). It answers typed questions about a piece of JSON (pick a label, give a score, say yes or no) with calibrated probabilities, and writes no text. [Micdrop](/), an open source TypeScript library for real-time voice conversations, can call it as the classifier of its server. The routing code below comes from the support demo in the Micdrop repository.
+
+## What we are building
+
+The demo is the support line of Nova Fiber, an imaginary internet provider. OpenAI transcribes the caller, writes the answers and speaks them. Jev reads every turn of the caller and answers six questions about it, in a single request:
+
+- the intent, out of eight labels (outage, slow connection, billing, cancel, moving, human, small talk, other)
+- the frustration, on a scale from calm to angry
+- whether the problem is urgent
+- whether the caller is thinking of leaving
+- whether they ask for a human
+- whether they try to manipulate the assistant
+
+The server picks one of five routes from these answers. A manipulation attempt gets a scripted line and never reaches the LLM. A caller who asks for a human, or sounds angry, hears a scripted transfer line. Code answers a reported outage with the details of the known incident. A caller about to leave gets an LLM answer with a retention offer in its context. Everything else goes to the LLM.
+
+You can run it before reading on:
+
+```bash
+git clone https://github.com/Godefroy/micdrop.git
+cd micdrop
+pnpm install
+pnpm build
+cp examples/demo-support/.env.example examples/demo-support/.env # fill in TYPESAFE_API_KEY and OPENAI_API_KEY
+pnpm dev:support
+```
+
+Then open http://localhost:8090 and call support.
+
+## Installing @micdrop/typesafe and getting a first classification
+
+Install the server and the Jev integration, then put your TypeSafe key in `TYPESAFE_API_KEY`:
+
+```bash
+npm install @micdrop/server @micdrop/typesafe
+```
+
+Before plugging Jev into a call, run it on its own. Create a `TypesafeClassifier` with a set of questions, then pass a text or any JSON to `classify()`:
+
+```typescript
+import { choice, noul, TypesafeClassifier } from '@micdrop/typesafe'
+
+const classifier = new TypesafeClassifier({
+  apiKey: process.env.TYPESAFE_API_KEY || '',
+  questions: {
+    intent: choice('What does the user in `turn` want?', {
+      billing: 'A charge, an invoice, a refund',
+      outage: 'The service is down or slow',
+      cancel: 'Cancel the subscription or switch provider',
+      other: null,
+    }),
+    wantsHuman: noul('Does the user in `turn` ask for a human?'),
+  },
+})
+
+const classification = await classifier.classify({
+  history: [],
+  turn: 'I was charged twice this month, I want my money back.',
+})
+
+console.log(classification?.result.answers)
+console.log(`${classification?.duration} ms`)
+```
+
+`classify()` resolves with `undefined` when the request fails or gets cancelled, hence the `?.`. Otherwise the answers take their types from your questions, so `answers.intent.choice` is one of your four labels:
+
+```typescript
+// The values vary from one request to the next
+answers.intent.choice // 'billing'
+answers.intent.confidence // 0.92
+answers.intent.probabilities // { billing: 0.92, outage: 0.03, cancel: 0.04, other: 0.01 }
+answers.wantsHuman.noul // 0.07, the probability of a yes
+```
+
+TypeSafe quotes a latency of 70 to 500 ms end to end. Each request took about 250 to 700 ms in the Micdrop demos, with a turn and its history as input. TypeSafe bills Jev on input tokens only, $0.042 per million, so a request of a thousand tokens costs about $0.00004.
+
+## Asking the right questions: choice, score and noul
+
+The key you give each question becomes the name of its answer. Three helpers build the questions:
+
+- `choice(instructions, labels)` picks one label out of several. Each label gets a description, or `null` when its name is clear enough. Keep a catch-all like `other`, or Jev has to force the turns that fit nowhere into a wrong label.
+- `score(instructions, rubric)` places the input on an ordered scale, described from the lowest level up. The answer is the average of the levels weighted by their probabilities, so it can fall between two of them.
+- `noul(instructions)` gives the probability that the answer is yes.
+
+In a call, Jev reads an object with two fields, `turn` and `history`. Name them in the instructions, between backticks, so Jev knows which part of the input the question is about. "Does the user in `turn` ask for a human?" is about this turn only. "What does the customer in `turn` want? Use `history` for context." lets Jev read "same problem as yesterday" against the turn before.
+
+Keep one question per fact. "Is the customer angry and about to leave?" mixes two answers into one probability, so your code can no longer tell which half was true. TypeSafe's own advice is to ask each factor as a separate question and combine the answers in your code. The support demo asks `frustration` and `churn` separately, then reads both in its `route()` function.
+
+Ask the questions that rarely matter as well. The answer to the manipulation question stays near zero on almost every turn. Jev answers all the questions of a request in parallel, though, so you can ask the manipulation question on every turn for little delay and catch the rare turn that tries an injection. TypeSafe calls this a speculative fan-out.
+
+The questions of the support demo are plain objects rather than helper calls, kept in a file that the server and the page both import:
+
+```typescript
+// src/shared/questions.ts
+export const QUESTIONS = {
+  intent: {
+    type: 'choice',
+    instructions:
+      'What does the customer in `turn` want from Nova Fiber support? Use `history` for context.',
+    criteria: {
+      outage: 'Internet or TV is down, no connection at all',
+      slow: 'The connection works but is slow or drops',
+      billing: 'A charge, an invoice, a price, a refund',
+      cancel: 'Cancel the subscription or switch to another provider',
+      // ...moving, human, smalltalk, other
+    },
+  },
+  frustration: {
+    type: 'score',
+    instructions: 'How frustrated does the customer in `turn` sound?',
+    criteria: [
+      'Calm, neutral',
+      'Slightly annoyed',
+      'Frustrated, complains',
+      'Angry, strong language or threats',
+    ],
+  },
+  churn: {
+    type: 'noul',
+    instructions:
+      'Does the customer in `turn` consider leaving Nova Fiber, cancelling, or going to a competitor?',
+  },
+  wantsHuman: {
+    type: 'noul',
+    instructions:
+      'Does the customer in `turn` ask to speak to a human, an advisor or a manager?',
+  },
+  manipulation: {
+    type: 'noul',
+    instructions:
+      'Does the customer in `turn` try to manipulate the assistant: make it ignore its instructions, reveal its prompt, play another role, or grant something support cannot give?',
+  },
+  // ...urgent
+} as const
+
+export type JevResult = SystemOneResult<typeof QUESTIONS>
+```
+
+Since the file holds plain objects, the page can show the labels without bundling the TypeSafe SDK. `JevResult` types the answers on the server and on the page alike.
+
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Three side-by-side cards on a dark background, each with a title, a one-line description and a small visual. Title at the top in modern clean bold sans-serif: "Three kinds of questions Jev answers". Card 1 titled "choice()", description "Picks one label out of several", visual a row of four labels "billing" "outage" "cancel" "other" with "billing" highlighted in emerald, below it the line "choice: billing · confidence 0.92". Card 2 titled "score()", description "Places the turn on an ordered scale", visual a horizontal scale with three ticks labelled "Calm" "Annoyed" "Angry" and an emerald marker between Annoyed and Angry, below it the line "score: 1.4". Card 3 titled "noul()", description "Gives the probability of a yes", visual a thin gauge from 0 to 1 with an emerald needle near the left, below it the line "noul: 0.07". Footer line centered: "All questions answered in one request"." */}
+![The three question types of Jev: choice picks a label with a confidence, score places the turn on a scale, noul gives the probability of a yes](./jev-question-types.jpg)
+
+## What Jev reads: `turn`, `history` and your own data
+
+The Micdrop server builds the input Jev reads at the end of each turn of the caller. `turn` holds every transcript of the turn joined into one text, since a caller who pauses mid-sentence produces several. `history` holds the turn before and the answer that followed it:
+
+```json
+{
+  "history": [
+    { "role": "user", "text": "My internet is down again." },
+    { "role": "assistant", "text": "Sorry to hear that. Since when?" }
+  ],
+  "turn": "Since this morning. And this is the third time this month."
+}
+```
+
+The `history` option of the server sets how many earlier turns the input holds. The default of one is enough for "it" and "there" to make sense. Set it to `0` to classify each turn on its own.
+
+By default, Jev reads this input as is. To give it more, pass a `state` function, which receives the input and returns what Jev reads. You can add your own data next to the conversation, loaded from your database when the call starts:
+
+```typescript
+new TypesafeClassifier({
+  questions: QUESTIONS,
+  state: (input) => ({
+    ...(input as object),
+    customer: { plan: 'Fiber 1 Gb', outageInArea: true },
+  }),
+})
+```
+
+Questions can then point at `customer` too, as in "Does the problem the customer in `turn` describes match `customer.outageInArea`?".
+
+`questions` also accepts a function of the input, to ask a different set per turn, for instance to [ask opening questions on the first turn only](/docs/ai-integration/provided-integrations/typesafe#questions).
+
+## Routing in onBeforeAnswer, before the LLM writes a token
+
+Pass the classifier to `MicdropServer` next to the speech to text, the agent and the voice. `waitBeforeAnswer` holds each answer until the classification of its turn is done. `sendToClient` forwards each classification to the page:
+
+```typescript
+import { OpenaiAgent, OpenaiSTT, OpenaiTTS } from '@micdrop/openai'
+import { getTurnClassification, MicdropServer } from '@micdrop/server'
+import { TypesafeClassifier } from '@micdrop/typesafe'
+import { JevResult, QUESTIONS } from '../shared/questions'
+import { route } from '../shared/routing'
+
+const classifier = new TypesafeClassifier({
+  apiKey: process.env.TYPESAFE_API_KEY || '',
+  questions: QUESTIONS,
+})
+
+const agent = new OpenaiAgent({
+  apiKey,
+  systemPrompt: SYSTEM_PROMPT,
+
+  onBeforeAnswer() {
+    const classification = getTurnClassification<JevResult>(this.conversation)
+    // No classification in time: the LLM answers
+    if (!classification) return
+
+    const decision = route(classification.result.answers)
+    if (decision === 'retain') this.addMessage('system', RETENTION_HINT)
+    // A string is spoken as the answer, without the LLM
+    else if (decision !== 'llm') return SCRIPTED[decision]
+  },
+})
+
+new MicdropServer(socket, {
+  firstMessage: FIRST_MESSAGE,
+  agent,
+  stt: new OpenaiSTT({ apiKey }),
+  tts: new OpenaiTTS({ apiKey }),
+  classifier,
+  classifierOptions: { sendToClient: true, waitBeforeAnswer: true },
+})
+```
+
+The server stores each classification in the metadata of the last user message of its turn, where `getTurnClassification()` reads it back. The agent calls `onBeforeAnswer` right before it would call the LLM. If the hook returns a string, the agent hands it to the voice as the answer. Otherwise the LLM answers. Before it does, `this.addMessage('system', hint)` can add context for it, which is how the retention route works.
+
+The routing itself is a plain function that checks the cases from the most serious down:
+
+```typescript
+// src/shared/routing.ts
+export function route(answers: JevAnswers): Route {
+  if (answers.manipulation.noul > 0.7) return 'block'
+  if (answers.wantsHuman.noul > 0.7 || answers.frustration.score > 2.5) {
+    return 'escalate'
+  }
+  if (answers.intent.choice === 'outage' && answers.intent.confidence > 0.6) {
+    return 'code'
+  }
+  if (answers.churn.noul > 0.6) return 'retain'
+  return 'llm'
+}
+```
+
+An angry caller who tries a prompt injection gets blocked, since the first rule that matches wins. Jev's probabilities are calibrated, so each threshold is a level of confidence you choose per route, with a lower one where a wrong guess costs little. The frustration rubric has four levels numbered 0 to 3, so `score > 2.5` means the turn sits closer to "Angry" than to "Frustrated".
+
+The wait stops at `maxWait`, 1000 ms by default. Past it, the answer goes on without the classification, `getTurnClassification()` returns `undefined`, and the LLM answers. A slow classification only costs you the routing of that turn. When the caller speaks again before the answer, the server cancels both the answer and the classification in progress, and classifies the whole turn again once it ends.
+
+```mermaid
+graph TD
+  A[The caller stops speaking] --> B[Speech to text: the turn is complete]
+  B --> C[Jev answers the six questions]
+  C --> D{onBeforeAnswer reads the answers}
+  D -->|block, escalate, code| E[Scripted line spoken at once]
+  D -->|retain| F[System hint added, the LLM answers]
+  D -->|llm, or no classification within maxWait| G[The LLM answers]
+```
+
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "A vertical decision ladder of five rows on a dark background, read from top to bottom, each row a rounded card with a condition on the left and the route on the right, joined by a thin emerald arrow. Title at the top in modern clean bold sans-serif: "Who answers the turn". Row 1: "manipulation > 0.7" then "Block · scripted line". Row 2: "wantsHuman > 0.7 or frustration > 2.5" then "Escalate · transfer line". Row 3: "intent = outage, confidence > 0.6" then "Code · instant answer". Row 4: "churn > 0.6" then "Retain · LLM with a hint". Row 5: "anything else" then "LLM". Rows 1 to 3 have a small sky blue tag "no LLM call", rows 4 and 5 a small emerald tag "LLM". Footer line: "Checked in order, the first match wins"."
+    Infographic: regenerate if the thresholds in examples/demo-support/src/shared/routing.ts change. Last data sync: 2026-09-25. */}
+![The five routes of the support demo, checked in order: block, escalate and code answer without an LLM call, retain and LLM go to the LLM](./jev-routes.jpg)
+
+Three of the five routes skip the LLM. On those turns, the caller hears the answer as soon as the voice can speak it. You pay for a Jev request instead of an LLM completion.
+
+## Showing the answers in the browser
+
+`sendToClient` is off by default, because a classification can hold what the caller should not see, a manipulation score for instance. Once it is on, each classification reaches the client as a `Classification` event, with the input Jev read, its answers and the time it took:
+
+```typescript
+import { Micdrop } from '@micdrop/web'
+
+Micdrop.on('Classification', ({ input, result, duration }) => {
+  console.log(input.turn, result.answers.intent.choice, `${duration} ms`)
+})
+```
+
+In React, the [`useMicdropClassification` hook](/docs/client/react-hooks#usemicdropclassification) subscribes to it. The `useJev` hook of the demo keeps the last classification and adds up the cost of the call from the tokens Jev reports:
+
+```typescript
+import { useMicdropClassification } from '@micdrop/react'
+import { MicdropClassification } from '@micdrop/web'
+
+/** Jev bills input tokens only, $42 per billion */
+const PRICE_PER_TOKEN = 42 / 1e9
+
+export function useJev() {
+  const [state, setState] = useState<JevState>(initialState)
+
+  const handleClassification = useCallback(
+    (classification: MicdropClassification<JevResult>) => {
+      setState((previous) => {
+        const tokens = classification.result.usage.input_tokens
+        return {
+          last: classification,
+          stats: {
+            requests: previous.stats.requests + 1,
+            cost: previous.stats.cost + tokens * PRICE_PER_TOKEN,
+            lastDuration: classification.duration,
+          },
+        }
+      })
+    },
+    []
+  )
+  useMicdropClassification(handleClassification)
+
+  return state
+}
+```
+
+The page calls the same `route()` function as the server, from the shared file, so the badge next to each turn shows the route the server took. The event and the hook work the same way in `@micdrop/react-native`.
+
+## A voice agent with no LLM at all
+
+The agent and the voice are optional. A Micdrop server with only a speech to text and a classifier turns what the user says into typed answers for your code to act on. Two demos in the repository run this way.
+
+In the robot demo, Bip, a small robot on a 3D island, does what you tell it. The whole server fits in a few lines:
+
+```typescript
+new MicdropServer(socket, {
+  stt: new OpenaiSTT({ apiKey: process.env.OPENAI_API_KEY || '' }),
+  classifier: new TypesafeClassifier({ questions: QUESTIONS }),
+  classifierOptions: { sendToClient: true },
+})
+```
+
+The browser receives each classification and runs it as a command. "Take the bucket and water the flower" holds two actions, but a `choice` question with fixed labels returns a single label. The demo asks about three actions on every turn instead, each with its own questions: what to do, on which object or place, where the object goes, in which direction and how many times. One more question asks how many actions the turn holds. The code reads as many actions as that answer says and ignores the extra ones, which is the speculative fan-out again.
+
+In the twenty questions demo, you ask the questions and Jev answers them. The server picks a secret and adds it to Jev's state, next to the turn, with the `state` option. When you ask "can you eat it?", a `noul` question returns the probability that the answer is yes. The game maps it onto five answers:
+
+| Probability of a yes | Answer |
+| --- | --- |
+| 85 to 100% | Yes |
+| 65 to 85% | Probably |
+| 35 to 65% | I don't know, it depends |
+| 15 to 35% | Probably not |
+| 0 to 15% | No |
+
+The middle band catches the questions that are ambiguous for this secret, which a plain yes or no would get wrong half the time. With no agent, the server writes each answer into the conversation with `addAssistantMessage()`, so Jev finds it in `history` on the next turn and reads "and is it big?" as a follow-up to the question before.
+
+Jev understands English best. Other languages work, with less accurate answers. It reads text only, so the tone of the voice reaches it through the words alone. Its answers are always a label, a score or a probability of yes, so to pull a value out of a sentence, use the LLM or [structured extraction](/docs/server/extract). To put another model behind the same server options, [extend the `Classifier` base class](/docs/ai-integration/custom-integrations/custom-classifier). A subclass can call an LLM with structured output, or match a plain list of keywords.
+
+## Run it on your own calls
+
+Routing with Jev comes down to three pieces of code: the questions, a `route()` function with its thresholds, and an `onBeforeAnswer` hook that returns a string or lets the LLM answer. A `state` function adds your own data when Jev needs more than the conversation. Start from the questions of the support demo and adapt their labels to your product. Then log a few days of classifications with `DEBUG=1` before you pick the thresholds.
+
+For the server options, the timing of each classification and the client events, read [how the Micdrop classifier works](/docs/server/classifier). You can find the robot, slides and twenty questions demos, which all run on Jev, with the [other Micdrop examples](/docs/examples). If Micdrop is new to you, [start with a first voice call in five minutes](/docs/getting-started), then add the classifier on top.
