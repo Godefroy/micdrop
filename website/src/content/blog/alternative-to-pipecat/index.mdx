@@ -205,7 +205,8 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 |--------|---------|---------|
 | **Server language** | Python | TypeScript / Node.js |
 | **Client library** | JS SDK (transport only) | Full browser SDK (VAD, mic, speaker, state) |
-| **Architecture** | Frame pipeline | Simple 3-component (Agent + STT + TTS) |
+| **Architecture** | Frame pipeline | Agent, STT and TTS, or one [realtime model](/docs/server/realtime) |
+| **Speech-to-speech models** | OpenAI Realtime, Gemini Live and others, as LLM services | OpenAI Realtime and Gemini Live, through the `realtime` option |
 | **Transport** | WebRTC (production) / WebSocket (dev) | WebSocket (production-ready) |
 | **Infrastructure** | Daily.co, another provider or your own WebRTC | Standard Node.js hosting |
 | **Managed option** | Pipecat Cloud, from $0.01 per agent minute | None |

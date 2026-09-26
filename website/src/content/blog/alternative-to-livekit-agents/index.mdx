@@ -113,6 +113,7 @@ Most of a migration is deleting the transport layer.
 | `AgentSession` | `new MicdropServer(socket, options)` |
 | `defineAgent` with `instructions` | `agent` option with `systemPrompt` |
 | STT, LLM and TTS plugins | `stt`, `agent` and `tts` options |
+| Realtime model plugin passed as `llm` | [`realtime` option](/docs/server/realtime) |
 | `llm.tool` with a Zod schema | `agent.addTool` with a Zod schema |
 | Turn detector plugin | `autoSemanticTurn: true` |
 | Server-side Silero VAD plugin | `vad: 'silero'` in the browser |
@@ -133,6 +134,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Deployment** | Worker process, self-hosted or LiveKit Cloud | Inside your existing Node server |
 | **Telephony (SIP/PSTN)** | Yes | No |
 | **Video and vision** | Yes | No, voice only |
+| **Speech-to-speech models** | OpenAI Realtime, Gemini Live and several others | OpenAI Realtime and Gemini Live |
 | **Turn detection** | Transformer model | LLM-based, one option |
 | **Provider fallback** | On you | Built in for agent, STT and TTS |
 | **Tool calling** | Yes, with Zod | Yes, with Zod |

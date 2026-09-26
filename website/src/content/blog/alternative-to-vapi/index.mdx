@@ -110,7 +110,7 @@ So a voice feature costs you what those three providers charge, plus the server 
 
 ### Any provider, with a backup when it fails
 
-[Provider integrations](/docs/ai-integration) ship for OpenAI, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor.
+[Provider integrations](/docs/ai-integration) ship for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor. A call can also run on one [speech-to-speech model](/docs/server/realtime), OpenAI Realtime or Gemini Live, in place of separate speech-to-text, model and text-to-speech providers. The browser code stays the same either way.
 
 Outages are handled in the same place. `FallbackTTS` takes a list of factories and walks down it when a provider stops answering:
 
@@ -197,7 +197,7 @@ Which one is cheaper depends on volume and on what you count. At low volume the 
 
 If you have not built the feature yet, build the first version on Vapi. A weekend on its free minutes tells you more about your prompt, your voice choice and how people actually talk to your product than any architecture decision will. The choice between the two only starts to matter once enough people use the feature for the per-minute fee to show up in your budget. If you already suspect you will move at that point, keep your prompt and your tool logic in your own repository rather than in Vapi's dashboard, and the move costs you an afternoon instead of a rewrite.
 
-Plenty of teams should use neither. If you have committed to one model vendor and only need a voice loop, a realtime API from that vendor is fewer moving parts than either option here. If your backend is Python and you need telephony, Pipecat and LiveKit Agents are the serious answers, and we ranked the whole field in [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks).
+Plenty of teams should use neither. If you have committed to one model vendor and only need a voice loop, a realtime API from that vendor has fewer moving parts than Vapi. When you later want the microphone, turn-taking and transcripts handled for you, Micdrop can run that same API behind its own client. If your backend is Python and you need telephony, Pipecat and LiveKit Agents are the serious answers, and we ranked the whole field in [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks).
 
 ## What adopting Micdrop involves
 
@@ -211,7 +211,7 @@ Wiring that into a real application, with your authentication, your session and 
 
 There is no import tool, so you rebuild the assistant by hand. That is less work than it sounds, because most of what you built is prompt text and business logic that carries straight across.
 
-Your system prompt moves over unchanged, into the `systemPrompt` of the agent. Micdrop integrates with many of the same speech and model vendors, so a stack on OpenAI, Mistral, ElevenLabs, Cartesia or Gladia transfers as is and the same voice ID keeps working. The tools are the real work: each Vapi function becomes a function registered on the agent with a Zod schema, and the body usually gets shorter, because it now runs where your database connection already lives instead of behind an HTTP round trip. If you built a custom LLM server, that logic collapses into the agent itself and the endpoint disappears.
+Your system prompt moves over unchanged, into the `systemPrompt` of the agent. Micdrop integrates with many of the same speech and model vendors, so a stack on OpenAI, Gemini, Mistral, ElevenLabs, Cartesia or Gladia transfers as is and the same voice ID keeps working. The tools are the real work: each Vapi function becomes a function registered on the agent with a Zod schema, and the body usually gets shorter, because it now runs where your database connection already lives instead of behind an HTTP round trip. If you built a custom LLM server, that logic collapses into the agent itself and the endpoint disappears.
 
 On the browser side, `@micdrop/client` replaces `@vapi-ai/web`, and `Micdrop.start({ url })` replaces `vapi.start(assistantId)`, pointing at your own server rather than at an assistant on the platform. Both SDKs surface the same conversational moments (call start and end, speech boundaries, transcript messages), so the UI you already built maps across with renamed handlers rather than a rewrite.
 
