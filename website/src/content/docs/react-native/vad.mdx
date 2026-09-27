@@ -44,6 +44,10 @@ The chosen microphone and output are kept there too.
 hears the difference between a voice and a noise, where the volume detection
 only hears how loud the room is, which is worth it in a car or in a street.
 
+Micdrop decides when speech starts and stops with the same algorithm on both
+platforms. That algorithm comes from [ricky0123/vad](https://github.com/ricky0123/vad),
+the open source project that runs Silero in the browser.
+
 <Callout type="warning">
   `onnxruntime-react-native` 1.24.3 takes a patch before it links on Expo SDK
   57, otherwise the first import throws `Cannot read property 'install' of
@@ -64,8 +68,9 @@ import '@micdrop/react-native/silero'
 await Micdrop.start({ url: 'wss://example.com/call', vad: 'silero' })
 ```
 
-The model is about two megabytes, fetched once on the first call and kept for as
-long as the app runs. To ship it with the app instead:
+The model is about two megabytes. Micdrop fetches it on the first call, from the
+`@ricky0123/vad-web` npm package on jsDelivr, and keeps it for as long as the app
+runs. To ship it with the app instead:
 
 ```ts
 import { setSileroOptions } from '@micdrop/react-native/silero'

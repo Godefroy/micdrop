@@ -104,9 +104,9 @@ To use `SileroVAD` for speech detection:
 Micdrop.start({ vad: 'silero' })
 ```
 
-It runs the [Silero](https://github.com/snakers4/silero-vad) model, on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) in a browser and on the native runtime on a phone. The model is about two megabytes, fetched once on the first call.
+It runs the [Silero](https://github.com/snakers4/silero-vad) model on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) in a browser and on the native runtime on a phone. The model gives each window of sound a probability of speech. Micdrop decides from those probabilities when speech starts and stops, with the same algorithm as [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that runs Silero in the browser. The model is about two megabytes. Micdrop fetches it once, on the first call, from the `@ricky0123/vad-web` npm package on jsDelivr.
 
-It is more accurate than `VolumeVAD` and works better with low voice, since it hears the difference between a voice and a noise rather than measuring how loud the room is.
+`SileroVAD` is more accurate than `VolumeVAD` and works better with low voice, since it hears the difference between a voice and a noise rather than measuring how loud the room is.
 
 The ONNX runtime weighs more than the rest of Micdrop put together, so it only
 enters your bundle if you ask for it:
@@ -115,7 +115,7 @@ enters your bundle if you ask for it:
 import '@micdrop/web/silero'
 ```
 
-To serve the model from your own domain rather than from a CDN:
+To serve the model from your own domain rather than from jsDelivr:
 
 ```typescript
 import { setSileroOptions } from '@micdrop/web/silero'
