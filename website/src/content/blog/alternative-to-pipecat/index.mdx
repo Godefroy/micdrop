@@ -3,7 +3,7 @@ title: 'Pipecat Alternative for TypeScript and Node.js Web Apps'
 h1: 'Micdrop: A TypeScript Alternative to Pipecat for Voice AI in Web Apps'
 summary: 'Micdrop runs the whole voice AI pipeline in TypeScript, browser and Node.js side, with provider fallback and semantic turn detection built in.'
 date: 2026-03-03
-update: 2026-08-17
+update: 2026-09-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -243,6 +243,26 @@ Micdrop is built for one use case, and a common one: **adding real-time voice AI
 - You bring your own provider keys, so the provider bills stay your only per-minute cost, under an MIT licence.
 - Native integrations with [Mistral](/docs/ai-integration/provided-integrations/mistral) (LLM and STT), [Gladia](/docs/ai-integration/provided-integrations/gladia) (STT) and [Gradium](/docs/ai-integration/provided-integrations/gradium) (STT and TTS) make a fully French stack possible.
 - React hooks, TypeScript types and a ten-line setup carry the developer experience.
+
+## Frequently asked questions
+
+<FaqList>
+  <FaqItem question="What are some alternatives to Pipecat?">
+    LiveKit Agents is the closest alternative to Pipecat: an Apache 2.0 framework in Python and Node that runs over a WebRTC media server and handles telephony and video as well. Dograh suits a team that wants a self-hosted platform with a visual workflow builder rather than a library. Micdrop adds a voice conversation to a TypeScript web app, over a WebSocket to your own Node server. Pipecat, LiveKit Agents, Dograh and Micdrop are four of the nine [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks) we compared on language, transport, telephony and licence. Vapi, Retell AI and Bland are hosted platforms billed per minute.
+  </FaqItem>
+  <FaqItem question="Is Pipecat free?">
+    Pipecat and its Smart Turn detection model are free, both under the BSD 2-Clause licence. Run the framework on your own servers and a call costs what your speech-to-text, model and text-to-speech providers charge, with nothing added by Pipecat. Daily, the company behind Pipecat, bills only for Pipecat Cloud, its managed hosting. Micdrop is free too, under the MIT licence, so you pay only [the providers you pick](/docs/ai-integration).
+  </FaqItem>
+  <FaqItem question="Is Pipecat open source?">
+    Pipecat is open source under the BSD 2-Clause licence, which allows commercial use and modification as long as you keep its copyright notice and licence text. The Python framework is public on GitHub at pipecat-ai/pipecat. Micdrop is open source too, under MIT, and written in TypeScript from the [browser client](/docs/client) to the Node server.
+  </FaqItem>
+  <FaqItem question="What is Pipecat Cloud?">
+    Pipecat Cloud is the managed hosting Daily sells for Pipecat agents, generally available since January 2026. Daily runs your agent from a Docker image in the US, Europe or India, and scales the number of running agents with demand. It costs $0.01 to $0.03 per agent minute depending on the container size, with phone calls over Daily PSTN at $0.018 a minute and one-to-one WebRTC voice included. Speech and model inference still run on your own provider keys. Micdrop runs [inside the Node.js server you already deploy](/docs/server), so the only hosting it needs is the one you pay for today.
+  </FaqItem>
+  <FaqItem question="Can I use Pipecat with TypeScript or Node.js?">
+    Pipecat supports TypeScript on the client side only. Its JavaScript and React SDKs connect a browser to the Python process that runs the pipeline, so a Node.js or Next.js team that adopts Pipecat deploys a second service, in Python, beside its app. Micdrop keeps the whole pipeline in TypeScript, so the same team can [set up a first voice call in five minutes](/docs/getting-started) inside the server it already runs.
+  </FaqItem>
+</FaqList>
 
 ## Getting started
 
