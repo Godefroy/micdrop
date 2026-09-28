@@ -153,3 +153,66 @@ describe('Pcm16AudioStream', () => {
     }
   })
 })
+
+describe('Pcm16AudioStream warming up', () => {
+  let sink: FakeAudioSink
+  let stream: Pcm16AudioStream
+  let events: string[]
+
+  beforeEach(() => {
+    mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 })
+    sink = new FakeAudioSink(48000)
+    stream = new Pcm16AudioStream(sink)
+    events = []
+    stream.on('StartPlaying', () => events.push('StartPlaying'))
+  })
+
+  afterEach(() => {
+    stream.destroy()
+    mock.timers.reset()
+  })
+
+  it('plays silence without reporting the assistant as speaking', () => {
+    stream.warmUp(2000)
+    assert.equal(sink.scheduled.length, 1)
+    assert.equal(sink.scheduled[0].samples.length, 96000, '2 s at 48 kHz')
+    assert.ok(sink.scheduled[0].samples.every((sample) => sample === 0))
+    assert.deepEqual(events, [])
+    assert.equal(stream.isPlaying, false)
+  })
+
+  it('holds an answer that arrives during the warm-up until it is over', () => {
+    stream.warmUp(2000)
+    mock.timers.tick(500)
+    stream.playAudio(speech(200), 16000)
+    stream.playAudio(speech(100), 16000)
+    assert.equal(sink.scheduled.length, 1, 'only the silence so far')
+
+    mock.timers.tick(1500)
+    assert.equal(sink.scheduled.length, 3, 'both chunks, one after the other')
+    assert.equal(sink.scheduled[2].when, sink.scheduled[1].when + 0.2)
+    assert.deepEqual(events, ['StartPlaying'])
+  })
+
+  it('plays an answer that arrives after the warm-up right away', () => {
+    stream.warmUp(2000)
+    mock.timers.tick(2500)
+    stream.playAudio(speech(200), 16000)
+    assert.equal(sink.scheduled.length, 2)
+  })
+
+  it('drops an answer held by the warm-up when the user interrupts', () => {
+    stream.warmUp(2000)
+    stream.playAudio(speech(200), 16000)
+    stream.stopAudio()
+    mock.timers.tick(2000)
+    assert.equal(sink.scheduled.length, 1, 'only the silence')
+    assert.deepEqual(events, [])
+  })
+
+  it('stops the silence once destroyed', () => {
+    stream.warmUp(2000)
+    stream.destroy()
+    assert.equal(sink.scheduled[0].stopped, true)
+  })
+})

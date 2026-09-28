@@ -25,7 +25,6 @@ const UTTERANCE_END_DELAY = 300 // ms
 // Cadence of the Volume events, used to drive a level meter while the
 // assistant speaks.
 const VOLUME_INTERVAL = 100 // ms
-
 export interface Pcm16AudioStreamEvents {
   StartPlaying: []
   StopPlaying: []
@@ -51,6 +50,10 @@ export class Pcm16AudioStream extends EventEmitter<Pcm16AudioStreamEvents> {
   private endTimer?: ReturnType<typeof setTimeout>
   private volumeTimers: ReturnType<typeof setTimeout>[] = []
   private meter = new VolumeMeter()
+  // Wall time before which no utterance starts, see warmUp()
+  private holdUntil = 0
+  private holdTimer?: ReturnType<typeof setTimeout>
+  private warmUpAudio?: ScheduledAudio
 
   constructor(private sink: AudioSink) {
     super()
@@ -69,6 +72,36 @@ export class Pcm16AudioStream extends EventEmitter<Pcm16AudioStreamEvents> {
       this.sink.sampleRate
     )
     this.handleSamples(samples)
+  }
+
+  /**
+   * Plays silence for a while, and holds the next utterance until it is over.
+   *
+   * Firefox mangles what it plays while a Bluetooth headset switches to its
+   * call profile, which the headset does as soon as its microphone opens. The
+   * first answer then comes out all at once. Silence played through that switch
+   * goes unheard.
+   * @param duration - How long to play silence, in milliseconds
+   */
+  warmUp(duration: number) {
+    this.holdUntil = Date.now() + duration
+    const samples = new Float32Array(
+      Math.round((duration / 1000) * this.sink.sampleRate)
+    )
+    this.warmUpAudio?.stop()
+    this.warmUpAudio = this.sink.schedule(
+      samples,
+      this.sink.currentTime,
+      () => (this.warmUpAudio = undefined)
+    )
+  }
+
+  /** Stops playing, for a stream no longer used */
+  destroy() {
+    this.stopAudio()
+    this.warmUpAudio?.stop()
+    this.warmUpAudio = undefined
+    this.removeAllListeners()
   }
 
   /** Drops everything queued and stops playing immediately */
@@ -119,6 +152,15 @@ export class Pcm16AudioStream extends EventEmitter<Pcm16AudioStreamEvents> {
       clearTimeout(this.quietTimer)
       this.quietTimer = undefined
     }
+    // Keep buffering through the warm-up, and start once it is over
+    const hold = this.holdUntil - Date.now()
+    if (hold > 0) {
+      this.holdTimer ??= setTimeout(() => {
+        this.holdTimer = undefined
+        this.flushPrebuffer()
+      }, hold)
+      return
+    }
     this.prebuffering = false
     const buffers = this.prebuffer
     this.prebuffer = []
@@ -134,6 +176,10 @@ export class Pcm16AudioStream extends EventEmitter<Pcm16AudioStreamEvents> {
     if (this.endTimer !== undefined) {
       clearTimeout(this.endTimer)
       this.endTimer = undefined
+    }
+    if (this.holdTimer !== undefined) {
+      clearTimeout(this.holdTimer)
+      this.holdTimer = undefined
     }
     this.prebuffering = true
     this.prebuffer = []

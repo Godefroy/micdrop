@@ -3,6 +3,12 @@ import { audioContext } from './audioContext'
 import { listDevices } from './WebMic'
 import { WebAudioSink } from './WebAudioSink'
 
+// A Bluetooth headset switches to its call profile as its microphone opens,
+// and Firefox mangles what it plays through that switch: the first answer of a
+// call comes out all at once. The speaker starts right after the microphone, so
+// it plays silence that long and holds the first answer until then.
+const FIREFOX_WARM_UP = 2000 // ms
+
 /**
  * Plays the assistant voice with the Web Audio API.
  */
@@ -32,6 +38,9 @@ export class WebSpeaker extends SpeakerDriver {
 
     this.sink = new WebAudioSink()
     this.stream = new Pcm16AudioStream(this.sink)
+    if (navigator.userAgent.includes('Firefox')) {
+      this.stream.warmUp(FIREFOX_WARM_UP)
+    }
     this.stream.on('StartPlaying', () => this.emit('StartPlaying'))
     this.stream.on('StopPlaying', () => this.emit('StopPlaying'))
     this.stream.on('Volume', (volume) => this.emit('Volume', volume))
@@ -48,8 +57,7 @@ export class WebSpeaker extends SpeakerDriver {
   }
 
   async stop(): Promise<void> {
-    this.stream?.stopAudio()
-    this.stream?.removeAllListeners()
+    this.stream?.destroy()
     this.stream = undefined
     this.sink?.output.disconnect()
     this.sink = undefined
