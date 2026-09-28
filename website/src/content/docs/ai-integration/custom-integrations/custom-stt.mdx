@@ -16,6 +16,8 @@ The `STT` class is the core abstraction for speech-to-text functionality in Micd
 
 For automatic failover between multiple STT providers, see [FallbackSTT](../fallback-strategies/stt-fallback).
 
+`MicdropServer` accepts an STT on its own, yours included, for [dictation without an agent or a voice](../../server/dictation), where each sentence reaches the client as a message.
+
 ## Overview
 
 The `STT` class is an abstract base class that extends `EventEmitter` and manages:

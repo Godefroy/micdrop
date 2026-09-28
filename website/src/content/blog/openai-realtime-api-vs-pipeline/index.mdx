@@ -107,6 +107,8 @@ Regulation leads to a pipeline too. A European deployment can run [Mistral for t
 
 Resilience is the argument teams discover last and care about most. When the three services are separate, one of them failing takes down one stage instead of the conversation. Micdrop's [FallbackAgent](/docs/ai-integration/fallback-strategies/agent-fallback) switches to a second model mid-conversation, from the same history, and `FallbackSTT` and `FallbackTTS` do the same for transcription and voice. A single session has nowhere to fall back to.
 
+A pipeline also lets you remove stages. Keep transcription alone and the server [turns speech into text without answering](/docs/server/dictation), whereas a speech to speech session is built to answer.
+
 | | Realtime API | Swappable pipeline |
 |---|---|---|
 | Providers | One | One per stage, mixable |

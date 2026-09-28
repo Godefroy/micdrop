@@ -12,6 +12,8 @@ Display and manage conversation messages between the user and AI assistant durin
 
 The conversation is available through the Micdrop state and contains all messages exchanged during the current session.
 
+When the server runs [a speech to text and nothing else](../server/dictation), each sentence the user says arrives in the conversation as a user message. A dictation page builds its text from those messages.
+
 ### Basic Usage
 
 Access conversation messages using the state:
