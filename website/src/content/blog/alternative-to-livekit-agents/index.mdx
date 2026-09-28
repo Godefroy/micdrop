@@ -3,6 +3,7 @@ title: 'LiveKit Agents Alternative: Voice AI in TypeScript'
 h1: 'Micdrop, a TypeScript alternative to LiveKit Agents'
 summary: 'Micdrop runs a voice call in TypeScript over a WebSocket to your own Node server. LiveKit Agents works in Node too, as a worker that joins a WebRTC room.'
 date: 2026-08-13
+update: 2026-09-28
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -122,6 +123,18 @@ Most of a migration is deleting the transport layer.
 
 The prompt, the tools and the provider keys carry over almost unchanged. What disappears is the room lifecycle and the worker process.
 
+## LiveKit React Native versus Micdrop for mobile voice agents
+
+Both projects run a voice agent in a React Native app, LiveKit over WebRTC and Micdrop over a WebSocket. LiveKit React Native is `@livekit/react-native`, built on LiveKit's fork of react-native-webrtc. The app joins the agent's room as a participant, the way a browser does. LiveKit publishes an Expo starter app that talks to an agent written in Python or Node.
+
+Micdrop's [React Native client](/docs/react-native) records the microphone, runs voice activity detection on the device and streams audio to the same `MicdropServer` a browser talks to. Your web app and your mobile app share one server and one agent. The call code is the browser code with a different import. Both SDKs include native audio code, so both run from an Expo development build rather than from Expo Go.
+
+The two SDKs also differ in what they send to your server. A LiveKit app publishes its microphone track for the whole call and the agent detects speech on the server, so the server receives everything the microphone picks up, silences included. Micdrop detects speech on the device and only sends audio while the user is talking, nothing between turns.
+
+On a phone, the assistant's voice comes out of the speaker and goes back into the microphone. LiveKit's SDK filters that echo out with WebRTC echo cancellation, on by default. Micdrop configures the audio session as a phone call, which turns on the phone's own echo cancellation.
+
+LiveKit holds up better on a weak network, because WebRTC sends audio over UDP. A lost packet is skipped and the sound keeps playing. A WebSocket runs over TCP, so when a packet is lost, everything after it waits until it's resent. On a weak cellular link, the user hears that as stutter and extra delay. If your users call from trains and basements, weigh that advantage against running a media server or paying for LiveKit Cloud.
+
 ## Feature comparison
 
 This comparison was checked in August 2026, and both projects keep moving fast.
@@ -139,6 +152,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Provider fallback** | On you | Built in for agent, STT and TTS |
 | **Tool calling** | Yes, with Zod | Yes, with Zod |
 | **React** | Components and hooks | `@micdrop/react` hooks |
+| **React Native** | `@livekit/react-native`, on WebRTC | `@micdrop/react-native`, on WebSocket |
 | **Observability dashboard** | Yes, on LiveKit Cloud | No |
 | **Pricing** | Free tier, then per minute | Your provider bills only |
 | **License** | Apache-2.0 | MIT |
@@ -150,7 +164,7 @@ Micdrop ships no infrastructure of its own. The media server, the phone numbers,
 
 ## How to choose
 
-Pick LiveKit Agents when voice is your product rather than a feature of it, when you need SIP and a phone number, when video or vision is part of the experience, when your backend already runs Python, or when a managed platform with observability is worth its per-minute price.
+Pick LiveKit Agents when voice is your product rather than a feature of it, when you need SIP and a phone number, when video or vision is part of the experience, when your mobile users often call over weak cellular links, when your backend already runs Python, or when a managed platform with observability is worth its per-minute price.
 
 Pick Micdrop when you are adding voice to a web application, when your stack is Node and TypeScript and you would rather keep it that way, when you want the browser side handled for you instead of assembling it on top of a WebRTC SDK, and when the only per-minute bills you want are the ones from the providers you picked.
 
