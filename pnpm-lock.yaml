@@ -345,6 +345,43 @@ importers:
         specifier: ^7.3.1
         version: 7.3.6(@types/node@22.19.13)(tsx@4.23.12)
 
+  examples/demo-storyteller:
+    dependencies:
+      '@micdrop/elevenlabs':
+        specifier: '*'
+        version: link:../../packages/elevenlabs
+      '@micdrop/openai':
+        specifier: '*'
+        version: link:../../packages/openai
+      '@micdrop/server':
+        specifier: '*'
+        version: link:../../packages/server
+      '@micdrop/web':
+        specifier: '*'
+        version: link:../../packages/web
+      ws:
+        specifier: ^8.19.0
+        version: 8.19.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.13
+        version: 22.19.13
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.12
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.1
+        version: 7.3.6(@types/node@22.19.13)(tsx@4.23.12)
+
   examples/demo-support:
     dependencies:
       '@fastify/websocket':
@@ -1089,7 +1126,7 @@ importers:
   packages/web:
     dependencies:
       '@micdrop/client':
-        specifier: ^3.3.1
+        specifier: ^3.4.0
         version: link:../client
       onnxruntime-web:
         specifier: ^1.23.2

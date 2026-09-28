@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Micdrop storyteller, voiced by Eleven v4</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 36rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        background: #16110d;
+        color: #f3e7d8;
+      }
+      h1 {
+        margin-bottom: 0.25rem;
+      }
+      .intro {
+        color: #b9a58f;
+        margin-top: 0;
+      }
+      .controls {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button,
+      select {
+        font: inherit;
+        padding: 0.6rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #5c4331;
+        background: #2a1f17;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+        background: #c2571a;
+        border-color: #c2571a;
+        color: #fff;
+      }
+      #status {
+        color: #b9a58f;
+      }
+      #conversation {
+        padding: 0;
+        list-style: none;
+      }
+      #conversation li {
+        margin-bottom: 0.75rem;
+        line-height: 1.6;
+      }
+      #conversation li.user {
+        color: #b9a58f;
+      }
+      #conversation li.user::before {
+        content: 'You: ';
+      }
+      #conversation li.assistant::before {
+        content: 'Ember: ';
+        font-weight: 600;
+      }
+      .tag {
+        display: inline-block;
+        margin: 0 0.2rem;
+        padding: 0 0.45rem;
+        border-radius: 999px;
+        background: #4a2a14;
+        color: #ffb877;
+        font-size: 0.85em;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔥 Ember, the storyteller</h1>
+    <p class="intro">
+      Ember tells a story by voice. The LLM behind Ember directs its voice with
+      audio tags, which Eleven v4 performs.
+    </p>
+    <div class="controls">
+      <button id="call">Sit by the fire</button>
+      <select id="model" aria-label="Voice model"></select>
+    </div>
+    <p id="status">The fire is burning</p>
+    <ul id="conversation"></ul>
+    <script type="module" src="/src/client.ts"></script>
+  </body>
+</html>

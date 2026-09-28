@@ -1,0 +1,29 @@
+{
+  "name": "@micdrop/demo-storyteller",
+  "version": "1.0.0",
+  "author": "Godefroy de Compreignac",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"pnpm dev:server\" \"pnpm dev:client\"",
+    "dev:server": "tsx watch --env-file=.env src/server.ts",
+    "dev:client": "vite --port 8098 --strictPort",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@micdrop/elevenlabs": "*",
+    "@micdrop/openai": "*",
+    "@micdrop/server": "*",
+    "@micdrop/web": "*",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.13",
+    "@types/ws": "^8.18.1",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
+}

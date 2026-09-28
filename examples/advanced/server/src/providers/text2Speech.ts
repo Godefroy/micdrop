@@ -70,17 +70,20 @@ const text2speech: ProviderRegistry<TTS> = {
       ]),
   },
 
-  // The voice comes from the environment, so the select offers the models,
-  // from the quickest to answer to the one speaking the most languages
+  // The voice comes from the environment, so the select offers the models.
+  // Eleven v4 Turbo starts speaking soonest. Both v4 models perform the audio
+  // tags an LLM writes, such as [laughs], which the older ones read out.
   elevenlabs: {
     label: 'ElevenLabs',
     requiredEnv: ['ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID'],
     models: [
+      { id: 'eleven_v4_turbo', label: 'eleven_v4_turbo' },
+      { id: 'eleven_v4', label: 'eleven_v4' },
       { id: 'eleven_flash_v2_5', label: 'eleven_flash_v2_5' },
       { id: 'eleven_turbo_v2_5', label: 'eleven_turbo_v2_5' },
       { id: 'eleven_multilingual_v2', label: 'eleven_multilingual_v2' },
     ],
-    defaultModel: 'eleven_flash_v2_5',
+    defaultModel: 'eleven_v4_turbo',
     create: ({ model }) =>
       new ElevenLabsTTS({
         apiKey: process.env.ELEVENLABS_API_KEY || '',
