@@ -1,6 +1,7 @@
 import { TTS } from '@micdrop/server'
 import { Readable } from 'stream'
 import WebSocket from 'ws'
+import { closeSocket } from './closeSocket'
 import {
   DEFAULT_MODEL_NAME,
   DEFAULT_OUTPUT_FORMAT,
@@ -30,9 +31,11 @@ export class GradiumTTS extends TTS {
   private generation = 0
   private isProcessing = false
   private reconnectTimeout?: NodeJS.Timeout
+  private connectionTimeout?: NodeJS.Timeout
   private textSent = ''
   private textBuffer = ''
   private retryCount = 0
+  private destroyed = false
 
   constructor(private readonly options: GradiumTTSOptions) {
     super()
@@ -41,6 +44,7 @@ export class GradiumTTS extends TTS {
   }
 
   private connect() {
+    if (this.destroyed) return
     this.initPromise = this.initWS().catch((error) => {
       console.error('[GradiumTTS] Connection error:', error)
       this.reconnect()
@@ -154,6 +158,13 @@ export class GradiumTTS extends TTS {
       this.reconnectTimeout = undefined
     }
 
+    // A socket still connecting keeps its connection timeout, which would
+    // otherwise fire on the connection opened below.
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout)
+      this.connectionTimeout = undefined
+    }
+
     // Closing the socket cancels the in-flight synthesis server-side. Detach the
     // old socket first so its close handler can't run and strand the next
     // request (a speak() racing right after cancel would otherwise flip
@@ -162,28 +173,24 @@ export class GradiumTTS extends TTS {
     // new initPromise and lands its setup and text on the new socket.
     const socket = this.socket
     this.socket = undefined
-    if (socket) {
-      socket.removeAllListeners()
-      if (
-        socket.readyState === WebSocket.OPEN ||
-        socket.readyState === WebSocket.CONNECTING
-      ) {
-        socket.close(1000)
-      }
-    }
+    if (socket) closeSocket(socket)
     this.connect()
   }
 
   destroy() {
+    // Set first, so the cancel() that super.destroy() runs opens no new
+    // connection
+    this.destroyed = true
     super.destroy()
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = undefined
     }
-    this.socket?.removeAllListeners()
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket?.close(1000)
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout)
+      this.connectionTimeout = undefined
     }
+    if (this.socket) closeSocket(this.socket)
     this.socket = undefined
     this.isProcessing = false
   }
@@ -204,11 +211,11 @@ export class GradiumTTS extends TTS {
 
       const timeout = setTimeout(() => {
         this.log('Connection timeout')
-        socket.removeAllListeners()
-        socket.close()
+        closeSocket(socket)
         this.socket = undefined
         reject(new Error('WebSocket connection timeout'))
       }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
+      this.connectionTimeout = timeout
 
       socket.addEventListener('open', () => {
         clearTimeout(timeout)
@@ -250,6 +257,8 @@ export class GradiumTTS extends TTS {
               // resolved initPromise on socket open, so this is purely
               // informational. Logged so it shows up in debug traces.
               this.log('Server ready', message.request_id ?? '')
+              // The server accepted the voice, so the connection is usable
+              this.retryCount = 0
               break
 
             case 'audio':
@@ -315,6 +324,7 @@ export class GradiumTTS extends TTS {
   }
 
   private reconnect() {
+    if (this.destroyed) return
     this.retryCount++
     if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
       this.log('Max retries reached, giving up')
@@ -326,10 +336,10 @@ export class GradiumTTS extends TTS {
       this.log('Reconnecting...')
       this.reconnectTimeout = setTimeout(() => {
         this.reconnectTimeout = undefined
+        // The count starts over once the server accepts the session, since it
+        // opens the connection before checking the setup
         this.initWS()
           .then(() => {
-            this.retryCount = 0
-
             // Resend text if reconnecting during processing. Setup must come
             // first because the new socket has no session yet, and it carries
             // the same client_req_id as the in-flight request.

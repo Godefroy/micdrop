@@ -43,6 +43,8 @@ export const DEFAULT_MODEL_NAME = 'default'
 export const DEFAULT_OUTPUT_FORMAT: GradiumOutputFormat = 'pcm_16000'
 export const DEFAULT_INPUT_FORMAT: GradiumInputFormat = 'pcm_16000'
 export const DEFAULT_REGION: GradiumRegion = 'eu'
+// Gradium refuses a transcription without a language, "any" detects it
+export const DEFAULT_LANGUAGE = 'any'
 
 // Speech-to-text (ASR) types
 
@@ -157,6 +159,7 @@ export type GradiumResponse =
 export interface GradiumReadyResponse {
   type: 'ready'
   request_id?: string
+  delay_in_frames?: number // Frames of 80ms the transcription lags behind the audio
 }
 
 export interface GradiumAudioResponse {

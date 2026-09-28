@@ -39,6 +39,7 @@ export class MistralSTT extends STT {
   private socket?: WebSocket
   private initPromise: Promise<void>
   private reconnectTimeout?: NodeJS.Timeout
+  private connectionTimeout?: NodeJS.Timeout
   private transcriptionTimeout?: NodeJS.Timeout
   private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
   private transcriptDelta = '' // Accumulated transcription.text.delta chunks
@@ -103,10 +104,11 @@ export class MistralSTT extends STT {
       clearTimeout(this.transcriptionTimeout)
       this.transcriptionTimeout = undefined
     }
-    this.socket?.removeAllListeners()
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket?.close(1000)
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout)
+      this.connectionTimeout = undefined
     }
+    if (this.socket) closeSocket(this.socket)
     this.socket = undefined
   }
 
@@ -135,11 +137,11 @@ export class MistralSTT extends STT {
 
       const timeout = setTimeout(() => {
         this.log('Connection timeout')
-        socket.removeAllListeners()
-        socket.close()
+        closeSocket(socket)
         this.socket = undefined
         reject(new Error('WebSocket connection timeout'))
       }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
+      this.connectionTimeout = timeout
 
       socket.addEventListener('open', () => {
         clearTimeout(timeout)
@@ -283,5 +285,22 @@ export class MistralSTT extends STT {
           })
       }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
     })
+  }
+}
+
+/**
+ * Closes a socket without hearing from it again.
+ *
+ * A socket closed while still connecting emits an error, and an error nobody
+ * listens to crashes the process, so a listener that ignores it stays.
+ */
+function closeSocket(socket: WebSocket) {
+  socket.removeAllListeners()
+  socket.on('error', () => {})
+  if (
+    socket.readyState === WebSocket.OPEN ||
+    socket.readyState === WebSocket.CONNECTING
+  ) {
+    socket.close(1000)
   }
 }

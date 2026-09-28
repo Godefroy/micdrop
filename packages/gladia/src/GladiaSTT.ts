@@ -29,9 +29,11 @@ export class GladiaSTT extends STT {
   private socket?: WebSocket
   private initPromise: Promise<void>
   private reconnectTimeout?: NodeJS.Timeout
+  private connectionTimeout?: NodeJS.Timeout
   private transcriptionTimeout?: NodeJS.Timeout
   private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
   private retryCount = 0
+  private destroyed = false
 
   constructor(private options: GladiaSTTOptions) {
     super()
@@ -72,6 +74,7 @@ export class GladiaSTT extends STT {
 
   destroy() {
     super.destroy()
+    this.destroyed = true
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = undefined
@@ -80,10 +83,11 @@ export class GladiaSTT extends STT {
       clearTimeout(this.transcriptionTimeout)
       this.transcriptionTimeout = undefined
     }
-    this.socket?.removeAllListeners()
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket?.close(1000)
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout)
+      this.connectionTimeout = undefined
     }
+    if (this.socket) closeSocket(this.socket)
     this.socket = undefined
   }
 
@@ -140,17 +144,19 @@ export class GladiaSTT extends STT {
 
   // Connect to Gladia
   private initWS = async (url: string) => {
+    // Destroyed while the session URL was on its way
+    if (this.destroyed) return
     return new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(url)
       this.socket = socket
 
       const timeout = setTimeout(() => {
         this.log('Connection timeout')
-        socket.removeAllListeners()
-        socket.close()
+        closeSocket(socket)
         this.socket = undefined
         reject(new Error('WebSocket connection timeout'))
       }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
+      this.connectionTimeout = timeout
 
       socket.addEventListener('open', () => {
         clearTimeout(timeout)
@@ -195,6 +201,7 @@ export class GladiaSTT extends STT {
   }
 
   private reconnect() {
+    if (this.destroyed) return
     this.retryCount++
     if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
       this.log('Max retries reached, giving up')
@@ -238,5 +245,22 @@ export class GladiaSTT extends STT {
     this.log(
       `Sent ${durationSeconds * 1000}ms of silence (${silenceBuffer.byteLength} bytes) after stream end`
     )
+  }
+}
+
+/**
+ * Closes a socket without hearing from it again.
+ *
+ * A socket closed while still connecting emits an error, and an error nobody
+ * listens to crashes the process, so a listener that ignores it stays.
+ */
+function closeSocket(socket: WebSocket) {
+  socket.removeAllListeners()
+  socket.on('error', () => {})
+  if (
+    socket.readyState === WebSocket.OPEN ||
+    socket.readyState === WebSocket.CONNECTING
+  ) {
+    socket.close(1000)
   }
 }

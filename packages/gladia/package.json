@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/gladia",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Gladia implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

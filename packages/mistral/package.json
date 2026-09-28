@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/mistral",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Mistral implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

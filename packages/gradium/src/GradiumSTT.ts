@@ -1,13 +1,16 @@
 import { STT } from '@micdrop/server'
 import { Readable } from 'stream'
 import WebSocket from 'ws'
+import { closeSocket } from './closeSocket'
 import {
   DEFAULT_INPUT_FORMAT,
+  DEFAULT_LANGUAGE,
   DEFAULT_MODEL_NAME,
   DEFAULT_REGION,
   GradiumASRJsonConfig,
   GradiumASRResponse,
   GradiumASRSetupMessage,
+  GradiumInputFormat,
   GradiumSTTOptions,
 } from './types'
 
@@ -21,15 +24,20 @@ const DEFAULT_CONNECTION_TIMEOUT = 5000
 const DEFAULT_TRANSCRIPTION_TIMEOUT = 4000
 const DEFAULT_RETRY_DELAY = 1000
 const DEFAULT_MAX_RETRY = 3
+// Each frame of the transcription model lasts 80 ms
+const FRAME_DURATION_MS = 80
+const DEFAULT_DELAY_IN_FRAMES = 10
 
 export class GradiumSTT extends STT {
   private socket?: WebSocket
   private initPromise: Promise<void>
   private reconnectTimeout?: NodeJS.Timeout
+  private connectionTimeout?: NodeJS.Timeout
   private transcriptionTimeout?: NodeJS.Timeout
   private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
   private transcript = '' // Accumulated text segments for the current utterance
   private flushId = 0
+  private delayInFrames = DEFAULT_DELAY_IN_FRAMES // Given by the server when ready
   private retryCount = 0
   private destroyed = false
 
@@ -65,6 +73,7 @@ export class GradiumSTT extends STT {
     audioStream.on('end', async () => {
       await this.initPromise
       if (this.audioChunksPending.length === 0) return
+      this.sendTrailingSilence()
       const flushId = ++this.flushId
       this.sendFlush(flushId)
 
@@ -88,10 +97,11 @@ export class GradiumSTT extends STT {
       clearTimeout(this.transcriptionTimeout)
       this.transcriptionTimeout = undefined
     }
-    this.socket?.removeAllListeners()
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket?.close(1000)
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout)
+      this.connectionTimeout = undefined
     }
+    if (this.socket) closeSocket(this.socket)
     this.socket = undefined
   }
 
@@ -118,11 +128,11 @@ export class GradiumSTT extends STT {
 
       const timeout = setTimeout(() => {
         this.log('Connection timeout')
-        socket.removeAllListeners()
-        socket.close()
+        closeSocket(socket)
         this.socket = undefined
         reject(new Error('WebSocket connection timeout'))
       }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
+      this.connectionTimeout = timeout
 
       socket.addEventListener('open', () => {
         clearTimeout(timeout)
@@ -159,12 +169,12 @@ export class GradiumSTT extends STT {
     })
   }
 
-  private buildJsonConfig(): GradiumASRJsonConfig | undefined {
+  private buildJsonConfig(): GradiumASRJsonConfig {
     const config: GradiumASRJsonConfig = { ...this.options.jsonConfig }
-    if (this.options.language && config.language === undefined) {
-      config.language = this.options.language
+    if (config.language === undefined) {
+      config.language = this.options.language ?? DEFAULT_LANGUAGE
     }
-    return Object.keys(config).length > 0 ? config : undefined
+    return config
   }
 
   private sendSetup() {
@@ -186,6 +196,28 @@ export class GradiumSTT extends STT {
         audio: chunk.toString('base64'),
       })
     )
+  }
+
+  /**
+   * Follows the speech with as much silence as the transcription lags behind.
+   *
+   * The model writes each word a few frames after hearing it, and a flush only
+   * processes the audio already sent. With nothing after the last word, the
+   * server confirms the flush before writing that word, which then opens the
+   * next transcript.
+   */
+  private sendTrailingSilence() {
+    const sampleRate = pcmSampleRate(
+      this.options.inputFormat ?? DEFAULT_INPUT_FORMAT
+    )
+    // Silence is a run of zeros in raw PCM only
+    if (!sampleRate) return
+    const durationMs = this.delayInFrames * FRAME_DURATION_MS
+    const samples = Math.round((sampleRate * durationMs) / 1000)
+    const silence = Buffer.alloc(samples * 2)
+    this.audioChunksPending.push(silence)
+    this.sendAudioChunk(silence)
+    this.log(`Sent ${durationMs}ms of silence`)
   }
 
   private sendFlush(flushId: number) {
@@ -210,6 +242,11 @@ export class GradiumSTT extends STT {
     switch (message.type) {
       case 'ready':
         this.log('Server ready')
+        // The server accepted the setup, so the connection is usable
+        this.retryCount = 0
+        if (typeof message.delay_in_frames === 'number') {
+          this.delayInFrames = message.delay_in_frames
+        }
         break
 
       case 'text':
@@ -258,10 +295,10 @@ export class GradiumSTT extends STT {
       this.log('Reconnecting...')
       this.reconnectTimeout = setTimeout(() => {
         this.reconnectTimeout = undefined
+        // The count starts over once the server accepts the session, since it
+        // opens the connection before checking the setup
         this.initWS()
           .then(() => {
-            this.retryCount = 0
-
             // Resend audio chunks if reconnecting during transcription. Setup
             // is sent on open and the server replays the whole utterance, so
             // reset the accumulated segments to avoid duplicating them.
@@ -281,4 +318,11 @@ export class GradiumSTT extends STT {
       }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
     })
   }
+}
+
+/** Sample rate of a raw PCM input format, undefined for an encoded one */
+function pcmSampleRate(format: GradiumInputFormat): number | undefined {
+  if (format === 'pcm') return 24000
+  const match = format.match(/^pcm_(\d+)$/)
+  return match ? Number(match[1]) : undefined
 }
