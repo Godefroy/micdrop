@@ -38,6 +38,13 @@ example to `.env` with your API keys, then run its command from the root.
 - The [world demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-world)
   (`pnpm dev:world`) is an immersive 3D scene, where a newborn planet talks to
   you and reshapes itself as the conversation goes.
+- The [storyteller demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-storyteller)
+  (`pnpm dev:storyteller`) tells a story by voice around a campfire. The LLM
+  writes audio tags such as `[whispers]` or `[laughs]` into its answers, for
+  [Eleven v4 Turbo](./ai-integration/provided-integrations/elevenlabs) to
+  perform. The demo page shows each tag apart from the words. You can also
+  switch the voice to Flash v2.5, where the same storyteller speaks without
+  tags. The demo needs an OpenAI key and an ElevenLabs key.
 - The [form demo](https://github.com/Godefroy/micdrop-form-demo), in its own
   repository, fills a form by voice with OpenAI and tool calling.
 

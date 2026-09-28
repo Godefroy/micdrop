@@ -68,18 +68,18 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 
 ### Options
 
-| Option                 | Type                   | Default       | Description                                            |
-| ---------------------- | ---------------------- | ------------- | ------------------------------------------------------ |
-| `apiKey`               | `string`               | Required      | Your Gradium API key                                   |
-| `modelName`            | `string`               | `'default'`   | Model name to use for transcription                    |
-| `inputFormat`          | `GradiumInputFormat`   | `'pcm_16000'` | Audio input format of the incoming stream              |
-| `language`             | `string`               | Optional      | Language hint (shortcut for `jsonConfig.language`)     |
-| `region`               | `'eu' \| 'us'`         | `'eu'`        | API region (EU or US endpoint)                         |
-| `jsonConfig`           | `GradiumASRJsonConfig` | Optional      | Advanced transcription configuration                   |
-| `connectionTimeout`    | `number`               | `5000`        | Timeout in milliseconds for WebSocket connection       |
-| `transcriptionTimeout` | `number`               | `4000`        | Timeout in milliseconds to wait for transcription      |
-| `retryDelay`           | `number`               | `1000`        | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`             | `number`               | `3`           | Maximum number of reconnection attempts before failing |
+| Option                 | Type                   | Default       | Description                                                                                                               |
+| ---------------------- | ---------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`               | `string`               | Required      | Your Gradium API key                                                                                                      |
+| `modelName`            | `string`               | `'default'`   | Model name to use for transcription                                                                                       |
+| `inputFormat`          | `GradiumInputFormat`   | `'pcm_16000'` | Audio input format of the incoming stream                                                                                 |
+| `language`             | `string`               | `'any'`       | Language of the speech, among `en`, `fr`, `de`, `es` and `pt`, or `any` to detect it (shortcut for `jsonConfig.language`) |
+| `region`               | `'eu' \| 'us'`         | `'eu'`        | API region (EU or US endpoint)                                                                                            |
+| `jsonConfig`           | `GradiumASRJsonConfig` | Optional      | Advanced transcription configuration                                                                                      |
+| `connectionTimeout`    | `number`               | `5000`        | Timeout in milliseconds for WebSocket connection                                                                          |
+| `transcriptionTimeout` | `number`               | `4000`        | Timeout in milliseconds to wait for transcription                                                                         |
+| `retryDelay`           | `number`               | `1000`        | Delay in milliseconds between reconnection attempts                                                                       |
+| `maxRetry`             | `number`               | `3`           | Maximum number of reconnection attempts before failing                                                                    |
 
 ### Advanced Transcription Configuration
 
@@ -95,6 +95,8 @@ const stt = new GradiumSTT({
   },
 })
 ```
+
+The model writes each word `delay_in_frames` frames after hearing it, 10 frames of 80 ms unless you set another value. `GradiumSTT` reads that delay when the session starts and sends as much silence at the end of each utterance, so the transcript of each turn ends with its last word. Lower `delay_in_frames` to get the transcript sooner, at the cost of some context for the model.
 
 ## Gradium TTS (Text-to-Speech)
 

@@ -78,6 +78,6 @@ class MySpeaker extends SpeakerDriver {
 Speaker.setDriver(new MySpeaker())
 ```
 
-Chunks arrive faster or slower than they are heard, so a driver has to queue them rather than play each one on arrival. `Pcm16AudioStream` does that scheduling and is exported: give it an `AudioSink`, which is the small slice of Web Audio it needs, and it handles the buffering, the gapless playback and the level meter.
+Chunks arrive faster or slower than they are heard, so a driver has to queue them rather than play each one on arrival. `Pcm16AudioStream` does that scheduling and is exported: give it an `AudioSink`, which is the small slice of Web Audio it needs, and it handles the buffering, the gapless playback and the level meter. Call its `destroy()` when the driver stops.
 
 Call `setDriver` before the first `Micdrop.start()`.

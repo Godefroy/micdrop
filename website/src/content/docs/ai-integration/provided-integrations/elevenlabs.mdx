@@ -1,16 +1,14 @@
 ---
 title: 'ElevenLabs'
-description: 'Add ElevenLabs streaming voices to a TypeScript voice pipeline with one npm package, and your Node server pushes the audio out as it arrives.'
+description: 'Stream ElevenLabs text to speech into a TypeScript voice pipeline with one npm package, Eleven v4 Turbo and its audio tags included.'
 order: 48
 ---
 
 # ElevenLabs
 
-ElevenLabs implementation for [@micdrop/server](../../server).
+`@micdrop/elevenlabs` streams ElevenLabs text to speech for [@micdrop/server](../../server). It sends the agent's answer to ElevenLabs over a WebSocket as the agent writes it, so the audio comes back before the answer is finished. The package works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
 
-This package provides high-quality real-time text-to-speech implementation using ElevenLabs' streaming API.
-
-ElevenLabs and every other voice engine in Micdrop sit behind the same interface, so moving to an [ElevenLabs alternative](/blog/elevenlabs-alternatives-typescript) only means replacing `new ElevenLabsTTS(...)` with the other engine's class.
+ElevenLabs and every other voice engine in Micdrop implement the same interface, so moving to an [ElevenLabs alternative](/blog/elevenlabs-alternatives-typescript) only means replacing `new ElevenLabsTTS(...)` with the other engine's class.
 
 ## Installation
 
@@ -29,12 +27,10 @@ import { MicdropServer } from '@micdrop/server'
 const tts = new ElevenLabsTTS({
   apiKey: process.env.ELEVENLABS_API_KEY || '',
   voiceId: '21m00Tcm4TlvDq8ikWAM', // ElevenLabs voice ID
-  modelId: 'eleven_turbo_v2_5', // Optional: model to use
+  modelId: 'eleven_v4_turbo', // Optional: model to use
   language: 'en', // Optional: language code
   voiceSettings: {
     stability: 0.5,
-    similarity_boost: 0.75,
-    style: 0.5,
   },
 })
 
@@ -68,52 +64,98 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | Event    | Payload    | Description                                                              |
 | -------- | ---------- | ------------------------------------------------------------------------ |
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.  |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
+### Choosing a model
+
+ElevenLabs streams speech over two WebSockets, each with its own protocol. Eleven v3 and v4 only stream over the Text to Dialogue WebSocket, while Flash v2.5, Turbo v2.5 and Multilingual v2 use the Text to Speech one. `ElevenLabsTTS` opens the right one for the `modelId` you pass, so moving from Flash to v4 Turbo only means changing the model ID.
+
+| Model                      | WebSocket        | Languages | Audio tags | Best for                                                                      |
+| -------------------------- | ---------------- | --------- | ---------- | ----------------------------------------------------------------------------- |
+| `eleven_v4_turbo`          | Text to Dialogue | 90+       | Performed  | Expressive voice agents, with a median inference latency of about 100 ms      |
+| `eleven_v4`                | Text to Dialogue | 90+       | Performed  | Narration and characters, where the quality of the voice comes first          |
+| `eleven_v3_conversational` | Text to Dialogue | 70+       | Performed  | Expressive real-time speech, the generation before v4 Turbo                   |
+| `eleven_v3`                | Text to Dialogue | 70+       | Performed  | Expressive speech, the generation before v4                                   |
+| `eleven_flash_v2_5`        | Text to Speech   | 32        | Read out   | The lowest latency, about 75 ms                                               |
+| `eleven_multilingual_v2`   | Text to Speech   | 29        | Read out   | Long narration, where the voice stays the most stable                         |
+| `eleven_turbo_v2_5`        | Text to Speech   | 32        | Read out   | Existing servers, since ElevenLabs deprecated it in favor of Flash v2.5       |
+
+The latencies are the ones ElevenLabs gives, network excluded. `eleven_turbo_v2_5` stays the default of the package, so an existing server keeps its voice until you pick another model.
+
+### Eleven v4 and audio tags
+
+Eleven v3 and v4 perform audio tags, short directions in square brackets. A tag like `[whispers]`, `[laughs]` or `[excited]` goes right before the words it changes. Eleven v4 also plays sound effects like `[door slams]` and follows free directions like `[strong French accent]`. ElevenLabs lists the [tags it tested with Eleven v4](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#prompting-eleven-v4).
+
+The LLM writes the tags, so tell it in the system prompt which ones it may use:
+
+```typescript
+import { OpenaiAgent } from '@micdrop/openai'
+
+const agent = new OpenaiAgent({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  systemPrompt: `You are a warm and playful assistant. Your answers are spoken out loud.
+
+Your voice performs audio tags: short directions in square brackets, placed right before the words they change. Use one or two per answer, where they fit:
+- How you speak: [whispers], [excited], [curious], [sarcastic]
+- How you react: [laughs], [sighs], [clears throat]
+Use an ellipsis for a pause. The words you say always stay outside the brackets.`,
+})
+```
+
+The tags reach the client with the rest of the answer, in the conversation and in the [partial messages](../../server/partial-messages). Run the [storyteller demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-storyteller) to hear what the tags change. Its page shows each tag apart from the words, and lets you switch the voice to Flash v2.5, where the same storyteller speaks without tags.
+
+<Callout type="warning">
+Only Eleven v3 and v4 perform the tags. Flash v2.5, Turbo v2.5 and Multilingual v2 read them out loud, so leave the tag instructions out of the system prompt when the voice runs on one of those models.
+</Callout>
+
+### How Eleven v3 and v4 stream
+
+The Text to Dialogue WebSocket holds text back until it has about 40 characters and 8 words. `ElevenLabsTTS` flushes it at the end of every sentence, so a short first sentence such as "Sure!" starts playing without waiting for the next one. The package counts an ellipsis as part of the sentence, since Eleven v4 performs it as a pause.
+
+The Text to Dialogue WebSocket has no message to stop a synthesis halfway. When the user interrupts the assistant, `ElevenLabsTTS` closes the connection and opens a new one while the user is still speaking, so the interrupted answer stops where the user cut it. ElevenLabs closes a connection after 20 seconds without a message, so the package sends a keep-alive every 15 seconds.
+
+ElevenLabs counts each connection to the Text to Dialogue WebSocket as one dialogue session for as long as it stays open, speaking or silent, so each call holds one session from start to end. ElevenLabs allows 14 sessions at once on its free plan and 105 on Scale, and publishes the [session limit of each plan](https://elevenlabs.io/docs/overview/models#text-to-dialogue-concurrency). Past the limit, it rejects new connections with `too_many_concurrent_requests`. ElevenLabs counts only the time spent generating audio on the Text to Speech WebSocket, so the same plan usually allows more calls at once with Flash.
+
 ### Options
 
-| Option              | Type                                                                     | Default               | Description                                            |
-| ------------------- | ------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------ |
-| `apiKey`            | `string`                                                                 | Required              | Your ElevenLabs API key                                |
-| `voiceId`           | `string`                                                                 | Required              | ElevenLabs voice ID                                    |
-| `modelId`           | `'eleven_multilingual_v2' \| 'eleven_turbo_v2_5' \| 'eleven_flash_v2_5'` | `'eleven_turbo_v2_5'` | Model to use for speech synthesis                      |
-| `language`          | `string`                                                                 | Optional              | Language code (e.g., 'en', 'fr')                       |
-| `outputFormat`      | `TextToSpeechStreamRequestOutputFormat`                                  | `'pcm_16000'`         | Audio output format                                    |
-| `voiceSettings`     | `VoiceSettings`                                                          | Optional              | Voice customization settings                           |
-| `connectionTimeout` | `number`                                                                 | `5000`                | Timeout in milliseconds for WebSocket connection       |
-| `retryDelay`        | `number`                                                                 | `1000`                | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`          | `number`                                                                 | `3`                   | Maximum number of reconnection attempts before failing |
+| Option              | Type                                    | Default               | Description                                                                         |
+| ------------------- | --------------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `apiKey`            | `string`                                | Required              | Your ElevenLabs API key                                                             |
+| `voiceId`           | `string`                                | Required              | ElevenLabs voice ID                                                                 |
+| `modelId`           | `ElevenLabsModelId`                     | `'eleven_turbo_v2_5'` | Model to use for speech synthesis, one of the [supported models](#choosing-a-model) |
+| `language`          | `string`                                | Optional              | Language code (e.g., 'en', 'fr')                                                    |
+| `outputFormat`      | `TextToSpeechStreamRequestOutputFormat` | `'pcm_16000'`         | Audio output format                                                                 |
+| `voiceSettings`     | `VoiceSettings`                         | Optional              | Voice customization settings. Eleven v3 and v4 only read `stability`                |
+| `connectionTimeout` | `number`                                | `5000`                | Timeout in milliseconds for WebSocket connection                                    |
+| `retryDelay`        | `number`                                | `1000`                | Delay in milliseconds between reconnection attempts                                 |
+| `maxRetry`          | `number`                                | `3`                   | Maximum number of reconnection attempts before failing                              |
 
 ### Voice Settings
 
-The `voiceSettings` option allows you to customize the voice characteristics:
+The `voiceSettings` option takes the `VoiceSettings` type of the ElevenLabs SDK, with its keys in camel case:
 
 ```typescript
 const tts = new ElevenLabsTTS({
   apiKey: 'your-api-key',
   voiceId: 'your-voice-id',
+  modelId: 'eleven_flash_v2_5',
   voiceSettings: {
-    stability: 0.5, // 0.0 to 1.0 - Lower = more variable, Higher = more stable
-    similarity_boost: 0.75, // 0.0 to 1.0 - How closely to match the original voice
-    style: 0.5, // 0.0 to 1.0 - Exaggeration of the style
-    use_speaker_boost: true, // Boost the similarity to the speaker
+    stability: 0.5, // 0 to 1, lower is more expressive, higher is steadier
+    similarityBoost: 0.75, // 0 to 1, how closely to match the original voice
+    style: 0.5, // 0 to 1, exaggeration of the style
+    useSpeakerBoost: true, // Boost the similarity to the speaker
+    speed: 1, // 1 is the normal pace
   },
 })
 ```
 
-### Supported Models
-
-| Model                    | Description                                  | Languages     | Speed     |
-| ------------------------ | -------------------------------------------- | ------------- | --------- |
-| `eleven_multilingual_v2` | High-quality multilingual model              | 29+ languages | Standard  |
-| `eleven_turbo_v2_5`      | Fast, high-quality model optimized for speed | English       | Fast      |
-| `eleven_flash_v2_5`      | Ultra-fast model for real-time applications  | English       | Very Fast |
+Eleven v3 and v4 only read `stability`. A lower value gives the voice a broader emotional range, so it responds more to the audio tags.
 
 ### Supported Languages
 
-ElevenLabs supports 29+ languages including:
+The languages depend on the model: more than 90 for Eleven v4 and v4 Turbo, more than 70 for Eleven v3, 32 for Flash v2.5 and Turbo v2.5, and 29 for Multilingual v2. ElevenLabs keeps the [list of languages of each model](https://elevenlabs.io/docs/overview/models). Every model speaks these languages:
 
 | Code | Language | Code | Language | Code | Language   |
 | ---- | -------- | ---- | -------- | ---- | ---------- |
@@ -121,7 +163,7 @@ ElevenLabs supports 29+ languages including:
 | `de` | German   | `it` | Italian  | `pt` | Portuguese |
 | `pl` | Polish   | `tr` | Turkish  | `ru` | Russian    |
 | `nl` | Dutch    | `cs` | Czech    | `ar` | Arabic     |
-| `zh` | Chinese  | `ja` | Japanese | `hu` | Hungarian  |
+| `zh` | Chinese  | `ja` | Japanese | `sv` | Swedish    |
 | `ko` | Korean   | `hi` | Hindi    | `fi` | Finnish    |
 
 ## Getting Started
@@ -136,12 +178,8 @@ import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 const tts = new ElevenLabsTTS({
   apiKey: 'your-elevenlabs-api-key',
   voiceId: 'your-voice-id', // Get this from ElevenLabs dashboard
-  modelId: 'eleven_turbo_v2_5', // Choose based on your needs
+  modelId: 'eleven_v4_turbo', // Choose based on your needs
   language: 'en',
-  voiceSettings: {
-    stability: 0.5,
-    similarity_boost: 0.75,
-  },
 })
 
 // Use with MicdropServer
@@ -153,7 +191,4 @@ new MicdropServer(socket, {
 
 ### Finding Voice IDs
 
-You can find voice IDs in several ways:
-
-1. **ElevenLabs Dashboard**: Browse voices in your ElevenLabs account
-2. **Voice Library**: Use the public voice library API
+You can find voice IDs in the ElevenLabs dashboard, by browsing the voices of your account, or through the public voice library API.
