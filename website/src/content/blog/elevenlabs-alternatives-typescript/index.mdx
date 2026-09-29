@@ -2,6 +2,7 @@
 title: 'ElevenLabs Alternatives for a TypeScript Voice Agent'
 summary: 'Cartesia, Gradium, OpenAI and four local engines share one TypeScript interface. Switching engine is a one-line change. FallbackTTS keeps a backup ready.'
 date: 2026-09-12
+update: 2026-09-29
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -18,7 +19,7 @@ similarPosts:
   - 'open-source-voice-agent-frameworks'
   - 'openai-realtime-api-vs-pipeline'
 takeaways:
-  - 'Your ElevenLabs plan caps how many syntheses run at once, 20 concurrent Flash requests on Pro and 30 on Scale. A voice product hits that ceiling long before it spends its credits.'
+  - 'Your ElevenLabs plan caps how many syntheses run at once. Pro allows 20 concurrent Flash requests, or 70 calls on Eleven v4, since each v4 call holds one dialogue session from start to end. A voice product hits that ceiling long before it spends its credits.'
   - 'Cartesia, Gradium, OpenAI, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
   - 'Gradium synthesises on an EU endpoint, so you can name the region when a customer asks where the audio is generated.'
   - 'Micdrop ships a FallbackTTS class that holds a list of providers and replays the unspoken text to the next one when the first gives up mid-sentence.'
@@ -30,7 +31,7 @@ This article compares these engines on languages, voices, where they run and how
 
 ## Why teams look for an ElevenLabs alternative
 
-Most teams hit the concurrency ceiling first. Few of them knew it was there. Your plan sets how many syntheses ElevenLabs runs at the same time. The [model documentation](https://elevenlabs.io/docs/models) publishes the limits: 20 concurrent Flash requests on Pro, 30 on Scale, half those numbers on Multilingual v2. A blog reading feature never reaches that ceiling. A voice agent does, because every live call holds a slot for as long as the agent is talking.
+Most teams hit the concurrency ceiling first. Few of them knew it was there. Your plan sets how many syntheses ElevenLabs runs at the same time. The [model documentation](https://elevenlabs.io/docs/overview/models) publishes the limits: 20 concurrent Flash requests on Pro, 30 on Scale, half those numbers on Multilingual v2. Eleven v3 and v4 stream over a separate WebSocket, where ElevenLabs caps dialogue sessions instead: 14 on the free plan, 70 on Pro, 105 on Scale. A blog reading feature never reaches that ceiling. A voice agent does, because every live call holds a Flash slot for as long as the agent is talking. On v4, the call holds its session from the first second to the last, silences included.
 
 ElevenLabs charges a credit per character on Multilingual v2 and half that on Flash. Those credits come in [plans](https://elevenlabs.io/pricing) running from $6 a month for 30,000 credits to $990 for six million. Your bill grows with how much your agent says. To budget calls, compare the [cost per hour of generated audio for each voice provider](/docs/ai-integration) rather than the price of a character.
 
@@ -40,7 +41,7 @@ Data residency comes up with European buyers. Teams in health, education and the
 
 | Engine                                                              | Runs                         | Languages            | Voice catalog        | Reach for it when                              |
 | ------------------------------------------------------------------- | ---------------------------- | -------------------- | -------------------- | ---------------------------------------------- |
-| [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Hosted API                   | 29+                  | 1000+                | The voice is what sells the product            |
+| [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Hosted API                   | 29 to 90+            | 17,500+              | The voice is what sells the product            |
 | [Cartesia](/docs/ai-integration/provided-integrations/cartesia)     | Hosted API                   | 15                   | 50+                  | The pause before the first word matters        |
 | [Gradium](/docs/ai-integration/provided-integrations/gradium)       | Hosted API, EU endpoint      | 5                    | 150+                 | The audio has to stay in Europe                |
 | [OpenAI](/docs/ai-integration/provided-integrations/openai)         | Hosted API                   | The one you write in | 13                   | You already hold an OpenAI key                 |
@@ -55,7 +56,7 @@ OpenAI's speech API takes no language parameter and speaks whatever text you sen
 
 [Cartesia](https://cartesia.ai) built Sonic around time to first audio. A caller hears the gap between the end of their own sentence and the first syllable of the answer. Once the answer starts, nobody counts how fast the words come.
 
-Cartesia also charges per character, less than ElevenLabs at every tier, with plans from $5 a month to $299 on [its pricing page](https://cartesia.ai/pricing). It covers fifteen languages, against at least twenty-nine at ElevenLabs. Its voice catalog is smaller too.
+Cartesia also charges per character, less than ElevenLabs at every tier, with plans from $5 a month to $299 on [its pricing page](https://cartesia.ai/pricing). It covers fifteen languages, where ElevenLabs covers 29 to more than 90 depending on the model. Its voice catalog is smaller too.
 
 ```typescript
 import { CartesiaTTS } from '@micdrop/cartesia'
@@ -178,7 +179,7 @@ Set `maxRetry` low on the first provider so the caller barely notices the switch
 
 ## Which engine to pick
 
-Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI and the local engines all have smaller voice catalogs.
+Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length.
 
 Switch to Cartesia when callers complain about the silence before the first word, and when the per-character bill has started to matter.
 
@@ -212,12 +213,14 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     instead, sized for trying a voice rather than for serving calls.
   </FaqItem>
   <FaqItem question="Which text to speech API has the lowest latency?">
-    Cartesia Sonic and ElevenLabs Flash both compete on time to first audio.
-    ElevenLabs [publishes around 75 ms of
-    inference](https://elevenlabs.io/docs/models) for Flash, excluding the
-    network. Treat every published number as a floor, since your own latency
-    includes the round trip from your server and the provider's queue at that
-    moment. Measure the engines you shortlisted from the region you deploy in,
+    Cartesia Sonic, ElevenLabs Flash and Eleven v4 Turbo all compete on time to
+    first audio. ElevenLabs [publishes around 75 ms of
+    inference](https://elevenlabs.io/docs/overview/models) for Flash and around
+    100 ms for v4 Turbo, network excluded. It also [announces about 150 ms
+    before the first speech](https://elevenlabs.io/v4) on v4 Turbo. Treat every
+    published number as a floor, since your own latency includes the round trip
+    from your server and the provider's queue at that moment. Measure the
+    engines you shortlisted from the region you deploy in,
     on sentences your agent actually says.
   </FaqItem>
   <FaqItem question="Can I use ElevenLabs and another provider at the same time?">
@@ -232,8 +235,8 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     Gradium is the European voice provider Micdrop integrates. It is French, it
     covers both transcription and voice, and its API has an EU endpoint that the
     integration uses by default. For a whole call to stay in Europe the agent
-    and the transcription have to follow. Mistral, Gladia and Gradium cover
-    those three parts together in the sovereign voice AI guide. Micdrop makes
+    and the transcription have to follow. Mistral, Gladia and Gradium together
+    cover all three parts inside the European Union. Micdrop makes
     that architecture possible. The compliance claim belongs to your deployment
     and to the contracts you sign with each provider.
   </FaqItem>
@@ -244,8 +247,8 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     WebSocket and the browser playback stay the same whichever provider speaks.
     To change engine, you replace the object you pass to the `tts` option, for
     example `new ElevenLabsTTS(...)` with `new CartesiaTTS(...)`. For a provider
-    with no package, you write your own class, two methods long, following the
-    custom TTS guide.
+    with no package, you write your own class, two methods long, starting from a
+    [custom TTS skeleton](/docs/ai-integration/custom-integrations/custom-tts).
   </FaqItem>
 </FaqList>
 
