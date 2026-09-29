@@ -87,6 +87,12 @@ réponse.
 - **Amener à Micdrop par l'usage.** Le produit apparaît là où il résout le problème du lecteur, dans
   une section qui montre le code, puis dans la conclusion qui renvoie vers la page canonique du
   thème. Une mention dans chaque section transforme l'article en brochure.
+- **Dire pourquoi passer par Micdrop.** Un article qui teste un modèle ou une intégration explique,
+  dans la section Micdrop, ce que le lecteur y gagne face à ses deux autres options : écrire le
+  client lui-même (ce que le package gère, chiffré en lignes de code ou en cas traités) et une
+  plateforme hébergée (son prix à la minute, daté et sourcé). Il dit aussi ce que Micdrop ne
+  fournit pas (hébergement, tableau de bord, historique d'appels), avec des faits vérifiables et
+  sans promesse de latence ni de coût.
 - **Se lire sans connaître Micdrop.** À sa première mention, l'article dit ce qu'est Micdrop
   (bibliothèque TypeScript open source pour les conversations vocales temps réel) et le lie vers
   `/`.
