@@ -1,6 +1,6 @@
 ---
 title: 'ElevenLabs Alternatives for a TypeScript Voice Agent'
-summary: 'Cartesia, Gradium, OpenAI and four local engines share one TypeScript interface. Switching engine is a one-line change. FallbackTTS keeps a backup ready.'
+summary: 'Cartesia, Gradium, OpenAI, Gemini and four local engines share one TypeScript interface. Switching engine takes one line. FallbackTTS keeps a backup ready.'
 date: 2026-09-12
 update: 2026-09-29
 author: godefroy
@@ -20,12 +20,12 @@ similarPosts:
   - 'openai-realtime-api-vs-pipeline'
 takeaways:
   - 'Your ElevenLabs plan caps how many syntheses run at once. Pro allows 20 concurrent Flash requests, or 70 calls on Eleven v4, since each v4 call holds one dialogue session from start to end. A voice product hits that ceiling long before it spends its credits.'
-  - 'Cartesia, Gradium, OpenAI, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
+  - 'Cartesia, Gradium, OpenAI, Gemini, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
   - 'Gradium synthesises on an EU endpoint, so you can name the region when a customer asks where the audio is generated.'
   - 'Micdrop ships a FallbackTTS class that holds a list of providers and replays the unspoken text to the next one when the first gives up mid-sentence.'
 ---
 
-Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word at a lower price, Gradium generates the audio in Europe, OpenAI uses the key your agent already has, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
+Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word at a lower price, Gradium generates the audio in Europe, OpenAI uses the key your agent already has, Gemini follows the tone you describe in plain words, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
 
 This article compares these engines on languages, voices, where they run and how they bill, then shows how to switch from ElevenLabs to one of them in a TypeScript voice agent built on Micdrop, where the change fits in one line of code.
 
@@ -44,6 +44,7 @@ Data residency comes up with European buyers. Teams in health, education and the
 | [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Hosted API                   | 29 to 90+            | 17,500+              | The voice is what sells the product            |
 | [Cartesia](/docs/ai-integration/provided-integrations/cartesia)     | Hosted API                   | 15                   | 50+                  | The pause before the first word matters        |
 | [Gradium](/docs/ai-integration/provided-integrations/gradium)       | Hosted API, EU endpoint      | 5                    | 150+                 | The audio has to stay in Europe                |
+| [Gemini](/docs/ai-integration/provided-integrations/gemini)         | Hosted API                   | About 90             | 30                   | You want to describe the tone in plain words   |
 | [OpenAI](/docs/ai-integration/provided-integrations/openai)         | Hosted API                   | The one you write in | 13                   | You already hold an OpenAI key                 |
 | [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | Your Node process            | English              | 28                   | The whole setup has to be one npm install      |
 | [Piper](/docs/ai-integration/provided-integrations/piper)           | A subprocess you spawn       | 43                   | 100+, one file each  | The call happens in a language besides English |
@@ -87,6 +88,24 @@ const tts = new GradiumTTS({
 
 Voice is one of the three parts of a call, so the residency answer holds only when the agent and the transcription stay in Europe too. [Mistral](/docs/ai-integration/provided-integrations/mistral) drives the agent and transcribes with Voxtral, while Gladia and Gradium both transcribe. With these three providers you can build a [sovereign voice AI pipeline that keeps the audio inside the European Union](/docs/ai-integration/sovereign-voice-ai). Compliance still depends on where you host and on the terms you sign with each provider.
 
+## Gemini TTS, when you want to describe the tone of the voice
+
+Google's [Gemini TTS](/docs/ai-integration/provided-integrations/gemini#gemini-tts-text-to-speech) speaks with one of thirty prebuilt voices, in the tone you describe in plain words. Micdrop puts your `instructions` string, such as "Say in a calm and friendly tone", before every sentence of the answer. The voice follows the language of the text, in about ninety languages. If your agent already runs on Gemini, the voice uses the same API key.
+
+```typescript
+import { GeminiTTS } from '@micdrop/gemini'
+
+const tts = new GeminiTTS({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  voice: 'Kore',
+  instructions: 'Say in a calm and friendly tone',
+})
+```
+
+The caller waits longer for the first word than with ElevenLabs or Cartesia. `gemini-2.5-flash-preview-tts`, the default model in Micdrop, starts after about three seconds and sends each sentence whole, so it plays without a gap. `gemini-3.1-flash-tts-preview` starts after about a second, then streams the rest slower than it is spoken, which leaves gaps in a long sentence. Gemini also refuses an ordinary sentence now and then, as if its content were forbidden. `GeminiTTS` then sends it again, as long as none of that sentence's audio has played.
+
+Google bills by token rather than by character. A million audio tokens cost [$10 on 2.5 Flash and $20 on 3.1 Flash](https://ai.google.dev/gemini-api/docs/pricing) in September 2026, with a free tier on both models.
+
 ## Kokoro, Piper, Pocket TTS and Qwen3-TTS, when the voice runs on your own machine
 
 These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 43 languages, more than the other three put together. Pocket TTS clones a voice from a few seconds of audio and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
@@ -126,7 +145,7 @@ One interface also makes A/B testing cheap. Read the provider from an environmen
 
 ## Writing your own integration for another provider
 
-Micdrop packages eight engines, so the ninth is yours to write. Deepgram, Azure, Google and Amazon all publish streaming speech endpoints. So does a model you fine-tuned and host yourself.
+Micdrop packages nine engines, so the tenth is yours to write. Deepgram, Azure, Google Cloud Text-to-Speech and Amazon all publish streaming speech endpoints. So does a model you fine-tuned and host yourself.
 
 To write your own, extend `TTS`, implement two methods, `speak(textStream)` and `cancel()`, then emit an `Audio` event per chunk. You can start from [two working custom TTS skeletons](/docs/ai-integration/custom-integrations/custom-tts), one for a WebSocket API that streams as it generates and one for an HTTP API that returns the whole clip. Your class then drops into the same `tts` slot as the packaged ones, and into `FallbackTTS` alongside them.
 
@@ -179,13 +198,15 @@ Set `maxRetry` low on the first provider so the caller barely notices the switch
 
 ## Which engine to pick
 
-Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length.
+Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length.
 
 Switch to Cartesia when callers complain about the silence before the first word, and when the per-character bill has started to matter.
 
 Pick Gradium when your buyer needs the audio synthesised in Europe. Before you promise anything, check how to [move the agent and the transcription to Europe with the voice](/docs/ai-integration/sovereign-voice-ai).
 
 OpenAI suits a team that would rather keep one vendor for the agent and the voice, when the exact timbre matters less than the number of contracts.
+
+A team whose agent runs on Gemini keeps a single vendor with Gemini TTS. Choose it when you want to describe the tone of the voice in plain words, and when your callers accept waiting about three seconds for the first word with the default model.
 
 A local engine makes the per-character bill disappear, as long as you have somewhere to run the model.
 
