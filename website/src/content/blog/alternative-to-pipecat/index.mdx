@@ -3,7 +3,7 @@ title: 'Pipecat Alternative for TypeScript and Node.js Web Apps'
 h1: 'Micdrop: A TypeScript Alternative to Pipecat for Voice AI in Web Apps'
 summary: 'Micdrop runs the whole voice AI pipeline in TypeScript, browser and Node.js side, with provider fallback and semantic turn detection built in.'
 date: 2026-03-03
-update: 2026-09-27
+update: 2026-09-30
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -43,7 +43,7 @@ Pipecat's server is Python-only. If your web application runs on Node.js, Next.j
 
 Pipecat's own documentation still warns that WebSocket transports are ["best suited for prototyping and controlled network environments"](https://docs.pipecat.ai/api-reference/server/services/transport/websocket-server) and recommends WebRTC-based transports for production client-server applications. Getting there means Daily.co's transport layer, another managed media provider, or the self-hosted `SmallWebRTCTransport`, which still asks you for STUN servers and, on most corporate networks, TURN servers.
 
-WebRTC is designed for peer-to-peer communication and adds significant complexity: TURN/STUN servers, ICE negotiation, codec management, NAT traversal. For a client-to-server voice AI use case, this is unnecessary overhead.
+WebRTC is designed for peer-to-peer communication and adds significant complexity: TURN/STUN servers, ICE negotiation, codec management, NAT traversal. For a client-to-server voice AI use case, this is usually unnecessary overhead.
 
 ### 3. Complex pipeline model
 
@@ -121,7 +121,7 @@ Micdrop uses WebSocket for transport, and the choice holds up for the web use ca
 - WebSocket messages are inspectable in browser DevTools, where WebRTC debugging asks for specialised tools.
 - Browsers, firewalls and corporate networks all let it through.
 
-WebSocket is the simpler and more reliable choice when a browser talks to a server instead of to another browser.
+WebSocket is simpler to deploy and gets through more networks when a browser talks to a server instead of to another browser.
 
 ## Features that matter in production
 
@@ -197,6 +197,16 @@ function VoiceUI() {
 }
 ```
 
+## Pipecat and Micdrop in a React Native app
+
+Both projects run a voice agent in a React Native app, Pipecat over WebRTC and Micdrop over a WebSocket. Pipecat's React Native support is a transport for its JavaScript client, `@pipecat-ai/react-native-daily-transport` or `@pipecat-ai/react-native-small-webrtc-transport`, built on Daily's fork of react-native-webrtc. The app joins the same Python pipeline a browser would. Pipecat also publishes native SDKs in Swift for iOS and Kotlin for Android, for apps written outside React Native.
+
+Micdrop's [React Native client](/docs/react-native) records the microphone, runs voice activity detection on the device and streams audio to the same `MicdropServer` your web app talks to. The call code is the browser code with a different import, and the server stays in TypeScript beside the rest of your backend. Pipecat's React Native transports and Micdrop's client both include native audio code, so both run from an Expo development build rather than from Expo Go.
+
+The two React Native clients also differ in what they send to your server. A Pipecat app publishes its microphone track for the whole call, because the pipeline detects speech on the server with Silero and Smart Turn. Micdrop detects speech on the device and only sends audio while the user is talking.
+
+Pipecat holds up better on a weak cellular link, because WebRTC sends audio over UDP and a lost packet is simply skipped. A WebSocket runs over TCP, so a lost packet holds back everything after it until it is resent, which the user hears as a stutter. That advantage comes with STUN and TURN servers to run, or with Daily's hosted transport.
+
 ## Head-to-head comparison
 
 This comparison was checked in August 2026, and both projects keep moving fast.
@@ -211,6 +221,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Infrastructure** | Daily.co, another provider or your own WebRTC | Standard Node.js hosting |
 | **Managed option** | Pipecat Cloud, from $0.01 per agent minute | None |
 | **React support** | React SDK | React hooks (state, volume, errors) |
+| **Mobile** | React Native transports on WebRTC, Swift and Kotlin SDKs | `@micdrop/react-native`, on WebSocket |
 | **Semantic turn detection** | Built-in, bundled ONNX classifier | Built-in, decided by the LLM |
 | **Noise filtering** | Audio filters, most needing a vendor key | Built-in at the transcript level |
 | **Provider fallback** | Built-in (ServiceSwitcher) | Built-in (FallbackSTT, FallbackTTS, FallbackAgent) |
@@ -228,7 +239,7 @@ Pipecat covers ground Micdrop leaves alone.
 
 - SIP and PSTN integration is native, which puts call centres and phone agents in reach.
 - Video processing and multimodal pipelines, vision alongside voice, are part of the framework.
-- SDKs exist for ESP32 and other embedded devices.
+- Native SDKs exist for iOS and Android apps, and for ESP32 and other embedded devices.
 - A backend already written in Python, on Django or FastAPI, gains a voice service in its own language.
 - Pipecat Cloud runs the agents and the phone layer for you, where Micdrop has no equivalent to offer.
 - 14,000 stars and 293 contributors bring more tutorials, community answers and third-party integrations.
@@ -243,6 +254,7 @@ Micdrop is built for one use case, and a common one: **adding real-time voice AI
 - You bring your own provider keys, so the provider bills stay your only per-minute cost, under an MIT licence.
 - Native integrations with [Mistral](/docs/ai-integration/provided-integrations/mistral) (LLM and STT), [Gladia](/docs/ai-integration/provided-integrations/gladia) (STT) and [Gradium](/docs/ai-integration/provided-integrations/gradium) (STT and TTS) make a fully French stack possible.
 - React hooks, TypeScript types and a ten-line setup carry the developer experience.
+- A React Native app talks to the same Node server as the web app, with the same call code.
 
 ## Frequently asked questions
 
@@ -276,4 +288,4 @@ If LiveKit Agents is the other framework on your shortlist, we ran the same comp
 
 ---
 
-Pipecat is the answer the moment the pipeline leaves the browser, for telephony, video or embedded devices. For a web application whose team already writes TypeScript, Micdrop gets a call running with fewer moving parts, and what a production call needs is already wired in.
+Pipecat is the answer when the project needs telephony, video, embedded devices or a native Swift or Kotlin app. For a web application whose team already writes TypeScript, Micdrop gets a call running with fewer moving parts, and what a production call needs is already wired in.

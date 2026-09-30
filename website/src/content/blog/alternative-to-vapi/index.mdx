@@ -3,6 +3,7 @@ title: 'Vapi Alternative: Own the Voice Loop in TypeScript'
 h1: 'Micdrop, an open source Vapi alternative for TypeScript web apps'
 summary: 'Vapi runs your voice agent on its servers for $0.05 a minute. Micdrop runs the same loop inside the Node server you already ship, with no platform fee.'
 date: 2026-08-16
+update: 2026-09-30
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -158,6 +159,16 @@ Micdrop comes with the details that separate a voice demo from a feature you can
 
 Products already run on this. [Raconte.ai](https://raconte.ai) conducts voice interviews and is built by Micdrop's maintainer, which is worth saying out loud when it is cited as proof. [Cibli](https://cibli.fr), a recruitment platform where candidates answer out loud, is built by a separate team. Both ship the browser and server packages together.
 
+## Vapi and Micdrop in a React Native app
+
+Vapi and Micdrop both put a voice agent in a React Native app. Vapi's `@vapi-ai/react-native` mirrors its web SDK: `vapi.start(assistantId)` joins a Daily WebRTC room, the app streams the microphone for the whole call, and transcription, the model, the voice and the turn-taking run on Vapi's servers.
+
+Vapi last released that SDK in July 2025. Its README still asks you to switch off React Native's New Architecture, which recent React Native versions make mandatory, so check the state of the repository before you build a mobile app on it. Vapi's native SDKs, also built on Daily, are more current: the Swift one was updated in March 2026 and the Kotlin one in December 2025.
+
+Micdrop's [React Native client](/docs/react-native) runs on the New Architecture and streams to the `MicdropServer` in your own Node process, the one your web app already talks to. Voice activity detection runs on the device, so audio leaves the phone only while the user speaks. The call code is the browser code with a different import. Vapi's and Micdrop's React Native SDKs both need native code, so both run from an Expo development build rather than from Expo Go.
+
+The choice on mobile is the same as on the web: where the conversation runs, and who bills the minute. Vapi charges its $0.05 a minute on a call from a mobile app just as on a call from a browser. That fee still pays for the dashboard, the call logs and the SLA, which Micdrop leaves to you on mobile as on the web.
+
 ## Head to head
 
 Vapi published these prices in August 2026. Voice AI pricing moves fast, so check its pricing page before you commit a budget.
@@ -168,6 +179,7 @@ Vapi published these prices in August 2026. Voice AI pricing moves fast, so chec
 | **How you get it** | Hosted platform, closed orchestration engine | MIT library on npm |
 | **Server language** | Any, through HTTP webhooks | TypeScript / Node.js |
 | **Browser transport** | WebRTC through Daily | WebSocket, with VAD in the browser |
+| **React Native** | `@vapi-ai/react-native`, WebRTC through Daily | `@micdrop/react-native`, WebSocket with VAD on the device |
 | **Custom logic** | An OpenAI-shaped endpoint Vapi calls back | Functions and Zod schemas in your process |
 | **Extending the built-ins** | Assistant configuration, then a webhook | Swap the VAD, subclass any class, fork the code |
 | **Platform fee** | $0.05 / min on Build, custom on Scale | None |
@@ -213,7 +225,7 @@ There is no import tool, so you rebuild the assistant by hand. That is less work
 
 Your system prompt moves over unchanged, into the `systemPrompt` of the agent. Micdrop integrates with many of the same speech and model vendors, so a stack on OpenAI, Gemini, Mistral, ElevenLabs, Cartesia or Gladia transfers as is and the same voice ID keeps working. The tools are the real work: each Vapi function becomes a function registered on the agent with a Zod schema, and the body usually gets shorter, because it now runs where your database connection already lives instead of behind an HTTP round trip. If you built a custom LLM server, that logic collapses into the agent itself and the endpoint disappears.
 
-On the browser side, `@micdrop/client` replaces `@vapi-ai/web`, and `Micdrop.start({ url })` replaces `vapi.start(assistantId)`, pointing at your own server rather than at an assistant on the platform. Both SDKs surface the same conversational moments (call start and end, speech boundaries, transcript messages), so the UI you already built maps across with renamed handlers rather than a rewrite.
+On the browser side, `@micdrop/client` replaces `@vapi-ai/web`, and `Micdrop.start({ url })` replaces `vapi.start(assistantId)`, pointing at your own server rather than at an assistant on the platform. Both SDKs surface the same conversational moments (call start and end, speech boundaries, transcript messages), so the UI you already built maps across with renamed handlers rather than a rewrite. In a React Native app, `@micdrop/react-native` replaces `@vapi-ai/react-native` the same way.
 
 Rebuilding the pipeline itself takes hours. Rebuilding the dashboard and the call history takes longer, since they stop being included the day you leave. Run both stacks in parallel behind a feature flag, and keep the Vapi assistant answering until the traffic has moved.
 
@@ -239,7 +251,7 @@ Rebuilding the pipeline itself takes hours. Rebuilding the dashboard and the cal
     It depends on which unknown is bigger. If you are still unsure the voice feature will hold up with real users, Vapi's free minutes answer that in a weekend, before you commit to any architecture. If the feature is a screen inside a web application and your backend already runs Node, starting on a library saves you a migration you can already see coming. Either way you can change your mind later. Rebuilding the pipeline takes hours, and what you throw away is the dashboard or the logging you built on top of it.
   </FaqItem>
   <FaqItem question="Does Micdrop support phone calls?">
-    No. Micdrop connects a browser to your Node server over a WebSocket, and it has no SIP, PSTN or telephony layer. If your agent has to answer a phone number, a hosted platform like Vapi or a telephony-capable framework like Pipecat, LiveKit Agents or Jambonz is the right tool. Micdrop covers the web leg: a user talking to your application in a tab.
+    No. Micdrop connects a browser or a React Native app to your Node server over a WebSocket, and it has no SIP, PSTN or telephony layer. If your agent has to answer a phone number, a hosted platform like Vapi or a telephony-capable framework like Pipecat, LiveKit Agents or Jambonz is the right tool. Micdrop covers a user talking to your application, in a browser tab or in your mobile app.
   </FaqItem>
   <FaqItem question="How long does it take to migrate from Vapi to Micdrop?">
     Rebuilding the pipeline takes a few hours. The system prompt and the provider configuration transfer almost unchanged, and the tools need rewriting as typed functions in your server, which usually makes them shorter. The work that actually takes time is replacing what the platform included: call logging, transcript storage and any dashboard your team relied on. Run both behind a feature flag before cutting over.
