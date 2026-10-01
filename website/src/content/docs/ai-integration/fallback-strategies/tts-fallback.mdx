@@ -8,7 +8,7 @@ order: 63
 
 The `FallbackTTS` class provides automatic failover between multiple TTS providers for improved reliability. When one provider fails after exhausting its retries, it automatically switches to the next provider in the list.
 
-Cartesia, Gradium, OpenAI and the local engines are all [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript) that you can put in the provider list.
+Cartesia, Gradium, OpenAI and the local engines are all [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript) that you can put in the provider list. Cartesia and ElevenLabs make a good pair there. Put first the engine whose strength you want on every call, once you [compare Cartesia and ElevenLabs on price and concurrency](/blog/cartesia-vs-elevenlabs).
 
 When the main voice performs audio tags such as `[laughs]` and the backup would read them out loud, [strip the tags from the text sent to the backup engine](/blog/elevenlabs-audio-tags-voice-agent).
 
