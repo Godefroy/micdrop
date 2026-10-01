@@ -1,3 +1,4 @@
+// Languages spoken by Sonic 3.6
 export type CartesiaLanguage =
   | 'en'
   | 'fr'
@@ -14,6 +15,102 @@ export type CartesiaLanguage =
   | 'ru'
   | 'sv'
   | 'tr'
+  | 'tl'
+  | 'bg'
+  | 'ro'
+  | 'ar'
+  | 'cs'
+  | 'el'
+  | 'fi'
+  | 'hr'
+  | 'ms'
+  | 'sk'
+  | 'da'
+  | 'ta'
+  | 'uk'
+  | 'hu'
+  | 'no'
+  | 'vi'
+  | 'bn'
+  | 'th'
+  | 'he'
+  | 'ka'
+  | 'id'
+  | 'te'
+  | 'gu'
+  | 'kn'
+  | 'ml'
+  | 'mr'
+  | 'pa'
+  | 'or'
+  | 'ur'
+
+// Emotions accepted by generation_config.emotion (English only)
+export type CartesiaEmotion =
+  | 'neutral'
+  | 'happy'
+  | 'excited'
+  | 'enthusiastic'
+  | 'elated'
+  | 'euphoric'
+  | 'triumphant'
+  | 'amazed'
+  | 'surprised'
+  | 'flirtatious'
+  | 'curious'
+  | 'content'
+  | 'peaceful'
+  | 'serene'
+  | 'calm'
+  | 'grateful'
+  | 'affectionate'
+  | 'trust'
+  | 'sympathetic'
+  | 'anticipation'
+  | 'mysterious'
+  | 'angry'
+  | 'mad'
+  | 'outraged'
+  | 'frustrated'
+  | 'agitated'
+  | 'threatened'
+  | 'disgusted'
+  | 'contempt'
+  | 'envious'
+  | 'sarcastic'
+  | 'ironic'
+  | 'sad'
+  | 'dejected'
+  | 'melancholic'
+  | 'disappointed'
+  | 'hurt'
+  | 'guilty'
+  | 'bored'
+  | 'tired'
+  | 'rejected'
+  | 'nostalgic'
+  | 'wistful'
+  | 'apologetic'
+  | 'hesitant'
+  | 'insecure'
+  | 'confused'
+  | 'resigned'
+  | 'anxious'
+  | 'panicked'
+  | 'alarmed'
+  | 'scared'
+  | 'proud'
+  | 'confident'
+  | 'distant'
+  | 'skeptical'
+  | 'contemplative'
+  | 'determined'
+
+export interface CartesiaGenerationConfig {
+  speed?: number // 0.6 to 1.5, default 1
+  volume?: number // 0.5 to 2.0, default 1
+  emotion?: CartesiaEmotion
+}
 
 export type CartesiaPayload = CartesiaTranscriptPayload | CartesiaCancelPayload
 
@@ -32,6 +129,7 @@ export interface CartesiaTranscriptPayload {
   language?: CartesiaLanguage
   duration?: number
   speed?: 'fast' | 'normal' | 'slow'
+  generation_config?: CartesiaGenerationConfig
   context_id?: string
   continue?: boolean
   max_buffer_delay_ms?: number

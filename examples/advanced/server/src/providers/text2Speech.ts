@@ -96,15 +96,14 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Cartesia',
     requiredEnv: ['CARTESIA_API_KEY', 'CARTESIA_VOICE_ID'],
     models: [
-      { id: 'sonic-turbo', label: 'sonic-turbo' },
-      { id: 'sonic-3', label: 'sonic-3' },
-      { id: 'sonic-2', label: 'sonic-2' },
+      { id: 'sonic-3.6', label: 'sonic-3.6' },
+      { id: 'sonic-3.5', label: 'sonic-3.5' },
     ],
-    defaultModel: 'sonic-turbo',
+    defaultModel: 'sonic-3.6',
     create: ({ lang, model }) =>
       new CartesiaTTS({
         apiKey: process.env.CARTESIA_API_KEY || '',
-        modelId: model || 'sonic-turbo',
+        modelId: model || 'sonic-3.6',
         voiceId: process.env.CARTESIA_VOICE_ID || '',
         language: lang.split('-')[0] as CartesiaLanguage,
       }),

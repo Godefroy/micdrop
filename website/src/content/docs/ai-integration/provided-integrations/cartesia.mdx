@@ -26,10 +26,10 @@ import { MicdropServer } from '@micdrop/server'
 
 const tts = new CartesiaTTS({
   apiKey: process.env.CARTESIA_API_KEY || '',
-  modelId: 'sonic-turbo', // Cartesia model ID
+  modelId: 'sonic-3.6', // Cartesia model ID
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091', // Voice ID
   language: 'en', // Optional: specify language
-  speed: 'normal', // Optional: speech speed
+  generationConfig: { speed: 1.1 }, // Optional: speed, volume and emotion
 })
 
 // Use with MicdropServer
@@ -47,7 +47,7 @@ import { Readable } from 'stream'
 
 const tts = new CartesiaTTS({
   apiKey: process.env.CARTESIA_API_KEY || '',
-  modelId: 'sonic-turbo',
+  modelId: 'sonic-3.6',
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
 })
 
@@ -69,28 +69,64 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 
 ### Options
 
-| Option              | Type                           | Default  | Description                                            |
-| ------------------- | ------------------------------ | -------- | ------------------------------------------------------ |
-| `apiKey`            | `string`                       | Required | Your Cartesia API key                                  |
-| `modelId`           | `string`                       | Required | Cartesia model ID to use                               |
-| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                          |
-| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                               |
-| `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Speech speed                                           |
-| `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection       |
-| `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`          | `number`                       | `3`      | Maximum number of reconnection attempts before failing |
+| Option              | Type                           | Default  | Description                                              |
+| ------------------- | ------------------------------ | -------- | -------------------------------------------------------- |
+| `apiKey`            | `string`                       | Required | Your Cartesia API key                                    |
+| `modelId`           | `string`                       | Required | Cartesia model ID to use, such as `sonic-3.6`            |
+| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                            |
+| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                                 |
+| `generationConfig`  | `CartesiaGenerationConfig`     | Optional | Speed, volume and emotion of the voice, see below        |
+| `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Deprecated, Sonic 3 models read `generationConfig.speed` |
+| `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection         |
+| `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts      |
+| `maxRetry`          | `number`                       | `3`      | Maximum number of reconnection attempts before failing   |
+
+### Models
+
+Use `sonic-3.6`, the current Sonic model, or pin its snapshot `sonic-3.6-2026-08-27` in production. Cartesia stops serving `sonic-turbo` and `sonic-2` after October 20, 2026, so an agent configured with one of them has to switch its `modelId` before that date. The [Cartesia model list](https://docs.cartesia.ai/build-with-cartesia/tts-models/older-models) gives every snapshot and its sunset date.
+
+### Speed, volume and emotion
+
+`generationConfig` applies to every sentence the agent speaks. Cartesia treats its values as guidance and keeps the pacing natural.
+
+| Field     | Type              | Range      | Description                                                               |
+| --------- | ----------------- | ---------- | ------------------------------------------------------------------------- |
+| `speed`   | `number`          | 0.6 to 1.5 | Speech speed, `1` by default                                              |
+| `volume`  | `number`          | 0.5 to 2.0 | Volume, `1` by default                                                    |
+| `emotion` | `CartesiaEmotion` |            | Emotion the voice leans toward, such as `calm` or `content`, English only |
+
+```typescript
+const tts = new CartesiaTTS({
+  apiKey: process.env.CARTESIA_API_KEY || '',
+  modelId: 'sonic-3.6',
+  voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
+  generationConfig: { speed: 0.9, volume: 1.2, emotion: 'calm' },
+})
+```
+
+To change the tone sentence by sentence, the LLM can write [Cartesia's emotion and speed tags](https://docs.cartesia.ai/build-with-cartesia/capability-guides/volume-speed-emotion) into its answer, such as `<emotion value="calm"/>`.
 
 ### Supported Languages
 
-The package supports the following languages:
+Sonic 3.6 speaks 44 languages:
 
-| Code | Language | Code | Language   | Code | Language |
-| ---- | -------- | ---- | ---------- | ---- | -------- |
-| `en` | English  | `fr` | French     | `de` | German   |
-| `es` | Spanish  | `pt` | Portuguese | `zh` | Chinese  |
-| `ja` | Japanese | `hi` | Hindi      | `it` | Italian  |
-| `ko` | Korean   | `nl` | Dutch      | `pl` | Polish   |
-| `ru` | Russian  | `sv` | Swedish    | `tr` | Turkish  |
+| Code | Language   | Code | Language   | Code | Language   |
+| ---- | ---------- | ---- | ---------- | ---- | ---------- |
+| `en` | English    | `fr` | French     | `de` | German     |
+| `es` | Spanish    | `pt` | Portuguese | `zh` | Chinese    |
+| `ja` | Japanese   | `hi` | Hindi      | `it` | Italian    |
+| `ko` | Korean     | `nl` | Dutch      | `pl` | Polish     |
+| `ru` | Russian    | `sv` | Swedish    | `tr` | Turkish    |
+| `tl` | Tagalog    | `bg` | Bulgarian  | `ro` | Romanian   |
+| `ar` | Arabic     | `cs` | Czech      | `el` | Greek      |
+| `fi` | Finnish    | `hr` | Croatian   | `ms` | Malay      |
+| `sk` | Slovak     | `da` | Danish     | `ta` | Tamil      |
+| `uk` | Ukrainian  | `hu` | Hungarian  | `no` | Norwegian  |
+| `vi` | Vietnamese | `bn` | Bengali    | `th` | Thai       |
+| `he` | Hebrew     | `ka` | Georgian   | `id` | Indonesian |
+| `te` | Telugu     | `gu` | Gujarati   | `kn` | Kannada    |
+| `ml` | Malayalam  | `mr` | Marathi    | `pa` | Punjabi    |
+| `or` | Odia       | `ur` | Urdu       |      |            |
 
 ## Getting Started
 
@@ -103,10 +139,9 @@ import { CartesiaTTS } from '@micdrop/cartesia'
 
 const tts = new CartesiaTTS({
   apiKey: 'your-cartesia-api-key',
-  modelId: 'sonic-turbo', // Or sonic-multilingual for multiple languages
+  modelId: 'sonic-3.6',
   voiceId: 'your-preferred-voice-id',
   language: 'en',
-  speed: 'normal',
 })
 
 // Use with MicdropServer

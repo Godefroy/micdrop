@@ -3,6 +3,7 @@ import { Readable } from 'stream'
 import WebSocket from 'ws'
 import {
   CartesiaCancelPayload,
+  CartesiaGenerationConfig,
   CartesiaLanguage,
   CartesiaPayload,
   CartesiaResponse,
@@ -13,7 +14,9 @@ export interface CartesiaTTSOptions {
   modelId: string
   voiceId: string
   language?: CartesiaLanguage
+  /** @deprecated Sonic 3 models read `generationConfig.speed` instead */
   speed?: 'fast' | 'normal' | 'slow'
+  generationConfig?: CartesiaGenerationConfig
   connectionTimeout?: number
   retryDelay?: number
   maxRetry?: number
@@ -163,6 +166,7 @@ export class CartesiaTTS extends TTS {
       },
       language: this.options.language,
       speed: this.options.speed,
+      generation_config: this.options.generationConfig,
     } as const
   }
 

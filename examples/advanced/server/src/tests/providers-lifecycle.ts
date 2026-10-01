@@ -46,7 +46,7 @@ const providers: Record<string, (options: Options) => any> = {
     new CartesiaTTS({
       apiKey: env('CARTESIA_API_KEY'),
       voiceId: env('CARTESIA_VOICE_ID'),
-      modelId: 'sonic-turbo',
+      modelId: 'sonic-3.6',
       ...options,
     }),
   gladia: (options) =>

@@ -9,7 +9,7 @@ const textStream = createTextStream()
 
 const tts = new CartesiaTTS({
   apiKey: process.env.CARTESIA_API_KEY || '',
-  modelId: 'sonic-turbo',
+  modelId: 'sonic-3.6',
   voiceId: process.env.CARTESIA_VOICE_ID || '',
 })
 tts.logger = new Logger('CartesiaTTS')
