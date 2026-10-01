@@ -158,9 +158,7 @@ Split the text on the punctuation that ends a sentence, and keep the ellipsis in
 
 ## Audio tags the LLM can write
 
-v4 Turbo acts out tags such as `[whispers]`, `[laughs]` or `[sighs]`, along with sound effects like `[door slams]` and free directions like `[strong French accent]`. We checked it by transcribing its audio with Whisper: no tag word came out of v4 Turbo, while Flash v2.5 said "Laughs… whispers" out loud.
-
-The LLM writes the tags, so the system prompt has to list the ones it may use and where to place them, right before the words they change. The tags also reach your transcript, so strip them from what you display or show them apart from the words. You can start from our [system prompt for audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags).
+Eleven v4 Turbo acts out tags such as `[whispers]`, `[laughs]` or `[sighs]`, along with sound effects like `[door slams]` and free directions like `[strong French accent]`. The LLM writes the tags, so its system prompt has to list the ones it may use. The tags also reach your transcript and the text on screen. You can [prompt the LLM to write ElevenLabs audio tags](/blog/elevenlabs-audio-tags-voice-agent), show them as labels and strip them before a backup voice reads them.
 
 Tags give a pipeline some of the expressiveness that used to push teams toward a speech to speech model. When you weigh the [OpenAI Realtime API against a pipeline of separate providers](/blog/openai-realtime-api-vs-pipeline), a pipeline with v4 Turbo now laughs and whispers too, with a voice you pick from the ElevenLabs library.
 

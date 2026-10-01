@@ -10,6 +10,8 @@ The `FallbackTTS` class provides automatic failover between multiple TTS provide
 
 Cartesia, Gradium, OpenAI and the local engines are all [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript) that you can put in the provider list.
 
+When the main voice performs audio tags such as `[laughs]` and the backup would read them out loud, [strip the tags from the text sent to the backup engine](/blog/elevenlabs-audio-tags-voice-agent).
+
 ## Features
 
 - **Automatic failover**: Seamlessly switches between providers when failures occur

@@ -107,7 +107,7 @@ Use an ellipsis for a pause. The words you say always stay outside the brackets.
 The tags reach the client with the rest of the answer, in the conversation and in the [partial messages](../../server/partial-messages). Run the [storyteller demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-storyteller) to hear what the tags change. Its page shows each tag apart from the words, and lets you switch the voice to Flash v2.5, where the same storyteller speaks without tags.
 
 <Callout type="warning">
-Only Eleven v3 and v4 perform the tags. Flash v2.5, Turbo v2.5 and Multilingual v2 read them out loud, so leave the tag instructions out of the system prompt when the voice runs on one of those models.
+Only Eleven v3 and v4 perform the tags. Flash v2.5, Turbo v2.5 and Multilingual v2 read them out loud, so leave the tag instructions out of the system prompt when the voice runs on one of those models. When one of those models only serves as a backup voice, keep the tag instructions and [strip the audio tags from the text it receives](/blog/elevenlabs-audio-tags-voice-agent).
 </Callout>
 
 ### How Eleven v3 and v4 stream
