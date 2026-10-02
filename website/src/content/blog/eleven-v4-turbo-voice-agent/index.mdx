@@ -182,16 +182,7 @@ In an agent, the LLM writes the text, so add a rule to the system prompt for the
 
 ## Eleven v4 pricing
 
-The [API prices](https://elevenlabs.io/pricing/api) read on September 29, 2026 carry a launch discount until October 12:
-
-| Model           | Launch price, per million characters | Regular price, per million characters |
-| --------------- | ------------------------------------ | ------------------------------------- |
-| Eleven v4 Turbo | $11                                  | $40                                   |
-| Eleven v4       | $22                                  | $80                                   |
-| Eleven v3       | $80                                  | $80                                   |
-| Flash v2.5      | $40                                  | $40                                   |
-
-After the launch offer, v4 Turbo costs the same as Flash v2.5, and v4 the same as v3. Moving an agent from v3 conversational to v4 Turbo lowers the bill as well as the latency. The subscription plans bill v4 in credits, and ElevenLabs had not published how many credits a v4 character costs when we checked.
+Eleven v4 Turbo costs [$40 per million characters on the API](https://elevenlabs.io/pricing/api) and Eleven v4 $80, discounted to $11 and $22 until October 12, 2026. At list price, v4 Turbo costs the same as Flash v2.5, about [$0.04 per minute of agent speech](/blog/elevenlabs-api-pricing-voice-agent).
 
 ## Why run v4 Turbo through Micdrop
 
@@ -273,7 +264,7 @@ To keep the agent speaking when ElevenLabs fails, put a second engine behind it 
   <FaqItem question="How much does Eleven v4 cost?">
     On the API, Eleven v4 costs $80 per million characters and v4 Turbo $40.
     Until October 12, 2026, a launch offer lowers them to $22 and $11. The
-    subscription plans bill v4 in credits. Each call also holds one dialogue
+    price per character is the same on every plan. Each call also holds one dialogue
     session for its whole length, so your plan caps how many v4 calls run at
     once, 70 on Pro and 105 on Scale.
   </FaqItem>

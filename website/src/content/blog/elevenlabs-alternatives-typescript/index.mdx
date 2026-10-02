@@ -19,13 +19,13 @@ similarPosts:
   - 'open-source-voice-agent-frameworks'
   - 'openai-realtime-api-vs-pipeline'
 takeaways:
-  - 'Your ElevenLabs plan caps how many syntheses run at once. Pro allows 20 concurrent Flash requests, or 70 calls on Eleven v4, since each v4 call holds one dialogue session from start to end. A voice product hits that ceiling long before it spends its credits.'
+  - 'Your ElevenLabs plan caps how many syntheses run at once. Pro allows 20 concurrent Flash requests, or 70 calls on Eleven v4, since each v4 call holds one dialogue session from start to end. A voice product hits that ceiling long before it uses up the characters its plan includes.'
   - 'Cartesia, Gradium, OpenAI, Gemini, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
   - 'Gradium synthesises on an EU endpoint, so you can name the region when a customer asks where the audio is generated.'
   - 'Micdrop ships a FallbackTTS class that holds a list of providers and replays the unspoken text to the next one when the first gives up mid-sentence.'
 ---
 
-Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word at a lower price, Gradium generates the audio in Europe, OpenAI uses the key your agent already has, Gemini follows the tone you describe in plain words, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
+Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word, Gradium generates the audio in Europe, OpenAI uses the key your agent already has, Gemini follows the tone you describe in plain words, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
 
 This article compares these engines on languages, voices, where they run and how they bill, then shows how to switch from ElevenLabs to one of them in a TypeScript voice agent built on Micdrop, where the change fits in one line of code.
 
@@ -33,7 +33,7 @@ This article compares these engines on languages, voices, where they run and how
 
 Most teams hit the concurrency ceiling first. Few of them knew it was there. Your plan sets how many syntheses ElevenLabs runs at the same time. The [model documentation](https://elevenlabs.io/docs/overview/models) publishes the limits: 20 concurrent Flash requests on Pro, 30 on Scale, half those numbers on Multilingual v2. Eleven v3 and v4 stream over a separate WebSocket, where ElevenLabs caps dialogue sessions instead: 14 on the free plan, 70 on Pro, 105 on Scale. A blog reading feature never reaches that ceiling. A voice agent does, because every live call holds a Flash slot for as long as the agent is talking. On v4, the call holds its session from the first second to the last, silences included.
 
-ElevenLabs charges a credit per character on Multilingual v2 and half that on Flash. Those credits come in [plans](https://elevenlabs.io/pricing) running from $6 a month for 30,000 credits to $990 for six million. Your bill grows with how much your agent says. To budget calls, compare the [cost per hour of generated audio for each voice provider](/docs/ai-integration) rather than the price of a character.
+On the API, ElevenLabs bills in dollars per character, which comes to about [$0.04 per minute of agent speech on Flash v2.5](/blog/elevenlabs-api-pricing-voice-agent) and twice that on Multilingual v2. Your bill grows with how much your agent says. To budget calls, compare the [cost per hour of generated audio for each voice provider](/docs/ai-integration) rather than the price of a character.
 
 Every hosted provider has outages. When text to speech fails, your agent goes silent while a caller waits for an answer. Configure a second engine before that happens, especially when the voice is your interface.
 
@@ -57,7 +57,7 @@ OpenAI's speech API takes no language parameter and speaks whatever text you sen
 
 [Cartesia](https://cartesia.ai) built Sonic around time to first audio. A caller hears the gap between the end of their own sentence and the first syllable of the answer. Once the answer starts, nobody counts how fast the words come.
 
-Cartesia also charges per character, less than ElevenLabs at every tier, with plans from $5 a month to $299 on [its pricing page](https://cartesia.ai/pricing). Sonic 3.6 speaks 44 languages, where ElevenLabs covers 29 to more than 90 depending on the model. Cartesia's voice catalog is smaller too.
+Cartesia also charges per character. Its plans, from $5 to $299 a month on [its pricing page](https://cartesia.ai/pricing), work out between $37 and $50 per million characters, about the price of Flash v2.5. Sonic 3.6 speaks 44 languages, where ElevenLabs covers 29 to more than 90 depending on the model. Cartesia's voice catalog is smaller too.
 
 If you are choosing between Cartesia and ElevenLabs, [compare the two for a voice agent](/blog/cartesia-vs-elevenlabs) on latency, price and concurrency.
 
@@ -202,7 +202,7 @@ Set `maxRetry` low on the first provider so the caller barely notices the switch
 
 Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length.
 
-Switch to Cartesia when callers complain about the silence before the first word, and when the per-character bill has started to matter.
+Switch to Cartesia when callers complain about the silence before the first word.
 
 Pick Gradium when your buyer needs the audio synthesised in Europe. Before you promise anything, check how to [move the agent and the transcription to Europe with the voice](/docs/ai-integration/sovereign-voice-ai).
 

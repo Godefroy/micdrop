@@ -20,7 +20,7 @@ takeaways:
   - 'For a voice agent, the comparison is Cartesia Sonic 3.6 against ElevenLabs Flash v2.5 or Eleven v4 Turbo. Cartesia stops serving sonic-turbo and sonic-2 after October 20, 2026.'
   - 'Both vendors publish a latency test they win, so measure them yourself from the region you deploy in. Even the ElevenLabs test has Sonic 3.6 and v4 Turbo both starting to speak in under 300 ms.'
   - 'Eleven v4 Turbo covers more languages (90+, against 44 on Sonic 3.6 and 32 on Flash) and acts out audio tags. Cartesia clones a voice from 10 seconds of audio and takes emotion and speed tags.'
-  - 'On the subscription plans, Cartesia costs less per character. At $299 a month, Cartesia Scale covers about 8 million characters with 15 concurrent generations, while ElevenLabs Scale covers 1.8 to 3.6 million Flash characters with 30 Flash generations or 105 Eleven v4 calls at once.'
+  - 'Cartesia and the ElevenLabs API cost about the same per character. At $299 a month, Cartesia Scale covers about 8 million characters with 15 concurrent generations, while ElevenLabs Scale covers 7,475,000 Flash characters with 30 Flash generations or 105 Eleven v4 calls at once.'
   - 'You can keep both: FallbackTTS in Micdrop switches to the second engine when the first one fails and replays the text that was never spoken.'
 ---
 
@@ -80,23 +80,23 @@ With v4 Turbo and Sonic 3.6 alike, the LLM writes the tags, so list the ones it 
 
 ## Price and concurrency per plan
 
-Cartesia bills about one credit per character, so its plans work out between $37 and $50 per million characters. ElevenLabs charges [$40 per million characters](https://elevenlabs.io/pricing/api) for Flash v2.5 when you pay as you go on its API, close to Cartesia. Eleven v4 Turbo costs $11 per million until October 12, 2026, then $40. The ElevenLabs subscription plans cost more per character.
+Cartesia bills about one credit per character, so its plans work out between $37 and $50 per million characters. ElevenLabs bills its API in dollars, [$40 per million characters](https://elevenlabs.io/pricing/api) for Flash v2.5 on every plan. Eleven v4 Turbo costs $11 per million until October 12, 2026, then $40. On the API, ElevenLabs Flash v2.5 costs about [$0.04 per minute of agent speech](/blog/elevenlabs-api-pricing-voice-agent), close to what Cartesia charges.
 
-Each plan includes a number of credits and a concurrency limit:
+Each plan includes a monthly allowance and a concurrency limit:
 
-| Cartesia plan and monthly price | Cartesia credits | Cartesia concurrency | ElevenLabs plan and monthly price | ElevenLabs credits | Flash concurrency | v4 calls at once |
+| Cartesia plan and monthly price | Cartesia credits | Cartesia concurrency | ElevenLabs plan and monthly price | ElevenLabs Flash characters on the API | Flash concurrency | v4 calls at once |
 | --- | --- | --- | --- | --- | --- | --- |
-| Pro, $5 | 100,000 | 3 | Starter, $6 | 30,000 | 6 | 21 |
-| Startup, $49 | 1,250,000 | 5 | Pro, $99 | 600,000 | 20 | 70 |
-| Scale, $299 | 8,000,000 | 15 | Scale, $299 | 1,800,000 | 30 | 105 |
+| Pro, $5 | 100,000 | 3 | Starter, $6 | 150,000 | 6 | 21 |
+| Startup, $49 | 1,250,000 | 5 | Pro, $99 | 2,475,000 | 20 | 70 |
+| Scale, $299 | 8,000,000 | 15 | Scale, $299 | 7,475,000 | 30 | 105 |
 
-ElevenLabs charges between 0.5 and 1 credit per Flash character. At $299 a month, ElevenLabs Scale therefore covers 1.8 to 3.6 million Flash characters, between $83 and $166 per million. Cartesia Scale includes more than twice as many characters. In exchange, ElevenLabs Scale runs 30 Flash generations at once, against 15 on Cartesia Scale. The v4 figures come from the session limits ElevenLabs published on September 29, 2026.
+With ElevenLabs Scale, your $299 a month pays for 7,475,000 Flash v2.5 characters on the API, at the prices read on October 2, 2026. Cartesia Scale includes about 8 million characters for the same price. ElevenLabs Scale runs 30 Flash generations at once, against 15 on Cartesia Scale. The v4 figures come from the session limits ElevenLabs published on September 29, 2026.
 
 The vendors also count concurrency differently. Cartesia [counts each open context](https://docs.cartesia.ai/use-the-api/concurrency-limits-and-timeouts). Micdrop opens one context per answer, so a slot stays busy for one answer rather than a whole call. On Flash, ElevenLabs counts the time spent generating audio, so a slot stays busy for one answer there as well. On v4 Turbo, each call holds one dialogue session from its first second to its last, silences included. A voice agent with 20 live calls rarely generates 15 answers at the same instant, so Cartesia's 15 slots go further than the number suggests. Size your plan on your peak of simultaneous answers, measured on real traffic.
 
-{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "A comparison of two plans that both cost '$299 a month', shown as two cards side by side on a dark surface. Left card with an emerald accent, header 'Cartesia Scale'. Inside, two large figures stacked: '8M credits' with the small caption 'about 1 credit per character', and '15' with the small caption 'concurrent generations'. Right card with a sky blue accent, header 'ElevenLabs Scale'. Inside, three large figures stacked: '1.8M credits' with the small caption '0.5 to 1 credit per Flash character', '30' with the small caption 'concurrent Flash generations', and '105' with the small caption 'Eleven v4 calls at once'. Title at the top in a modern clean bold sans-serif: 'What $299 a month buys'. Small footer text: 'Plans published by Cartesia and ElevenLabs, read on October 1, 2026'. Flat vector style, generous spacing."
-    Infographic only: regenerate if either vendor changes its Scale plan. Last data sync: 2026-10-01. */}
-![At $299 a month, Cartesia Scale includes 8 million credits and 15 concurrent generations, ElevenLabs Scale 1.8 million credits, 30 concurrent Flash generations or 105 Eleven v4 calls](./what-299-buys.jpg)
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "A comparison of two plans that both cost '$299 a month', shown as two cards side by side on a dark surface. Left card with an emerald accent, header 'Cartesia Scale'. Inside, two large figures stacked: '8M credits' with the small caption 'about 1 credit per character', and '15' with the small caption 'concurrent generations'. Right card with a sky blue accent, header 'ElevenLabs Scale'. Inside, three large figures stacked: '7.475M Flash characters' with the small caption 'billed in dollars on the API', '30' with the small caption 'concurrent Flash generations', and '105' with the small caption 'Eleven v4 calls at once'. Title at the top in a modern clean bold sans-serif: 'What $299 a month buys'. Small footer text: 'Plans and API prices published by Cartesia and ElevenLabs, read on October 2, 2026'. Flat vector style, generous spacing."
+    Infographic only: regenerate if either vendor changes its Scale plan. Last data sync: 2026-10-02. */}
+![At $299 a month, Cartesia Scale includes 8 million credits and 15 concurrent generations, ElevenLabs Scale 7,475,000 Flash characters on the API, 30 concurrent Flash generations or 105 Eleven v4 calls](./what-299-buys.jpg)
 
 ## Streaming from Node
 
@@ -186,13 +186,12 @@ Keep `maxRetry` low on the first engine. The default of three retries, one secon
     the sentences your agent says.
   </FaqItem>
   <FaqItem question="Is Cartesia cheaper than ElevenLabs?">
-    On the subscription plans, yes. At $299 a month, Cartesia Scale includes 8
-    million credits, about 8 million characters, against 1.8 million credits for
-    ElevenLabs Scale, which buy 1.8 to 3.6 million Flash characters. In
-    exchange, ElevenLabs Scale runs 30 Flash generations at once, against 15
-    on Cartesia Scale. When you pay as you go, ElevenLabs charges $40 per
-    million Flash v2.5 characters, close to the $37 to $50 per million of the
-    Cartesia plans.
+    Barely, and only from Cartesia's $49 Startup plan up. The Cartesia plans work out between $37 and $50 per million
+    characters, and ElevenLabs bills its API $40 per million Flash v2.5
+    characters on every plan. At $299 a month, Cartesia Scale includes about 8
+    million characters, against 7,475,000 Flash characters on ElevenLabs Scale.
+    In exchange, ElevenLabs Scale runs 30 Flash generations at once, against
+    15 on Cartesia Scale.
   </FaqItem>
   <FaqItem question="Which Cartesia voice is considered the best?">
     Cartesia names eight voices that respond best to its emotion controls:
@@ -207,8 +206,8 @@ Keep `maxRetry` low on the first engine. The default of three retries, one secon
   </FaqItem>
   <FaqItem question="What is the best alternative to ElevenLabs?">
     For a real-time voice agent, Cartesia is the closest alternative: a hosted
-    streaming API built for a fast first word, with subscription plans that
-    include more characters per dollar. Other engines suit other needs, such as Gradium for audio
+    streaming API built for a fast first word, at about the same price per
+    character. Other engines suit other needs, such as Gradium for audio
     generated in Europe or local engines with no bill at all. We compare them with the
     other [alternatives to ElevenLabs for a TypeScript voice
     agent](/blog/elevenlabs-alternatives-typescript).
