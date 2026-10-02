@@ -82,7 +82,7 @@ ElevenLabs streams speech over two WebSockets, each with its own protocol. Eleve
 | `eleven_multilingual_v2`   | Text to Speech   | 29        | Read out   | Long narration, where the voice stays the most stable                         |
 | `eleven_turbo_v2_5`        | Text to Speech   | 32        | Read out   | Existing servers, since ElevenLabs deprecated it in favor of Flash v2.5       |
 
-The latencies are the ones ElevenLabs gives, network excluded. `eleven_turbo_v2_5` stays the default of the package, so an existing server keeps its voice until you pick another model.
+The latencies are the ones ElevenLabs gives, network excluded. A Micdrop test measured the [first audio in a streamed voice agent](/blog/eleven-v4-turbo-voice-agent), network included: about 90 ms on v4 Turbo and about 850 ms on v3. `eleven_turbo_v2_5` stays the default of the package, so an existing server keeps its voice until you pick another model.
 
 ### Eleven v4 and audio tags
 

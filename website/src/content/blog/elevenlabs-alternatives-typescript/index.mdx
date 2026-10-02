@@ -200,7 +200,7 @@ Set `maxRetry` low on the first provider so the caller barely notices the switch
 
 ## Which engine to pick
 
-Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length.
+Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length. Moving from Flash to v4 Turbo also means switching to the Text to Dialogue WebSocket, where [the latency depends on flushing each sentence](/blog/eleven-v4-turbo-voice-agent).
 
 Switch to Cartesia when callers complain about the silence before the first word.
 
