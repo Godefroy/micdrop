@@ -23,7 +23,7 @@
     "@micdrop/web": "*",
     "@react-three/fiber": "^8.17.10",
     "dotenv": "^17.0.0",
-    "fastify": "^5.7.4",
+    "fastify": "^5.12.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.171.0",

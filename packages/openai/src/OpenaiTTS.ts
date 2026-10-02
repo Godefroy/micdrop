@@ -92,7 +92,8 @@ export class OpenaiTTS extends TTS {
     if (model.startsWith('gpt-realtime')) {
       this.realtime = new OpenaiRealtimeSpeech(
         {
-          apiKey: 'openai' in options ? options.openai.apiKey : options.apiKey,
+          apiKey:
+            ('openai' in options ? options.openai.apiKey : options.apiKey) ?? '',
           model,
           voice: options.voice || DEFAULT_REALTIME_VOICE,
           instructions: options.instructions,

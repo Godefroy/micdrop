@@ -3,6 +3,7 @@ import { unified } from '@astrojs/markdown-remark'
 import mdx, { type MdxOptions } from '@astrojs/mdx'
 import netlify from '@astrojs/netlify'
 import sitemap from '@astrojs/sitemap'
+import tailwindcss from '@tailwindcss/vite'
 import expressiveCode from 'astro-expressive-code'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeMermaid from 'rehype-mermaid'
@@ -77,6 +78,7 @@ export default defineConfig({
     enrichMd(),
   ],
   vite: {
+    plugins: [tailwindcss()],
     optimizeDeps: {
       // Pre-bundled rather than discovered on the fly: both load lazily, and a
       // mid-session re-optimize hands the page that asked for them a stale

@@ -37,6 +37,11 @@
   "pnpm": {
     "patchedDependencies": {
       "onnxruntime-react-native@1.24.3": "patches/onnxruntime-react-native@1.24.3.patch"
+    },
+    "overrides": {
+      "esbuild@<0.28.1": "^0.28.1",
+      "sharp@<0.35.4": "^0.35.4",
+      "xcode>uuid": "^11.1.1"
     }
   }
 }
