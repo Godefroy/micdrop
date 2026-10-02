@@ -2,43 +2,60 @@ import { Pcm16Resampler, SentenceSplitter, TTS } from '@micdrop/server'
 import OpenAI from 'openai'
 import { Readable } from 'stream'
 import { OpenaiOptions } from './OpenaiAgent'
+import { OpenaiRealtimeSpeech, Synthesis } from './OpenaiRealtimeSpeech'
 
 /**
  * OpenAI Text-to-Speech
  *
  * @see https://platform.openai.com/docs/guides/text-to-speech
+ * @see https://developers.openai.com/api/docs/deprecations
  *
- * The OpenAI speech endpoint takes a complete text input (no streaming text
- * in), so the incoming text stream is buffered into sentences and each
- * sentence is synthesized as soon as it is complete. Requests are processed
- * sequentially, which keeps the emitted audio in order while still starting
- * playback as soon as the first sentence is ready.
+ * Two ways to synthesize, picked by the model:
+ * - tts-1, tts-1-hd and gpt-4o-mini-tts go through the speech endpoint, which
+ *   OpenAI shuts down on January 6, 2027.
+ * - gpt-realtime-* models go through the Realtime API, see
+ *   OpenaiRealtimeSpeech. gpt-realtime-2.1-mini is the replacement OpenAI
+ *   names for the speech endpoint.
+ *
+ * Neither takes a text stream in, so the incoming text is buffered into
+ * sentences and each sentence is synthesized as soon as it is complete. The
+ * audio is emitted in the order the sentences were written, while playback
+ * still starts as soon as the first sentence is ready.
  */
 
 export type OpenaiTTSOptions = OpenaiOptions & {
+  // A speech endpoint model (default) or a gpt-realtime-* model
   model?: string
+  // The Realtime API has no fable, nova and onyx voices, and adds marin and
+  // cedar, its default
   voice?: string
-  // Prosody instructions (accent, emotion, speed, tone...).
-  // Only works with gpt-4o-mini-tts, not tts-1 / tts-1-hd.
+  // Delivery instructions (accent, emotion, speed, tone...).
+  // Works with gpt-4o-mini-tts and gpt-realtime-* models, not tts-1 / tts-1-hd.
   instructions?: string
-  // Speech speed from 0.25 to 4.0. Only works with tts-1 / tts-1-hd.
+  // Speech speed from 0.25 to 4.0 with tts-1 / tts-1-hd, from 0.25 to 1.5
+  // with gpt-realtime-* models. Ignored by gpt-4o-mini-tts.
   speed?: number
+  // Reasoning of gpt-realtime-* models before speaking, 'minimal' by default
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
+  // Timeout to open the Realtime connection, in milliseconds
+  connectionTimeout?: number
 }
 
 const DEFAULT_MODEL = 'gpt-4o-mini-tts'
 const DEFAULT_VOICE = 'alloy'
+const DEFAULT_REALTIME_VOICE = 'marin'
 const OPENAI_SAMPLE_RATE = 24000 // Rate of the pcm output from OpenAI
 const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
 const MAX_IN_FLIGHT = 2 // Requests asked for at once, current one included
 // Audio held back at the start of an utterance, in bytes of the output format
 // (16 bits, 16 kHz, so 32 bytes per millisecond).
 //
-// The endpoint answers with a burst of a hundred milliseconds or so, then goes
-// quiet while it generates the rest. Forwarding that burst as it arrives means
-// the browser starts playing a syllable it cannot continue, and the hole lands
-// inside the first word. Holding the opening back until there is enough of it
-// to cover the pause costs the same time either way, and spends it before the
-// first syllable rather than inside it.
+// The speech endpoint answers with a burst of a hundred milliseconds or so,
+// then goes quiet while it generates the rest. Forwarding that burst as it
+// arrives means the browser starts playing a syllable it cannot continue, and
+// the hole lands inside the first word. Holding the opening back until there
+// is enough of it to cover the pause costs the same time either way, and
+// spends it before the first syllable rather than inside it.
 const OPENING_CUSHION = 300 * 32
 
 interface QueueItem {
@@ -48,12 +65,12 @@ interface QueueItem {
 
 /** A sentence whose synthesis has been asked for and not yet spoken. */
 interface PendingItem extends QueueItem {
-  controller: AbortController
-  response: Promise<{ body: ReadableStream<Uint8Array> | null } | null>
+  synthesis: Synthesis
 }
 
 export class OpenaiTTS extends TTS {
-  private openai: OpenAI
+  private openai?: OpenAI
+  private realtime?: OpenaiRealtimeSpeech
   private counter = 0 // Identifies the current speak() call
   // Bumped by every speak() and every cancel(), so a call claimed late can tell
   // whether it is still the one that should be heard. Kept apart from
@@ -66,15 +83,31 @@ export class OpenaiTTS extends TTS {
   private cushion: Buffer[] = [] // Opening audio held back, see OPENING_CUSHION
   private cushionBytes = 0
   private processing = false
-  // More than one request is in flight at a time, so they are aborted as a set.
-  private abortControllers = new Set<AbortController>()
+  // More than one request is in flight at a time, so they are stopped as a set.
+  private syntheses = new Set<Synthesis>()
 
   constructor(private readonly options: OpenaiTTSOptions) {
     super()
-    this.openai =
-      'openai' in options
-        ? options.openai
-        : new OpenAI({ apiKey: options.apiKey })
+    const model = options.model || DEFAULT_MODEL
+    if (model.startsWith('gpt-realtime')) {
+      this.realtime = new OpenaiRealtimeSpeech(
+        {
+          apiKey: 'openai' in options ? options.openai.apiKey : options.apiKey,
+          model,
+          voice: options.voice || DEFAULT_REALTIME_VOICE,
+          instructions: options.instructions,
+          speed: options.speed,
+          reasoningEffort: options.reasoningEffort,
+          connectionTimeout: options.connectionTimeout,
+        },
+        (...message) => this.log(...message)
+      )
+    } else {
+      this.openai =
+        'openai' in options
+          ? options.openai
+          : new OpenAI({ apiKey: options.apiKey })
+    }
   }
 
   speak(textStream: Readable) {
@@ -131,8 +164,13 @@ export class OpenaiTTS extends TTS {
     this.pending = []
     this.cushion = []
     this.cushionBytes = 0
-    this.abortControllers.forEach((controller) => controller.abort())
-    this.abortControllers.clear()
+    this.syntheses.forEach((synthesis) => synthesis.cancel())
+    this.syntheses.clear()
+  }
+
+  destroy() {
+    super.destroy()
+    this.realtime?.destroy()
   }
 
   private enqueue(counter: number, text: string) {
@@ -143,7 +181,7 @@ export class OpenaiTTS extends TTS {
   /**
    * Starts what can be started, then speaks what is ready.
    *
-   * The endpoint takes a few hundred milliseconds before its first byte, and
+   * A request takes a few hundred milliseconds before its first byte, and
    * waiting for that between two sentences leaves a silence in the middle of
    * her voice. It is loudest at the very start, where a greeting is often one
    * short sentence: a syllable, a hole, then the rest of the answer. Asking for
@@ -158,7 +196,11 @@ export class OpenaiTTS extends TTS {
       const item = this.queue.shift()!
       // Skip work from a cancelled or superseded speak() call
       if (item.counter !== this.counter) continue
-      this.pending.push(this.request(item))
+      const synthesis = this.realtime
+        ? this.realtime.synthesize(item.text)
+        : this.requestSpeech(item.text)
+      this.syntheses.add(synthesis)
+      this.pending.push({ ...item, synthesis })
     }
     this.drain()
   }
@@ -183,34 +225,50 @@ export class OpenaiTTS extends TTS {
     if (this.pending.length > 0 || this.queue.length > 0) this.pump()
   }
 
-  /** Asks for one sentence, without waiting for the answer. */
-  private request(item: QueueItem): PendingItem {
+  /**
+   * Asks the speech endpoint for one sentence, without waiting for the answer.
+   *
+   * Only for tts-1, tts-1-hd and gpt-4o-mini-tts, until January 6, 2027.
+   */
+  private requestSpeech(text: string): Synthesis {
     const controller = new AbortController()
-    this.abortControllers.add(controller)
+    const response = this.openai!.audio.speech.create(
+      {
+        model: this.options.model || DEFAULT_MODEL,
+        voice: this.options.voice || DEFAULT_VOICE,
+        input: text,
+        response_format: 'pcm',
+        ...(this.options.instructions
+          ? { instructions: this.options.instructions }
+          : {}),
+        ...(this.options.speed ? { speed: this.options.speed } : {}),
+      },
+      { signal: controller.signal }
+    )
+    // Rejected before its turn comes, which nothing awaits yet
+    response.catch(() => {})
 
-    const response = this.openai.audio.speech
-      .create(
-        {
-          model: this.options.model || DEFAULT_MODEL,
-          voice: this.options.voice || DEFAULT_VOICE,
-          input: item.text,
-          response_format: 'pcm',
-          ...(this.options.instructions
-            ? { instructions: this.options.instructions }
-            : {}),
-          ...(this.options.speed ? { speed: this.options.speed } : {}),
-        },
-        { signal: controller.signal }
+    async function* read() {
+      const { body } = await response
+      if (!body) return
+      const resampler = new Pcm16Resampler(
+        OPENAI_SAMPLE_RATE,
+        OUTPUT_SAMPLE_RATE
       )
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          this.log('Error synthesizing speech:', error)
-          this.emit('Failed', [item.text])
+      const reader = body.getReader()
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const output = resampler.process(Buffer.from(value))
+          if (output.length > 0) yield output
         }
-        return null
-      })
+      } finally {
+        reader.cancel().catch(() => {})
+      }
+    }
 
-    return { ...item, controller, response }
+    return { audio: read(), cancel: () => controller.abort() }
   }
 
   /** Holds the opening of an utterance back, then lets the rest through. */
@@ -231,39 +289,25 @@ export class OpenaiTTS extends TTS {
     for (const chunk of held) this.emit('Audio', chunk)
   }
 
-  /** Emits one sentence, whose request was started earlier. */
+  /** Emits one sentence as its audio arrives, from a request started earlier. */
   private async speakItem(item: PendingItem) {
     try {
-      const response = await item.response
-      if (!response?.body) return
       if (item.counter !== this.counter) return
       this.log(`Synthesizing: "${item.text}"`)
-
-      const resampler = new Pcm16Resampler(
-        OPENAI_SAMPLE_RATE,
-        OUTPUT_SAMPLE_RATE
-      )
-      const reader = response.body.getReader()
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        if (item.counter !== this.counter) {
-          await reader.cancel()
-          break
-        }
-        const output = resampler.process(Buffer.from(value))
-        if (output.length > 0) this.emitAudio(output)
+      for await (const chunk of item.synthesis.audio) {
+        if (item.counter !== this.counter) break
+        this.emitAudio(chunk)
       }
     } catch (error) {
-      // A cancel aborts the body being read, which is expected. Anything else
+      // A cancel stops the audio being read, which is expected. Anything else
       // is logged rather than left unhandled, where it would stop the server.
-      if (!item.controller.signal.aborted) {
-        this.log('Error reading synthesized speech:', error)
+      if (item.counter === this.counter) {
+        this.log('Error synthesizing speech:', error)
         this.emit('Failed', [item.text])
       }
     } finally {
-      this.abortControllers.delete(item.controller)
+      item.synthesis.cancel()
+      this.syntheses.delete(item.synthesis)
     }
   }
 }

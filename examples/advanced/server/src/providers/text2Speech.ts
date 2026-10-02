@@ -141,6 +141,8 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'OpenAI',
     requiredEnv: ['OPENAI_API_KEY'],
     models: [
+      { id: 'marin', label: 'marin' },
+      { id: 'cedar', label: 'cedar' },
       { id: 'alloy', label: 'alloy' },
       { id: 'ash', label: 'ash' },
       { id: 'ballad', label: 'ballad' },
@@ -150,11 +152,11 @@ const text2speech: ProviderRegistry<TTS> = {
       { id: 'shimmer', label: 'shimmer' },
       { id: 'verse', label: 'verse' },
     ],
-    defaultModel: 'alloy',
+    defaultModel: 'marin',
     create: ({ model }) =>
       new OpenaiTTS({
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: 'gpt-4o-mini-tts-2025-12-15',
+        model: 'gpt-realtime-2.1-mini',
         voice: model,
       }),
   },

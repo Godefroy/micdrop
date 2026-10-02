@@ -6,6 +6,7 @@ import {
 } from '@micdrop/server'
 import WebSocket from 'ws'
 import z, { toJSONSchema } from 'zod'
+import { transcriptionLanguage } from './transcription'
 
 /**
  * OpenAI Realtime API, a model hearing the user and answering with its voice
@@ -23,6 +24,8 @@ export interface OpenaiRealtimeOptions extends RealtimeOptions {
   voice?: string
   // Language of the user, which helps the transcription
   language?: string
+  // gpt-4o-transcribe (default) shuts down on February 26, 2027, replaced by
+  // gpt-live-transcribe and gpt-transcribe
   transcriptionModel?: string
   connectionTimeout?: number
   retryDelay?: number
@@ -188,6 +191,8 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
   }
 
   private sendSessionUpdate() {
+    const transcriptionModel =
+      this.options.transcriptionModel || DEFAULT_TRANSCRIPTION_MODEL
     this.socket?.send(
       JSON.stringify({
         type: 'session.update',
@@ -202,12 +207,11 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
               // The Micdrop client detects when the user speaks
               turn_detection: null,
               transcription: {
-                model:
-                  this.options.transcriptionModel ||
-                  DEFAULT_TRANSCRIPTION_MODEL,
-                ...(this.options.language
-                  ? { language: this.options.language }
-                  : {}),
+                model: transcriptionModel,
+                ...transcriptionLanguage(
+                  transcriptionModel,
+                  this.options.language
+                ),
               },
               noise_reduction: { type: 'near_field' },
             },

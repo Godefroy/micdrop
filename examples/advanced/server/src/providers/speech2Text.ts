@@ -38,8 +38,9 @@ const speech2Text: ProviderRegistry<STT> = {
       { id: 'gpt-4o-transcribe', label: 'gpt-4o-transcribe' },
       { id: 'gpt-4o-mini-transcribe', label: 'gpt-4o-mini-transcribe' },
       { id: 'gpt-live-transcribe', label: 'gpt-live-transcribe' },
+      { id: 'gpt-transcribe', label: 'gpt-transcribe' },
     ],
-    defaultModel: 'gpt-4o-transcribe',
+    defaultModel: 'gpt-live-transcribe',
     create: ({ model }) =>
       new OpenaiSTT({
         apiKey: process.env.OPENAI_API_KEY || '',

@@ -75,6 +75,8 @@ See the [Agent interface](https://micdrop.dev/docs/ai-integration/custom-integra
 
 ## OpenAI STT (Speech-to-Text)
 
+OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) `gpt-4o-transcribe` (the default), `gpt-4o-mini-transcribe` and `whisper-1`, which shut down on **February 26, 2027**. Their replacements, `gpt-live-transcribe` and `gpt-transcribe`, work with the same options: `language` is sent as the list of expected languages these models take. `gpt-live-transcribe` is recommended for new integrations.
+
 ### Usage with MicdropServer
 
 ```typescript
@@ -83,7 +85,7 @@ import { MicdropServer } from '@micdrop/server'
 
 const stt = new OpenaiSTT({
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4o-transcribe',
+  model: 'gpt-live-transcribe', // Default 'gpt-4o-transcribe', shut down on February 26, 2027
   language: 'en',
 })
 
@@ -123,6 +125,13 @@ See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrati
 
 ## OpenAI TTS (Text-to-Speech)
 
+Two ways to synthesize, picked by `model`:
+
+- **Speech endpoint** (default): `gpt-4o-mini-tts`, its dated snapshots, `tts-1` and `tts-1-hd`. OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) all of them, and the endpoint shuts down on **January 6, 2027**. Until then, they work as before.
+- **Realtime API**: `gpt-realtime-2.1-mini`, the replacement OpenAI names, recommended for new integrations. Each sentence is sent as an out-of-band response with instructions to read it word for word. The model is a voice model rather than a reader, so it can reword a sentence now and then (a contraction such as "I'm" for "I am"), and `OpenaiTTS` logs the transcript of any sentence it reads differently.
+
+Either way, the incoming text is buffered into sentences and each sentence is synthesized as soon as it is complete, so playback can start without waiting for the whole answer.
+
 ### Usage with MicdropServer
 
 ```typescript
@@ -131,13 +140,16 @@ import { MicdropServer } from '@micdrop/server'
 
 const tts = new OpenaiTTS({
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4o-mini-tts', // Default model
-  voice: 'alloy', // Default voice
+  // Recommended: the speech endpoint models (default 'gpt-4o-mini-tts')
+  // shut down on January 6, 2027
+  model: 'gpt-realtime-2.1-mini',
+  voice: 'marin', // Default with gpt-realtime-*, 'alloy' otherwise
 
-  // Prosody control, only for gpt-4o-mini-tts (optional)
+  // Delivery control, not for tts-1 / tts-1-hd (optional)
   instructions: 'Speak in a calm and friendly tone',
 
-  // Speech speed from 0.25 to 4.0, only for tts-1 / tts-1-hd (optional)
+  // Speech speed: 0.25 to 1.5 with gpt-realtime-*, 0.25 to 4.0 with
+  // tts-1 / tts-1-hd (optional)
   // speed: 1,
 })
 
@@ -175,7 +187,9 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
 
-> **Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
+> **Voices**: the Realtime API offers `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin` and `cedar`. `fable`, `nova` and `onyx` only exist on the speech endpoint.
+
+> **Language**: neither the speech endpoint nor the Realtime API has a language parameter, the voice follows the language of the input text. To influence the accent, use `instructions` (e.g. `'Speak with a Parisian accent'`) with `gpt-realtime-*` or `gpt-4o-mini-tts`.
 
 ## OpenAI Realtime
 

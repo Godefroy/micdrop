@@ -1,6 +1,7 @@
 import { Pcm16Resampler, STT } from '@micdrop/server'
 import { Readable } from 'stream'
 import WebSocket from 'ws'
+import { transcriptionLanguage } from './transcription'
 
 /**
  * OpenAI Real-time STT
@@ -10,6 +11,8 @@ import WebSocket from 'ws'
 
 export interface OpenaiSTTOptions {
   apiKey: string
+  // gpt-4o-transcribe (default) and gpt-4o-mini-transcribe shut down on
+  // February 26, 2027, replaced by gpt-live-transcribe and gpt-transcribe
   model?: string
   language?: string
   prompt?: string
@@ -100,6 +103,8 @@ export class OpenaiSTT extends STT {
   private sendSessionUpdate() {
     if (!this.socket) return
 
+    const model = this.options.model || DEFAULT_MODEL
+
     // Configure the transcription session (GA Realtime API schema)
     this.socket.send(
       JSON.stringify({
@@ -113,8 +118,11 @@ export class OpenaiSTT extends STT {
                 rate: OPENAI_SAMPLE_RATE,
               },
               transcription: {
-                model: this.options.model || DEFAULT_MODEL,
-                language: this.options.language || DEFAULT_LANGUAGE,
+                model,
+                ...transcriptionLanguage(
+                  model,
+                  this.options.language || DEFAULT_LANGUAGE
+                ),
                 prompt:
                   this.options.prompt ||
                   'Transcribe the incoming audio in real time.',

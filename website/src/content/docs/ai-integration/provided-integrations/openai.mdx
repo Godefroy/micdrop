@@ -150,6 +150,8 @@ Real-time speech-to-text implementation using OpenAI's WebSocket-based real-time
 
 Leave out the agent and the voice, and `OpenaiSTT` alone gives you [speech to text with nothing answering back](../../server/dictation).
 
+OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) `gpt-4o-transcribe` (the default), `gpt-4o-mini-transcribe` and `whisper-1`, which shut down on **February 26, 2027**. Their replacements, `gpt-live-transcribe` and `gpt-transcribe`, work with the same options: `language` is sent as the list of expected languages these models take. `gpt-live-transcribe` is recommended for new integrations.
+
 ### Usage with MicdropServer
 
 ```typescript
@@ -158,7 +160,7 @@ import { MicdropServer } from '@micdrop/server'
 
 const stt = new OpenaiSTT({
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4o-transcribe', // Default real-time transcription model
+  model: 'gpt-live-transcribe', // Default 'gpt-4o-transcribe', shut down on February 26, 2027
   language: 'en', // Optional: specify language for better accuracy
   prompt: 'Transcribe the incoming audio in real time.', // Optional: custom prompt
   transcriptionTimeout: 4000, // Optional: timeout in ms for transcription
@@ -200,20 +202,25 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 
 ### Options
 
-| Option                 | Type     | Default                                         | Description                                              |
-| ---------------------- | -------- | ----------------------------------------------- | -------------------------------------------------------- |
-| `apiKey`               | `string` | Required                                        | Your OpenAI API key                                      |
-| `model`                | `string` | `'gpt-4o-transcribe'`                           | Real-time transcription model to use                     |
-| `language`             | `string` | `'en'`                                          | Language code for transcription                          |
-| `prompt`               | `string` | `'Transcribe the incoming audio in real time.'` | Custom prompt to guide transcription behavior            |
-| `connectionTimeout`    | `number` | `5000`                                          | Timeout in milliseconds for WebSocket connection         |
-| `transcriptionTimeout` | `number` | `4000`                                          | Timeout in milliseconds to wait for transcription result |
-| `retryDelay`           | `number` | `1000`                                          | Delay in milliseconds between reconnection attempts      |
-| `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing   |
+| Option                 | Type     | Default                                         | Description                                                                                                                                            |
+| ---------------------- | -------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKey`               | `string` | Required                                        | Your OpenAI API key                                                                                                                                    |
+| `model`                | `string` | `'gpt-4o-transcribe'`                           | Real-time transcription model: `gpt-live-transcribe` and `gpt-transcribe`, or until February 26, 2027 `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` |
+| `language`             | `string` | `'en'`                                          | Language code for transcription                                                                                                                        |
+| `prompt`               | `string` | `'Transcribe the incoming audio in real time.'` | Custom prompt to guide transcription behavior                                                                                                          |
+| `connectionTimeout`    | `number` | `5000`                                          | Timeout in milliseconds for WebSocket connection                                                                                                       |
+| `transcriptionTimeout` | `number` | `4000`                                          | Timeout in milliseconds to wait for transcription result                                                                                               |
+| `retryDelay`           | `number` | `1000`                                          | Delay in milliseconds between reconnection attempts                                                                                                    |
+| `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing                                                                                                 |
 
 ## OpenAI TTS (Text-to-Speech)
 
-Text-to-speech implementation using OpenAI's speech API. The incoming text is buffered into sentences and each sentence is synthesized as soon as it is complete, so playback can start without waiting for the whole answer.
+Two ways to synthesize, picked by `model`:
+
+- **Speech endpoint** (default): `gpt-4o-mini-tts`, its dated snapshots, `tts-1` and `tts-1-hd`. OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) all of them, and the endpoint shuts down on **January 6, 2027**. Until then, they work as before.
+- **Realtime API**: `gpt-realtime-2.1-mini`, the replacement OpenAI names, recommended for new integrations. Each sentence is sent as an out-of-band response with instructions to read it word for word. The model is a voice model rather than a reader, so it can reword a sentence now and then (a contraction such as "I'm" for "I am"), and `OpenaiTTS` logs the transcript of any sentence it reads differently.
+
+Either way, the incoming text is buffered into sentences and each sentence is synthesized as soon as it is complete, so playback can start without waiting for the whole answer.
 
 ### Usage with MicdropServer
 
@@ -223,10 +230,12 @@ import { MicdropServer } from '@micdrop/server'
 
 const tts = new OpenaiTTS({
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4o-mini-tts', // Default model
-  voice: 'alloy', // Default voice
+  // Recommended: the speech endpoint models (default 'gpt-4o-mini-tts')
+  // shut down on January 6, 2027
+  model: 'gpt-realtime-2.1-mini',
+  voice: 'marin', // Default with gpt-realtime-*, 'alloy' otherwise
 
-  // Prosody control, only for gpt-4o-mini-tts (optional)
+  // Delivery control, not for tts-1 / tts-1-hd (optional)
   instructions: 'Speak in a calm and friendly tone',
 })
 
@@ -266,18 +275,22 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 
 ### Options
 
-| Option         | Type     | Default             | Description                                                           |
-| -------------- | -------- | ------------------- | --------------------------------------------------------------------- |
-| `apiKey`       | `string` | Required\*          | Your OpenAI API key (required if `openai` not provided)               |
-| `openai`       | `OpenAI` | Optional            | OpenAI instance (alternative to `apiKey`)                             |
-| `model`        | `string` | `'gpt-4o-mini-tts'` | Speech model to use (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`)          |
-| `voice`        | `string` | `'alloy'`           | Voice to use (e.g. `alloy`, `ash`, `ballad`, `coral`, `sage`, ...)    |
-| `instructions` | `string` | `undefined`         | Prosody/accent/tone control. Only works with `gpt-4o-mini-tts`        |
-| `speed`        | `number` | `undefined`         | Speech speed from `0.25` to `4.0`. Only works with `tts-1`/`tts-1-hd` |
+| Option              | Type     | Default               | Description                                                                                                                       |
+| ------------------- | -------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`            | `string` | Required\*            | Your OpenAI API key (required if `openai` not provided)                                                                           |
+| `openai`            | `OpenAI` | Optional              | OpenAI instance (alternative to `apiKey`)                                                                                         |
+| `model`             | `string` | `'gpt-4o-mini-tts'`   | `gpt-realtime-2.1-mini` (recommended), or until January 6, 2027 the speech endpoint models `gpt-4o-mini-tts`, `tts-1`, `tts-1-hd` |
+| `voice`             | `string` | `'marin'` / `'alloy'` | `marin` with `gpt-realtime-*`, `alloy` otherwise. `fable`, `nova` and `onyx` only exist on the speech endpoint                    |
+| `instructions`      | `string` | `undefined`           | Delivery control (accent, emotion, tone). Works with `gpt-realtime-*` and `gpt-4o-mini-tts`                                       |
+| `speed`             | `number` | `undefined`           | Speech speed, from `0.25` to `1.5` with `gpt-realtime-*` (clamped), from `0.25` to `4.0` with `tts-1`/`tts-1-hd`                  |
+| `reasoningEffort`   | `string` | `'minimal'`           | Reasoning before speaking, `gpt-realtime-*` only: `minimal`, `low`, `medium`, `high`, `xhigh`                                     |
+| `connectionTimeout` | `number` | `5000`                | Timeout in milliseconds to open the Realtime connection, `gpt-realtime-*` only                                                    |
 
 :::note
 
-**Language**: OpenAI's speech API has no language parameter, the voice follows the language of the input text. To influence the spoken language or accent, use `instructions` (e.g. `'Speak in French'`) with the `gpt-4o-mini-tts` model.
+**Voices**: the Realtime API offers `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin` and `cedar`. `fable`, `nova` and `onyx` only exist on the speech endpoint.
+
+**Language**: neither the speech endpoint nor the Realtime API has a language parameter, the voice follows the language of the input text. To influence the accent, use `instructions` (e.g. `'Speak with a Parisian accent'`) with `gpt-realtime-*` or `gpt-4o-mini-tts`.
 
 :::
 
@@ -331,19 +344,19 @@ When the user interrupts, the answer is cancelled and the conversation of the mo
 
 ### Options
 
-| Option                | Type                | Default               | Description                                                              |
-| --------------------- | ------------------- | --------------------- | ------------------------------------------------------------------------ |
-| `apiKey`              | `string`            | Required              | Your OpenAI API key                                                      |
-| `systemPrompt`        | `string`            | Required              | Instructions of the model                                                |
-| `model`               | `string`            | `'gpt-realtime-2.1'`  | Realtime model to use (`gpt-realtime-2.1`, `gpt-realtime-mini`, ...)     |
-| `voice`               | `string`            | `'marin'`             | Voice of the model                                                       |
-| `language`            | `string`            | `undefined`           | Language of the user, as an ISO 639-1 code, for the transcription        |
-| `transcriptionModel`  | `string`            | `'gpt-4o-transcribe'` | Model transcribing the user                                              |
-| `autoEndCall`         | `boolean \| string` | `false`               | Ends the call when the user asks for it                                  |
-| `autoSemanticTurn`    | `boolean \| string` | `false`               | Lets the model wait silently when the user did not finish their sentence |
-| `autoIgnoreUserNoise` | `boolean \| string` | `false`               | Drops the turn when it carries no meaning                                |
-| `connectionTimeout`   | `number`            | `5000`                | Time to open the connection, in milliseconds                             |
-| `retryDelay`          | `number`            | `1000`                | Delay before reconnecting, in milliseconds                               |
-| `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                   |
+| Option                | Type                | Default               | Description                                                                                                                             |
+| --------------------- | ------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`              | `string`            | Required              | Your OpenAI API key                                                                                                                     |
+| `systemPrompt`        | `string`            | Required              | Instructions of the model                                                                                                               |
+| `model`               | `string`            | `'gpt-realtime-2.1'`  | Realtime model to use (`gpt-realtime-2.1`, `gpt-realtime-mini`, ...)                                                                    |
+| `voice`               | `string`            | `'marin'`             | Voice of the model                                                                                                                      |
+| `language`            | `string`            | `undefined`           | Language of the user, as an ISO 639-1 code, for the transcription                                                                       |
+| `transcriptionModel`  | `string`            | `'gpt-4o-transcribe'` | Model transcribing the user: `gpt-live-transcribe` or `gpt-transcribe` recommended, `gpt-4o-transcribe` shuts down on February 26, 2027 |
+| `autoEndCall`         | `boolean \| string` | `false`               | Ends the call when the user asks for it                                                                                                 |
+| `autoSemanticTurn`    | `boolean \| string` | `false`               | Lets the model wait silently when the user did not finish their sentence                                                                |
+| `autoIgnoreUserNoise` | `boolean \| string` | `false`               | Drops the turn when it carries no meaning                                                                                               |
+| `connectionTimeout`   | `number`            | `5000`                | Time to open the connection, in milliseconds                                                                                            |
+| `retryDelay`          | `number`            | `1000`                | Delay before reconnecting, in milliseconds                                                                                              |
+| `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                                                                                  |
 
 A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session.
