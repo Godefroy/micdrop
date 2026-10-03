@@ -26,7 +26,7 @@ takeaways:
   - 'Voice activity detection classifies audio frame by frame as speech or silence. It opens the recording, closes it, and gives the user a way to cut the assistant off.'
   - 'A volume threshold costs nothing and breaks in a noisy room. WebRTC VAD needs no model file. Silero, a 309K-parameter network, tells a voice from a television in under a millisecond per frame.'
   - 'Confirming speech in two stages, with the first chunks queued instead of sent, makes a false positive free.'
-  - 'A VAD hears silence, not the end of a sentence. Turn detection is a separate layer that reads the transcript.'
+  - 'A VAD only hears that the sound stopped. A turn detector decides whether that pause ends the turn, judging from the sound of the sentence or from its transcript.'
 ---
 
 Voice activity detection (VAD) is the piece of code that decides, frame by frame, whether an audio signal carries human speech or silence. In a voice agent it runs in the browser and gates everything downstream: when to record, when to send audio to the server, when to stop the assistant mid-sentence. Three detectors cover almost every browser project: a volume threshold, WebRTC VAD and Silero VAD. Silero is the one to pick for a voice agent, because it tells a voice from a television or a fan far more reliably than the other two, and it still scores a frame in under a millisecond.
@@ -168,24 +168,9 @@ A VAD reports acoustics. It tells you sound stopped, and it has no opinion about
 
 > "I'd like to book a flight to..."
 
-The speaker paused to remember the city. Acoustically, this is a completed utterance with 700 ms of silence behind it, and any VAD tuned for responsiveness will close it. The agent then answers a half-question, and the user has to start over.
+The speaker paused to remember the city. Acoustically, this is a completed utterance with 700 ms of silence behind it, and any VAD tuned for responsiveness will close it. The agent then answers a half-question, and the user has to start over. A turn detection model that [listens to whether the sentence sounds finished](/blog/end-of-turn-detection-voice-agents) can keep the turn open through that pause.
 
-Longer silence windows push the problem around rather than solving it. Two seconds of tolerance for mid-sentence pauses makes every normal exchange feel two seconds slow.
-
-The fix sits one layer up, on the transcript rather than on the waveform. [Semantic turn detection](/docs/server/semantic-turn-detection) asks whether the text so far is a complete thought, and holds the answer back when it is not. Micdrop implements it as an agent option that emits a `SkipAnswer` event on an incomplete sentence:
-
-```typescript
-const agent = new OpenaiAgent({
-  apiKey: process.env.OPENAI_API_KEY || '',
-  systemPrompt: 'You are a helpful assistant',
-  autoSemanticTurn: true, // wait for a complete thought
-  autoIgnoreUserNoise: true, // drop "uh", "hmm", "ahem"
-})
-```
-
-A VAD correctly identifies "hmm" as speech, because it is, and answering it wastes a full round trip. `autoIgnoreUserNoise` turns on [noise filtering](/docs/server/noise-filtering), which drops those interjections before the agent replies.
-
-Divide the responsibilities this way and each layer does what it is good at. The VAD decides when the microphone is worth recording, and the language model decides when the user is done talking.
+Turn detection runs on top of the VAD and checks each pause the VAD reports. In Micdrop, the open Smart Turn model [listens to the sound of the sentence right in the browser](/docs/client/turn-detection), and the server can also [read the transcript](/docs/server/semantic-turn-detection) to judge whether the thought is complete. The VAD keeps deciding when the microphone is worth recording, and the turn detector decides when the user is done talking.
 
 ## Frequently asked questions
 
@@ -212,7 +197,7 @@ Divide the responsibilities this way and each layer does what it is good at. The
     For a voice agent, run it in the browser. The browser holds the microphone, so it keeps the audio on the device until someone speaks and stops the assistant the moment the user talks. A server-side VAD fits recordings processed after the fact. In a live call, it adds a network round trip to every interruption. Micdrop runs its VAD on the device, in the browser and [in a React Native app](/docs/react-native/vad).
   </FaqItem>
   <FaqItem question="What is the difference between VAD and turn detection?">
-    A VAD works on the audio signal and answers "is someone speaking right now". Turn detection works on the transcript and answers "has this person finished their thought". A VAD closes an utterance after a fixed amount of silence, so it cuts off a user who pauses mid-sentence. Turn detection reads the words and waits, which is why voice agents run both.
+    A VAD works on the audio signal and answers "is someone speaking right now". Turn detection answers "has this person finished their thought", by listening to the sound of the sentence or by reading its transcript. A VAD closes an utterance after a fixed amount of silence, so it cuts off a user who pauses mid-sentence. Voice agents run both, with the VAD spotting each pause and the turn detector deciding whether it ends the turn.
   </FaqItem>
 </FaqList>
 

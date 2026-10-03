@@ -99,7 +99,7 @@ wss.on('connection', (socket) => {
 
 Micdrop adds a socket handler to the [Fastify](/docs/server/with-fastify) or [NestJS](/docs/server/with-nestjs) application you already run, and the audio goes through the same load balancer as the rest of your traffic. The room, the worker and the media server have no equivalent here because there would be nothing for them to do.
 
-Two behaviours that usually cost time are options rather than code. [Semantic turn detection](/docs/server/semantic-turn-detection) asks the model whether the user finished their thought before answering, which stops the assistant from cutting in on a mid-sentence pause. Noise filtering drops the "uh" and "hmm" that would otherwise trigger a full round trip. On the browser side, [voice activity detection](/docs/client/vad) runs on volume, on a Silero model, or on both at once, which is how you trade latency against false positives.
+Two behaviours that usually cost time are options rather than code. Micdrop [detects the end of a turn](/docs/client/turn-detection) with Smart Turn, an open model that hears whether the sentence sounds finished, so the assistant waits through a mid-sentence pause. The server can also [ask the LLM](/docs/server/semantic-turn-detection) whether the thought is complete. LiveKit's detector and Smart Turn both listen to the audio of the sentence, which is the faster of the [signals that end a turn](/blog/end-of-turn-detection-voice-agents). Noise filtering drops the "uh" and "hmm" that would otherwise trigger a full round trip. On the browser side, [voice activity detection](/docs/client/vad) runs on volume, on a Silero model, or on both at once, which is how you trade latency against false positives.
 
 Keys stay yours. Micdrop calls the providers you configure with your own credentials, so the only per-minute bills are theirs. Provider choice is open through [the AI integrations](/docs/ai-integration), including a fully European stack with [Mistral, Gladia and Gradium](/docs/ai-integration/sovereign-voice-ai), and each layer accepts a fallback provider that takes over when the primary one fails.
 
@@ -116,7 +116,7 @@ Most of a migration is deleting the transport layer.
 | STT, LLM and TTS plugins | `stt`, `agent` and `tts` options |
 | Realtime model plugin passed as `llm` | [`realtime` option](/docs/server/realtime) |
 | `llm.tool` with a Zod schema | `agent.addTool` with a Zod schema |
-| Turn detector plugin | `autoSemanticTurn: true` |
+| Turn detector plugin | `turnDetector: new SmartTurn()` from `@micdrop/smart-turn` |
 | Server-side Silero VAD plugin | `vad: 'silero'` in the browser |
 | LiveKit client SDK plus your own UI state | `@micdrop/client` and `@micdrop/react` hooks |
 | `livekit-cli` deployment | Your existing Node deployment |
@@ -148,7 +148,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Telephony (SIP/PSTN)** | Yes | No |
 | **Video and vision** | Yes | No, voice only |
 | **Speech-to-speech models** | OpenAI Realtime, Gemini Live and several others | OpenAI Realtime and Gemini Live |
-| **Turn detection** | Transformer model | LLM-based, one option |
+| **Turn detection** | Audio model, local or on LiveKit Inference | Smart Turn audio model, plus an optional LLM check |
 | **Provider fallback** | On you | Built in for agent, STT and TTS |
 | **Tool calling** | Yes, with Zod | Yes, with Zod |
 | **React** | Components and hooks | `@micdrop/react` hooks |

@@ -131,9 +131,9 @@ Beyond the simpler architecture, Micdrop turns several production behaviours int
 
 Most voice AI systems use silence duration to detect when a user has finished speaking. This leads to the assistant jumping in during natural pauses mid-sentence.
 
-Both projects solve it, by different means. Micdrop's `autoSemanticTurn` asks the LLM already in the pipeline whether the user's utterance is a complete thought. The judgement follows your system prompt and the conversation so far rather than the audio signal, and it costs one small model call per turn.
+Pipecat bundles Smart Turn, an 8 MB ONNX classifier that reads intonation in the waveform, shipped inside the package under the same BSD-2-Clause licence as the framework and wired in as the default turn-stop strategy. It runs on CPU in a few milliseconds across 23 languages. Micdrop now runs the same Smart Turn model in TypeScript, in the browser and in Node, and [the ways a voice agent decides the turn is over](/blog/end-of-turn-detection-voice-agents) can be layered.
 
-Pipecat bundles Smart Turn, an 8 MB ONNX classifier that reads intonation in the waveform, shipped inside the package under the same BSD-2-Clause licence as the framework and wired in as the default turn-stop strategy. It runs on CPU in a few milliseconds across 23 languages, which makes it the faster of the two, and the one limited to those 23 languages.
+The `@micdrop/smart-turn` package plugs into the Micdrop client as a [turn detector](/docs/client/turn-detection), so the browser holds the turn open without a round trip to the server. The `autoSemanticTurn` option adds a second check on the server: it asks the LLM already in the pipeline whether the transcript is a complete thought. That judgement follows your system prompt and the conversation so far, works in any language the LLM speaks, and costs one small model call per turn.
 
 ### Noise filtering
 
@@ -222,7 +222,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Managed option** | Pipecat Cloud, from $0.01 per agent minute | None |
 | **React support** | React SDK | React hooks (state, volume, errors) |
 | **Mobile** | React Native transports on WebRTC, Swift and Kotlin SDKs | `@micdrop/react-native`, on WebSocket |
-| **Semantic turn detection** | Built-in, bundled ONNX classifier | Built-in, decided by the LLM |
+| **Semantic turn detection** | Built-in, bundled ONNX classifier | Smart Turn in the browser or Node, plus an optional LLM check |
 | **Noise filtering** | Audio filters, most needing a vendor key | Built-in at the transcript level |
 | **Provider fallback** | Built-in (ServiceSwitcher) | Built-in (FallbackSTT, FallbackTTS, FallbackAgent) |
 | **Data extraction** | Hand-rolled over function calling | Built-in (`extract` option) |
