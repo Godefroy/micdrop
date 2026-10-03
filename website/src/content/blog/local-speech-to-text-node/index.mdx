@@ -137,19 +137,7 @@ For another language, search the Hugging Face hub for a `whisper-small` fine-tun
 
 ## Hosted transcription costs $0.18 to $0.75 per hour of audio
 
-Use a hosted API when the server is short on CPU, or when the call switches between languages no local checkpoint covers. A hosted API also saves you from setting up Vosk, Moonshine or Kyutai STT when you need words to appear while the user is still speaking. Micdrop ships integrations for Mistral, OpenAI and Gladia. You can put any of them in place of `WhisperSTT` and keep the same agent and voice.
-
-| Provider                                                         | Model                    | Price per hour of audio                              |
-| ---------------------------------------------------------------- | ------------------------ | ---------------------------------------------------- |
-| [Mistral](/docs/ai-integration/provided-integrations/mistral)    | Voxtral Mini Transcribe  | $0.18, on recorded files                             |
-| Mistral                                                          | Voxtral Realtime         | $0.36                                                |
-| [OpenAI](/docs/ai-integration/provided-integrations/openai)      | gpt-4o-mini-transcribe   | $0.18                                                |
-| OpenAI                                                           | gpt-4o-transcribe        | $0.36                                                |
-| [Gladia](/docs/ai-integration/provided-integrations/gladia)      | Real time                | $0.75 on Starter, from $0.25 with volume             |
-
-Prices come from each provider's pricing page in September 2026. Gladia gives a new account a one-time €50 credit. Mistral publishes the weights of Voxtral Realtime under Apache 2.0, so a team that starts on the API can move the same model onto its own GPU later. Mistral and Gladia both process the audio in Europe, so either one fits a [sovereign voice pipeline](/docs/ai-integration/sovereign-voice-ai).
-
-A thousand hours of calls a month comes to $180 at $0.18 per hour, so a hosted API stays cheap for most early products. Local transcription is worth it for privacy, for offline use, and on a server you already run with CPU to spare.
+Use a hosted API when the server is short on CPU, or when the call switches between languages no local checkpoint covers. Micdrop ships integrations for [OpenAI](/docs/ai-integration/provided-integrations/openai), [Gemini](/docs/ai-integration/provided-integrations/gemini), [Mistral](/docs/ai-integration/provided-integrations/mistral) and [Gladia](/docs/ai-integration/provided-integrations/gladia), and each one replaces `WhisperSTT` while the agent and the voice stay as they are. They cost between $0.18 and $0.75 an hour of audio in September 2026, and they differ in [languages, accuracy and time to the final transcript](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral). Mistral and Gladia fit a [sovereign voice pipeline](/docs/ai-integration/sovereign-voice-ai).
 
 ## The models compared on latency, size, license and Node support
 
