@@ -193,7 +193,10 @@ export class KeywordClassifier extends Classifier<
 ```
 
 Keywords miss every sentence phrased another way, which is where a model earns
-its place. They make a fine first layer, or a test double.
+its place. They make a fine first layer, or a test double. A dedicated model
+answers in a few hundred milliseconds where an LLM often takes over a second,
+which matters for
+[intent detection during a voice call](/blog/intent-classification-voice-agent).
 
 ## Usage without MicdropServer
 

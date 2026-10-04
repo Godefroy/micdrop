@@ -94,6 +94,8 @@ The other limits come from TypeSafe's documentation:
 | Probabilities | Calibrated, one per option | A confidence number the model writes itself, if you ask for one |
 | Text generation, extraction, multi-step reasoning | Left to an LLM or to your code | Supported |
 
+Jev is one of three ways to handle [intent classification in a voice agent](/blog/intent-classification-voice-agent), next to keywords and an LLM with structured output.
+
 ## Speculative fan-out sends every question in every request
 
 Speculative fan-out is the pattern TypeSafe recommends around Jev: send every question in one call, including the ones that only matter in some cases, and let your code decide which answers to read. It works because Jev evaluates each question against the state in parallel and in isolation, so an extra question barely changes the response time.

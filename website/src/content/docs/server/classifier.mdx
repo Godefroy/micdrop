@@ -54,7 +54,9 @@ Micdrop ships [`TypesafeClassifier`](../ai-integration/provided-integrations/typ
 which runs [Jev](../ai-integration/provided-integrations/typesafe), the System
 One model of TypeSafe. Any other model fits by extending the
 [`Classifier` base class](../ai-integration/custom-integrations/custom-classifier),
-an LLM with structured output as much as a list of keywords.
+an LLM with structured output as much as a list of keywords. Keywords, an LLM
+and a dedicated model differ a lot in
+[latency and accuracy for intent classification](/blog/intent-classification-voice-agent).
 
 The agent, the voice and even the answer are optional. A server with only a
 speech to text and a classifier turns each thing the user says into a typed
