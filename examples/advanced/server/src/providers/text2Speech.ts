@@ -4,6 +4,7 @@ import { GeminiTTS } from '@micdrop/gemini'
 import { GradiumTTS } from '@micdrop/gradium'
 import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
 import { OpenaiTTS } from '@micdrop/openai'
+import { listVoices, PhononTTS } from '@micdrop/phonon'
 import { PiperTTS } from '@micdrop/piper'
 import { BUNDLED_VOICES, PocketTTS } from '@micdrop/pocket-tts'
 import { QWEN_SPEAKERS, Qwen3TTS } from '@micdrop/qwen-tts'
@@ -17,6 +18,12 @@ import { ModelOption, ProviderRegistry } from './types'
 const POCKET_MODEL_DIR =
   process.env.POCKET_MODEL_DIR ||
   path.join(__dirname, '../../models/sherpa-onnx-pocket-tts-int8-2026-01-26')
+
+// Where the Phonon model supplied by Gradium was extracted, see the README of
+// @micdrop/phonon
+const PHONON_MODEL_DIR =
+  process.env.PHONON_MODEL_DIR ||
+  path.join(__dirname, '../../models/phonon-7e71a02d.200')
 
 // Where the Piper voices were downloaded, see the README of @micdrop/piper
 const PIPER_VOICES_DIR =
@@ -202,6 +209,24 @@ const text2speech: ProviderRegistry<TTS> = {
     defaultModel: 'bria',
     create: ({ model }) =>
       new PocketTTS({ modelDir: POCKET_MODEL_DIR, voice: model }),
+  },
+
+  // Local, needs the model supplied by Gradium extracted next to the demo
+  phonon: {
+    label: 'Phonon',
+    description: 'Gradium, on-device',
+    local: true,
+    isAvailable: () => existsSync(PHONON_MODEL_DIR),
+    models: () => listVoices(PHONON_MODEL_DIR).map((id) => ({ id, label: id })),
+    defaultModel: 'Freya',
+    create: ({ lang, model }) =>
+      new PhononTTS({
+        modelDir: PHONON_MODEL_DIR,
+        voice: model,
+        // The model folder decides which languages sound right, the language
+        // of the call only decides how numbers and symbols are read
+        language: lang,
+      }),
   },
 
   // Local, ten languages, needs the mlx-audio server running next to the demo

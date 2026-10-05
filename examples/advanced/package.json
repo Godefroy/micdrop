@@ -27,6 +27,7 @@
     "@micdrop/mistral": "*",
     "@micdrop/openai": "*",
     "@micdrop/piper": "*",
+    "@micdrop/phonon": "*",
     "@micdrop/pocket-tts": "*",
     "@micdrop/qwen-tts": "*",
     "@micdrop/react": "*",

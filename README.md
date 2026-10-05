@@ -32,6 +32,7 @@ Running on your own machine, with no API key and no data leaving it.
 
 - [`@micdrop/whisper`](./packages/whisper/README.md) - Local Whisper speech-to-text, in your Node process
 - [`@micdrop/kokoro`](./packages/kokoro/README.md) - Local Kokoro text-to-speech, in your Node process, English only
+- [`@micdrop/phonon`](./packages/phonon/README.md) - Local Gradium Phonon text-to-speech, in your Node process through WebAssembly
 - [`@micdrop/piper`](./packages/piper/README.md) - Local Piper text-to-speech, around forty languages
 - [`@micdrop/pocket-tts`](./packages/pocket-tts/README.md) - Local Kyutai Pocket TTS text-to-speech, in your Node process, cloning a voice, English only
 - [`@micdrop/qwen-tts`](./packages/qwen-tts/README.md) - Local Qwen3-TTS text-to-speech, ten languages, on an mlx-audio server

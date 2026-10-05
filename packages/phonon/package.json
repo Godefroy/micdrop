@@ -1,0 +1,49 @@
+{
+  "name": "@micdrop/phonon",
+  "version": "1.0.0",
+  "description": "Local Gradium Phonon text to speech for @micdrop/server",
+  "author": "Godefroy de Compreignac",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "build:wasm": "sh scripts/build-wasm.sh",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build:wasm && npm run build"
+  },
+  "files": [
+    "dist",
+    "wasm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Godefroy/micdrop.git",
+    "directory": "packages/phonon"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "microphone",
+    "audio",
+    "voice",
+    "conversation",
+    "phonon",
+    "gradium",
+    "local",
+    "offline",
+    "tts"
+  ],
+  "peerDependencies": {
+    "@micdrop/server": ">=2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.13",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
