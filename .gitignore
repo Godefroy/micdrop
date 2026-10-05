@@ -7,5 +7,5 @@ build
 *.log
 recording.json
 
-# Shared Terreau skills (symlinks to the terreau repo)
-.claude/skills/terreau-*
+# Shared Bibop skills (symlinks to the bibop repo)
+.claude/skills/bibop-*
