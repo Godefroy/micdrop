@@ -24,15 +24,19 @@ hardware you deploy to.
 
 ## Choosing a stack
 
-Four combinations cover most cases. Pick a row by the language of the call and
+Five combinations cover most cases. Pick a row by the language of the call and
 the machine it runs on. Each part links to its page if you want to replace it.
 
-| What you need                 | Agent       | Speech to text   | Voice                                             | First word   | Held    |
-| ----------------------------- | ----------- | ---------------- | ------------------------------------------------- | ------------ | ------- |
-| English, the least setup      | Qwen3 4B    | Whisper `base`   | [Kokoro](../provided-integrations/kokoro)         | 1.4 to 1.9 s | ~4 GB   |
-| English, the shortest wait    | MiniCPM5-2B | Whisper `base`   | [Pocket TTS](../provided-integrations/pocket-tts) | 0.8 to 1 s   | ~3.5 GB |
-| Another language, on any CPU  | Qwen3 4B    | Whisper `french` | [Piper](../provided-integrations/piper)           | ~1.6 s       | ~4.5 GB |
-| Ten languages, the best voice | Qwen3 4B    | Whisper `french` | [Qwen3-TTS](../provided-integrations/qwen-tts)    | ~1.6 s       | ~6.5 GB |
+| What you need                 | Agent       | Speech to text   | Voice                                          | First word   | Held    |
+| ----------------------------- | ----------- | ---------------- | ---------------------------------------------- | ------------ | ------- |
+| English, the least setup      | Qwen3 4B    | Whisper `base`   | [Kokoro](../provided-integrations/kokoro)      | 1.4 to 1.9 s | ~4 GB   |
+| English, the shortest wait    | MiniCPM5-2B | Whisper `base`   | [Phonon 31M](../provided-integrations/phonon)  | 0.5 to 0.6 s | ~3.4 GB |
+| Five languages, inside Node   | Qwen3 4B    | Whisper `french` | [Phonon 40M](../provided-integrations/phonon)  | ~1.3 s       | ~4.9 GB |
+| Another language, on any CPU  | Qwen3 4B    | Whisper `french` | [Piper](../provided-integrations/piper)        | ~1.6 s       | ~4.5 GB |
+| Ten languages, the best voice | Qwen3 4B    | Whisper `french` | [Qwen3-TTS](../provided-integrations/qwen-tts) | ~1.6 s       | ~6.5 GB |
+
+The Phonon 40M models are free for non-commercial use only. For a commercial
+call in French, Piper and Qwen3-TTS remain.
 
 `First word` is the sum of the three steps of a turn, taken from the tables
 below. It is the time between the end of the user's sentence and the first
@@ -48,7 +52,7 @@ Piper.
 
 Which rows fit depends on the machine.
 
-- **8 GB.** The first three rows fit, with little memory left. Use MiniCPM5-2B
+- **8 GB.** The first four rows fit, with little memory left. Use MiniCPM5-2B
   instead of Qwen3 4B for an English call, or Piper, the voice that uses the
   least memory.
 - **16 GB.** Every row fits. The last one needs Apple Silicon.
@@ -60,8 +64,8 @@ Which rows fit depends on the machine.
   only because they were too slow.
 
 Each part also has its own install: Ollama for the agent, an npm install for
-Whisper and Kokoro, a binary and a voice file for Piper, an extracted archive
-for Pocket TTS, and a running mlx-audio server for Qwen3-TTS.
+Whisper, Kokoro and Phonon, a binary and a voice file for Piper, an extracted
+archive for Pocket TTS, and a running mlx-audio server for Qwen3-TTS.
 
 ## Latency
 
@@ -75,10 +79,12 @@ for Pocket TTS, and a running mlx-audio server for Qwen3-TTS.
 | First sentence from Kokoro               | 900 to 1300 ms |
 | First sentence from Piper                | ~390 ms        |
 | First sentence from Pocket TTS           | 250 to 430 ms  |
+| First sentence from Phonon               | 30 to 100 ms   |
 | First sentence from Qwen3-TTS            | ~400 ms        |
 
 So a local call answers in about 1 second with Piper, Pocket TTS or Qwen3-TTS,
-and in about 2 seconds with Kokoro. When the model answers an automatic prompt,
+in about 2 seconds with Kokoro, and in about half a second with Phonon and
+MiniCPM5-2B in English. When the model answers an automatic prompt,
 the turn needs a second pass, which takes longer than transcription and voice
 together.
 
@@ -92,7 +98,8 @@ up, not while the user waits.
 Qwen3 4B in `Q4`, Whisper `base` and Kokoro together take around 4 GB including
 the key value cache, which leaves enough room on a 16 GB machine and plenty on
 24 GB. Pocket TTS in place of Kokoro adds about half a gigabyte, since Pocket
-TTS holds 600 MB while it generates, against 80 MB for Kokoro. Qwen3-TTS runs
+TTS holds 600 MB while it generates, against 80 MB for Kokoro. Phonon holds
+about 450 MB, counting the whole Node process. Qwen3-TTS runs
 in the mlx-audio server, outside the Node process. With the default checkpoint,
 that server uses 2.5 GB on top of the rest of the call. A 16 GB machine can run
 it next to a 4B agent, with little memory left.

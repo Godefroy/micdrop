@@ -33,11 +33,12 @@ that machine.
 | Agent          | [@micdrop/ai-sdk](../provided-integrations/ai-sdk)         | Any local server speaking the OpenAI protocol                   |
 | Speech to text | [@micdrop/whisper](../provided-integrations/whisper)       | Whisper, in your Node process                                   |
 | Text to speech | [@micdrop/kokoro](../provided-integrations/kokoro)         | Kokoro, in your Node process, English only                      |
+| Text to speech | [@micdrop/phonon](../provided-integrations/phonon)         | Phonon, in your Node process, five languages                    |
 | Text to speech | [@micdrop/piper](../provided-integrations/piper)           | Piper, as a subprocess, around forty languages                  |
 | Text to speech | [@micdrop/pocket-tts](../provided-integrations/pocket-tts) | Pocket TTS, in your Node process, English only, cloning a voice |
 | Text to speech | [@micdrop/qwen-tts](../provided-integrations/qwen-tts)     | Qwen3-TTS, on an mlx-audio server, ten languages                |
 
-An npm install is enough for Whisper and Kokoro. They download their weights on
+An npm install is enough for Whisper, Kokoro and Phonon. They download their weights on
 first use and run inside Node. The LLM needs a server such as
 [Ollama](https://ollama.com), Qwen3-TTS needs an mlx-audio server, Piper needs
 its binary, and Pocket TTS needs its archive extracted somewhere the server can

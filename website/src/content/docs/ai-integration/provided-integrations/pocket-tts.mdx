@@ -17,11 +17,13 @@ license. `@micdrop/pocket-tts` runs the same model in the Node process of
 ONNX Runtime, with no Python to install.
 
 The model generates about five times faster than real time and emits its audio
-while it is still writing the rest, which makes it the local voice with the
-shortest delay before the first word. On a MacBook Pro M2, its first sound
+while it is still writing the rest. On a MacBook Pro M2, its first sound
 arrives 250 to 430 ms after it receives a sentence. On the same machine, Piper
 takes about 390 ms and Kokoro 900 to 1300 ms, all three
 [measured side by side from Node](/blog/local-tts-node-kokoro-vs-piper).
+[Phonon](./phonon), which Gradium built on Pocket TTS, starts within 100 ms and
+speaks five languages, and Pocket TTS keeps the cloning of a voice from a wav
+file.
 
 ## Installation
 
@@ -149,7 +151,8 @@ covers French, German, Spanish, Italian, Portuguese and Dutch, with one
 checkpoint per language. The sherpa-onnx project publishes only the English
 checkpoint in ONNX, so that is the one the addon loads. Hand it French and you get fluent nonsense rather
 than an accent, since it reads every word with English phonemes. For French and
-the other languages in Node, use [Piper](./piper).
+the other languages in Node, use [Phonon](./phonon), built on Pocket TTS, or
+[Piper](./piper).
 
 ## Latency
 

@@ -116,8 +116,9 @@ voices, which `@micdrop/kokoro` leaves out. Kokoro takes phonemes as input.
 and British for the `b` voices, so a French voice would read French text with
 an English pronunciation.
 
-For a call in another language, use [Piper](./piper), which covers around
-forty languages, French included.
+For a call in another language, use [Phonon](./phonon), which speaks French,
+German, Spanish and Portuguese inside Node, or [Piper](./piper), which covers
+around forty languages.
 
 ## Latency
 
@@ -126,7 +127,8 @@ M2, so a three second sentence takes about two seconds to generate and a short
 greeting comes back in about one second. On that machine, the first sentence
 of an answer takes 900 to 1300 ms. In a full turn with Whisper `base` and
 Qwen3 4B, the user hears the first word 1.4 to 1.9 seconds after they stop
-talking. Piper and Pocket TTS take 250 to 430 ms for the same first sentence.
+talking. Piper and Pocket TTS take 250 to 430 ms for the same first sentence, and
+[Phonon](./phonon) 30 to 100 ms.
 We measured [every step of a local turn](../local-models/performance) for each
 model.
 

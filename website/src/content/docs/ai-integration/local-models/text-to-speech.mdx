@@ -1,16 +1,17 @@
 ---
 title: 'Local TTS'
-description: 'The four local text to speech engines, what each one asks for, and which to pick for the language of your call.'
+description: 'The five local text to speech engines, what each one asks for, and which to pick for the language of your call.'
 order: 67
 ---
 
 # Local TTS
 
-Four engines generate speech locally. Choose by the language of the call first,
+Five engines generate speech locally. Choose by the language of the call first,
 then by what you can install next to your app.
 
 | Engine                                            | Runs                   | Languages    | Voice comes from                        | First audio    |
 | ------------------------------------------------- | ---------------------- | ------------ | --------------------------------------- | -------------- |
+| [Phonon](../provided-integrations/phonon)         | In the Node process    | Five         | A catalog of 102 voices                 | 30 to 100 ms   |
 | [Piper](../provided-integrations/piper)           | In a subprocess        | Around forty | A voice file downloaded next to the app | ~390 ms        |
 | [Pocket TTS](../provided-integrations/pocket-tts) | In the Node process    | English      | A bundled voice, or a sample to clone   | 250 to 430 ms  |
 | [Kokoro](../provided-integrations/kokoro)         | In the Node process    | English      | A bundled voice                         | 900 to 1300 ms |
@@ -18,13 +19,22 @@ then by what you can install next to your app.
 
 ## In English
 
-Kokoro installs with npm alone, the least setup of the four, but it starts
-speaking about a second later than Pocket TTS, which the user notices. Pocket
+Phonon 31M installs with npm alone, downloads 65 MB on first use, and starts
+speaking within 100 ms of receiving a sentence, the shortest delay of the five.
+It is free for commercial use and offers 37 English voices. Kokoro also installs
+with npm alone, but it starts speaking about a second later, which the user
+notices. Pocket
 TTS also needs a 98 MB archive, downloaded and extracted once. It can clone a
 voice from a few seconds of audio but uses 600 MB while it generates. Qwen3-TTS sounds better than both, but it
 needs a server and a GPU.
 
 ## In the other languages
+
+Phonon covers French, German, Spanish and Portuguese with its 40M models, one
+per language plus a multilingual one, inside the Node process and on the CPU.
+Whisper transcribes its French back word for word, dates and times included.
+These models are gated on Hugging Face and free for non-commercial use only,
+so a commercial product in those languages turns to Piper or Qwen3-TTS.
 
 Piper covers around forty languages, with voice files of a few dozen megabytes,
 and generates much faster than real time on any CPU. Its voices are small VITS
@@ -56,12 +66,17 @@ Chinese voices, but `kokoro-js` accepts only its 28 American and British voice
 ids and throws an error on any other, such as `ff_siwis`. It also converts all
 text to phonemes with English rules. Pocket TTS
 has French, German, Spanish, Italian and Portuguese checkpoints, but they have
-no ONNX export yet, so the addon uses the English one.
+no ONNX export yet, so the addon uses the English one. Phonon, which Gradium
+built on Pocket TTS, brings French, German, Spanish and Portuguese to Node
+through its own runtime.
 
 ## Choosing the voice
 
 Each engine names its voices its own way:
 
+- [Phonon](../provided-integrations/phonon) takes a name from its catalog of
+  102 voices, such as `Easton` or `Noémie`, each with a sample to listen to on
+  Hugging Face, and every voice works with every model.
 - [Kokoro](../provided-integrations/kokoro) takes shorthands such as
   `americanFemale` or `britishFemale`, and any of its 28 English voice ids.
 - [Piper](../provided-integrations/piper) names its voices after their language,
@@ -85,7 +100,7 @@ fixing a memory issue in their inference code.
 
 ## XTTS and Tortoise
 
-Two open source engines often compared with these four have no Micdrop
+Two open source engines often compared with these five have no Micdrop
 integration. XTTS v2, from Coqui, clones a voice in seventeen languages, but its
 weights are under the Coqui Public Model License, which allows only
 non-commercial use. Coqui closed in early 2024, so no commercial license can be

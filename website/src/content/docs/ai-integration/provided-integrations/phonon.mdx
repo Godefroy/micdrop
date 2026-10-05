@@ -1,0 +1,206 @@
+---
+title: 'Phonon TTS in Node.js'
+sidebarLabel: 'Phonon'
+description: "Run Gradium's Phonon text to speech in your Node voice agent, in English, French, German, Spanish and Portuguese, with 102 voices and its first audio in under 100 ms."
+order: 53.5
+---
+
+# Phonon TTS in Node.js
+
+Phonon is the on-device text to speech model of [Gradium](https://gradium.ai),
+built on Kyutai's [Pocket TTS](./pocket-tts) and the Mimi codec. Gradium
+publishes its weights on [Hugging Face](https://huggingface.co/collections/gradium/phonon)
+and its runtime, written in Rust and compiled to WebAssembly, as
+[`phonon-tts`](https://www.npmjs.com/package/phonon-tts) on npm.
+`@micdrop/phonon` runs that runtime on a worker thread of the Node process of
+[@micdrop/server](../../server), with no API key, no native addon and no
+server next to yours.
+
+It is the local voice with the shortest delay before the first word, and the
+only one running inside Node that speaks French, German, Spanish and
+Portuguese as well as English. On a MacBook Pro M2, on a single CPU core, the
+first audio of a sentence arrives 30 to 100 ms after the model receives it,
+and the rest is generated five times faster than real time.
+
+## Installation
+
+```bash
+npm install @micdrop/phonon
+```
+
+The model and the voices are downloaded from Hugging Face on first use, into
+the cache the Hugging Face libraries share (`~/.cache/huggingface/hub`, or
+`HF_HUB_CACHE`). The English model weighs 65 MB. Once it is in the cache, the
+server starts offline.
+
+## Usage with MicdropServer
+
+```typescript
+import { PhononTTS } from '@micdrop/phonon'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new PhononTTS({ voice: 'Easton' })
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { PhononTTS } from '@micdrop/phonon'
+import { Readable } from 'stream'
+
+const tts = new PhononTTS({ voice: 'Easton' })
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+## Models
+
+Gradium publishes seven models. They share the same runtime, the same voices
+and the same options, so switching means changing `model`.
+
+| Model                                  | Parameters | Languages                | License      |
+| -------------------------------------- | ---------- | ------------------------ | ------------ |
+| `hf://gradium/phonon-31m-en`           | 31M        | English                  | Apache 2.0   |
+| `hf://gradium/phonon-40m-en`           | 40M        | English                  | CC BY-NC 4.0 |
+| `hf://gradium/phonon-40m-fr`           | 40M        | French                   | CC BY-NC 4.0 |
+| `hf://gradium/phonon-40m-de`           | 40M        | German                   | CC BY-NC 4.0 |
+| `hf://gradium/phonon-40m-es`           | 40M        | Spanish                  | CC BY-NC 4.0 |
+| `hf://gradium/phonon-40m-pt`           | 40M        | Portuguese               | CC BY-NC 4.0 |
+| `hf://gradium/phonon-40m-multilingual` | 40M        | The five languages above | CC BY-NC 4.0 |
+
+Phonon 31M in English is the default, and the only one free for commercial
+use. The 40M models are gated on Hugging Face: accept their terms on the model
+page, then give the package a token of that account through `HF_TOKEN`, the
+`hfToken` option or `hf auth login`.
+
+```typescript
+import { PHONON_MODELS, PhononTTS } from '@micdrop/phonon'
+
+const tts = new PhononTTS({
+  model: PHONON_MODELS['phonon-40m-fr'].model,
+  voice: 'Noémie',
+})
+```
+
+`model` also takes `hf://owner/name@revision` to pin a commit, or the path to
+a folder laid out as these repos are.
+
+<Callout type="warning">
+  The language of the model matters more than the voice. Phonon 31M reads French
+  with English phonemes, and Whisper turns "comment puis-je vous aider
+  aujourd'hui" into "comment please J. vous aider au George Huit". The French
+  40M model reads the same sentence, a date and a time included, back word for
+  word.
+</Callout>
+
+## Voices
+
+The 102 voices of the [Phonon catalog](https://huggingface.co/gradium/phonon-voices)
+work with every model, and each has a sample to listen to on that page.
+
+| Language   | Locales           | Voices                      |
+| ---------- | ----------------- | --------------------------- |
+| English    | American, British | 25, and 12 character voices |
+| French     | France            | 15                          |
+| German     | Germany           | 13                          |
+| Spanish    | Spain, Mexico     | 25                          |
+| Portuguese | Brazil            | 12                          |
+
+Pick a voice by name, `Easton` or `Noémie`, or by its id. `PHONON_VOICES`
+lists them with their language, locale and gender. A voice from the catalog
+also sets how the text is normalized when `language` is left out, so
+`voice: 'Noémie'` reads numbers and dates the French way.
+
+Left out, the voice is the model's own. A path to a `.safetensors` file works
+too, such as a voice made with the `create_voice` tool of the
+[Phonon runtime](https://github.com/gradium-ai/xn-ptts).
+
+## Numbers, dates and symbols
+
+Phonon normalizes the text before speaking it, with the rules of `language`,
+so `12 mars à 14 h 30` comes out as a French speaker would say it. By default
+the rules cover numbers, currency, emails and urls. `rewrites: 'all'` adds
+phone numbers, times and dates, and `'none'` turns them off.
+
+## Options
+
+| Option        | Type      | Default                | Description                                                         |
+| ------------- | --------- | ---------------------- | ------------------------------------------------------------------- |
+| `model`       | `string`  | Phonon 31M, in English | A Hugging Face repo, `hf://owner/name[@revision]`, or a folder      |
+| `voice`       | `string`  | The model's own        | A catalog voice by name or id, or the path to a `.safetensors` file |
+| `language`    | `string`  | The voice's, else `en` | `en`, `fr`, `de`, `es`, `pt`, `none`, or a locale such as `fr-FR`   |
+| `rewrites`    | `string`  | `'default'`            | Word rewrites, `'default'`, `'all'`, `'none'` or a list of rules    |
+| `conditions`  | `object`  | Optional               | Values for the conditioners listed in the model's `config.json`     |
+| `temperature` | `number`  | `0.3`                  | Sampling temperature                                                |
+| `seed`        | `number`  | Random                 | Sampling seed, to make a sentence reproducible                      |
+| `quant`       | `string`  | `'q8'`                 | Weight precision, `'q8'` or `'f32'`                                 |
+| `hfToken`     | `string`  | `HF_TOKEN`             | Hugging Face token, for the gated 40M models                        |
+| `cacheDir`    | `string`  | `HF_HUB_CACHE`         | Hugging Face cache folder                                           |
+| `warmup`      | `boolean` | `true`                 | Speaks one word at startup                                          |
+
+## Events
+
+| Event    | Payload    | Description                                                      |
+| -------- | ---------- | ---------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played. |
+| `Failed` | `string[]` | Synthesis failed, with the text that stayed unspoken.            |
+
+See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
+
+## Latency
+
+These times come from a MacBook Pro M2, on one CPU core, with the model already
+in the cache. Phonon 31M and the 40M models measure the same.
+
+| Step                                 | Time         |
+| ------------------------------------ | ------------ |
+| Loading the model and the first word | 0.7 to 0.9 s |
+| First audio of a sentence            | 30 to 100 ms |
+| Generating four seconds of speech    | ~0.9 s       |
+
+The model hands its audio over by frames of 80 ms, and Micdrop sends each one
+to the client as it comes, so the user hears the start of a sentence while the
+model is still writing its end. An interruption stops the generation between
+two frames.
+
+## The model runs inside your Node server
+
+The runtime generates on a worker thread, so a sentence being written never
+holds the event loop of your server. Micdrop loads one instance per model,
+language and precision and shares it across every call. The calls take turns
+on that thread, one sentence after the other.
+
+## Memory
+
+The Node process holds about 450 MB with Phonon loaded and generating, against
+600 MB for [Pocket TTS](./pocket-tts) and 80 MB for [Kokoro](./kokoro). That
+stays small next to the language model running beside it.
+
+## Phonon, Pocket TTS and Gradium's API
+
+Phonon starts from Pocket TTS and adds the other languages, a catalog of
+voices and a text normalization that reads numbers and dates. Pocket TTS keeps
+one advantage, cloning a voice from a wav file on the fly. The hosted voices
+of [Gradium](./gradium) run on the same company's servers, with more voices
+and a streaming WebSocket API, for when the call can leave the machine.
+
+## Documentation
+
+Read the [guide on running Micdrop with local models](../local-models) to see
+how Phonon fits with a local LLM and local speech to text.
+
+## License
+
+`@micdrop/phonon` is released under the MIT license, and the Phonon runtime
+under MIT or Apache 2.0. Phonon 31M and the voice catalog are under Apache 2.0.
+The 40M models are under CC BY-NC 4.0, which rules out commercial use.

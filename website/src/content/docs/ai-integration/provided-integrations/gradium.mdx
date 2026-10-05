@@ -197,6 +197,14 @@ const tts = new GradiumTTS({
 | `cfg_coef`      | `number` | 1.0 - 4.0  | 2.0     | Controls similarity to the original voice |
 | `padding_bonus` | `number` | -4.0 - 4.0 | 0       | Controls speech speed                     |
 
+## On-device voices with Phonon
+
+Gradium also publishes Phonon, a model of 31 to 40 million parameters that runs
+on the CPU, with no API key and no audio leaving the machine. [@micdrop/phonon](./phonon)
+runs it inside your Node server, in English, French, German, Spanish and
+Portuguese. It suits a call that has to stay on the machine, and the hosted
+API suits a call that needs more voices or voice cloning.
+
 ## Getting Started
 
 1. Sign up for a [Gradium account](https://gradium.ai) and get your API key

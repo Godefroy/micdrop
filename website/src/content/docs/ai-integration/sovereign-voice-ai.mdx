@@ -42,6 +42,8 @@ Pour la synthèse vocale (TTS), deux fournisseurs souverains sont intégrés :
 - **Gradium** : voix françaises en streaming, avec une région `eu`. L'article [text-to-speech français souverain avec Gradium](/blog/gradium-text-to-speech-souverain) montre comment régler la voix et ce que coûte un secours qui reste en Europe les jours de panne.
 - **Mistral** (Voxtral Speech 3) : plus de 35 langues, quatre voix françaises prêtes à l'emploi, clonage de voix à partir de quelques secondes d'audio, à 13 $ le million de caractères
 
+Pour que la voix ne quitte pas du tout votre serveur, [Phonon](/docs/ai-integration/provided-integrations/phonon), le modèle embarqué de Gradium, tourne directement dans le processus Node, sur le CPU, avec quinze voix françaises. Son modèle français est réservé à un usage non commercial.
+
 Mistral peut ainsi tenir toute la chaîne avec une seule clé API : Voxtral 3 transcrit, un modèle Mistral répond et Voxtral Speech 3 parle. Gradium regroupe de son côté la transcription et la synthèse. Dans les deux cas, vous avez moins de fournisseurs à gérer.
 
 Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`. `MistralTTS` s'y connecte avec l'option `baseUrl`, alors que `MistralAgent` et `MistralSTT` appellent le point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l’agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.

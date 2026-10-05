@@ -63,6 +63,9 @@ importers:
       '@micdrop/openai':
         specifier: '*'
         version: link:../../packages/openai
+      '@micdrop/phonon':
+        specifier: '*'
+        version: link:../../packages/phonon
       '@micdrop/piper':
         specifier: '*'
         version: link:../../packages/piper
@@ -959,6 +962,28 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.2
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/phonon:
+    dependencies:
+      '@huggingface/hub':
+        specifier: ^2.17.8
+        version: 2.17.8
+      '@micdrop/server':
+        specifier: '>=2.7.0'
+        version: link:../server
+      phonon-tts:
+        specifier: ^0.4.0
+        version: 0.4.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.13
+        version: 22.20.5
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(typescript@5.9.3)
@@ -4702,9 +4727,28 @@ packages:
       hono: 4.13.12
     dev: false
 
+  /@huggingface/blake3-jit@0.0.2:
+    resolution: {integrity: sha512-Bq7B5qabyjrJfhBsl85Jd2QBtf+HzRD7h7A9GfN2lzrrsABhOa5evVPgzoCTxR7Ub0QFj7YDK1YkYRWBU25+2w==}
+    dev: false
+
+  /@huggingface/hub@2.17.8:
+    resolution: {integrity: sha512-FzZaxzt0f2pkFQxFB7hxicCRsB3KFDXM8l6VOjisFbJboE7nSAMcCKxxxO3ARoZMFXDFDigFWbYNaVvzB8w2mg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      '@huggingface/tasks': 0.21.61
+      '@huggingface/xetchunk-wasm': 0.2.0
+    optionalDependencies:
+      cli-progress: 3.12.0
+    dev: false
+
   /@huggingface/jinja@0.5.10:
     resolution: {integrity: sha512-SgS1D1bglQ94ceD4ZCL6eayUDy9uV1xuyk61OjgSxU5GJh7upqZCKII0JoTYMc6wWsg3JUgaPRX0ElQzXPk3Cw==}
     engines: {node: '>=18'}
+
+  /@huggingface/tasks@0.21.61:
+    resolution: {integrity: sha512-bAki2SyAkxYbzYCAcOmPYq++CzCHI1CkxeVQnF2jkXAh60wnIuR+jZJ+Eha1aaI049bB1aO8H+icr4C/kvLnuw==}
+    dev: false
 
   /@huggingface/transformers@3.8.1(@types/node@22.20.5):
     resolution: {integrity: sha512-tsTk4zVjImqdqjS8/AOZg2yNLd1z9S5v+7oUPpXaasDRwEDhB+xnglK1k5cad26lL5/ZIaeREgWWy0bs9y9pPA==}
@@ -4715,6 +4759,13 @@ packages:
       sharp: 0.35.5(@types/node@22.20.5)
     transitivePeerDependencies:
       - '@types/node'
+
+  /@huggingface/xetchunk-wasm@0.2.0:
+    resolution: {integrity: sha512-cmp7oAAWeCpZGrVQTP/LxDtJdzGMfpxwkEVsZsk5jZQ2FwP2njm8LnyobhnQvLpkSAcJJwUzFJC0PYS9ZsqeTg==}
+    dependencies:
+      '@huggingface/blake3-jit': 0.0.2
+      gearhash-jit: 1.0.2
+    dev: false
 
   /@humanwhocodes/momoa@2.0.4:
     resolution: {integrity: sha512-RE815I4arJFtt+FVeU1Tgp9/Xvecacji8w/V6XtXsWWH/wz/eNkNbhb+ny/+PlVZjV0rxQpRSQKNKE3lcktHEA==}
@@ -10680,6 +10731,15 @@ packages:
       restore-cursor: 2.0.0
     dev: false
 
+  /cli-progress@3.12.0:
+    resolution: {integrity: sha512-tRkV3HJ1ASwm19THiiLIXLO7Im7wlTuKnvkYaTkyoAPefqjNg7W7DHKUlGRxy9vxDvbyCYQkQozvptuMkGCg8A==}
+    engines: {node: '>=4'}
+    requiresBuild: true
+    dependencies:
+      string-width: 4.2.3
+    dev: false
+    optional: true
+
   /cli-spinners@2.9.2:
     resolution: {integrity: sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg==}
     engines: {node: '>=6'}
@@ -13006,6 +13066,10 @@ packages:
       json-bigint: 1.0.0
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /gearhash-jit@1.0.2:
+    resolution: {integrity: sha512-UhzJL4KXSdqAKepy/tZwmi2Rcy0YMmtiC4DQS4SURCuIWdh8ECZtnXK2ePRMLigfB61hRKdLK/Vgg2bSw73izQ==}
     dev: false
 
   /generator-function@2.0.1:
@@ -16939,6 +17003,10 @@ packages:
 
   /phonemizer@1.2.1:
     resolution: {integrity: sha512-v0KJ4mi2T4Q7eJQ0W15Xd4G9k4kICSXE8bpDeJ8jisL4RyJhNWsweKTOi88QXFc4r4LZlz5jVL5lCHhkpdT71A==}
+    dev: false
+
+  /phonon-tts@0.4.0:
+    resolution: {integrity: sha512-008+bytDUgx2npm+KXJV4Quo8BTXeRVLiYkX4mXPcToy81RQ2cu3Vvi2bdRjFZdpyaWfDy574w4bIZnGqRd44g==}
     dev: false
 
   /piccolore@0.1.3:
