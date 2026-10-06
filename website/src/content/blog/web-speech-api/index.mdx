@@ -161,7 +161,7 @@ Micdrop.on('Message', (message) => {
 })
 ```
 
-Each sentence goes out as its own stream, so the provider starts transcribing while the user is still talking and the text arrives as soon as they pause. The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation) puts those two snippets behind a microphone button, with a language picker and a text area, in 180 lines of TypeScript.
+Each sentence goes out as its own stream, so the provider starts transcribing while the user is still talking and the text arrives as soon as they pause. The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation) puts those two snippets behind a microphone button, with a language picker and a text area, in 180 lines of TypeScript. A dropped connection, a sentence cut in two or a transcript that never arrives are the failures [real-time transcription over a WebSocket](/blog/real-time-transcription-websocket-typescript) has to handle once real users speak.
 
 | | Web Speech API | Your own transcription server |
 | --- | --- | --- |

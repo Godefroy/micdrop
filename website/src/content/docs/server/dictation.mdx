@@ -45,7 +45,9 @@ Micdrop.on('StateChange', (state) => {
 ```
 
 Each sentence lands once the speech to text has settled it, so the text grows
-sentence by sentence, at the pauses.
+sentence by sentence, at the pauses. Each provider needs its own signal to close
+a sentence, and the path from the microphone to the text is detailed in
+[real-time transcription over a WebSocket](/blog/real-time-transcription-websocket-typescript).
 
 The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation)
 does exactly this, in a page with a microphone button, a language picker and a
