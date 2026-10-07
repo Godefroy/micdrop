@@ -3,6 +3,7 @@ title: 'Intent Classification in a Voice Agent, Before the LLM'
 h1: 'Intent detection in a voice agent, before the LLM answers'
 summary: 'Keywords, an LLM or a dedicated model can classify each turn of a voice call. Compare their latency and route the answer in TypeScript before the LLM speaks.'
 date: 2026-09-27
+update: 2026-10-07
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -47,7 +48,7 @@ You can classify a turn of a voice call in three ways:
 
 1. Match the turn against keywords and rules. A regular expression or a list of phrases flags the turn. It runs in under a millisecond, costs nothing, and misses every sentence phrased another way.
 2. Ask an LLM for structured output. You describe the labels in a prompt and ask for JSON that fits a schema. It understands any phrasing and needs no training data, but a full completion often takes more than a second.
-3. Call a dedicated classification model, such as an embedding model with a router, a fine-tuned classifier, or Jev, a model that answers each question with a label, a score or a probability. It answers in tens to a few hundred milliseconds, at a fraction of the cost of an LLM.
+3. Call a dedicated classification model, such as an embedding model with a router, a fine-tuned classifier, or a model that answers each question with a label, a score or a probability, like Jev or the model behind the OpenAI Decisions API. It answers in tens to a few hundred milliseconds, at a fraction of the cost of an LLM.
 
 ### Keywords and rules
 
@@ -67,19 +68,20 @@ A dedicated model only classifies, which makes it faster and cheaper. There are 
 - A zero-shot model from Hugging Face, such as the natural language inference models behind the `zero-shot-classification` pipeline, which [Transformers.js](https://huggingface.co/docs/transformers.js) also runs in Node. You give it labels at runtime, without training.
 - A small classifier fine-tuned on your own transcripts, with a library like [SetFit](https://github.com/huggingface/setfit) that needs only a few examples per label. This is usually the most accurate option on your domain once you have the data, and the most work to maintain.
 - A System One model, like [Jev](/blog/what-is-jev) from TypeSafe AI. Jev reads a text or a JSON object and answers typed questions about it (a label, a score, the probability of a yes) with calibrated probabilities. In the same robot demo, Jev answered in 233 ms at the median against 1,971 ms for Claude Haiku 4.5. Jev costs $0.042 per million input tokens, with output free of charge.
+- The [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), in public beta in October 2026, runs `gpt-6-luna`, a model that only answers questions. You ask yes or no questions (it returns the probability of a yes), choices (one of your labels with the probability of each) and scores on a scale (the average level, weighted by probability). A team that already pays OpenAI for its LLM adds no new vendor. We measured 200 to 530 ms per request on October 7, 2026, with one turn, its history and three questions, in a test separate from the robot demo. The first request a process sent took about 2.4 s. Check the probabilities of `gpt-6-luna` against turns you have labelled yourself before you pick thresholds. Input costs $0.10 per million tokens, output is free, and the API is available with data residency in the United States or Europe.
 
 Jev is faster than Claude and less accurate on some commands. In the robot demo, the two models agreed on the command in 65 of 90 answers. Where they differed, Jev made more of the mistakes, mostly on commands that pack two steps into one verb, like "bring the ball to the dog". An embedding router has a different limit: it knows only the routes you wrote examples for.
 
 | | Keywords | LLM with structured output | Dedicated model |
 | --- | --- | --- | --- |
-| Latency per turn | Under 1 ms | Often over 1 s (1,971 ms median in the robot demo) | Tens to a few hundred ms (233 ms median for Jev) |
+| Latency per turn | Under 1 ms | Often over 1 s (1,971 ms median in the robot demo) | Tens to a few hundred ms (233 ms median for Jev, 200 to 530 ms for `gpt-6-luna` on October 7, 2026) |
 | Handles new phrasings | No | Yes | Yes, within the labels it knows |
-| Confidence you can threshold | No | Unreliable | Similarity score, or calibrated probability for Jev |
+| Confidence you can threshold | No | Unreliable | Similarity score, calibrated probability for Jev, probability per answer for `gpt-6-luna` (check it on your own turns) |
 | Setup | A list of phrases | A prompt and a schema | Labels, questions, or examples to train on |
 | Best for | Fixed commands, a first layer | Prototypes, rare and complex turns | Classifying every turn of every call |
 
 {/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Three tall cards side by side on a dark background, each with a title, a latency figure in large digits, and three short lines. Title at the top in modern clean bold sans-serif: "Three ways to classify a turn". Card 1 titled "Keywords", large figure "< 1 ms", lines "Free", "Fixed phrasings only", "No confidence score". Card 2 titled "LLM + structured output", large figure "~2 s", lines "Any phrasing", "No training data", "Confidence unreliable". Card 3 titled "Dedicated model", large figure "~250 ms", lines "Any phrasing within its labels", "Fraction of the LLM cost", "Score you can threshold". The third card is outlined in bright emerald, the first two in muted slate. Footer line centered: "LLM and dedicated model figures: medians in the Micdrop robot demo, September 25, 2026"."
-    Infographic: regenerate if examples/demo-robot/measurements gets a newer file. Last data sync: 2026-09-25. */}
+    Infographic: regenerate if examples/demo-robot/measurements gets a newer file, such as a gpt-6-luna run. Last data sync: 2026-09-25. The gpt-6-luna range in the table (200 to 530 ms, 2026-10-07) is outside the robot demo and stays out of the image. */}
 ![Three ways to classify a turn: keywords in under 1 ms with fixed phrasings only, an LLM with structured output in about 2 s, a dedicated model in about 250 ms](./three-ways-to-classify.jpg)
 
 You can combine the three. Keywords catch the obvious commands for free, a dedicated model classifies every other turn, and the LLM answers what falls below your confidence threshold.
@@ -173,7 +175,7 @@ new MicdropServer(socket, {
 })
 ```
 
-`TypesafeClassifier` runs [Jev through its Micdrop integration](/docs/ai-integration/provided-integrations/typesafe). You can use any of the other methods with the same `classifierOptions` by [writing your own classifier](/docs/ai-integration/custom-integrations/custom-classifier): you implement a single `evaluate()` method, whether it calls an LLM with a zod schema or matches keywords. With `sendToClient`, each classification also reaches the browser, where the `useMicdropClassification` React hook reads it.
+`TypesafeClassifier` runs [Jev through its Micdrop integration](/docs/ai-integration/provided-integrations/typesafe). You can use any of the other methods with the same `classifierOptions` by [writing your own classifier](/docs/ai-integration/custom-integrations/custom-classifier): you implement a single `evaluate()` method, whether it calls an LLM with a zod schema, sends the turn to the OpenAI Decisions API or matches keywords. With `sendToClient`, each classification also reaches the browser, where the `useMicdropClassification` React hook reads it.
 
 You can also [set how long the server waits for the classification and how many earlier turns the classifier reads](/docs/server/classifier). To go further, you can [build a support agent that routes each turn five ways](/blog/jev-voice-agent-typescript): a block on manipulation attempts, a transfer to a human, an answer written by code, an LLM answer with a retention hint, and a plain LLM answer. That agent comes from the support demo, listed with the other [Micdrop demos that run on a classifier](/docs/examples#classifier-demos).
 
@@ -188,6 +190,9 @@ The routing works differently, though. The model starts answering on its own, so
 <FaqList>
   <FaqItem question="How can LLMs be used for intent classification?">
     Give the LLM the list of intents with a description of each, pass it the user's message with the turn before it, and ask for a JSON object that matches a schema. Structured output features in the OpenAI, Anthropic and Gemini APIs keep the answer to one of your labels. It needs no training data, but a completion often takes over a second, which is slow for a voice call.
+  </FaqItem>
+  <FaqItem question="Can I classify intent with the OpenAI API without an LLM call?">
+    Yes, with the Decisions API, in public beta in October 2026. You send the turn to `POST /v1/decisions` with your questions, and the `gpt-6-luna` model returns one of your labels with the probability of each, or the probability of a yes, without writing any text. We measured 200 to 530 ms per request on October 7, 2026. Input costs $0.10 per million tokens, and output is free.
   </FaqItem>
   <FaqItem question="What is the difference between intent classification and intent detection?">
     Both terms name the same task: reading a user's message and deciding what they want, out of a list of intents you define. Intent recognition is a third name for it, more common in older chatbot and voice assistant frameworks.
