@@ -1,4 +1,5 @@
 export * from './OpenaiAgent'
+export * from './OpenaiClassifier'
 export * from './OpenaiRealtime'
 export * from './OpenaiSTT'
 export * from './OpenaiTTS'

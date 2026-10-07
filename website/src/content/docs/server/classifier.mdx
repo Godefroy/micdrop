@@ -52,7 +52,8 @@ new MicdropServer(socket, {
 
 Micdrop ships [`TypesafeClassifier`](../ai-integration/provided-integrations/typesafe),
 which runs [Jev](../ai-integration/provided-integrations/typesafe), the System
-One model of TypeSafe. Any other model fits by extending the
+One model of TypeSafe, and [`OpenaiClassifier`](../ai-integration/provided-integrations/openai#openai-classifier),
+which runs the Decisions API of OpenAI. Any other model fits by extending the
 [`Classifier` base class](../ai-integration/custom-integrations/custom-classifier),
 an LLM with structured output as much as a list of keywords. Keywords, an LLM
 and a dedicated model differ a lot in
@@ -66,12 +67,12 @@ command for the page.
 
 `classifierOptions` sets how the server uses the classifier:
 
-| Option             | Type      | Default | Description                                                                                          |
-| ------------------ | --------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| `sendToClient`     | `boolean` | `false` | Sends every classification to the client as `Classification`.                                        |
-| `waitBeforeAnswer` | `boolean` | `false` | Holds each answer until the classification of its turn is done, so `onBeforeAnswer` can read it.      |
-| `maxWait`          | `number`  | `1000`  | How long `waitBeforeAnswer` holds an answer, in ms. Past it, the answer goes on without the result.  |
-| `history`          | `number`  | `1`     | How many turns of the user before this one the input holds, with the answers that followed them.     |
+| Option             | Type      | Default | Description                                                                                         |
+| ------------------ | --------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `sendToClient`     | `boolean` | `false` | Sends every classification to the client as `Classification`.                                       |
+| `waitBeforeAnswer` | `boolean` | `false` | Holds each answer until the classification of its turn is done, so `onBeforeAnswer` can read it.    |
+| `maxWait`          | `number`  | `1000`  | How long `waitBeforeAnswer` holds an answer, in ms. Past it, the answer goes on without the result. |
+| `history`          | `number`  | `1`     | How many turns of the user before this one the input holds, with the answers that followed them.    |
 
 `sendToClient` stays off by default, since a result can hold what the user should
 not see, a manipulation score for instance. Without `waitBeforeAnswer`, the

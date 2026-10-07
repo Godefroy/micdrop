@@ -215,6 +215,35 @@ new MicdropServer(socket, {
 
 It emits the events of an agent, plus `Audio` (the voice of the model, PCM 16 bits, 16 kHz, mono) and `PartialMessage` (the transcript of the answer so far).
 
+## OpenAI Classifier
+
+Classifies each turn of the user with the [Decisions API](https://developers.openai.com/api/docs/guides/decisions): predicates, choices and scores answered with probabilities by `gpt-6-luna`.
+
+```typescript
+import { choice, OpenaiClassifier, predicate } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const classifier = new OpenaiClassifier({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  questions: {
+    intent: choice('What does the user in `turn` want?', {
+      billing: 'A charge, an invoice, a refund',
+      outage: 'The service is down or slow',
+      other: 'Anything else',
+    }),
+    wantsHuman: predicate('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { waitBeforeAnswer: true },
+})
+```
+
 ## Documentation
 
 Read full [documentation of the OpenAI integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/openai) on the [website](https://micdrop.dev).

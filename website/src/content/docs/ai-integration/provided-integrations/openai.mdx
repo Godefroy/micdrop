@@ -8,7 +8,7 @@ order: 53
 
 OpenAI implementation for [@micdrop/server](../../server).
 
-This package provides AI agent, speech-to-text and text-to-speech implementations using OpenAI's API.
+This package provides AI agent, speech-to-text, text-to-speech and classifier implementations using OpenAI's API.
 
 Each of the three is a separate argument, so any of them can move to another provider. [`OpenaiRealtime`](#openai-realtime) runs all three in one connection to the Realtime API, which changes what you can swap and what you pay.
 
@@ -78,21 +78,21 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 
 ### Options
 
-| Option                | Type                                                                                                                              | Default     | Description                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------ |
-| `apiKey`              | `string`                                                                                                                          | Required\*  | Your OpenAI API key (required if `openai` not provided)                  |
-| `openai`              | `OpenAI`                                                                                                                          | Optional    | OpenAI instance (alternative to `apiKey`)                                |
-| `model`               | `string`                                                                                                                          | `'gpt-4o'`  | OpenAI model to use                                                      |
-| `systemPrompt`        | `string`                                                                                                                          | Required    | System prompt for the agent                                              |
-| `retryDelay`          | `number`                                                                                                                          | `1000`      | Delay in milliseconds between retry attempts                             |
-| `maxRetry`            | `number`                                                                                                                          | `3`         | Maximum number of retries on API failures                                |
-| `maxSteps`            | `number`                                                                                                                          | `5`         | Maximum number of steps (for tool calls)                                 |
-| `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../../server/auto-end-call)    |
-| `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`     | [Handle incomplete user sentences](../../server/semantic-turn-detection) |
-| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)           |
-| `extract`             | [`ExtractJsonOptions`](../../server/extract#json-extraction) \| [`ExtractTagOptions`](../../server/extract#custom-tag-extraction) | `undefined` | Extract structured data from responses                                   |
+| Option                | Type                                                                                                                              | Default     | Description                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `apiKey`              | `string`                                                                                                                          | Required\*  | Your OpenAI API key (required if `openai` not provided)                                     |
+| `openai`              | `OpenAI`                                                                                                                          | Optional    | OpenAI instance (alternative to `apiKey`)                                                   |
+| `model`               | `string`                                                                                                                          | `'gpt-4o'`  | OpenAI model to use                                                                         |
+| `systemPrompt`        | `string`                                                                                                                          | Required    | System prompt for the agent                                                                 |
+| `retryDelay`          | `number`                                                                                                                          | `1000`      | Delay in milliseconds between retry attempts                                                |
+| `maxRetry`            | `number`                                                                                                                          | `3`         | Maximum number of retries on API failures                                                   |
+| `maxSteps`            | `number`                                                                                                                          | `5`         | Maximum number of steps (for tool calls)                                                    |
+| `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../../server/auto-end-call)                       |
+| `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`     | [Handle incomplete user sentences](../../server/semantic-turn-detection)                    |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../../server/noise-filtering)                              |
+| `extract`             | [`ExtractJsonOptions`](../../server/extract#json-extraction) \| [`ExtractTagOptions`](../../server/extract#custom-tag-extraction) | `undefined` | Extract structured data from responses                                                      |
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined` | Hook called before answer generation, returns `true` to skip it or a text to answer instead |
-| `settings`            | `object`                                                                                                                          | `{}`        | Additional OpenAI Responses API parameters                               |
+| `settings`            | `object`                                                                                                                          | `{}`        | Additional OpenAI Responses API parameters                                                  |
 
 The OpenAI Agent supports adding and removing custom tools to extend its capabilities. For detailed information about tool management, see the [Tools documentation](../../server/tools).
 
@@ -360,3 +360,137 @@ When the user interrupts, the answer is cancelled and the conversation of the mo
 | `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                                                                                  |
 
 A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session.
+
+## OpenAI Classifier
+
+`OpenaiClassifier` is a [classifier](../../server/classifier) running the
+[Decisions API](https://developers.openai.com/api/docs/guides/decisions) of
+OpenAI. Where the Responses API writes an answer token by token, Decisions
+answers a set of typed questions at once: the probability that a condition is
+true, a choice out of several values, or a score on ordered levels. OpenAI
+announces it about ten times faster than the Responses API, which leaves time to
+route the answer before the LLM starts.
+
+The Decisions API is in public beta, and `gpt-6-luna` is its only model.
+
+### Usage with MicdropServer
+
+```typescript
+import { choice, OpenaiClassifier, predicate, score } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const classifier = new OpenaiClassifier({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  questions: {
+    intent: choice(
+      'What does the user in `turn` want? Read `history` for context.',
+      {
+        billing: 'A charge, an invoice, a refund',
+        outage: 'The service is down or slow',
+        cancel: 'Cancel the subscription or switch provider',
+        other: 'Anything else',
+      }
+    ),
+    frustration: score('How frustrated is the user in `turn`?', [
+      'Calm',
+      'Annoyed',
+      'Angry',
+    ]),
+    wantsHuman: predicate('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { sendToClient: true, waitBeforeAnswer: true },
+})
+```
+
+The server classifies each turn of the user when it ends, and sends it the
+`MicdropTurnInput` as JSON, with the `turn` and its `history`. The questions
+point at these fields by name, between backticks. See
+[Classifier](../../server/classifier) for the server options and routing the
+answer in `onBeforeAnswer`.
+
+### Usage without MicdropServer
+
+```typescript
+import { OpenaiClassifier, predicate } from '@micdrop/openai'
+
+const classifier = new OpenaiClassifier({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  questions: { urgent: predicate('Does this message sound urgent?') },
+})
+
+const classification = await classifier.classify('My internet is down!')
+console.log(classification?.result.answers.urgent?.probability)
+```
+
+### Questions
+
+Three helpers build the questions. The key of each question names its answer.
+
+| Helper                          | Answers                                       | Example                             |
+| ------------------------------- | --------------------------------------------- | ----------------------------------- |
+| `predicate(instructions)`       | The probability that the condition is true    | Asks for a human, wants to cancel   |
+| `choice(instructions, choices)` | One value out of several, without order       | The intent, the topic, the language |
+| `score(instructions, levels)`   | A position on ordered levels, from the lowest | Frustration, urgency, severity      |
+
+`choice()` takes an object of values, each with a description of when it
+applies, or `null`. Add a fallback such as `other` when the values do not cover
+every turn. `score()` takes the levels from the lowest up, each a label or a
+`{ label, description }`.
+
+Every question goes in the same request. To pick them per input, pass a function
+of the input as `questions`.
+
+### Reading the answers
+
+The answers are typed from your questions:
+
+```typescript
+const { answers, refusals, usage } = getTurnClassification(
+  this.conversation
+)!.result
+
+answers.intent?.choice // 'billing', typed as one of your values
+answers.intent?.confidence // 0.93
+answers.intent?.probabilities // { billing: 0.95, outage: 0.01, cancel: 0.02, other: 0.02 }
+
+answers.frustration?.score // 1.1, the weighted average of the level indices
+answers.frustration?.probabilities // { 0: 0.1, 1: 0.7, 2: 0.2 }
+
+answers.wantsHuman?.probability // 0.07
+
+refusals // ['wantsHuman'] when the model declined that question
+usage.input_tokens // 412
+```
+
+The model can refuse a question. Its answer is then missing from `answers` and
+its name is listed in `refusals`, hence the `?.` above. Level indices start at
+0, and a score can fall between two levels. Set your thresholds on labeled
+turns of your own application.
+
+### Options
+
+| Option             | Type                                          | Default           | Description                                                                         |
+| ------------------ | --------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| `apiKey`           | `string`                                      | Required          | Your OpenAI API key, or pass an `openai` client instead                             |
+| `model`            | `string`                                      | `'gpt-6-luna'`    | Model answering the questions                                                       |
+| `questions`        | `Questions \| (input) => Questions`           | Required          | Questions built with `predicate()`, `choice()` and `score()`, or a function of them |
+| `input`            | `(input) => string \| DecisionInputMessage[]` | The input as JSON | Builds what the model reads, a text or user messages with text and images           |
+| `safetyIdentifier` | `string`                                      | `undefined`       | Identifies the end user to OpenAI, for abuse detection                              |
+| `timeout`          | `number`                                      | `3000`            | Timeout of each request in ms                                                       |
+
+### Latency and price
+
+Measured on the real API with a turn, its history and three questions, each
+request took about 200 to 550 ms. The first request of a process takes a few
+seconds more, while it opens the connection.
+
+Input costs $0.10 per million tokens, and output is free. A request of a
+thousand tokens costs about $0.0001, so classifying every turn of a call stays
+well under a cent.

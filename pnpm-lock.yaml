@@ -941,11 +941,11 @@ importers:
   packages/openai:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.8.0'
+        specifier: '>=2.9.0'
         version: link:../server
       openai:
-        specifier: ^6.0.0
-        version: 6.49.0(ws@8.22.0)(zod@4.6.5)
+        specifier: ^7.30.0
+        version: 7.30.0(ws@8.22.0)(zod@4.6.5)
       ws:
         specifier: ^8.19.0
         version: 8.22.0
@@ -16688,13 +16688,15 @@ packages:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  /openai@6.49.0(ws@8.22.0)(zod@4.6.5):
-    resolution: {integrity: sha512-aYCc0C6L864eR6WSYIwQGyXriw/nIyZx0ObvhzOEVuk0zoBDpynjSbrionWI7q65B5H8jJX0DXR9snEzM6bfPg==}
+  /openai@7.30.0(ws@8.22.0)(zod@4.6.5):
+    resolution: {integrity: sha512-tvvcPdhS56B/79o0mJS5h4JndAov5Sz78T7CFl4gJ+C9S3GoSqHNLO6lG/8kdK+/c13zWEI97Srf66ar0V242g==}
+    engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
       '@smithy/hash-node': '>=4.3.0 <5'
       '@smithy/signature-v4': '>=5.4.0 <6'
-      ws: ^8.18.0
+      undici: '>=5 <9'
+      ws: ^8.21.0
       zod: ^3.25 || ^4.0
     peerDependenciesMeta:
       '@aws-sdk/credential-provider-node':
@@ -16702,6 +16704,8 @@ packages:
       '@smithy/hash-node':
         optional: true
       '@smithy/signature-v4':
+        optional: true
+      undici:
         optional: true
       ws:
         optional: true
