@@ -122,7 +122,9 @@ wants the spelled out form, since the answer will be read out loud.
 
 The other languages have no shorthand yet. Search the Hugging Face hub for a
 `whisper-small` fine-tuned on your language and exported to ONNX, then pass its
-repository id as `model` for the same benefit.
+repository id as `model` for the same benefit. The
+[local speech to text guide](../local-models/speech-to-text) places this choice
+in a call that runs entirely on your machine.
 
 <Callout type="tip">
   Set `language` to save the detection pass and keep the model on the right

@@ -133,7 +133,7 @@ The generic Whisper checkpoints learned around a hundred languages at once, so t
 const stt = new WhisperSTT({ model: 'french', language: 'fr' })
 ```
 
-For another language, search the Hugging Face hub for a `whisper-small` fine-tuned on it and exported to ONNX, then pass its repository id as `model`. Try that before a larger generic checkpoint, which slows down every sentence, short ones included.
+For another language, search the Hugging Face hub for a `whisper-small` fine-tuned on it and exported to ONNX, then pass its repository id as `model`. Try that before a larger generic checkpoint, which slows down every sentence, short ones included. The [local STT page of the docs](/docs/ai-integration/local-models/speech-to-text) sums up which checkpoint to run for each language.
 
 ## Hosted transcription costs $0.18 to $0.75 per hour of audio
 
