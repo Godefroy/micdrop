@@ -45,11 +45,9 @@ import {
 wss.on('connection', async (socket) => {
   try {
     // Validate environment
+    // Any other error is logged and closes the call as InternalServer
     if (!process.env.OPENAI_API_KEY) {
-      throw new MicdropError(
-        MicdropErrorCode.InternalServer,
-        'OpenAI API key not configured'
-      )
+      throw new Error('OpenAI API key not configured')
     }
 
     // Check authentication

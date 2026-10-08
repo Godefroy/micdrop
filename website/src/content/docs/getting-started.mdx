@@ -132,17 +132,119 @@ create a turbo monorepo in current folder with a client and a server in a new /a
 
 ## Troubleshooting
 
-**Microphone not working?**
+### Turn on the logs first
 
-- Check browser permissions for microphone access
-- Ensure you're serving over HTTPS in production
+Both sides stay quiet by default. On the client, `debugLog` prints each step of
+the call: microphone, WebSocket, reconnections.
 
-**WebSocket connection fails?**
+```typescript
+Micdrop.start({ url: 'ws://localhost:8081', debugLog: true })
 
-- Verify the server is running on the correct port
-- Check firewall settings
+Micdrop.on('Error', (error) => {
+  console.error(error.code, error.message)
+})
+```
 
-**AI responses not working?**
+On the server, every piece takes a `Logger`. Errors from the providers (a
+rejected API key, a wrong model name, a quota reached) only show up there, so
+give one to each piece while you set things up:
 
-- Verify all API keys are set correctly
-- Check the server console for error messages
+```typescript
+import { Logger, MicdropServer } from '@micdrop/server'
+
+const server = new MicdropServer(socket, { agent, stt, tts })
+server.logger = new Logger('Server')
+agent.logger = new Logger('Agent')
+stt.logger = new Logger('STT')
+tts.logger = new Logger('TTS')
+```
+
+The error code the client receives tells you where to look next.
+
+### The call stops at once with a `Mic` error
+
+The microphone was refused, and `error.message` carries the browser's reason.
+`NotAllowedError` means the user or the site settings denied access,
+`NotFoundError` means no microphone is plugged in.
+
+Browsers only give the microphone to secure pages, served over HTTPS or from
+`localhost`. Opening your dev server from a phone at `http://192.168.1.20:3000`
+fails for this reason, so go through an HTTPS tunnel instead. On React Native,
+the permission has to be declared in the app, see
+[Installation](./react-native/installation).
+
+### `Connection` errors, or a client that keeps reconnecting
+
+The client gives the server 5 seconds to answer, then retries every second
+with no limit (see the `reconnect` option). The usual causes:
+
+- The URL misses the route. Behind [Fastify](./server/with-fastify) or
+  [NestJS](./server/with-nestjs), the socket lives on a path such as
+  `ws://localhost:8081/call`.
+- An HTTPS page has to connect with `wss://`, browsers block `ws://` from it. A
+  reverse proxy in front of the server must forward the `Upgrade` and
+  `Connection` headers.
+- A phone has its own `localhost`, so it needs your machine's address on the
+  network, as explained in
+  [Reaching the server](./react-native/installation#reaching-the-server).
+
+### `InternalServer`, `Unauthorized`, `BadRequest` or `NotFound`
+
+These come from the server closing the socket. `InternalServer` means your
+connection handler threw: `handleError` prints the error in the server console,
+most often a missing environment variable. The other three are the
+`MicdropError` your own code throws when it checks the
+[parameters and authentication](./server/auth-and-parameters), and the client
+does not retry them.
+
+### The call connects but the assistant stays silent
+
+A provider is failing, and the server logs tell you which one. Follow a turn
+through them:
+
+1. With `firstMessage` set, hearing it proves the speech synthesis and the
+   speakers work.
+2. `Received chunk` lines show the audio arrives. None while you talk means the
+   client never detected your voice, see the next section.
+3. `User transcript` shows speech to text works. Its absence points at the STT
+   key or language.
+4. `Adding assistant message` shows the agent answered. Its absence points at
+   the LLM key, model name or quota.
+5. `Send audio chunk` shows the answer is being spoken. Its absence points at
+   the TTS key or voice ID.
+
+A provider that gives up after its retries emits `Failed`, and the call stays
+open without a word. In production, put a fallback behind each piece:
+[STT](./ai-integration/fallback-strategies/stt-fallback),
+[agent](./ai-integration/fallback-strategies/agent-fallback) and
+[TTS](./ai-integration/fallback-strategies/tts-fallback).
+
+### The assistant does not hear you, or never stops listening
+
+Voice detection runs in the browser, and the volume detector used by default
+depends on the room and the microphone. A quiet microphone never crosses the
+threshold, a noisy room never drops below it. Tune it or switch to Silero,
+which recognises human speech, as described in [VAD](./client/vad). Check also
+that the right input is selected with
+[device management](./client/devices-management), and that the call is
+neither muted nor paused.
+
+### The assistant interrupts itself, or you cannot interrupt it
+
+Without echo cancellation, the microphone hears the speakers and the assistant
+would answer its own voice. Micdrop then turns interruptions off
+(`isInterruptionDisabled` in the state), and `debugLog` prints
+`No echo cancellation, interruptions are disabled`. Headphones fix it, and so
+does a microphone the browser can cancel echo on (some USB and Bluetooth
+headsets lose it).
+
+### No sound on Safari or iOS
+
+Browsers keep audio locked until the user interacts with the page. Call
+`Micdrop.start()` from a click or tap handler, never on page load.
+
+### Answers come too late
+
+Most of the delay is the silence the client waits for before it ends your
+turn. [Latency](./client/latency) breaks down a turn and lists the settings
+worth changing.
