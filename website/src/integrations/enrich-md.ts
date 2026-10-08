@@ -11,9 +11,6 @@ const turndown = new TurndownService({
 })
 // Cast: turndown's types restrict tag names to `keyof HTMLElementTagNameMap`,
 // but we also want to strip 'svg', a valid SVG element.
-// `nav` and `aside` hold the page chrome inside <main> (docs sidebar, table of
-// contents, breadcrumb, previous/next links, blog sidebar), the twin keeps the
-// content only.
 turndown.remove([
   'svg' as any,
   'video',
@@ -22,10 +19,17 @@ turndown.remove([
   'style',
   'noscript',
   'iframe',
-  'nav',
-  'aside',
   'button',
 ])
+
+// Page chrome inside <main> (docs sidebar, table of contents, breadcrumb,
+// previous/next links) is a `nav`, alone or in an `aside`. An `aside` without
+// a `nav` is content (key takeaways, call to action) and stays.
+turndown.remove(
+  (node) =>
+    node.nodeName === 'NAV' ||
+    (node.nodeName === 'ASIDE' && !!node.querySelector('nav'))
+)
 
 // Fence long enough to wrap code that itself contains backtick fences.
 function fence(code: string, lang: string): string {
@@ -105,8 +109,8 @@ export default function enrichMd(): AstroIntegration {
           const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)
           if (!mainMatch) continue
 
-          // The 404 page is no content.
-          if (htmlFile === '404.html') continue
+          // The 404 pages are no content.
+          if (/(^|\/)404\.html$/.test(htmlFile)) continue
 
           const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/)
           const descMatch = html.match(
