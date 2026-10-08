@@ -13,9 +13,10 @@ interface Props {
   /** `article` on blog posts, `website` everywhere else. */
   type?: 'website' | 'article'
   url: string
+  lang?: string
 }
 
-const { title, description, image, type = 'website', url } = Astro.props
+const { title, description, image, type = 'website', url, lang = 'en' } = Astro.props
 const imageUrl = image ? new URL(image.src, Astro.site).href : undefined
 ---
 
@@ -23,7 +24,7 @@ const imageUrl = image ? new URL(image.src, Astro.site).href : undefined
 <meta property="og:type" content={type} />
 <meta property="og:title" content={title} />
 <meta property="og:url" content={url} />
-<meta property="og:locale" content="en" />
+<meta property="og:locale" content={lang} />
 <meta name="twitter:title" content={title} />
 {
   description && (

@@ -14,15 +14,16 @@ interface Props {
   headings: MarkdownHeading[]
   previous?: DocsLink
   next?: DocsLink
+  lang?: 'en' | 'fr'
 }
 
-const { title, titleBrand = true, description, headings, previous, next } = Astro.props
+const { title, titleBrand = true, description, headings, previous, next, lang } = Astro.props
 
 // The groups the page sits under, so the breadcrumb mirrors the sidebar.
 const sections = getDocsTrail(await getDocsTree(), getCanonicalPath(Astro.url.pathname))
 ---
 
-<DocsLayout title={title} titleBrand={titleBrand} description={description} headings={headings}>
+<DocsLayout title={title} titleBrand={titleBrand} description={description} headings={headings} lang={lang}>
   <article>
     <header class="mb-8">
       <Breadcrumb

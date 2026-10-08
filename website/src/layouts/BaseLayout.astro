@@ -29,6 +29,8 @@ interface Props {
   bottomSpace?: boolean
   /** Full-bleed pages (the homepage) opt out of the centered content column. */
   fullWidth?: boolean
+  /** Language of the page, from its content entry. */
+  lang?: 'en' | 'fr'
 }
 
 const {
@@ -40,6 +42,7 @@ const {
   keywords = [],
   bottomSpace = true,
   fullWidth = false,
+  lang = 'en',
 } = Astro.props
 
 // Very short titles ("Blog", "Installation") need the brand appended to read
@@ -52,7 +55,7 @@ const canonicalUrl = absoluteUrl(canonicalPath)
 ---
 
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang={lang} data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -72,6 +75,7 @@ const canonicalUrl = absoluteUrl(canonicalPath)
       image={image}
       type={ogType}
       url={canonicalUrl}
+      lang={lang}
     />
     {import.meta.env.PROD && <UmamiAnalytics />}
     <!--

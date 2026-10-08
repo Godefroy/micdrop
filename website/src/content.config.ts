@@ -22,6 +22,9 @@ const docs = defineCollection({
     // Set to false on titles that already name the brand, so the document
     // title is not suffixed with it twice.
     titleBrand: z.boolean().default(true),
+    // Language of the page, declared in `<html lang>`, `og:locale` and the
+    // JSON-LD. The site is in English, a few pages are written in French.
+    lang: z.enum(['en', 'fr']).default('en'),
   }),
 })
 
@@ -47,6 +50,8 @@ const blog = defineCollection({
       takeaways: z.array(z.string()).default([]),
       // Drafts are excluded from the index and from the generated pages.
       draft: z.boolean().default(false),
+      // Language of the page, as on `docs`.
+      lang: z.enum(['en', 'fr']).default('en'),
     }),
 })
 
@@ -74,6 +79,8 @@ const pages = defineCollection({
     // Homepage and other full-bleed pages skip the prose container.
     fullWidth: z.boolean().default(false),
     titleBrand: z.boolean().default(true),
+    // Language of the page, as on `docs`.
+    lang: z.enum(['en', 'fr']).default('en'),
   }),
 })
 

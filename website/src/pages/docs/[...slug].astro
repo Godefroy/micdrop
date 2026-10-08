@@ -39,6 +39,7 @@ const { Content, headings } = await render(entry)
   headings={headings}
   previous={previous}
   next={next}
+  lang={entry.data.lang}
 >
   <Content components={mdxComponents} />
 </DocPage>

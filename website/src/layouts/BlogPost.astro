@@ -36,7 +36,7 @@ const articleSchema = {
   '@type': 'BlogPosting',
   headline: post.data.title,
   description: post.data.summary,
-  inLanguage: 'en',
+  inLanguage: post.data.lang,
   mainEntityOfPage: new URL(getCanonicalPath(Astro.url.pathname), Astro.site).href,
   ...(post.data.image && { image: new URL(post.data.image.src, Astro.site).href }),
   ...(post.data.date && { datePublished: post.data.date.toISOString() }),
@@ -65,6 +65,7 @@ const articleSchema = {
   description={post.data.summary}
   image={post.data.image}
   keywords={post.data.keywords}
+  lang={post.data.lang}
 >
   <JsonLd data={articleSchema} />
   <article class="min-w-0 flex-1">

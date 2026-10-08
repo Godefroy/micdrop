@@ -28,6 +28,7 @@ const { Content } = await render(entry)
   description={entry.data.description}
   fullWidth={entry.data.fullWidth}
   bottomSpace={!entry.data.fullWidth}
+  lang={entry.data.lang}
 >
   <Content components={mdxComponents} />
 </BaseLayout>
