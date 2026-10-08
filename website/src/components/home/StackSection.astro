@@ -1,0 +1,89 @@
+---
+/**
+ * The stacks Micdrop can run on, as a picker: the options on the left, and
+ * the pipeline and server code of the selected one on the right.
+ *
+ * Each `StackOption` renders its own button and its own panel inside a
+ * `display: contents` wrapper, so they land straight in this grid: the
+ * buttons fill the first column row by row, and every panel covers the whole
+ * second column, stacked in the same cell. The section is therefore as tall
+ * as its tallest panel whichever option is open, and the MDX stays a flat
+ * list of options with no tab labels to repeat.
+ *
+ * Every panel is in the HTML, code included, so crawlers and readers without
+ * JavaScript get all of them. The first one shows until the script marks
+ * another as active.
+ */
+import HomeSection from './HomeSection.astro'
+
+interface Props {
+  title: string
+  intro?: string
+}
+
+const { title, intro } = Astro.props
+---
+
+<HomeSection title={title} intro={intro}>
+  <div
+    class="stack reveal grid grid-cols-1 gap-x-10 lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)]"
+    data-stack
+  >
+    <slot />
+  </div>
+</HomeSection>
+
+<style>
+  /* Room for six options; the last row takes whatever height is left. */
+  .stack {
+    grid-template-rows: repeat(6, auto) 1fr;
+  }
+</style>
+
+<script>
+  function select(root: HTMLElement, option: HTMLElement) {
+    root.toggleAttribute('data-ready', true)
+    root.querySelectorAll<HTMLElement>('[data-option]').forEach((item) => {
+      const active = item === option
+      item.toggleAttribute('data-active', active)
+      item
+        .querySelector('[data-option-button]')
+        ?.setAttribute('aria-pressed', String(active))
+    })
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-stack]').forEach((root) => {
+    const options = Array.from(
+      root.querySelectorAll<HTMLElement>('[data-option]')
+    )
+    if (!options.length) return
+    select(root, options[0])
+
+    function handleClick(event: MouseEvent) {
+      const option = (event.currentTarget as HTMLElement).closest<HTMLElement>(
+        '[data-option]'
+      )
+      if (option) select(root, option)
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+      if (!keys.includes(event.key)) return
+      event.preventDefault()
+      const current = options.findIndex((item) =>
+        item.contains(event.currentTarget as Node)
+      )
+      const step = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1
+      const next = options[(current + step + options.length) % options.length]
+      select(root, next)
+      next.querySelector<HTMLElement>('[data-option-button]')?.focus()
+    }
+
+    root
+      .querySelectorAll<HTMLElement>('[data-option-button]')
+      .forEach((button) => {
+        button.addEventListener('click', handleClick)
+        button.addEventListener('keydown', handleKeyDown)
+      })
+  })
+</script>

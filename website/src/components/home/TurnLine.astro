@@ -1,0 +1,97 @@
+---
+/**
+ * One stretch of the exchange in `TurnSection`, placed on its timeline from
+ * `from` to `to` (percentages of the whole exchange).
+ *
+ * `who` picks the lane and the look: the user and the assistant speak as
+ * waveforms, a `tool` call shows as the function the agent ran. `cut` marks
+ * an answer the user spoke over, which ends on a hard stop.
+ *
+ * The waveform is drawn twice, a faint copy under a bright one that the
+ * script uncovers through `--lp`, the share of the line already played.
+ */
+interface Props {
+  who: 'user' | 'assistant' | 'tool'
+  from: string | number
+  to: string | number
+  text: string
+  cut?: boolean
+}
+
+const { who, from, to, text, cut = false } = Astro.props
+const start = Number(from)
+const end = Number(to)
+
+// Bar heights are fixed per line, from a pattern seeded on its position, so
+// the same exchange draws the same voice on every build.
+const count = Math.max(5, Math.round((end - start) * 1.5))
+const bars = Array.from({ length: count }, (_, i) => {
+  const t = i / (count - 1)
+  const envelope = Math.min(1, Math.sin(t * Math.PI) * 1.6)
+  const syllable = Math.abs(Math.sin((i + start) * 1.31) * Math.cos((i + start) * 0.47))
+  return Math.max(0.12, envelope * (0.35 + 0.65 * syllable))
+})
+
+const lane = who === 'user' ? 'top-0' : 'top-[calc(var(--lane)+var(--gap))]'
+const ink = who === 'user' ? 'bg-text-main' : 'bg-primary'
+---
+
+<div
+  class:list={['turn-line absolute h-[var(--lane)]', lane]}
+  style={`left:${start}%;width:${end - start}%`}
+  data-line
+  data-from={start}
+  data-to={end}
+>
+  {
+    who === 'tool' ? (
+      <div class="turn-tool flex h-full items-center">
+        <span class="hidden rounded-lg border border-ai-primary-500/40 bg-ai-primary-500/10 px-1.5 py-0.5 font-mono text-[11px] whitespace-nowrap text-primary sm:inline-block">
+          {text}
+        </span>
+        <span class="h-2.5 w-2.5 rounded-sm border border-primary bg-ai-primary-500/20 sm:hidden" />
+      </div>
+    ) : (
+      <div class="flex h-full flex-col justify-center gap-1.5">
+        <span class="turn-text hidden truncate text-xs text-text-secondary md:block">
+          {text}
+        </span>
+        <div class="relative h-6 md:h-7">
+          {[false, true].map((bright) => (
+            <div
+              class:list={[
+                'absolute inset-0 flex items-center gap-px sm:gap-[2px]',
+                bright ? 'turn-bright' : 'opacity-20',
+              ]}
+            >
+              {bars.map((height) => (
+                <span
+                  class:list={['min-w-0 flex-1 rounded-full', ink]}
+                  style={`height:${(height * 100).toFixed(1)}%`}
+                />
+              ))}
+              {cut && <span class="ml-0.5 h-full w-[2px] shrink-0 rounded-full bg-text-secondary" />}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .turn-bright {
+    clip-path: inset(0 calc((1 - var(--lp, 1)) * 100%) 0 0);
+  }
+  .turn-text,
+  .turn-tool {
+    transition:
+      opacity 0.4s var(--ease-rise),
+      transform 0.4s var(--ease-rise);
+  }
+  :global([data-playing]) .turn-line:not([data-started]) .turn-text,
+  :global([data-playing]) .turn-line:not([data-started]) .turn-tool {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+</style>

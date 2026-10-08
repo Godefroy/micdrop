@@ -1,0 +1,21 @@
+---
+/**
+ * The rest of what a call needs, as a three cell bento of `CapabilityGroup`:
+ * the client and the server side by side, then the integrations across the
+ * full width, since they are what a reader looks for last.
+ */
+import HomeSection from './HomeSection.astro'
+
+interface Props {
+  title: string
+  intro?: string
+}
+
+const { title, intro } = Astro.props
+---
+
+<HomeSection title={title} intro={intro} band>
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:[&>*:nth-child(3)]:col-span-2">
+    <slot />
+  </div>
+</HomeSection>

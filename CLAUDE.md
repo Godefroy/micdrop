@@ -176,3 +176,5 @@ Don't use em dashes (—) or simple dashes (-) as punctuation, use different for
 Prefer positive formulations over negative ones. Avoid label-colon patterns like
 "Objectif :", "Result:", "Avantage :"; integrate the information into the
 sentence.
+
+- Leave a section without a lead rather than give it one that repeats its title or the content below. Trim the lead, not the well-presented content (lists, cards).

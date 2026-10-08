@@ -1,0 +1,70 @@
+---
+/**
+ * A product that runs on Micdrop in production: the claim and the link on the
+ * left, a capture of the product on the right. The capture comes in through
+ * the slot as a markdown image, co-located with the MDX, so Astro optimises
+ * it like any other content image.
+ *
+ * On large screens the capture runs past the right edge of the container and
+ * the section clips it, so the product reads as bigger than the column.
+ */
+import HomeSection from './HomeSection.astro'
+
+interface Props {
+  title: string
+  text: string
+  detail?: string
+  linkLabel: string
+  href: string
+}
+
+const { title, text, detail, linkLabel, href } = Astro.props
+---
+
+<div class="overflow-hidden">
+  <HomeSection bare>
+    <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16">
+      <div class="reveal">
+        <h2 class="mt-0 mb-5 max-w-[18ch] text-3xl font-semibold tracking-tight text-balance text-text-main md:text-4xl">
+          {title}
+        </h2>
+        <p class="mb-4 max-w-[52ch] text-lg text-text-secondary">{text}</p>
+        {detail && <p class="mb-8 max-w-[52ch] text-text-secondary">{detail}</p>}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 rounded-lg border border-border bg-bg-elevated px-5 py-2.5 font-medium whitespace-nowrap text-text-main no-underline transition duration-200 hover:border-text-secondary hover:no-underline active:translate-y-px"
+        >
+          {linkLabel}
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div class="proof-shot reveal relative lg:-mr-40">
+        <div
+          class="pointer-events-none absolute -inset-10 bg-[radial-gradient(ellipse_at_center,rgb(16_185_129/0.16),transparent_65%)]"
+          aria-hidden="true"
+        >
+        </div>
+        <div class="relative overflow-hidden rounded-xl border border-border shadow-[0_30px_80px_-20px_rgb(2_6_23/0.6)]">
+          <slot />
+        </div>
+      </div>
+    </div>
+  </HomeSection>
+</div>
+
+<style>
+  /* The markdown image arrives wrapped in a paragraph with prose spacing. */
+  .proof-shot :global(p) {
+    margin: 0;
+  }
+  .proof-shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+  }
+</style>

@@ -1,0 +1,77 @@
+---
+/**
+ * Micdrop against the two other ways to ship a voice agent, as a real table
+ * so the comparison reads row by row and stays quotable as text. The Micdrop
+ * column carries the accent. Rows come from `CompareRow`, and the links to
+ * the detailed comparisons from `CompareLink` in the `links` slot.
+ *
+ * On narrow screens the table scrolls sideways inside its frame rather than
+ * squeezing four columns of prose into a phone.
+ */
+import HomeSection from './HomeSection.astro'
+
+interface Props {
+  title: string
+  intro?: string
+  us: string
+  platforms: string
+  platformsNote: string
+  frameworks: string
+  frameworksNote: string
+  linksLabel?: string
+}
+
+const {
+  title,
+  intro,
+  us,
+  platforms,
+  platformsNote,
+  frameworks,
+  frameworksNote,
+  linksLabel,
+} = Astro.props
+---
+
+<HomeSection title={title} intro={intro} band>
+  <div class="compare reveal overflow-x-auto rounded-xl border border-border bg-bg-main">
+    <table class="my-0 w-full min-w-[48rem] border-collapse text-left text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <td class="w-[19%]"></td>
+          <th scope="col" class="px-5 pt-5 pb-4 align-bottom text-base font-semibold text-primary">
+            {us}
+          </th>
+          <th scope="col" class="px-5 pt-5 pb-4 align-bottom font-semibold text-text-main">
+            {platforms}
+            <span class="block text-xs font-normal text-text-secondary">{platformsNote}</span>
+          </th>
+          <th scope="col" class="px-5 pt-5 pb-4 align-bottom font-semibold text-text-main">
+            {frameworks}
+            <span class="block text-xs font-normal text-text-secondary">{frameworksNote}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <slot />
+      </tbody>
+    </table>
+  </div>
+
+  {
+    Astro.slots.has('links') && (
+      <p class="mt-6 mb-0 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-text-secondary">
+        {linksLabel && <span>{linksLabel}</span>}
+        <slot name="links" />
+      </p>
+    )
+  }
+</HomeSection>
+
+<style>
+  /* The Micdrop column: a faint wash from the header to the last row. */
+  .compare :global(th:nth-child(2)),
+  .compare :global(td:nth-child(2)) {
+    background-color: color-mix(in srgb, var(--primary) 7%, transparent);
+  }
+</style>

@@ -1,0 +1,18 @@
+---
+/** One line of the comparison in `CompareSection`, a criterion and three answers. */
+interface Props {
+  label: string
+  us: string
+  platforms: string
+  frameworks: string
+}
+
+const { label, us, platforms, frameworks } = Astro.props
+---
+
+<tr class="border-b border-border last:border-b-0">
+  <th scope="row" class="px-5 py-4 align-top font-medium text-text-main">{label}</th>
+  <td class="px-5 py-4 align-top leading-relaxed text-text-main">{us}</td>
+  <td class="px-5 py-4 align-top leading-relaxed text-text-secondary">{platforms}</td>
+  <td class="px-5 py-4 align-top leading-relaxed text-text-secondary">{frameworks}</td>
+</tr>

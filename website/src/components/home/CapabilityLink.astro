@@ -1,0 +1,16 @@
+---
+/** One feature of a `CapabilityGroup`, linking to the page that documents it. */
+interface Props {
+  label: string
+  href: string
+}
+
+const { label, href } = Astro.props
+---
+
+<a
+  href={href}
+  class="inline-flex items-center rounded-lg border border-border bg-bg-main/60 px-3 py-1.5 text-sm text-text-secondary no-underline transition-colors duration-200 hover:border-primary hover:text-text-main hover:no-underline"
+>
+  {label}
+</a>

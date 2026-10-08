@@ -1,0 +1,320 @@
+---
+/**
+ * One stack in `StackSection`: its button in the left column, and its panel,
+ * the pipeline drawn from the props above the server code passed as the slot
+ * (a fenced code block in the MDX).
+ *
+ * The pipeline takes either `stt`, `agent` and `tts`, three models chained in
+ * the server, or `realtime`, one speech to speech model in their place. A
+ * signal travels through it on a loop, but only in the open panel, and not at
+ * all under `prefers-reduced-motion`.
+ */
+interface Props {
+  label: string
+  summary: string
+  note: string
+  stt?: string
+  agent?: string
+  tts?: string
+  realtime?: string
+  server?: string
+  href?: string
+  linkLabel?: string
+}
+
+const {
+  label,
+  summary,
+  note,
+  stt,
+  agent,
+  tts,
+  realtime,
+  server = 'Your Node server',
+  href,
+  linkLabel = 'Read the docs',
+} = Astro.props
+
+// Seconds into the loop at which the signal reaches each element.
+const nodes = realtime
+  ? [{ role: 'Speech to speech', name: realtime, at: 0.5 }]
+  : [
+      { role: 'Speech to text', name: stt, at: 0.5 },
+      { role: 'Agent', name: agent, at: 1.4 },
+      { role: 'Text to speech', name: tts, at: 2.4 },
+    ]
+---
+
+<div class="contents" data-option>
+  <button
+    type="button"
+    class="stack-button group/option mb-2 flex w-full cursor-pointer flex-col items-start rounded-xl border px-4 py-3.5 text-left transition-colors duration-300 col-start-1"
+    aria-pressed="false"
+    data-option-button
+  >
+    <span class="font-semibold text-text-main">{label}</span>
+    <span class="mt-0.5 text-sm text-text-secondary">{summary}</span>
+  </button>
+
+  <div
+    class="stack-panel col-start-1 row-start-[8] mt-6 min-w-0 lg:col-start-2 lg:row-span-full lg:mt-0"
+    data-option-panel
+  >
+    <div
+      class="diagram rounded-xl border border-border bg-bg-secondary p-4 sm:p-6"
+      aria-label={`Pipeline: ${nodes.map((node) => `${node.role}, ${node.name}`).join(', then ')}`}
+      role="img"
+    >
+      <div class="flex flex-col items-stretch md:flex-row md:items-center">
+        <div
+          class="node rounded-lg border border-border bg-bg-main px-4 py-3 md:w-40 md:shrink-0"
+          style="--at: 3.3s"
+        >
+          <span class="block text-xs text-text-secondary">Browser or phone</span>
+          <span class="block font-semibold text-text-main">Your app</span>
+        </div>
+
+        <span class="link link-both" aria-hidden="true">
+          <span class="dot" style="--at: 0s"></span>
+          <span class="dot dot-back" style="--at: 2.9s"></span>
+        </span>
+
+        <div class="relative flex-1 rounded-xl border border-dashed border-ai-primary-500/40 px-3 pt-8 pb-3 sm:px-4">
+          <span class="absolute top-2.5 left-4 text-xs font-medium text-primary">
+            {server}
+          </span>
+          <div class="flex flex-col items-stretch md:flex-row md:items-center">
+            {
+              nodes.map((node, index) => (
+                <>
+                  {index > 0 && (
+                    <span class="link" aria-hidden="true">
+                      <span class="dot" style={`--at:${node.at - 0.45}s`} />
+                    </span>
+                  )}
+                  <div
+                    class="node min-w-0 flex-1 rounded-lg border border-border bg-bg-main px-3 py-2.5"
+                    style={`--at:${node.at}s`}
+                  >
+                    <span class="block truncate text-xs text-text-secondary">
+                      {node.role}
+                    </span>
+                    <span class="block truncate font-semibold text-text-main">
+                      {node.name}
+                    </span>
+                  </div>
+                </>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-code mt-4 overflow-hidden rounded-xl border border-border bg-bg-secondary px-5 py-4">
+      <slot />
+    </div>
+
+    <p class="mt-4 mb-0 max-w-[62ch] text-sm leading-relaxed text-text-secondary">
+      {note}
+      {
+        href && (
+          <>
+            {' '}
+            <a href={href} class="font-medium text-primary no-underline hover:text-primary-light hover:no-underline">
+              {linkLabel} →
+            </a>
+          </>
+        )
+      }
+    </p>
+  </div>
+</div>
+
+<style>
+  /* Buttons: the open option carries the accent, the others wait. */
+  .stack-button {
+    border-color: transparent;
+  }
+  .stack-button:hover {
+    background-color: var(--bg-secondary);
+  }
+  [data-option][data-active] .stack-button,
+  :global([data-stack]:not([data-ready])) [data-option]:first-child .stack-button {
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  }
+
+  /* Panels: all stacked in one cell, only the open one visible. */
+  .stack-panel {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition:
+      opacity 0.35s var(--ease-rise),
+      transform 0.5s var(--ease-rise),
+      visibility 0s 0.35s;
+  }
+  [data-option][data-active] .stack-panel,
+  :global([data-stack]:not([data-ready])) [data-option]:first-child .stack-panel {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  /* The code block is the panel: it drops its own frame and spacing. */
+  .stack-code {
+    --ec-codeFontSize: 0.8125rem;
+    --ec-codePadBlk: 0;
+    --ec-codePadInl: 0px;
+    --ec-brdWd: 0px;
+    --ec-codeBg: transparent;
+  }
+  .stack-code :global(.expressive-code) {
+    margin: 0;
+  }
+  .stack-code :global(.expressive-code .frame) {
+    box-shadow: none;
+  }
+
+  /* Links between the boxes: vertical on phones, horizontal from md. */
+  .link {
+    position: relative;
+    align-self: center;
+    flex-shrink: 0;
+    width: 1px;
+    height: 1.25rem;
+    background: var(--border);
+  }
+  @media (min-width: 768px) {
+    .link {
+      width: 1.75rem;
+      height: 1px;
+    }
+    .link-both {
+      width: 2.5rem;
+    }
+  }
+
+  .dot {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+  .dot::after {
+    content: '';
+    position: absolute;
+    top: -2.5px;
+    left: -2.5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--primary);
+    box-shadow: 0 0 10px 1px var(--primary);
+  }
+  @media (min-width: 768px) {
+    .dot::after {
+      top: -2.5px;
+      left: -3px;
+    }
+  }
+
+  /**
+   * One loop of four seconds. Every element plays the same keyframes, offset
+   * by `--at`, the moment the signal reaches it. Only the open panel moves.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-active] .node {
+      animation: node-glow 4s var(--at) infinite;
+    }
+    [data-active] .dot {
+      animation: dot-down 4s var(--at) infinite;
+    }
+    [data-active] .dot-back {
+      animation-name: dot-up;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+    [data-active] .dot {
+      animation-name: dot-right;
+    }
+    [data-active] .dot-back {
+      animation-name: dot-left;
+    }
+  }
+
+  @keyframes node-glow {
+    0%,
+    24%,
+    100% {
+      border-color: var(--border);
+      box-shadow: none;
+    }
+    5%,
+    15% {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+  }
+  @keyframes dot-right {
+    0% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+    3%,
+    11% {
+      opacity: 1;
+    }
+    13%,
+    100% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+  @keyframes dot-left {
+    0% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    3%,
+    11% {
+      opacity: 1;
+    }
+    13%,
+    100% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+  }
+  @keyframes dot-down {
+    0% {
+      opacity: 0;
+      transform: translateY(0);
+    }
+    3%,
+    11% {
+      opacity: 1;
+    }
+    13%,
+    100% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+  @keyframes dot-up {
+    0% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    3%,
+    11% {
+      opacity: 1;
+    }
+    13%,
+    100% {
+      opacity: 0;
+      transform: translateY(0);
+    }
+  }
+</style>

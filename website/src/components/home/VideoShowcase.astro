@@ -1,0 +1,48 @@
+---
+/**
+ * The demo reel, right under the hero: a voice library has to be heard before
+ * it is read about. The first video is the large one and the others line up
+ * around it, so six videos fill the grid exactly (one wide cell on two rows,
+ * two beside it, three under it).
+ *
+ * `more` closes the section with the uses that have no video of their own.
+ */
+import HomeSection from './HomeSection.astro'
+
+interface Props {
+  title: string
+  intro: string
+  more?: string
+}
+
+const { title, intro, more } = Astro.props
+---
+
+<HomeSection title={title} intro={intro}>
+  <div
+    class="gallery grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2 lg:grid-cols-3 md:[&>*:first-child]:col-span-2 lg:[&>*:first-child]:row-span-2"
+  >
+    <slot />
+  </div>
+  {
+    more && (
+      <p class="reveal mt-14 mb-0 max-w-[68ch] border-t border-border pt-6 text-text-secondary">
+        {more}
+      </p>
+    )
+  }
+</HomeSection>
+
+<style>
+  /**
+   * The first card spans two rows on large screens: its video stretches to
+   * fill them, rather than leaving a hole under a 16:9 frame.
+   */
+  @media (min-width: 1024px) {
+    .gallery > :global(:first-child [data-media]) {
+      flex: 1 1 auto;
+      aspect-ratio: auto;
+      min-height: 0;
+    }
+  }
+</style>

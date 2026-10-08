@@ -1,0 +1,131 @@
+---
+/**
+ * A YouTube video that loads nothing from the player until it is clicked:
+ * the frame shows the thumbnail under a veil and a large play button, and the
+ * click swaps in the youtube-nocookie.com player, autoplaying in full screen.
+ * Usable from any MDX page as `<Video videoId="…" title="…" />`, and inside
+ * the homepage gallery through `VideoCard`.
+ *
+ * The thumbnail itself still comes from i.ytimg.com before the click.
+ *
+ * `data-media` marks the frame, so a layout can resize it from outside (the
+ * gallery stretches its first one over two rows). In running content the
+ * frame keeps some space around it, and `bare` drops it for a layout that
+ * spaces the frame itself.
+ */
+interface Props {
+  videoId: string
+  title: string
+  bare?: boolean
+}
+
+const { videoId, title, bare = false } = Astro.props
+---
+
+<div
+  class:list={[
+    'group/play relative aspect-video overflow-hidden rounded-xl border border-border bg-bg-secondary',
+    !bare && 'my-6',
+  ]}
+  data-media
+>
+  <button
+    type="button"
+    class="absolute inset-0 h-full w-full cursor-pointer [container-type:size]"
+    aria-label={`Play the video: ${title}`}
+    data-video-play={videoId}
+  >
+    {/* Sized to cover the frame with a 16:9 picture, whatever the frame's own
+        ratio. The small thumbnail is 4:3 with black bars around a 16:9
+        picture, and the same width crops the bars away. */}
+    <img
+      src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
+      data-fallback={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      class="absolute top-1/2 left-1/2 m-0 h-auto w-[max(100cqw,177.78cqh)] max-w-none -translate-x-1/2 -translate-y-1/2 rounded-none transition duration-700 ease-[var(--ease-rise)] group-hover/play:scale-[1.03]"
+    />
+    {/* A dark, slightly blurred veil over the thumbnail, lifted on hover: the
+        button reads at once whatever the picture behind it, and the blur hides
+        how soft the small thumbnail is. */}
+    <span class="absolute inset-0 bg-ai-surface-950/40 backdrop-blur-[3px] transition duration-500 group-hover/play:bg-ai-surface-950/20 group-hover/play:backdrop-blur-[1.5px]"></span>
+    {/* The button scales with its frame (container units), from a thumb-sized
+        target on a small card to a large one on a wide frame. A ring breathes
+        around it to invite the click. */}
+    <span class="absolute top-1/2 left-1/2 flex size-[clamp(4rem,20cqmin,7.5rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-cta text-on-cta shadow-[0_12px_40px_rgb(16_185_129/0.45)] transition duration-300 ease-[var(--ease-rise)] group-hover/play:scale-110 group-active/play:scale-95">
+      <span class="play-ring absolute inset-0 rounded-full border-2 border-ai-primary-300"></span>
+      {/* The triangle's centroid, (2 × 7.67 + 20.67) / 3 = 12, sits on the
+          centre of the box, so it reads centred in the circle. The round
+          stroke softens the corners and grows evenly around it. */}
+      <svg viewBox="0 0 24 24" class="size-[42%]" aria-hidden="true">
+        <path
+          d="M7.67 4.5v15l13-7.5z"
+          fill="currentColor"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"></path>
+      </svg>
+    </span>
+  </button>
+</div>
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    .play-ring {
+      animation: play-ring 2.4s var(--ease-rise) infinite;
+    }
+  }
+  @keyframes play-ring {
+    from {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.45);
+    }
+  }
+</style>
+
+<script>
+  function handlePlay(event: MouseEvent) {
+    const button = event.currentTarget as HTMLButtonElement
+    const id = button.dataset.videoPlay
+    if (!id) return
+    const iframe = document.createElement('iframe')
+    iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`
+    iframe.title = button.getAttribute('aria-label') ?? 'Video'
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'
+    iframe.allowFullscreen = true
+    iframe.className = 'absolute inset-0 h-full w-full'
+    button.replaceWith(iframe)
+    // Still inside the click, so the browser grants it. Where element
+    // fullscreen is missing (Safari on iPhone), the video plays in place.
+    const frame = iframe as HTMLIFrameElement & {
+      webkitRequestFullscreen?: () => void
+    }
+    if (frame.requestFullscreen) frame.requestFullscreen().catch(() => {})
+    else frame.webkitRequestFullscreen?.()
+  }
+
+  // YouTube serves the large thumbnail only for HD uploads. For the others it
+  // answers with a 120 px grey image rather than an error, so the width is what
+  // gives the miss away. The image may have loaded before this script runs.
+  function checkThumbnail(img: HTMLImageElement) {
+    const fallback = img.dataset.fallback
+    if (!img.complete || !fallback || img.src === fallback) return
+    if (img.naturalWidth <= 120) img.src = fallback
+  }
+
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-video-play]')
+    .forEach((button) => {
+      button.addEventListener('click', handlePlay)
+      const img = button.querySelector('img')
+      if (!img) return
+      checkThumbnail(img)
+      img.addEventListener('load', () => checkThumbnail(img))
+      img.addEventListener('error', () => checkThumbnail(img))
+    })
+</script>

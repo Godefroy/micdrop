@@ -24,7 +24,14 @@ example to `.env` with your API keys, then run its command from the root.
   shows how a call parameter reaches the server.
 - The [advanced example](https://github.com/Godefroy/micdrop/tree/main/examples/advanced)
   (`pnpm dev:advanced`) puts a React client and a Fastify server in one folder,
-  with every provider wired in and picked from the browser.
+  with every provider wired in and picked from the browser. Here it runs on the
+  OpenAI Realtime API, on French providers, then on local models.
+
+  <Video videoId="_50KMNZfFDw" title="The advanced example on the OpenAI Realtime API" />
+
+  <Video videoId="CYvU0B6mMZ8" title="The advanced example on French providers" />
+
+  <Video videoId="iVbsAlBMOSo" title="The advanced example on local models" />
 
 ## Mobile
 
@@ -68,10 +75,21 @@ the server. Each one needs an OpenAI key and a TypeSafe key.
   plan Jev gave it.
 - The [robot demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot)
   (`pnpm dev:robot`) runs with no agent and no voice. Jev turns each turn into
-  commands, and the browser plays them out.
+  commands, and the browser plays them out. Open it at `/?race` to put two
+  robots side by side, one on Jev and one on Claude, with a clock under each.
+  That mode also needs an Anthropic key.
+
+  <Video videoId="7GVhmaC7Qgo" title="Jev against Claude in the robot demo" />
+
 - The [twenty questions demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-twenty-questions)
   (`pnpm dev:twenty-questions`) runs with no agent and no voice either. Jev
   answers each question about a secret it reads in its state, and its
   probability of a yes gives "yes", "probably", "I don't know", "probably not"
   or "no". The server writes the answers with `addAssistantMessage()`, so Jev
-  reads the last one in `history`.
+  reads the last one in `history`. A tab before the call turns it into "Who am
+  I?", where the game plays a famous person and answers in the first person.
+
+  <Video videoId="QBb7TRJNQJ4" title="Finding a secret word in the twenty questions demo" />
+
+  <Video videoId="85QmRuGO9qg" title="Who am I? in the twenty questions demo" />
+

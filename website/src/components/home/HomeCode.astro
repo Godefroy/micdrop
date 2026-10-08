@@ -1,7 +1,8 @@
 ---
 /**
- * The four surfaces Micdrop runs on, as four tabs: the browser, React, React
- * Native and the Node server. Every panel is rendered at build time and the
+ * The four surfaces Micdrop runs on, as four tabs named like the files they
+ * would live in: React, React Native, the browser without a framework, and
+ * the Node server. React comes first since most readers start there. Every panel is rendered at build time and the
  * script only changes which one is visible, so the code is highlighted server
  * side and readable without JavaScript.
  *
@@ -16,8 +17,62 @@ import { Code } from 'astro-expressive-code/components'
 
 const panels = [
   {
+    id: 'react',
+    label: 'react-client.tsx',
+    install: 'npm install @micdrop/web @micdrop/react',
+    lang: 'tsx',
+    code: `import { Micdrop } from '@micdrop/web'
+import { useMicdropState } from '@micdrop/react'
+
+const start = () => Micdrop.start({ url: 'wss://your-server.com' })
+
+function Call() {
+  const { isStarted, conversation } = useMicdropState()
+  return (
+    <>
+      <button onClick={isStarted ? Micdrop.stop : start}>
+        {isStarted ? 'Hang up' : 'Start the call'}
+      </button>
+      {conversation.map((item, i) =>
+        'content' in item && (
+          <p key={i}>{item.role}: {item.content}</p>
+        )
+      )}
+    </>
+  )
+}`,
+  },
+  {
+    id: 'native',
+    label: 'react-native-client.tsx',
+    install: 'npm install @micdrop/react-native @micdrop/react react-native-audio-api',
+    lang: 'tsx',
+    code: `import { Micdrop } from '@micdrop/react-native'
+import { useMicdropState } from '@micdrop/react'
+import { Button, Text, View } from 'react-native'
+
+const start = () => Micdrop.start({ url: 'wss://your-server.com' })
+
+function Call() {
+  const { isStarted, conversation } = useMicdropState()
+  return (
+    <View>
+      <Button
+        title={isStarted ? 'Hang up' : 'Start the call'}
+        onPress={isStarted ? Micdrop.stop : start}
+      />
+      {conversation.map((item, i) =>
+        'content' in item && (
+          <Text key={i}>{item.role}: {item.content}</Text>
+        )
+      )}
+    </View>
+  )
+}`,
+  },
+  {
     id: 'web',
-    label: 'Web',
+    label: 'client.ts',
     install: 'npm install @micdrop/web',
     lang: 'typescript',
     code: `import { Micdrop } from '@micdrop/web'
@@ -37,52 +92,8 @@ Micdrop.on('EndCall', () => {
 Micdrop.stop()`,
   },
   {
-    id: 'react',
-    label: 'React',
-    install: 'npm install @micdrop/web @micdrop/react',
-    lang: 'tsx',
-    code: `import { Micdrop } from '@micdrop/web'
-import { useMicdropState } from '@micdrop/react'
-
-const start = () => Micdrop.start({ url: 'wss://your-server.com' })
-
-function Call() {
-  const { conversation } = useMicdropState()
-  return (
-    <>
-      <button onClick={start}>Start the call</button>
-      {conversation.map(({ role, content }, i) => (
-        <p key={i}>{role}: {content}</p>
-      ))}
-    </>
-  )
-}`,
-  },
-  {
-    id: 'native',
-    label: 'React Native',
-    install: 'npm install @micdrop/react-native react-native-audio-api',
-    lang: 'tsx',
-    code: `import { Micdrop, useMicdropState } from '@micdrop/react-native'
-import { Button, Text, View } from 'react-native'
-
-const start = () => Micdrop.start({ url: 'wss://your-server.com' })
-
-function Call() {
-  const { conversation } = useMicdropState()
-  return (
-    <View>
-      <Button title="Start the call" onPress={start} />
-      {conversation.map(({ role, content }, i) => (
-        <Text key={i}>{role}: {content}</Text>
-      ))}
-    </View>
-  )
-}`,
-  },
-  {
     id: 'server',
-    label: 'Server',
+    label: 'server.ts',
     install:
       'npm install @micdrop/server @micdrop/openai @micdrop/gladia @micdrop/elevenlabs',
     lang: 'typescript',
@@ -91,7 +102,8 @@ import { OpenaiAgent } from '@micdrop/openai'
 import { GladiaSTT } from '@micdrop/gladia'
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 
-const { OPENAI_KEY, GLADIA_KEY, TTS_KEY, VOICE } = process.env
+const { OPENAI_KEY, GLADIA_KEY, TTS_KEY, VOICE } =
+  process.env as Record<string, string>
 const systemPrompt = 'You are a helpful assistant'
 
 wss.on('connection', (socket) => {
@@ -155,12 +167,30 @@ const tabOff = 'border-transparent text-text-secondary hover:text-text-main'
           data-panel={panel.id}
         >
           {/* The install command is one line of shell, not a sample worth a
-              frame of its own: it sits on a strip under the tabs. */}
-          <div class="overflow-x-auto border-b border-border px-5 py-2.5 font-mono text-sm whitespace-nowrap text-text-secondary [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)]">
-            {panel.install}
+              frame of its own: it sits on a strip under the tabs. It wraps
+              between packages, and the lines after the first are indented
+              so the command still reads as one. */}
+          <div class="border-b border-border py-2.5 pr-5 pl-[calc(1.25rem+2ch)] -indent-[2ch] font-mono text-sm text-text-secondary">
+            {/* Each word on one line, so a package name never breaks on its
+                hyphen. */}
+            {panel.install.split(' ').map((word, i) => (
+              <>
+                {i > 0 && ' '}
+                <span class="whitespace-nowrap">{word}</span>
+              </>
+            ))}
           </div>
+          {/* Long lines wrap rather than scroll, keeping their indentation
+              plus two more columns, so a continued line reads as one. */}
           <div class="min-w-0 px-5 py-3.5">
-            <Code code={panel.code} lang={panel.lang} frame="none" />
+            <Code
+              code={panel.code}
+              lang={panel.lang}
+              frame="none"
+              wrap
+              preserveIndent
+              hangingIndent={2}
+            />
           </div>
         </div>
       ))
@@ -181,7 +211,10 @@ const tabOff = 'border-transparent text-text-secondary hover:text-text-main'
     --ec-codeFontSize: 0.875rem;
     --ec-codeLineHt: 1.45;
     --ec-codePadBlk: 0;
-    --ec-codePadInl: 0;
+    /* With a unit: Expressive Code adds it to lengths inside calc(), where a
+       bare 0 voids the whole padding that holds a wrapped line's hanging
+       indent, and every line then loses its first columns. */
+    --ec-codePadInl: 0px;
     --ec-brdWd: 0px;
     --ec-brdRad: 0px;
     --ec-codeBg: transparent;

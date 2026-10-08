@@ -1,0 +1,16 @@
+---
+/** A link to one detailed comparison, under the table of `CompareSection`. */
+interface Props {
+  label: string
+  href: string
+}
+
+const { label, href } = Astro.props
+---
+
+<a
+  href={href}
+  class="font-medium text-primary underline decoration-ai-primary-500/40 underline-offset-4 transition-colors hover:text-primary-light hover:decoration-current"
+>
+  {label}
+</a>

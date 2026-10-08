@@ -1,0 +1,88 @@
+---
+/**
+ * What Micdrop does at one moment of the exchange in `TurnSection`.
+ *
+ * The step is a list item under the timeline, and it also draws its numbered
+ * marker on the rail above the lanes, at `at` percent of the exchange. The
+ * marker is positioned against the panel with the lane geometry the panel
+ * publishes as CSS variables, which is why nothing between the two may be
+ * positioned or transformed. A CSS counter numbers the marker and the item
+ * alike, so the MDX never repeats a number.
+ */
+interface Props {
+  at: string | number
+  title: string
+  text: string
+}
+
+const { at, title, text } = Astro.props
+const position = Number(at)
+---
+
+<li class="turn-step [counter-increment:turn-step]" data-step data-at={position}>
+  <span
+    class="turn-marker pointer-events-none absolute top-[var(--pad)] flex -translate-x-1/2 flex-col items-center"
+    style={`--at:${position / 100}`}
+    aria-hidden="true"
+  >
+    <span class="turn-number flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold"></span>
+    <span class="turn-stem w-px border-l border-dashed"></span>
+  </span>
+
+  <div class="flex items-start gap-3">
+    <span
+      class="turn-number mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold"
+      aria-hidden="true"
+    ></span>
+    <div class="turn-copy">
+      <h3 class="mt-0 mb-1.5 text-base font-semibold tracking-tight text-text-main">
+        {title}
+      </h3>
+      <p class="mb-0 text-sm leading-relaxed text-text-secondary">{text}</p>
+    </div>
+  </div>
+</li>
+
+<style>
+  .turn-marker {
+    left: calc(
+      var(--pad) + var(--label) +
+        (100% - 2 * var(--pad) - var(--label)) * var(--at)
+    );
+  }
+  .turn-stem {
+    height: calc(var(--rail) + 2 * var(--lane) + var(--gap) - 1.5rem);
+    border-color: var(--border);
+  }
+  .turn-number::before {
+    content: counter(turn-step);
+  }
+
+  .turn-number,
+  .turn-copy,
+  .turn-stem {
+    transition:
+      background-color 0.35s,
+      border-color 0.35s,
+      color 0.35s,
+      opacity 0.35s;
+  }
+
+  /* Reached, or shown complete: the number fills with the accent. */
+  .turn-number {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    color: var(--on-cta);
+  }
+  :global([data-playing]) .turn-step:not([data-reached]) .turn-number {
+    border-color: var(--border);
+    background-color: var(--bg-main);
+    color: var(--text-secondary);
+  }
+  :global([data-playing]) .turn-step:not([data-reached]) .turn-copy {
+    opacity: 0.45;
+  }
+  .turn-step[data-reached] .turn-stem {
+    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  }
+</style>

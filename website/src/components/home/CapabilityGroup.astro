@@ -1,0 +1,58 @@
+---
+/**
+ * One cell of `CapabilitiesSection`: a side of the call and the features it
+ * covers, each one a `CapabilityLink` to its documentation.
+ *
+ * `variant` picks the surface, so the three cells read as three places rather
+ * than one card repeated: an emerald wash, the elevated surface, and the ruled
+ * grid of the hero.
+ */
+interface Props {
+  title: string
+  description?: string
+  variant?: 'accent' | 'plain' | 'grid'
+}
+
+const { title, description, variant = 'plain' } = Astro.props
+
+const surfaces = {
+  accent:
+    'border-ai-primary-500/30 bg-gradient-to-br from-ai-primary-500/12 to-transparent',
+  plain: 'border-border bg-bg-elevated/60',
+  grid: 'border-border bg-bg-main',
+}
+---
+
+<div
+  class:list={[
+    'reveal relative flex flex-col overflow-hidden rounded-xl border p-6 md:p-8',
+    surfaces[variant],
+  ]}
+>
+  {
+    variant === 'grid' && (
+      <div
+        class="bg-grid pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_right,#000_10%,transparent_75%)]"
+        aria-hidden="true"
+      />
+    )
+  }
+  <h3
+    class:list={[
+      'relative mt-0 text-lg font-semibold text-text-main',
+      description ? 'mb-2' : 'mb-5',
+    ]}
+  >
+    {title}
+  </h3>
+  {
+    description && (
+      <p class="relative mt-0 mb-6 max-w-[56ch] text-sm leading-relaxed text-text-secondary">
+        {description}
+      </p>
+    )
+  }
+  <div class="relative mt-auto flex flex-wrap gap-2">
+    <slot />
+  </div>
+</div>
