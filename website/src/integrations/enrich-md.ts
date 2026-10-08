@@ -11,6 +11,9 @@ const turndown = new TurndownService({
 })
 // Cast: turndown's types restrict tag names to `keyof HTMLElementTagNameMap`,
 // but we also want to strip 'svg', a valid SVG element.
+// `nav` and `aside` hold the page chrome inside <main> (docs sidebar, table of
+// contents, breadcrumb, previous/next links, blog sidebar), the twin keeps the
+// content only.
 turndown.remove([
   'svg' as any,
   'video',
@@ -19,7 +22,48 @@ turndown.remove([
   'style',
   'noscript',
   'iframe',
+  'nav',
+  'aside',
+  'button',
 ])
+
+// Fence long enough to wrap code that itself contains backtick fences.
+function fence(code: string, lang: string): string {
+  const longest = Math.max(
+    2,
+    ...(code.match(/`{3,}/g) ?? []).map((run) => run.length)
+  )
+  const marks = '`'.repeat(longest + 1)
+  return `\n\n${marks}${lang}\n${code}\n${marks}\n\n`
+}
+
+// Expressive Code renders one `<div class="ec-line">` per line, which Turndown
+// would flatten into a single paragraph. Rebuild the fenced block, with the
+// frame's file name as a lead line.
+turndown.addRule('expressiveCode', {
+  filter: (node) =>
+    node.nodeName === 'DIV' && node.classList.contains('expressive-code'),
+  replacement: (_content, node) => {
+    const element = node as HTMLElement
+    const pre = element.querySelector('pre')
+    if (!pre) return ''
+    const lines = Array.from(pre.querySelectorAll('.ec-line')).map((line) =>
+      (line.querySelector('.code') ?? line).textContent!.replace(/\n$/, '')
+    )
+    const lang = pre.getAttribute('data-language') ?? ''
+    const title = element.querySelector('figcaption .title')?.textContent
+    const code = fence(lines.join('\n'), lang === 'plaintext' ? '' : lang)
+    return title ? `\n\n\`${title}\`${code}` : code
+  },
+})
+
+// Mermaid diagrams stay as source, rendered in the browser by the site.
+turndown.addRule('mermaid', {
+  filter: (node) =>
+    node.nodeName === 'PRE' && node.classList.contains('mermaid'),
+  replacement: (_content, node) =>
+    fence(node.textContent!.replace(/\n$/, ''), 'mermaid'),
+})
 
 function decodeHtmlEntities(str: string): string {
   return str
@@ -61,6 +105,9 @@ export default function enrichMd(): AstroIntegration {
           const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/)
           if (!mainMatch) continue
 
+          // The 404 page is no content.
+          if (htmlFile === '404.html') continue
+
           const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/)
           const descMatch = html.match(
             /<meta\s+name="description"\s+content="([^"]*)"/
@@ -76,7 +123,7 @@ export default function enrichMd(): AstroIntegration {
 
           const slug = relative(distDir, htmlPath)
             .replace(/\.html$/, '')
-            .replace(/\/index$/, '')
+            .replace(/(^|\/)index$/, '')
           const url = slug ? `${siteUrl}/${slug}` : `${siteUrl}/`
 
           const fm = [
