@@ -67,7 +67,8 @@ the server. Each one needs an OpenAI key and a TypeSafe key.
   answer is routed from them: a manipulation attempt is blocked before the LLM,
   an angry customer or one asking for a human is transferred, a known outage is
   answered by code, and a customer about to leave gets an LLM answer with a
-  retention hint.
+  retention hint. You can
+  [rebuild this routing step by step in TypeScript](/blog/jev-voice-agent-typescript).
 - The [slides demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-slides)
   (`pnpm dev:slides`) builds a deck by voice. Its questions are built from the
   deck on screen, which Jev reads in its state. The page lays out the slides

@@ -164,6 +164,11 @@ The same hook can do more than replace the LLM. Adding a system message with
 `this.addMessage('system', hint)` lets the LLM answer with a hint the classifier
 gave it, such as a customer thinking of leaving.
 
+The support demo in the Micdrop repository
+[picks one of five routes for each turn](/blog/jev-voice-agent-typescript)
+from Jev's answers, with thresholds you can reuse as a starting point for your
+own.
+
 ## Reading it in the client
 
 With `sendToClient: true`, each classification reaches the client as a

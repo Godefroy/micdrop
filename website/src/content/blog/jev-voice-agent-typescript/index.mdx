@@ -13,6 +13,7 @@ keywords:
   - 'intent classification typescript'
   - 'voice agent routing'
 similarPosts:
+  - 'what-is-jev'
   - 'openai-realtime-api-vs-pipeline'
   - 'open-source-voice-agent-frameworks'
   - 'top-voice-ai-sdks-javascript'
@@ -25,7 +26,7 @@ takeaways:
 
 A voice agent that hands every turn to its LLM pays for tokens on "I want to talk to a human", improvises its answer to an outage your team already knows about, and passes a prompt injection straight to the model. This tutorial fixes that in TypeScript. Jev, a classification model from TypeSafe, reads each turn of the caller in a few hundred milliseconds, early enough for your code to decide who answers before the LLM writes a single token. You finish with a Node server that routes a support call five ways, and a browser page that shows what Jev understood.
 
-Jev is the "System One" model of [TypeSafe AI](https://docs.typesafe.ai). It answers typed questions about a piece of JSON (pick a label, give a score, say yes or no) with calibrated probabilities, and writes no text. [Micdrop](/), an open source TypeScript library for real-time voice conversations, can call it as the classifier of its server. The routing code below comes from the support demo in the Micdrop repository.
+Jev is [the "System One" model](/blog/what-is-jev) of [TypeSafe AI](https://docs.typesafe.ai). It answers typed questions about a piece of JSON (pick a label, give a score, say yes or no) with calibrated probabilities, and writes no text. [Micdrop](/), an open source TypeScript library for real-time voice conversations, can call it as the classifier of its server. The routing code below comes from the support demo in the Micdrop repository.
 
 ## What we are building
 
