@@ -3,7 +3,7 @@ title: 'Best Open Source Voice AI Agent Frameworks in 2026'
 h1: 'The best open source voice AI agent frameworks in 2026'
 summary: 'Thirteen voice agent frameworks and hosted platforms compared on language, transport, licence and cost. Micdrop publishes this ranking and sits third in it.'
 date: 2026-08-13
-update: 2026-10-06
+update: 2026-10-10
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -107,7 +107,7 @@ The MIT-licensed TypeScript packages carry the microphone, [voice activity detec
 
 One other project avoids the same three costs. With the OpenAI Agents SDK, either the browser talks straight to OpenAI and your server drops out of the conversation, or you keep the server in the loop and write the audio capture and playback yourself. Either way the model, the transport and the bill come from one vendor. Micdrop can run that same OpenAI model behind its own client. Moving the call to Gemini Live or to a pipeline then changes only the server code.
 
-Products such as [Raconte](https://raconte.ai), for voice interviews led by an AI, and [Cibli](https://cibli.fr), for recruitment where candidates answer out loud, run Micdrop in production, though Raconte is built by Micdrop's own maintainer and neither publishes a case study. Telephony, video, a mobile SDK, managed hosting and a customer page are all absent, the community is the smallest in this ranking by a wide margin, and Pipecat and LiveKit beat it on every criterion that involves reach, adoption or the size of the team behind the code.
+Products such as [Raconte](https://raconte.ai), for voice interviews led by an AI, and [Cibli](https://cibli.fr), for recruitment where candidates answer out loud, run Micdrop in production, though Raconte is built by Micdrop's own maintainer and neither publishes a case study. Telephony, video, managed hosting and a customer page are all absent, the community is the smallest in this ranking by a wide margin, and Pipecat and LiveKit beat it on every criterion that involves reach, adoption or the size of the team behind the code.
 
 ### 4. OpenAI Agents SDK
 
@@ -202,6 +202,8 @@ Start from what you refuse to operate, because that eliminates most of the list 
 If voice is your product and it involves phone numbers, video or a dozen client platforms, **LiveKit Agents or Pipecat** are the two serious answers, and the choice between them comes down to language and licence. Python teams take Pipecat and get the cleaner licence with no model carve-out. Teams that want a managed media plane with observability take LiveKit and pay per minute for it.
 
 If your backend is Node and the voice feature lives inside a web application you already ship, three projects qualify: **LiveKit Agents, the OpenAI Agents SDK and Micdrop**. Separate them on two questions. Does a WebRTC media plane earn its keep for a one-to-one call between a browser and your own server, and are you willing to buy the model, the transport and the bill from one vendor? LiveKit brings a much larger community, telephony and a managed option, at the cost of an SFU and a worker process. The OpenAI Agents SDK is the least code of the three and the shortest path if you have already committed to OpenAI. Swapping any part of the pipeline means writing a transport layer yourself. Micdrop brings a WebSocket into the server you already run, with three swappable provider slots or one realtime model, at the cost of telephony, a media plane and a large community. We wrote the long version separately, [against LiveKit Agents](/blog/alternative-to-livekit-agents) and [against Pipecat](/blog/alternative-to-pipecat).
+
+To choose the client that runs in the browser or in a mobile app, compare the [voice AI SDKs for web and React Native apps](/blog/top-voice-ai-sdks-javascript) on TypeScript coverage, React Native support and provider choice.
 
 If phone calls are the whole product, look at **Jambonz** to own the telecom layer in Node, or at a hosted platform to skip it entirely. Regional needs change the answer again. Outside the thirteen ranked here, Bolna is MIT, actively released and built around Indian-language telephony, which none of the leaders cover well.
 
