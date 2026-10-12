@@ -41,6 +41,8 @@ Regrouper l'agent et la transcription chez Mistral, ou la transcription et la sy
 
 Gradium est le seul fournisseur souverain de synthèse vocale intégré à Micdrop, et l'article [text-to-speech français souverain avec Gradium](/blog/gradium-text-to-speech-souverain) montre comment régler la voix et ce que coûte un secours qui reste en Europe les jours de panne.
 
+Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`, alors que `@micdrop/mistral` appelle son point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l’agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.
+
 ## Mise en place
 
 ### Installation

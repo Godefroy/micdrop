@@ -2,6 +2,7 @@
 title: 'Text-to-speech français souverain avec Gradium et Micdrop'
 summary: 'Intégrez Gradium, le TTS français issu de Kyutai, dans une application web avec Micdrop. Vos données passent par des serveurs européens, avec un fallback.'
 date: 2026-03-03
+update: 2026-10-12
 author: godefroy
 image: ./thumbnail.jpg
 lang: fr
@@ -105,46 +106,7 @@ const tts = new GradiumTTS({
 
 ## La stack souveraine complète
 
-Gradium couvre la sortie audio. Avec deux autres fournisseurs européens, il forme une stack vocale qui reste en Europe :
-
-| Composant | Fournisseur | Rôle |
-|-----------|-------------|------|
-| **Agent (LLM)** | [Mistral](https://mistral.ai) | Modèle de langage français, entraîné et hébergé en Europe |
-| **Speech-to-Text** | [Gladia](https://gladia.io) | Transcription temps réel, 90+ langues |
-| **Text-to-Speech** | [Gradium](https://gradium.ai) | Synthèse vocale, serveurs EU |
-
-### Exemple complet
-
-```typescript
-import { MicdropServer } from '@micdrop/server'
-import { MistralAgent } from '@micdrop/mistral'
-import { GladiaSTT } from '@micdrop/gladia'
-import { GradiumTTS } from '@micdrop/gradium'
-
-const agent = new MistralAgent({
-  apiKey: process.env.MISTRAL_API_KEY || '',
-  model: 'mistral-large-latest',
-  systemPrompt:
-    'Tu es un assistant vocal en français. Réponds de manière concise et naturelle.',
-})
-
-const stt = new GladiaSTT({
-  apiKey: process.env.GLADIA_API_KEY || '',
-  settings: {
-    language_config: { languages: ['fr'] },
-  },
-})
-
-const tts = new GradiumTTS({
-  apiKey: process.env.GRADIUM_API_KEY || '',
-  voiceId: 'YOUR_FRENCH_VOICE_ID',
-  region: 'eu',
-})
-
-new MicdropServer(socket, { agent, stt, tts })
-```
-
-Avec cette configuration, l'audio et le texte de la conversation restent chez des fournisseurs européens, hors du champ du Cloud Act. La conformité RGPD de l'ensemble dépend encore de votre hébergement et de vos contrats, Micdrop rend l'architecture possible et s'arrête là.
+Gradium prononce les réponses. Avec [Mistral](https://mistral.ai) pour les écrire et [Gladia](https://gladia.io) pour transcrire la voix de l’utilisateur, la conversation passe par trois entreprises françaises. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain) avec eux, choisissez la région européenne de chacun et hébergez aussi votre serveur dans l’Union.
 
 ## Stratégie de fallback pour la résilience
 
