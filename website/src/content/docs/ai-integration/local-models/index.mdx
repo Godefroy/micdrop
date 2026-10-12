@@ -104,6 +104,12 @@ new MicdropServer(socket, {
 LM Studio and the llama.cpp server answer on the same routes, so point
 `baseURL` at their port to run them instead of Ollama.
 
+A local stack has
+[traps a hosted one spares you](/blog/local-voice-agent-ollama-whisper-piper),
+such as a Qwen3 model that reasons for up to two minutes per turn when you
+pull its default tag, or a small model that says goodbye and leaves the line
+open.
+
 ## First run
 
 Each part downloads its weights before it can answer, from 45 MB for the

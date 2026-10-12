@@ -154,7 +154,7 @@ Use a hosted API when the server is short on CPU, or when the call switches betw
 
 Start with Whisper `base` for an English call, since it is the only English option here that installs with one npm command and has a measured latency on a laptop. For a call in another language, move to a checkpoint fine-tuned on that language. Look at Parakeet once transcription runs on a server and the English error rate matters more than setup time. Pick Moonshine Tiny or Vosk when the model has to stay as small as possible.
 
-To switch models, replace the transcription class. The agent and the voice stay as they are. The voice can run on the same machine too, with a [local text to speech model](/blog/local-tts-node-kokoro-vs-piper). You can [compare every transcription and voice provider](/docs/ai-integration) or [start a first voice call in about five minutes](/docs/getting-started).
+To switch models, replace the transcription class. The agent and the voice stay as they are. The voice can run on the same machine too, with a [local text to speech model](/blog/local-tts-node-kokoro-vs-piper). Whisper `base`, Piper and an LLM served by Ollama give you a [local voice agent](/blog/local-voice-agent-ollama-whisper-piper) that answers in about a second on a MacBook Pro M2. You can [compare every transcription and voice provider](/docs/ai-integration) or [start a first voice call in about five minutes](/docs/getting-started).
 
 ## Frequently asked questions
 

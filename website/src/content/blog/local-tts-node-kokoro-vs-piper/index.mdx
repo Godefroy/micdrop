@@ -197,7 +197,7 @@ Kokoro and Pocket TTS carry permissive licenses on the code. Kokoro's weights ar
 
 ## Which one to pick
 
-Pick **Piper** as soon as the call happens in a language other than English. Kokoro and Pocket TTS speak English only. You pay for that with a Python interpreter in your image, a voice file to ship, and a GPL check on what you redistribute.
+Pick **Piper** as soon as the call happens in a language other than English. Kokoro and Pocket TTS speak English only. You pay for that with a Python interpreter in your image, a voice file to ship, and a GPL check on what you redistribute. Piper, Whisper and a Qwen3 model served by Ollama are enough for a [voice agent that runs entirely on your machine](/blog/local-voice-agent-ollama-whisper-piper). It answers in about a second in English and about 1.6 seconds in French, both measured on a MacBook Pro M2.
 
 Pick **Pocket TTS** for an English call that has to answer fast, or that needs a specific voice. It speaks first, loads fastest, and clones a voice from a few seconds of audio with no training step. You pay 600 MB of memory while it generates and an archive to fetch at build time, and you need the consent of whoever you clone.
 
