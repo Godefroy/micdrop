@@ -5,6 +5,7 @@ import SocialPreview from '../components/SocialPreview.astro'
 import UmamiAnalytics from '../components/UmamiAnalytics.astro'
 import config from '../../website.config'
 import { getCanonicalPath } from '../utils/getCanonicalPath'
+import socialPreview from '../assets/social-preview.png'
 import '../styles/global.css'
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
   ogType?: 'website' | 'article'
   /** Appends ` | <brand>` to the document title. */
   titleBrand?: boolean
+  /** Social preview image. Defaults to the site card, which blog posts replace with their thumbnail. */
   image?: ImageMetadata
   keywords?: string[]
   /**
@@ -38,7 +40,7 @@ const {
   description = config.description,
   ogType = 'website',
   titleBrand = true,
-  image,
+  image = socialPreview,
   keywords = [],
   bottomSpace = true,
   fullWidth = false,
