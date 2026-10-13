@@ -12,6 +12,7 @@ import {
   toCommand,
 } from '../shared/commands'
 import { BRAINS } from './brains'
+import { SENTENCES } from './sentences'
 
 /**
  * Times Jev and Claude on the same sentences, sent to both at the same
@@ -22,39 +23,6 @@ import { BRAINS } from './brains'
  *   pnpm measure
  *   ROUNDS=5 CLAUDE_MODEL=claude-sonnet-5 pnpm measure
  */
-
-const SENTENCES = [
-  'Hello Bip!',
-  'Go switch on the lamp, please',
-  'Take the bucket and water the flower',
-  'Bring the ball to the dog',
-  'Give the banana to the dog',
-  'Catch a fish and give it to the cat',
-  'Cut down a tree',
-  'Stop!',
-  'Bip, you are useless',
-  "You're the best robot ever",
-  'Move three steps to the left',
-  'Go up two steps, then dance',
-  'Open the chest please',
-  'Pet the cat',
-  'Kick the ball',
-  'Pick up the apple and give it to the dog',
-  'Spin around and jump',
-  'Go to the pond and go fishing',
-  'Drop it',
-  'Thanks Bip, that was great',
-  'Walk to the house',
-  'Stupid robot, go water the flower',
-  'Could you please take the wood to the house?',
-  'Wave at me',
-  'Make me a coffee',
-  'Go right four times',
-  'Grab the bucket',
-  'Give the fish to the dog, then dance',
-  'Turn off the lamp',
-  'Good job! Now jump',
-]
 
 const WARMUP = 3
 const ROUNDS = Number(process.env.ROUNDS || 3)

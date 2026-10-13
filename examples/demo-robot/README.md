@@ -63,3 +63,17 @@ ROUNDS=5 CLAUDE_MODEL=claude-sonnet-5 pnpm measure
 
 It prints the median, the p95 and the sentences where the two models read a
 different command, and saves everything in `measurements/`.
+
+## Compare Jev, the OpenAI Decisions API and Claude
+
+A second script sends the same sentences to three classifiers at once: Jev,
+`gpt-6-luna` through the Decisions API of OpenAI, and Claude with structured
+outputs.
+
+```bash
+pnpm measure:classifiers
+```
+
+Next to the times, it counts the commands each model read right, against the
+commands accepted for each sentence in `src/server/sentences.ts`, the requests
+that failed, the questions refused, the tokens and the price of 1,000 requests.

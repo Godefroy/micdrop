@@ -6,6 +6,7 @@ import type { Questions } from '@micdrop/typesafe'
 export interface ClaudeResult {
   model: string
   answers: Record<string, { noul: number } | { choice: string }>
+  usage: { input_tokens: number; output_tokens: number }
 }
 
 export interface ClaudeClassifierOptions {
@@ -66,7 +67,12 @@ export class ClaudeClassifier extends Classifier<ClaudeResult> {
           ? { noul: value === true ? 1 : 0 }
           : { choice: String(value) }
     }
-    return { model: response.model, answers }
+    const { input_tokens, output_tokens } = response.usage
+    return {
+      model: response.model,
+      answers,
+      usage: { input_tokens, output_tokens },
+    }
   }
 }
 

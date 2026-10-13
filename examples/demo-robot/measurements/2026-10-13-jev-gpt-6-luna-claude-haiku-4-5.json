@@ -1,0 +1,6958 @@
+{
+  "date": "2026-10-13T10:09:47.863Z",
+  "rounds": 3,
+  "prices": {
+    "jev": {
+      "input": 0.042,
+      "output": 0
+    },
+    "gpt-6-luna": {
+      "input": 0.1,
+      "output": 0
+    },
+    "claude-haiku-4-5": {
+      "input": 1,
+      "output": 5
+    }
+  },
+  "results": {
+    "jev": {
+      "model": "jev",
+      "count": 90,
+      "failed": 0,
+      "errors": [],
+      "refusedQuestions": 0,
+      "coldStart": 373,
+      "median": 274,
+      "p95": 312,
+      "mean": 280,
+      "min": 245,
+      "max": 467,
+      "rightCommands": 75,
+      "unsure": {
+        "right": 0,
+        "wrong": 6
+      },
+      "inputTokens": 3732,
+      "outputTokens": 1586,
+      "costPer1000": 0.156744
+    },
+    "openai": {
+      "model": "gpt-6-luna",
+      "count": 90,
+      "failed": 0,
+      "errors": [],
+      "refusedQuestions": 3,
+      "coldStart": 281,
+      "median": 416,
+      "p95": 508,
+      "mean": 389,
+      "min": 176,
+      "max": 776,
+      "rightCommands": 60,
+      "unsure": {
+        "right": 9,
+        "wrong": 12
+      },
+      "inputTokens": 4306,
+      "outputTokens": 0,
+      "costPer1000": 0.4306
+    },
+    "claude": {
+      "model": "claude-haiku-4-5",
+      "count": 90,
+      "failed": 0,
+      "errors": [],
+      "refusedQuestions": 0,
+      "coldStart": 2157,
+      "median": 1513,
+      "p95": 2045,
+      "mean": 1646,
+      "min": 1360,
+      "max": 4113,
+      "rightCommands": 90,
+      "unsure": {
+        "right": 0,
+        "wrong": 0
+      },
+      "inputTokens": 3872,
+      "outputTokens": 105,
+      "costPer1000": 4.397
+    }
+  },
+  "agreement": {
+    "jev-openai": {
+      "same": 60,
+      "of": 90
+    },
+    "jev-claude": {
+      "same": 71,
+      "of": 90
+    },
+    "openai-claude": {
+      "same": 57,
+      "of": 90
+    }
+  },
+  "mistakes": [
+    {
+      "sentence": "Go switch on the lamp, please",
+      "accepted": [
+        "use lamp",
+        "go lamp, use lamp"
+      ],
+      "wrong": {
+        "jev": {
+          "go lamp": 3
+        },
+        "openai": {
+          "go lamp": 3
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "accepted": [
+        "pick up bucket, water flower"
+      ],
+      "wrong": {
+        "openai": {
+          "pick up flower, water flower": 3
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "accepted": [
+        "pick up ball, put dog"
+      ],
+      "wrong": {
+        "jev": {
+          "put dog": 3
+        },
+        "openai": {
+          "put dog": 3
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "accepted": [
+        "move left ×3"
+      ],
+      "wrong": {
+        "jev": {
+          "move left ×3, move left ×3": 3
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "accepted": [
+        "move up ×2, dance"
+      ],
+      "wrong": {
+        "openai": {
+          "move ? ×2, dance": 3
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "accepted": [
+        "drop"
+      ],
+      "wrong": {
+        "openai": {
+          "(nothing)": 3
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "accepted": [
+        "water flower",
+        "go flower, water flower"
+      ],
+      "wrong": {
+        "openai": {
+          "go flower": 3
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "accepted": [
+        "pick up wood, put house"
+      ],
+      "wrong": {
+        "jev": {
+          "pick up wood": 3
+        },
+        "openai": {
+          "put house": 3
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "accepted": [
+        "wave"
+      ],
+      "wrong": {
+        "openai": {
+          "(nothing)": 3
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "accepted": [
+        "move right ×4"
+      ],
+      "wrong": {
+        "jev": {
+          "go, go, go": 3
+        },
+        "openai": {
+          "move right ×4, move right ×4, move right ×4": 3
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "accepted": [
+        "use lamp"
+      ],
+      "wrong": {
+        "openai": {
+          "(nothing)": 3
+        }
+      }
+    }
+  ],
+  "cold": {
+    "sentence": "Hello Bip!",
+    "readings": {
+      "openai": {
+        "duration": 281,
+        "command": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "usage": {
+          "input_tokens": 4308,
+          "output_tokens": 0
+        },
+        "refusals": [],
+        "countConfidence": 0.93
+      },
+      "jev": {
+        "duration": 373,
+        "command": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "usage": {
+          "input_tokens": 3730,
+          "output_tokens": 1586
+        },
+        "refusals": [],
+        "countConfidence": 1
+      },
+      "claude": {
+        "duration": 2157,
+        "command": {
+          "steps": [],
+          "stop": false,
+          "polite": false,
+          "rude": false,
+          "praise": false,
+          "hello": true
+        },
+        "usage": {
+          "input_tokens": 3871,
+          "output_tokens": 105
+        },
+        "refusals": []
+      }
+    }
+  },
+  "samples": [
+    {
+      "sentence": "Hello Bip!",
+      "readings": {
+        "jev": {
+          "duration": 278,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 444,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 1915,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "readings": {
+        "jev": {
+          "duration": 269,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.72
+        },
+        "openai": {
+          "duration": 421,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.95
+        },
+        "claude": {
+          "duration": 1455,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              },
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "readings": {
+        "openai": {
+          "duration": 193,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "receiver": "flower",
+                "amount": 2
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.99
+        },
+        "claude": {
+          "duration": 1510,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "readings": {
+        "jev": {
+          "duration": 299,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.52
+        },
+        "openai": {
+          "duration": 475,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.56
+        },
+        "claude": {
+          "duration": 1554,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "ball",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "readings": {
+        "openai": {
+          "duration": 292,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "jev": {
+          "duration": 329,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.96
+        },
+        "claude": {
+          "duration": 1476,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "readings": {
+        "jev": {
+          "duration": 312,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "cat",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 469,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.77
+        },
+        "claude": {
+          "duration": 1995,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "readings": {
+        "openai": {
+          "duration": 195,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "jev": {
+          "duration": 284,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "direction": "down",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.96
+        },
+        "claude": {
+          "duration": 1492,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "readings": {
+        "openai": {
+          "duration": 188,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.61
+        },
+        "jev": {
+          "duration": 265,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "claude": {
+          "duration": 1421,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "readings": {
+        "jev": {
+          "duration": 278,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 456,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1363,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "readings": {
+        "jev": {
+          "duration": 260,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 446,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 2108,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "readings": {
+        "jev": {
+          "duration": 251,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              },
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.59
+        },
+        "openai": {
+          "duration": 466,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.6
+        },
+        "claude": {
+          "duration": 1871,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "readings": {
+        "openai": {
+          "duration": 265,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.68
+        },
+        "jev": {
+          "duration": 266,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "claude": {
+          "duration": 1423,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "readings": {
+        "jev": {
+          "duration": 261,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1589
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 411,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.81
+        },
+        "claude": {
+          "duration": 1458,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "readings": {
+        "jev": {
+          "duration": 269,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 432,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.87
+        },
+        "claude": {
+          "duration": 1360,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "readings": {
+        "jev": {
+          "duration": 275,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 452,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "receiver": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 2347,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "readings": {
+        "jev": {
+          "duration": 259,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 434,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 1928,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "readings": {
+        "jev": {
+          "duration": 283,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 422,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.57
+        },
+        "claude": {
+          "duration": 1840,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "readings": {
+        "jev": {
+          "duration": 310,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 2
+              },
+              {
+                "action": "fish",
+                "target": "fish",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 420,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.88
+        },
+        "claude": {
+          "duration": 1533,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "readings": {
+        "jev": {
+          "duration": 245,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "direction": "down",
+                "amount": 1
+              }
+            ],
+            "stop": true,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 434,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.43
+        },
+        "claude": {
+          "duration": 1504,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "readings": {
+        "jev": {
+          "duration": 277,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 414,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4178,
+            "output_tokens": 0
+          },
+          "refusals": [
+            "amount3"
+          ],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1629,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "readings": {
+        "jev": {
+          "duration": 252,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 424,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "claude": {
+          "duration": 4113,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "readings": {
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3735,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.96
+        },
+        "openai": {
+          "duration": 476,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4313,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.91
+        },
+        "claude": {
+          "duration": 1500,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "readings": {
+        "jev": {
+          "duration": 289,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "openai": {
+          "duration": 313,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "claude": {
+          "duration": 1438,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "readings": {
+        "jev": {
+          "duration": 274,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 401,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.36
+        },
+        "claude": {
+          "duration": 1458,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "readings": {
+        "jev": {
+          "duration": 281,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 433,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.79
+        },
+        "claude": {
+          "duration": 1360,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "readings": {
+        "jev": {
+          "duration": 272,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.91
+        },
+        "openai": {
+          "duration": 418,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "claude": {
+          "duration": 1590,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "readings": {
+        "openai": {
+          "duration": 197,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "jev": {
+          "duration": 249,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1650,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "readings": {
+        "openai": {
+          "duration": 194,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.85
+        },
+        "jev": {
+          "duration": 281,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1904,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3875,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "readings": {
+        "jev": {
+          "duration": 255,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 393,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.45
+        },
+        "claude": {
+          "duration": 1447,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "readings": {
+        "jev": {
+          "duration": 272,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3732,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.84
+        },
+        "openai": {
+          "duration": 429,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "claude": {
+          "duration": 1489,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Hello Bip!",
+      "readings": {
+        "openai": {
+          "duration": 184,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "jev": {
+          "duration": 263,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1915,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "readings": {
+        "jev": {
+          "duration": 273,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.71
+        },
+        "openai": {
+          "duration": 485,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.95
+        },
+        "claude": {
+          "duration": 1441,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              },
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "readings": {
+        "jev": {
+          "duration": 284,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "receiver": "flower",
+                "amount": 2
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.99
+        },
+        "openai": {
+          "duration": 386,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "claude": {
+          "duration": 1487,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "readings": {
+        "openai": {
+          "duration": 182,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.56
+        },
+        "jev": {
+          "duration": 265,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.53
+        },
+        "claude": {
+          "duration": 1642,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "ball",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "readings": {
+        "jev": {
+          "duration": 302,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 470,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "claude": {
+          "duration": 1571,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "readings": {
+        "jev": {
+          "duration": 280,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "cat",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 353,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.77
+        },
+        "claude": {
+          "duration": 1988,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "readings": {
+        "jev": {
+          "duration": 249,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 446,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "claude": {
+          "duration": 1437,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "readings": {
+        "jev": {
+          "duration": 298,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 389,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.61
+        },
+        "claude": {
+          "duration": 1442,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "readings": {
+        "jev": {
+          "duration": 272,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 475,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1580,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "readings": {
+        "jev": {
+          "duration": 287,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 418,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1969,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "readings": {
+        "openai": {
+          "duration": 242,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.6
+        },
+        "jev": {
+          "duration": 467,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              },
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.53
+        },
+        "claude": {
+          "duration": 1611,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "readings": {
+        "openai": {
+          "duration": 189,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.68
+        },
+        "jev": {
+          "duration": 273,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1488,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "readings": {
+        "jev": {
+          "duration": 298,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1589
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 386,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.81
+        },
+        "claude": {
+          "duration": 1467,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "readings": {
+        "openai": {
+          "duration": 199,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.87
+        },
+        "jev": {
+          "duration": 283,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1460,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "readings": {
+        "jev": {
+          "duration": 264,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 452,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "receiver": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 1681,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "readings": {
+        "jev": {
+          "duration": 291,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 513,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 1942,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "readings": {
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 461,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.57
+        },
+        "claude": {
+          "duration": 1883,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "readings": {
+        "jev": {
+          "duration": 263,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 2
+              },
+              {
+                "action": "fish",
+                "target": "fish",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 418,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.88
+        },
+        "claude": {
+          "duration": 1447,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "readings": {
+        "jev": {
+          "duration": 260,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "direction": "down",
+                "amount": 1
+              }
+            ],
+            "stop": true,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.99
+        },
+        "openai": {
+          "duration": 430,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.43
+        },
+        "claude": {
+          "duration": 1547,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "readings": {
+        "jev": {
+          "duration": 277,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 388,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4178,
+            "output_tokens": 0
+          },
+          "refusals": [
+            "amount3"
+          ],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1573,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "readings": {
+        "jev": {
+          "duration": 306,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 492,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "claude": {
+          "duration": 1585,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "readings": {
+        "jev": {
+          "duration": 268,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3735,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 433,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4313,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.91
+        },
+        "claude": {
+          "duration": 1444,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "readings": {
+        "jev": {
+          "duration": 275,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "openai": {
+          "duration": 437,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "claude": {
+          "duration": 1512,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "readings": {
+        "openai": {
+          "duration": 192,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.36
+        },
+        "jev": {
+          "duration": 301,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1429,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "readings": {
+        "jev": {
+          "duration": 281,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 400,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.79
+        },
+        "claude": {
+          "duration": 1431,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "readings": {
+        "jev": {
+          "duration": 267,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "openai": {
+          "duration": 408,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "claude": {
+          "duration": 1416,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "readings": {
+        "jev": {
+          "duration": 274,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 530,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "claude": {
+          "duration": 1612,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "readings": {
+        "jev": {
+          "duration": 271,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 421,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.85
+        },
+        "claude": {
+          "duration": 1828,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3875,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "readings": {
+        "jev": {
+          "duration": 260,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 412,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.45
+        },
+        "claude": {
+          "duration": 1520,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "readings": {
+        "jev": {
+          "duration": 299,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "direction": "up",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3732,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.91
+        },
+        "openai": {
+          "duration": 403,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "claude": {
+          "duration": 1465,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Hello Bip!",
+      "readings": {
+        "jev": {
+          "duration": 282,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 401,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "claude": {
+          "duration": 1917,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go switch on the lamp, please",
+      "readings": {
+        "jev": {
+          "duration": 267,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.79
+        },
+        "openai": {
+          "duration": 455,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.95
+        },
+        "claude": {
+          "duration": 1488,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "lamp",
+                "amount": 1
+              },
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Take the bucket and water the flower",
+      "readings": {
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "receiver": "flower",
+                "amount": 2
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.99
+        },
+        "openai": {
+          "duration": 385,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "flower",
+                "receiver": "flower",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "claude": {
+          "duration": 1952,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              },
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bring the ball to the dog",
+      "readings": {
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.57
+        },
+        "openai": {
+          "duration": 776,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.56
+        },
+        "claude": {
+          "duration": 1614,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "ball",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "ball",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the banana to the dog",
+      "readings": {
+        "openai": {
+          "duration": 176,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "jev": {
+          "duration": 409,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.95
+        },
+        "claude": {
+          "duration": 1479,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "banana",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Catch a fish and give it to the cat",
+      "readings": {
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "cat",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 404,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.77
+        },
+        "claude": {
+          "duration": 1986,
+          "command": {
+            "steps": [
+              {
+                "action": "fish",
+                "target": "fish",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Cut down a tree",
+      "readings": {
+        "jev": {
+          "duration": 266,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "direction": "down",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.99
+        },
+        "openai": {
+          "duration": 433,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "claude": {
+          "duration": 1508,
+          "command": {
+            "steps": [
+              {
+                "action": "cut",
+                "target": "tree",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stop!",
+      "readings": {
+        "jev": {
+          "duration": 266,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 522,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.61
+        },
+        "claude": {
+          "duration": 1398,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Bip, you are useless",
+      "readings": {
+        "jev": {
+          "duration": 269,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 428,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1450,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "You're the best robot ever",
+      "readings": {
+        "openai": {
+          "duration": 187,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "jev": {
+          "duration": 255,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 2069,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Move three steps to the left",
+      "readings": {
+        "jev": {
+          "duration": 274,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              },
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.49
+        },
+        "openai": {
+          "duration": 508,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4311,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.6
+        },
+        "claude": {
+          "duration": 1777,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "left",
+                "amount": 3
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3872,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go up two steps, then dance",
+      "readings": {
+        "jev": {
+          "duration": 258,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "openai": {
+          "duration": 414,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.68
+        },
+        "claude": {
+          "duration": 1634,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "up",
+                "amount": 2
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Open the chest please",
+      "readings": {
+        "jev": {
+          "duration": 268,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1589
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 485,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.81
+        },
+        "claude": {
+          "duration": 1511,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "chest",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pet the cat",
+      "readings": {
+        "jev": {
+          "duration": 273,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 459,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.87
+        },
+        "claude": {
+          "duration": 1458,
+          "command": {
+            "steps": [
+              {
+                "action": "pet",
+                "target": "cat",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Kick the ball",
+      "readings": {
+        "openai": {
+          "duration": 199,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "receiver": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "jev": {
+          "duration": 274,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1599,
+          "command": {
+            "steps": [
+              {
+                "action": "kick",
+                "target": "ball",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Pick up the apple and give it to the dog",
+      "readings": {
+        "openai": {
+          "duration": 178,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.93
+        },
+        "jev": {
+          "duration": 280,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 2
+              },
+              {
+                "action": "put",
+                "target": "dog",
+                "receiver": "dog",
+                "amount": 2
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 2045,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "apple",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "apple",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Spin around and jump",
+      "readings": {
+        "jev": {
+          "duration": 276,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 417,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.57
+        },
+        "claude": {
+          "duration": 1909,
+          "command": {
+            "steps": [
+              {
+                "action": "spin",
+                "amount": 1
+              },
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go to the pond and go fishing",
+      "readings": {
+        "jev": {
+          "duration": 256,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 2
+              },
+              {
+                "action": "fish",
+                "target": "fish",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3734,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 393,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4312,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.88
+        },
+        "claude": {
+          "duration": 1537,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "pond",
+                "amount": 1
+              },
+              {
+                "action": "fish",
+                "target": "pond",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3873,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Drop it",
+      "readings": {
+        "jev": {
+          "duration": 256,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "direction": "down",
+                "amount": 1
+              }
+            ],
+            "stop": true,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3729,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 409,
+          "command": {
+            "steps": [],
+            "stop": true,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4307,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.43
+        },
+        "claude": {
+          "duration": 1420,
+          "command": {
+            "steps": [
+              {
+                "action": "drop",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3868,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Thanks Bip, that was great",
+      "readings": {
+        "jev": {
+          "duration": 272,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3733,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 415,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4178,
+            "output_tokens": 0
+          },
+          "refusals": [
+            "amount3"
+          ],
+          "countConfidence": 1
+        },
+        "claude": {
+          "duration": 1745,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Walk to the house",
+      "readings": {
+        "jev": {
+          "duration": 266,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 409,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "claude": {
+          "duration": 1831,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Stupid robot, go water the flower",
+      "readings": {
+        "openai": {
+          "duration": 183,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4313,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.91
+        },
+        "jev": {
+          "duration": 279,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3735,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.96
+        },
+        "claude": {
+          "duration": 1463,
+          "command": {
+            "steps": [
+              {
+                "action": "water",
+                "target": "flower",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": true,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3874,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Could you please take the wood to the house?",
+      "readings": {
+        "jev": {
+          "duration": 260,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3737,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 0.87
+        },
+        "openai": {
+          "duration": 409,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4315,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.69
+        },
+        "claude": {
+          "duration": 1508,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "wood",
+                "amount": 1
+              },
+              {
+                "action": "put",
+                "target": "wood",
+                "receiver": "house",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": true,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3876,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Wave at me",
+      "readings": {
+        "jev": {
+          "duration": 343,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 416,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": true
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.36
+        },
+        "claude": {
+          "duration": 1412,
+          "command": {
+            "steps": [
+              {
+                "action": "wave",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3869,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Make me a coffee",
+      "readings": {
+        "jev": {
+          "duration": 277,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 408,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.79
+        },
+        "claude": {
+          "duration": 1398,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Go right four times",
+      "readings": {
+        "jev": {
+          "duration": 298,
+          "command": {
+            "steps": [
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "go",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.92
+        },
+        "openai": {
+          "duration": 409,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              },
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.75
+        },
+        "claude": {
+          "duration": 1470,
+          "command": {
+            "steps": [
+              {
+                "action": "move",
+                "direction": "right",
+                "amount": 4
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Grab the bucket",
+      "readings": {
+        "jev": {
+          "duration": 304,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3730,
+            "output_tokens": 1587
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 405,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4308,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.97
+        },
+        "claude": {
+          "duration": 1687,
+          "command": {
+            "steps": [
+              {
+                "action": "pick_up",
+                "target": "bucket",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 107
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Give the fish to the dog, then dance",
+      "readings": {
+        "jev": {
+          "duration": 260,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3736,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 431,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "receiver": "dog",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4314,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.85
+        },
+        "claude": {
+          "duration": 1928,
+          "command": {
+            "steps": [
+              {
+                "action": "put",
+                "target": "fish",
+                "receiver": "dog",
+                "amount": 1
+              },
+              {
+                "action": "dance",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3875,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Turn off the lamp",
+      "readings": {
+        "jev": {
+          "duration": 275,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3731,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 1
+        },
+        "openai": {
+          "duration": 438,
+          "command": {
+            "steps": [],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4309,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.45
+        },
+        "claude": {
+          "duration": 1513,
+          "command": {
+            "steps": [
+              {
+                "action": "use",
+                "target": "lamp",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": false,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3870,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    },
+    {
+      "sentence": "Good job! Now jump",
+      "readings": {
+        "jev": {
+          "duration": 273,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "direction": "up",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3732,
+            "output_tokens": 1586
+          },
+          "refusals": [],
+          "countConfidence": 0.85
+        },
+        "openai": {
+          "duration": 476,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 4310,
+            "output_tokens": 0
+          },
+          "refusals": [],
+          "countConfidence": 0.55
+        },
+        "claude": {
+          "duration": 1489,
+          "command": {
+            "steps": [
+              {
+                "action": "jump",
+                "amount": 1
+              }
+            ],
+            "stop": false,
+            "polite": false,
+            "rude": false,
+            "praise": true,
+            "hello": false
+          },
+          "usage": {
+            "input_tokens": 3871,
+            "output_tokens": 105
+          },
+          "refusals": []
+        }
+      }
+    }
+  ]
+}
