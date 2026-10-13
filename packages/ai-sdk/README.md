@@ -91,7 +91,7 @@ See the [Agent interface](https://micdrop.dev/docs/ai-integration/custom-integra
 
 The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 
-- **OpenAI**: `openai('gpt-4o')`, `openai('gpt-3.5-turbo')`
+- **OpenAI**: `openai('gpt-4o')`, `openai('gpt-5.6-luna')`
 - **Anthropic**: `anthropic('claude-3-5-sonnet-20241022')`
 - **Google**: `google('gemini-1.5-pro')`, `google('gemini-1.5-flash')`
 - **Mistral**: `mistral('mistral-large-latest')`
