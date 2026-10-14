@@ -48,19 +48,7 @@ sequenceDiagram
 
 ## Why WebSocket?
 
-While WebRTC is a powerful protocol for real-time communication, Micdrop uses a simple custom protocol over WebSocket for several reasons:
-
-- 🎯 **Focused on our use case**: WebRTC is designed for peer-to-peer communication, with features we don't need. Our client-server architecture is simpler.
-
-- 🔇 **Efficient audio transmission**: By using [Voice Activity Detection (VAD)](../client/vad) on the client side, we only send audio when the user is actually speaking. This reduces bandwidth usage and processing load compared to continuous streaming.
-
-- 💡 **Simple implementation**: WebSocket provides a straightforward, reliable way to send both text and binary data. The protocol is easy to implement and debug on both client and server.
-
-- 🔄 **Bidirectional communication**: WebSocket allows for real-time bidirectional messaging, which is perfect for our text and audio exchange needs.
-
-- 🛠️ **Custom protocol control**: Our simple protocol lets us optimize exactly how and when audio/text messages are sent, without the overhead of WebRTC's full feature set.
-
-This approach gives us the real-time capabilities we need while keeping the implementation lean and efficient.
+Micdrop talks to its server over a WebSocket because a browser calling your own backend needs just the server you already deploy. The browser [detects speech](../client/vad) and sends audio only while someone speaks, which keeps bandwidth low. [WebRTC is worth its extra servers](/blog/websocket-or-webrtc-voice-agent) for group calls, video, phone lines and users on weak mobile networks.
 
 ## Calls without a voice
 
