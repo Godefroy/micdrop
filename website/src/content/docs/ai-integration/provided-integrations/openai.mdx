@@ -371,7 +371,9 @@ true, a choice out of several values, or a score on ordered levels. OpenAI
 announces it about ten times faster than the Responses API, which leaves time to
 route the answer before the LLM starts.
 
-The Decisions API is in public beta, and `gpt-6-luna` is its only model.
+The Decisions API is in public beta, and `gpt-6-luna` is its only model. For a
+complete example, [route a support call with the Decisions API](/blog/openai-decisions-api-voice-agent),
+refusals and late requests included.
 
 ### Usage with MicdropServer
 
@@ -488,7 +490,7 @@ turns of your own application.
 ### Latency and price
 
 Measured on the real API with a turn, its history and three questions, each
-request took about 200 to 550 ms. The first request of a process takes a few
+request took about 200 to 530 ms. The first request of a process takes a few
 seconds more, while it opens the connection.
 
 Input costs $0.10 per million tokens, and output is free. A request of a

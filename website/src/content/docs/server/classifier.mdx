@@ -53,7 +53,9 @@ new MicdropServer(socket, {
 Micdrop ships [`TypesafeClassifier`](../ai-integration/provided-integrations/typesafe),
 which runs [Jev](../ai-integration/provided-integrations/typesafe), the System
 One model of TypeSafe, and [`OpenaiClassifier`](../ai-integration/provided-integrations/openai#openai-classifier),
-which runs the Decisions API of OpenAI. Any other model fits by extending the
+which runs the Decisions API of OpenAI. You can
+[call the Decisions API from Node, then route a call on its answers](/blog/openai-decisions-api-voice-agent)
+step by step. Any other model fits by extending the
 [`Classifier` base class](../ai-integration/custom-integrations/custom-classifier),
 an LLM with structured output as much as a list of keywords. Keywords, an LLM
 and a dedicated model differ a lot in

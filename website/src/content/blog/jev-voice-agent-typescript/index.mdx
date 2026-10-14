@@ -357,7 +357,7 @@ In the twenty questions demo, you ask the questions and Jev answers them. The se
 
 The middle band catches the questions that are ambiguous for this secret, which a plain yes or no would get wrong half the time. With no agent, the server writes each answer into the conversation with `addAssistantMessage()`, so Jev finds it in `history` on the next turn and reads "and is it big?" as a follow-up to the question before.
 
-Jev understands English best. Other languages work, with less accurate answers. It reads text only, so the tone of the voice reaches it through the words alone. Its answers are always a label, a score or a probability of yes, so to pull a value out of a sentence, use the LLM or [structured extraction](/docs/server/extract). To put another model behind the same server options, [extend the `Classifier` base class](/docs/ai-integration/custom-integrations/custom-classifier). A subclass can call an LLM with structured output, or match a plain list of keywords.
+Jev understands English best. Other languages work, with less accurate answers. It reads text only, so the tone of the voice reaches it through the words alone. Its answers are always a label, a score or a probability of yes, so to pull a value out of a sentence, use the LLM or [structured extraction](/docs/server/extract). To put another model behind the same server options, [extend the `Classifier` base class](/docs/ai-integration/custom-integrations/custom-classifier). The same routing also works with OpenAI's model, with [the Decisions API as the classifier of the voice agent](/blog/openai-decisions-api-voice-agent). A subclass can call an LLM with structured output, or match a plain list of keywords.
 
 ## Run it on your own calls
 
