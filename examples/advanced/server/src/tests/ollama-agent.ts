@@ -4,6 +4,8 @@
 // OLLAMA_MODEL picks the model and OLLAMA_LANG the language, so the same four
 // turns compare two models, or one model in two languages:
 //   OLLAMA_MODEL=hf.co/openbmb/MiniCPM5-2B-GGUF:Q4_K_M OLLAMA_LANG=en-US
+// OLLAMA_URL points it at another server speaking the OpenAI protocol, such as
+// llama-server: OLLAMA_URL=http://localhost:8090/v1
 import * as dotenv from 'dotenv'
 dotenv.config()
 

@@ -1,0 +1,101 @@
+---
+title: 'MiniCPM-V 4.7'
+description: 'MiniCPM-V 4.7 tested as the agent of a local call: the 35B-A3B handles every automatic tool in English and French but needs more memory, the 1B never calls a tool.'
+order: 75
+---
+
+# MiniCPM-V 4.7
+
+Tested as the agent, the part that writes the answers and decides when to call
+a tool. OpenBMB publishes MiniCPM-V 4.7 in two sizes under the Apache 2.0
+license: a 1B model, and a 35B-A3B mixture of experts that activates 3 billion
+parameters per token. Both read images too, which a voice call does not use, so
+only their text side was tested.
+
+Both were compared with the recommended model, [Qwen3 4B Instruct](../agent),
+using `ollama-agent.ts` with its `OLLAMA_MODEL`, `OLLAMA_LANG` and `OLLAMA_URL`
+variables, on the same machine and with the same prompt. The 1B ran 5 times in
+English and twice in French, the 35B-A3B 3 times in English and once in French:
+
+| The test                                       | 35B-A3B                           | 1B                                   | Qwen3 4B, recommended                       |
+| ---------------------------------------------- | --------------------------------- | ------------------------------------ | ------------------------------------------- |
+| Weights                                        | 15.5 GB, mixed 3 and 4 bits       | 0.67 GB in `Q4_K_M`                  | 2.5 GB in `Q4_K_M`                          |
+| First token, warm                              | 1.2 to 3.5 s, minutes when paging | 85 to 180 ms                         | ~100 ms                                     |
+| A whole turn in English                        | 1.3 to 14 s                       | 190 to 600 ms                        | 820 to 1420 ms                              |
+| Asking the time, with a `get_time` tool        | Tool called every run             | Never called, a made up time instead | Tool called                                 |
+| A meaningless `"uh"`, with `ignore_user_noise` | `CancelLastUserMessage` every run | Answered every run                   | `CancelLastUserMessage` every run           |
+| `"Thanks, goodbye!"`, with `end_call`          | `EndCall` in 3 runs out of 4      | Never called                         | No call, said goodbye                       |
+| Numbers written in full, as the prompt asks    | `"ten fifty-two forty AM"`        | `"12:01 PM"` in some runs            | `"nine fifteen forty-three in the morning"` |
+
+## The 35B-A3B
+
+It is the first local model in this section that handles every automatic tool
+Micdrop adds, in French as well as in English. Its French reads naturally:
+_"Il est actuellement dix heures quarante-cinq minutes et vingt secondes."_
+
+Its weights are the problem on this machine. The smallest file OpenBMB
+publishes, `mix_q3gud_im`, weighs 15.5 GB, and a 24 GB Mac running an editor
+and a browser alongside it pages part of the weights out. With the weights in
+memory, it generates about 25 tokens per second and each request takes under a
+second. When the system pages, a single request took up to two minutes. A whole
+turn often holds two requests, one that calls the tool and one that answers,
+so a call stays slower than with Qwen3 4B even in the best case.
+
+Ollama 0.32.15 does not accept `mix_q3gud_im` as a tag, and the smallest tag it
+accepts, `Q4_K_S`, weighs 19.9 GB. The tests ran on the llama.cpp server
+instead, which reads the file where it is:
+
+```bash
+brew install llama.cpp
+llama-server -m MiniCPM-V-4_7-35B-A3B-mix_q3gud_im.gguf \
+  --port 8090 --jinja -c 8192 -np 1 --reasoning-budget 0
+```
+
+`--reasoning-budget 0` turns reasoning off. `-np 1` keeps a single slot, so each
+turn reuses the prompt already processed for the previous one. With the default
+four slots, consecutive requests landed on different slots and processed the
+whole prompt again. Point `baseURL` at `http://localhost:8090/v1`, as the
+[local LLM page](../agent) explains for any server speaking the OpenAI protocol.
+
+## The 1B
+
+The 1B answers in 85 to 180 ms, faster than any other model measured here, but
+it ignores the tools under the Micdrop prompt. Over 5 English runs it never
+called `get_time` and gave a different made up time each time, never filtered
+`"uh"` and never ended the call. Asked the time alone, with `get_time` as its
+only tool and a one line prompt, it called the tool 3 times out of 3: the
+longer prompt and the automatic tools are what it cannot follow. In French it
+mixes English and Chinese into its sentences, as in `"L'heure现今 est dix-huit
+heures"`.
+
+Pulled with `ollama pull hf.co/openbmb/MiniCPM-V-4.7-1B-gguf:Q4_K_M`, the model
+fails on its first answer in Ollama 0.32.15 with `Failed to load CLIP model`:
+Ollama cannot load its image projector. A model built from the text weights
+alone answers normally, tools and reasoning included:
+
+```bash
+ollama show --modelfile hf.co/openbmb/MiniCPM-V-4.7-1B-gguf:Q4_K_M \
+  | grep -m1 '^FROM' > Modelfile
+ollama create minicpm-v4.7-1b-text -f Modelfile
+```
+
+## Other variants
+
+OpenBMB also publishes variants that were not tested, since they target other
+hardware:
+
+- The `DSpark` checkpoints are small draft models for speculative decoding,
+  which speed up generation of the matching model. They run with vLLM or with
+  OpenBMB's fork of llama.cpp, not with Ollama.
+- The `FP8`, `AWQ` and `GPTQ` weights are meant for vLLM or SGLang on an NVIDIA
+  GPU.
+- The `mlx-community` ports run on Apple silicon with MLX. One of them,
+  `REAP-19B`, prunes the 35B-A3B down to 19 billion parameters, 13.5 GB in
+  4 bits.
+
+## Verdict
+
+Use the 35B-A3B on a machine with enough memory to keep its 15.5 GB loaded next
+to everything else, when you need reliable tool calls in French. On a 24 GB
+machine, Qwen3 4B Instruct stays the recommended model. Leave the 1B aside for
+a voice agent, since it never calls the tools a call relies on.

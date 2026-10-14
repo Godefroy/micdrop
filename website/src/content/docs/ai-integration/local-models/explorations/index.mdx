@@ -16,12 +16,13 @@ The tests run with the demo in `examples/advanced`. Its `server/src/tests`
 folder has one script per model, so each result can be reproduced on another
 machine or with a newer release.
 
-| Model                            | Tested as      | Why it was left out                                     |
-| -------------------------------- | -------------- | ------------------------------------------------------- |
-| [MiniCPM5-2B](./minicpm)         | The agent      | Twice as fast as Qwen3 4B, but English only in practice |
-| [Mistral 7B](./mistral-7b)       | The agent      | Slower than Qwen3 4B, and its tool calls fail           |
-| [Voxtral Mini 3B](./voxtral-stt) | Speech to text | More accurate than Whisper `base`, 35 times slower      |
-| [Voxtral TTS 4B](./voxtral-tts)  | The voice      | Generates slower than real time                         |
+| Model                            | Tested as      | Why it was left out                                      |
+| -------------------------------- | -------------- | -------------------------------------------------------- |
+| [MiniCPM5-2B](./minicpm)         | The agent      | Twice as fast as Qwen3 4B, but English only in practice  |
+| [MiniCPM-V 4.7](./minicpm-v)     | The agent      | 35B-A3B reliable but 15.5 GB, 1B never calls a tool      |
+| [Mistral 7B](./mistral-7b)       | The agent      | Slower than Qwen3 4B, and its tool calls fail            |
+| [Voxtral Mini 3B](./voxtral-stt) | Speech to text | More accurate than Whisper `base`, 35 times slower       |
+| [Voxtral TTS 4B](./voxtral-tts)  | The voice      | Generates slower than real time                          |
 | [AuK and AuK-Flash](./auk)       | The voice      | Nine times slower than real time, even with a memory fix |
 
 All measurements were made on the machine described on the
