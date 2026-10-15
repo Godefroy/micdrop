@@ -262,6 +262,8 @@ server.on('connection', (socket) => {
 
 The transcript reaches the agent, whose reply streams into the voice and out of the phone speaker. Playback stops as soon as the user speaks again. Beyond the user's words, `state.conversation` now carries the assistant's answers, and `state.isAssistantSpeaking` marks the moments one is audible.
 
+The answer can also be read by the phone's own voice, and the two choices differ a lot for [text to speech in React Native](/blog/text-to-speech-react-native).
+
 ## Frequently asked questions
 
 <FaqList>

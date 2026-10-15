@@ -35,6 +35,8 @@ const handlePress = () =>
 
 Headphones and Bluetooth are handled by the operating system: plugging them in moves the call over, whatever was chosen here.
 
+The audio played here is PCM streamed by the server, which is one of two ways to get [a voice out of a React Native app](/blog/text-to-speech-react-native).
+
 ## Choosing the microphone
 
 The inputs the OS reports are in the state, each with an `id` to hand back and a `label` to show, and the call can be moved to another one without interrupting it:
