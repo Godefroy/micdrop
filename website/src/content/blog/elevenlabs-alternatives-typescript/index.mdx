@@ -2,7 +2,7 @@
 title: 'ElevenLabs Alternatives for a TypeScript Voice Agent'
 summary: 'Cartesia, Gradium, OpenAI, Gemini and four local engines share one TypeScript interface. Switching engine takes one line. FallbackTTS keeps a backup ready.'
 date: 2026-09-12
-update: 2026-09-29
+update: 2026-10-15
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -148,6 +148,8 @@ One interface also makes A/B testing cheap. Read the provider from an environmen
 ## Writing your own integration for another provider
 
 Micdrop packages nine engines, so the tenth is yours to write. Deepgram, Azure, Google Cloud Text-to-Speech and Amazon all publish streaming speech endpoints. So does a model you fine-tuned and host yourself.
+
+[Inworld TTS](https://inworld.ai/pricing) is one more candidate. Its Node SDK, `@inworld/tts`, offers `generate()` for a whole clip and `stream()` for chunks as they come, and a browser gets short-lived JWTs from your backend instead of the API key. In October 2026, a million characters cost $25 on TTS-2 and $15 on TTS-2 Flash at the on-demand rate, falling to $12.50 and $7 on the Growth plan.
 
 To write your own, extend `TTS`, implement two methods, `speak(textStream)` and `cancel()`, then emit an `Audio` event per chunk. You can start from [two working custom TTS skeletons](/docs/ai-integration/custom-integrations/custom-tts), one for a WebSocket API that streams as it generates and one for an HTTP API that returns the whole clip. Your class then drops into the same `tts` slot as the packaged ones, and into `FallbackTTS` alongside them.
 
