@@ -3,6 +3,7 @@ title: 'GPT-Live vs GPT-Realtime-2 vs Gemini Live in 2026'
 h1: 'GPT-Live, GPT-Realtime-2 or Gemini Live: picking a speech-to-speech model'
 summary: 'GPT-Live-1 listens while it speaks, GPT-Realtime-2.1 reasons and calls tools in one session, and Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1.'
 date: 2026-09-18
+update: 2026-10-15
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -139,7 +140,7 @@ Other providers ship a model that hears audio and speaks its answer. Several of 
 
 Four models run on your own GPU. Moshi, from the Kyutai lab, came first in September 2024 and is still the reference, with weights under CC BY 4.0. Step-Audio-R1.1, 33.5 billion parameters under Apache 2.0, reasons before it answers. NVIDIA's Nemotron VoiceChat 11B calls tools in the middle of a conversation. Qwen3-Omni-30B-A3B, also Apache 2.0, listens to audio and video and answers in a voice. You supply the GPU, the monitoring and the support that a hosted provider sells with its API.
 
-Watch the naming. ElevenLabs sells a feature called Speech to Speech, which converts one voice into another for dubbing. ElevenLabs Agents, Deepgram's Voice Agent API and Kyutai's Unmute assemble transcription, a text model and a voice behind one connection, which is the pipeline architecture rather than a single model. Mistral's Voxtral models transcribe and speak without holding a conversation, while Ultravox hears audio and answers in text. Read what comes out of the model before counting it as an alternative.
+Watch the naming. ElevenLabs sells a feature called Speech to Speech, which converts one voice into another for dubbing. ElevenLabs Agents, Deepgram's Voice Agent API, Inworld's Realtime API and Kyutai's Unmute assemble transcription, a text model and a voice behind one connection, which is the pipeline architecture rather than a single model. Inworld follows the OpenAI Realtime protocol, so a client written for OpenAI keeps its event loop and changes only the endpoint, the authentication and the models named in the session. Mistral's Voxtral models transcribe and speak without holding a conversation, while Ultravox hears audio and answers in text. Read what comes out of the model before counting it as an alternative.
 
 ## Micdrop runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same client
 
