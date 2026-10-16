@@ -55,7 +55,7 @@ graph TD
     I --> J[Message sent back<br>over the same WebSocket]
 ```
 
-Most speech models were trained on 16 kHz audio. At 16 bit per sample, that rate weighs 32 KB per second, so one 100 ms chunk is 3.2 KB. A WebSocket carries that easily, even on a mobile connection. The server resamples the audio for a provider that expects another rate, such as OpenAI's Realtime API at 24 kHz.
+Most speech models were trained on [16 kHz audio](/blog/audio-sample-rate-voice-agent). At 16 bit per sample, that rate weighs 32 KB per second, so one 100 ms chunk is 3.2 KB. A WebSocket carries that easily, even on a mobile connection. The server resamples the audio for a provider that expects another rate, such as OpenAI's Realtime API at 24 kHz.
 
 ## The browser's voice detector sets the latency you feel
 

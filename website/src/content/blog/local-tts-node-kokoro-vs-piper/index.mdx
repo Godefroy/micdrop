@@ -65,7 +65,7 @@ Micdrop keeps that Piper process alive across sentences rather than spawning one
 
 ## Running one from Node
 
-A Micdrop TTS is a small class you can drive on its own, with no server and no WebSocket. It takes a stream of text and emits PCM16 audio at 16 kHz, the rate the browser client expects.
+A Micdrop TTS is a small class you can drive on its own, with no server and no WebSocket. It takes a stream of text and emits PCM16 audio at 16 kHz, [the rate the browser client expects](/blog/audio-sample-rate-voice-agent).
 
 ```typescript
 import { TTS } from '@micdrop/server'

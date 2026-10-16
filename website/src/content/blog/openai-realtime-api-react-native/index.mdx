@@ -103,7 +103,7 @@ wss.on('connection', async (socket) => {
 })
 ```
 
-`OpenaiRealtime` resamples the phone's 16 kHz audio to the 24 kHz the API expects and back. It turns off OpenAI's own turn detection, since the client already detects when the user speaks. When the user interrupts, it cancels the answer and trims the model's memory of it to the point the user most likely stopped hearing. Tools you add with `addTool()` run on the server, in the middle of an answer. You can tune `OpenaiRealtime` further with its [OpenAI Realtime options](/docs/ai-integration/provided-integrations/openai#openai-realtime). The server [handles turns and interruptions](/docs/server/realtime) the same way for every speech-to-speech model.
+`OpenaiRealtime` [resamples the phone's 16 kHz audio to the 24 kHz the API expects](/blog/audio-sample-rate-voice-agent) and back. It turns off OpenAI's own turn detection, since the client already detects when the user speaks. When the user interrupts, it cancels the answer and trims the model's memory of it to the point the user most likely stopped hearing. Tools you add with `addTool()` run on the server, in the middle of an answer. You can tune `OpenaiRealtime` further with its [OpenAI Realtime options](/docs/ai-integration/provided-integrations/openai#openai-realtime). The server [handles turns and interruptions](/docs/server/realtime) the same way for every speech-to-speech model.
 
 In the app, one button starts and ends the call:
 
