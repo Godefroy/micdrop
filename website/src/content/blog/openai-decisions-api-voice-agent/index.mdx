@@ -360,7 +360,7 @@ A request of 470 input tokens costs about $0.00005. A call of twenty turns costs
 
 According to OpenAI, eligible customers can use the API with Zero Data Retention and under HIPAA, with data residency in the United States and in Europe.
 
-The Decisions API has one direct equivalent, [Jev, the System One model of TypeSafe](/blog/what-is-jev), which answers the same three kinds of questions and costs $0.042 per million input tokens. The same Micdrop server can [route a voice call with Jev](/blog/jev-voice-agent-typescript) through another classifier class, with the same `onBeforeAnswer` hook. Keywords and an LLM with structured output are the two other [ways to classify the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
+The Decisions API has one direct equivalent, [Jev, the System One model of TypeSafe](/blog/what-is-jev), which answers the same three kinds of questions and costs $0.042 per million input tokens. When we sent 90 voice commands to both, [Jev answered faster than `gpt-6-luna` at the median and read more of them right](/blog/openai-decisions-vs-jev). The same Micdrop server can [route a voice call with Jev](/blog/jev-voice-agent-typescript) through another classifier class, with the same `onBeforeAnswer` hook. Keywords and an LLM with structured output are the two other [ways to classify the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
 
 ## Frequently asked questions
 
