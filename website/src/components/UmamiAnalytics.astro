@@ -5,4 +5,4 @@ const scriptUrl =
   'https://cloud.umami.is/script.js'
 ---
 
-{websiteId && <script is:inline defer src={scriptUrl} data-website-id={websiteId}></script>}
+{websiteId && <script is:inline async src={scriptUrl} data-website-id={websiteId}></script>}
