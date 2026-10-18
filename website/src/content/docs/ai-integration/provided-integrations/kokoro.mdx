@@ -1,19 +1,24 @@
 ---
-title: 'Kokoro'
-description: 'Local text to speech with Kokoro, running in your Node process.'
+title: 'Kokoro TTS in Node.js'
+sidebarLabel: 'Kokoro'
+description: 'Run the 82M Kokoro model locally in your Node voice agent, with its 28 English voice ids, the dtype options and the latency measured on a MacBook.'
 order: 51
 ---
 
-# Kokoro
+# Kokoro TTS in Node.js
 
-Local text to speech for [@micdrop/server](../../server), running
-[Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) in your Node process
-through [Transformers.js](https://huggingface.co/docs/transformers.js) and ONNX
-Runtime.
+`@micdrop/kokoro` runs Kokoro TTS, a local text to speech model, for
+[@micdrop/server](../../server) inside your Node process, so the voice is
+generated on your machine without an API key or a separate server. The
+package loads [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) through
+[kokoro-js](https://www.npmjs.com/package/kokoro-js),
+[Transformers.js](https://huggingface.co/docs/transformers.js) and ONNX Runtime.
 
 Kokoro is an 82 million parameter model, small enough to download in seconds
 and to sit next to an LLM in memory, with a quality well above what its size
-suggests.
+suggests. It only turns text into speech, so the answers of a call come from a
+separate language model, which you can
+[run locally with Ollama](../local-models/agent).
 
 ## Installation
 
@@ -77,9 +82,25 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 
 ## Voices
 
-Shorthands cover the accents and the genders: `americanFemale`,
-`americanMale`, `britishFemale` and `britishMale`. Every voice id the model
-holds works too, and `KOKORO_VOICE_IDS` exports the full list.
+Kokoro TTS holds 28 English voices in one checkpoint, so switching voice costs
+nothing at runtime. The first two letters of a voice id give the accent and the
+gender: `af` and `am` are American female and male, `bf` and `bm` British
+female and male.
+
+Hexgrad, who trained Kokoro, grades every voice from A to F. The table lists
+the ids of each group from the best grade to the lowest. Each shorthand resolves
+to a top graded voice of its group: `af_heart`, `am_michael`, `bf_emma` and
+`bm_george`.
+
+| Group           | Shorthand        | Voice ids and grades                                                                                                                                                 |
+| --------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| American female | `americanFemale` | `af_heart` A, `af_bella` A-, `af_nicole` B-, `af_aoede` C+, `af_kore` C+, `af_sarah` C+, `af_alloy` C, `af_nova` C, `af_sky` C-, `af_jessica` D, `af_river` D |
+| American male   | `americanMale`   | `am_michael` C+, `am_fenrir` C+, `am_puck` C+, `am_echo` D, `am_eric` D, `am_liam` D, `am_onyx` D, `am_santa` D-, `am_adam` F+                                    |
+| British female  | `britishFemale`  | `bf_emma` B-, `bf_isabella` C, `bf_alice` D, `bf_lily` D                                                                                                             |
+| British male    | `britishMale`    | `bm_george` C, `bm_fable` C, `bm_lewis` D+, `bm_daniel` D                                                                                                            |
+
+Any id of the table works as `voice`. `KOKORO_VOICE_IDS` exports the full
+list.
 
 ```typescript
 import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
@@ -87,48 +108,75 @@ import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
 const tts = new KokoroTTS({ voice: 'am_michael' })
 ```
 
-<Callout type="warning">
-  Kokoro speaks English only in this integration. The upstream model also holds
-  French, Italian, Japanese, Portuguese and Chinese voices, but the `kokoro-js`
-  library phonemizes every input with the English rules, so those voices read
-  foreign words with an English pronunciation. Use [Piper](./piper) for the
-  other languages.
-</Callout>
+## Kokoro speaks English only in Micdrop
+
+The upstream model also holds French, Italian, Japanese, Portuguese and Chinese
+voices, which `@micdrop/kokoro` leaves out. Kokoro takes phonemes as input.
+`kokoro-js` produces them with English rules only, American for the `a` voices
+and British for the `b` voices, so a French voice would read French text with
+an English pronunciation.
+
+For a call in another language, use [Piper](./piper), which covers around
+forty languages, French included.
 
 ## Latency
 
 Synthesis runs at roughly half to three quarters of real time on a MacBook Pro
 M2, so a three second sentence takes about two seconds to generate and a short
-greeting comes back in about one second.
+greeting comes back in about one second. On that machine, the first sentence
+of an answer takes 900 to 1300 ms. In a full turn with Whisper `base` and
+Qwen3 4B, the user hears the first word 1.4 to 1.9 seconds after they stop
+talking. Piper and Pocket TTS take 250 to 430 ms for the same first sentence.
+We measured [every step of a local turn](../local-models/performance) for each
+model.
+
+Kokoro sounds better than Piper in English, so the choice comes down to
+[voice quality against latency between Kokoro, Piper and Pocket TTS](/blog/local-tts-node-kokoro-vs-piper).
 
 Micdrop cuts the answer into sentences and synthesizes each one as soon as it
 is complete, so the user hears the opening while the rest is still being
-written. Sentences go through one after the other rather than at once. The
-model is single threaded, so racing two sentences through it slows both down
-and the first word still arrives at the same moment.
+written. The sentences are synthesized one at a time. The model is single
+threaded, so running two sentences in parallel slows both down and brings the
+first word no sooner.
 
 ## Devices
 
 `cpu` is the default and, on a Mac, the fastest option, since Transformers.js
-exposes no GPU device on macOS. On Windows `dml` uses DirectML, and on Linux
-with an NVIDIA card `cuda` is worth trying. The
-[local models guide](../local-models/performance) lists the measurements.
+exposes no GPU device on macOS. On Windows, `dml` runs Kokoro through
+DirectML. On Linux with an NVIDIA card, try `cuda` and
+[compare it with the CPU](../local-models/performance) on your own server.
+
+## Choosing a dtype
+
+`dtype` picks which ONNX export of the weights `kokoro-js` downloads from
+`onnx-community/Kokoro-82M-v1.0-ONNX`.
+
+| `dtype` | Download | Effect                                                                                       |
+| ------- | -------- | -------------------------------------------------------------------------------------------- |
+| `q8`    | 92 MB    | The default. 8 bit weights, the smallest file and the fastest load on the CPU                |
+| `fp32`  | 326 MB   | Full precision. Loads several times slower than `q8` for a nearly identical synthesis speed |
+| `fp16`  | 163 MB   | Half precision, half the size of `fp32`                                                      |
+| `q4`    | 305 MB   | 4 bit weights on part of the graph only, so the file stays close to `fp32`                  |
+| `q4f16` | 155 MB   | 4 bit weights with the rest in half precision                                                |
+
+Keep `q8` on a CPU. Once loaded, Kokoro takes about 80 MB of memory, so a
+lower precision would save almost nothing next to the LLM of the call.
 
 ## Memory and startup
 
 The model is loaded once per configuration and shared by every call. Loading
-takes about a second and a half in `q8`, and the first synthesis pays for the
-graph warm-up, which is why `warmup` runs one word through the model while the
-call is being set up.
-
-The `fp32` precision loads several times slower for a nearly identical
-synthesis speed, so `q8` is the default.
+takes about a second and a half in `q8`. The first synthesis is slower while
+the graph warms up, which is why `warmup` runs one word through the model while
+the call is being set up.
 
 ## Documentation
 
-Read the [guide on running Micdrop with local models](../local-models) to see
-how Kokoro fits with a local LLM and local speech to text.
+Kokoro also fits in a voice agent that runs
+[entirely on local models](../local-models), with a local LLM and local speech
+to text.
 
 ## License
 
-Kokoro is released under the Apache 2.0 license, which covers commercial use.
+Kokoro TTS is free, commercial use included. The model is released under the
+Apache 2.0 license and runs on your own machine, so the only cost of a call is
+your own hardware.
