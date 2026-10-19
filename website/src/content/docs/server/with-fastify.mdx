@@ -1,12 +1,13 @@
 ---
-title: 'With Fastify'
+title: 'Fastify WebSocket Server for Voice AI'
+sidebarLabel: 'With Fastify'
 description: 'Integrate Micdrop server with Fastify for robust web applications with voice capabilities.'
 order: 29
 ---
 
-# With Fastify
+# Fastify WebSocket Server for Voice AI
 
-Integrate Micdrop server with Fastify for robust web applications with voice capabilities.
+A Fastify server runs Micdrop voice calls with the `@fastify/websocket` plugin: register the plugin, declare a route with `{ websocket: true }`, and hand the socket it receives to `MicdropServer`. The route runs on the port of your Fastify application and uses its logger and hooks. That socket comes from the `ws` library, which is the type `MicdropServer` expects.
 
 ## Installation
 
@@ -14,23 +15,26 @@ Integrate Micdrop server with Fastify for robust web applications with voice cap
 npm install @micdrop/server @fastify/websocket fastify
 ```
 
-## Basic Setup
+Add the packages of the AI providers you call, here `@micdrop/openai`, `@micdrop/gladia` and `@micdrop/elevenlabs`.
+
+## Basic setup
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
 import { OpenaiAgent } from '@micdrop/openai'
 import { GladiaSTT } from '@micdrop/gladia'
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
+import fastifyWebsocket from '@fastify/websocket'
 import Fastify from 'fastify'
 
 const fastify = Fastify({ logger: true })
 
 // Register WebSocket support
-await fastify.register(import('@fastify/websocket'))
+await fastify.register(fastifyWebsocket)
 
 // WebSocket route for voice calls
 fastify.register(async function (fastify) {
-  fastify.get('/call', { websocket: true }, (connection, request) => {
+  fastify.get('/call', { websocket: true }, (socket) => {
     // Setup AI components
     const agent = new OpenaiAgent({
       apiKey: process.env.OPENAI_API_KEY || '',
@@ -47,7 +51,7 @@ fastify.register(async function (fastify) {
     })
 
     // Handle voice conversation
-    new MicdropServer(connection.socket, {
+    new MicdropServer(socket, {
       firstMessage: 'Hello from Fastify! How can I help you?',
       agent,
       stt,
@@ -65,3 +69,69 @@ try {
   process.exit(1)
 }
 ```
+
+The handler receives the socket as its first argument since version 10 of `@fastify/websocket`. Older versions passed a connection object, with the socket in `connection.socket`.
+
+On the browser side, point the client at the route path: `ws://localhost:8081/call` in development.
+
+## Authenticate the connection
+
+A browser cannot set headers on a WebSocket, so the Micdrop client sends its parameters as the first message of the call. Read them with `waitForParams`, check the token, and throw a `MicdropError` when the token is invalid. `handleError` closes the socket with the code of that error, which the client receives. It logs any other error and closes the socket with code 1011.
+
+```typescript
+import {
+  handleError,
+  MicdropError,
+  MicdropErrorCode,
+  MicdropServer,
+  waitForParams,
+} from '@micdrop/server'
+import { z } from 'zod'
+
+const paramsSchema = z.object({
+  token: z.string(),
+})
+
+fastify.get('/call', { websocket: true }, async (socket) => {
+  try {
+    const { token } = await waitForParams(socket, paramsSchema.parse)
+
+    const user = await verifyToken(token)
+    if (!user) {
+      throw new MicdropError(MicdropErrorCode.Unauthorized, 'Invalid token')
+    }
+
+    // Setup agent, STT and TTS for this user [...]
+
+    const server = new MicdropServer(socket, { agent, stt, tts })
+    server.on('End', (call) => {
+      fastify.log.info({ call }, `Call of ${user.id} ended`)
+    })
+  } catch (error) {
+    handleError(socket, error)
+  }
+})
+```
+
+`waitForParams` rejects with `BadRequest` when no parameters arrive within 3 seconds or when they fail validation. You can also [authenticate the call with a JWT or an API key](./auth-and-parameters).
+
+Keep the rest of the setup inside the same `try` block, so that `handleError` also [closes the call on a setup failure](./error-handling), such as a missing API key.
+
+## Handle errors
+
+`handleError` only sees the errors your route handler catches. For the errors that escape the handler, pass an `errorHandler` to the plugin, for example one that logs the error and closes the socket with code 1011, as `handleError` does for an unexpected error:
+
+```typescript
+await fastify.register(fastifyWebsocket, {
+  errorHandler(error, socket) {
+    fastify.log.error(error)
+    socket.close(1011)
+  },
+})
+```
+
+The client receives the close code, so it can tell a rejected token (4401) from a server failure (1011).
+
+## What travels over the socket
+
+The socket carries the user's audio while they speak, the assistant's audio, and JSON commands for the transcripts, the cancellations and the end of the call. To log or proxy that traffic, look up [each command of the Micdrop WebSocket protocol](./protocol).

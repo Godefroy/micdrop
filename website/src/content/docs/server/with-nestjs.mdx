@@ -1,12 +1,13 @@
 ---
-title: 'With NestJS'
+title: 'NestJS WebSocket Gateway for Voice AI'
+sidebarLabel: 'With NestJS'
 description: 'Integrate Micdrop server with NestJS for enterprise-grade voice applications with dependency injection and decorators.'
 order: 30
 ---
 
-# With NestJS
+# NestJS WebSocket Gateway for Voice AI
 
-Integrate Micdrop server with NestJS for enterprise-grade voice applications with dependency injection and decorators.
+A NestJS WebSocket gateway runs a Micdrop voice call in a few lines: switch the application to the `ws` adapter, declare a gateway on a path such as `/call`, and hand each new socket to `MicdropServer` in `handleConnection`. The gateway is an ordinary provider, so it receives your services through dependency injection. It listens on the same HTTP port as the rest of your API.
 
 ## Installation
 
@@ -14,27 +15,42 @@ Integrate Micdrop server with NestJS for enterprise-grade voice applications wit
 npm install @micdrop/server @nestjs/websockets @nestjs/platform-ws
 ```
 
-## Basic Gateway
+Add the packages of the AI providers you call, here `@micdrop/openai`, `@micdrop/gladia` and `@micdrop/elevenlabs`.
+
+## Use the ws adapter
+
+NestJS gateways run on Socket.IO by default. The Micdrop client speaks plain WebSocket and sends raw audio frames, so the gateway needs the `ws` adapter from `@nestjs/platform-ws`. Set it once in `main.ts`:
+
+```typescript
+// main.ts
+import { NestFactory } from '@nestjs/core'
+import { WsAdapter } from '@nestjs/platform-ws'
+import { AppModule } from './app.module'
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule)
+  app.useWebSocketAdapter(new WsAdapter(app))
+  await app.listen(8081)
+}
+bootstrap()
+```
+
+## Basic gateway
+
+Each connection is one call. `handleConnection` receives the socket of the `ws` library, which is the type `MicdropServer` expects.
 
 ```typescript
 // micdrop.gateway.ts
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-} from '@nestjs/websockets'
+import { OnGatewayConnection, WebSocketGateway } from '@nestjs/websockets'
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 import { GladiaSTT } from '@micdrop/gladia'
 import { OpenaiAgent } from '@micdrop/openai'
 import { MicdropServer } from '@micdrop/server'
-import { Server } from 'ws'
+import { WebSocket } from 'ws'
 
 @WebSocketGateway({ path: '/call' })
 export class MicdropGateway implements OnGatewayConnection {
-  @WebSocketServer()
-  server: Server
-
-  handleConnection(socket: Server) {
+  handleConnection(socket: WebSocket) {
     // Setup agent
     const agent = new OpenaiAgent({
       apiKey: process.env.OPENAI_API_KEY || '',
@@ -63,6 +79,8 @@ export class MicdropGateway implements OnGatewayConnection {
 }
 ```
 
+Register the gateway as a provider of a module:
+
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common'
@@ -73,3 +91,61 @@ import { MicdropGateway } from './micdrop.gateway'
 })
 export class AppModule {}
 ```
+
+On the browser side, point the client at the gateway path: `ws://localhost:8081/call` in development.
+
+## Authenticate the connection
+
+A browser cannot set headers on a WebSocket, so the Micdrop client sends its parameters as the first message of the call. Read them with `waitForParams`, check the token with a service injected into the gateway, and throw a `MicdropError` when the token is invalid. `handleError` closes the socket with the code of that error, which the client receives. It logs any other error and closes the socket with code 1011.
+
+```typescript
+// micdrop.gateway.ts
+import { OnGatewayConnection, WebSocketGateway } from '@nestjs/websockets'
+import {
+  handleError,
+  MicdropError,
+  MicdropErrorCode,
+  MicdropServer,
+  waitForParams,
+} from '@micdrop/server'
+import { WebSocket } from 'ws'
+import { z } from 'zod'
+import { AuthService } from './auth.service'
+
+const paramsSchema = z.object({
+  token: z.string(),
+})
+
+@WebSocketGateway({ path: '/call' })
+export class MicdropGateway implements OnGatewayConnection {
+  constructor(private readonly auth: AuthService) {}
+
+  async handleConnection(socket: WebSocket) {
+    try {
+      const { token } = await waitForParams(socket, paramsSchema.parse)
+
+      const user = await this.auth.verify(token)
+      if (!user) {
+        throw new MicdropError(MicdropErrorCode.Unauthorized, 'Invalid token')
+      }
+
+      // Setup agent, STT and TTS for this user [...]
+
+      const server = new MicdropServer(socket, { agent, stt, tts })
+      server.on('End', (call) => {
+        console.log(`Call of ${user.id} ended`, call)
+      })
+    } catch (error) {
+      handleError(socket, error)
+    }
+  }
+}
+```
+
+`waitForParams` rejects with `BadRequest` when no parameters arrive within 3 seconds or when they fail validation. You can also [authenticate the call with a JWT or an API key](./auth-and-parameters).
+
+Keep the rest of the setup inside the same `try` block, so that `handleError` also [closes the call on a setup failure](./error-handling), such as a missing API key.
+
+## What travels over the socket
+
+The socket carries the user's audio while they speak, the assistant's audio, and JSON commands for the transcripts, the cancellations and the end of the call. To log or proxy that traffic, look up [each command of the Micdrop WebSocket protocol](./protocol).
