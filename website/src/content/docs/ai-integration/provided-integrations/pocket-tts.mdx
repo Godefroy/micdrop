@@ -1,21 +1,27 @@
 ---
 title: 'Pocket TTS'
-description: 'Local text to speech with Kyutai Pocket TTS, cloning a voice on the CPU.'
+description: 'Run Kyutai Pocket TTS in Node, inside your voice agent server, and clone a voice from a few seconds of audio on the CPU.'
 order: 55
 ---
 
 # Pocket TTS
 
-Local text to speech for [@micdrop/server](../../server), running
-[Pocket TTS](https://github.com/kyutai-labs/pocket-tts) in your Node process
-through the [sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/tts/pocket.html)
-addon and ONNX Runtime.
+Pocket TTS is a 100 million parameter text to speech model from
+[Kyutai](https://kyutai.org/pocket-tts), a nonprofit AI lab in Paris. It runs
+on the CPU and clones a voice from a few seconds of reference audio. Kyutai
+publishes it as a Python package in its
+[GitHub repository](https://github.com/kyutai-labs/pocket-tts), under the MIT
+license. `@micdrop/pocket-tts` runs the same model in the Node process of
+[@micdrop/server](../../server), through the
+[sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/tts/pocket.html) addon and
+ONNX Runtime, with no Python to install.
 
-Pocket TTS is a 100 million parameter model from Kyutai, designed for the CPU,
-that takes its voice from a few seconds of reference audio instead of from a
-catalog. It generates about five times faster than real time and emits its audio
+The model generates about five times faster than real time and emits its audio
 while it is still writing the rest, which makes it the local voice with the
-shortest delay before the first word.
+shortest delay before the first word. On a MacBook Pro M2, its first sound
+arrives 250 to 430 ms after it receives a sentence. On the same machine, Piper
+takes about 390 ms and Kokoro 900 to 1300 ms, all three
+[measured side by side from Node](/blog/local-tts-node-kokoro-vs-piper).
 
 ## Installation
 
@@ -25,7 +31,8 @@ Install the package:
 npm install @micdrop/pocket-tts
 ```
 
-Download the weights, converted to ONNX by the sherpa-onnx project:
+Download the English model, which the sherpa-onnx project converted to ONNX
+from Kyutai's PyTorch weights:
 
 ```bash
 curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
@@ -41,6 +48,39 @@ quantized ones first when both files are there.
 <Callout type="tip">
   The addon ships prebuilt binaries for macOS, Linux and Windows on both Intel
   and ARM, so `npm install` is all it takes.
+</Callout>
+
+## Voice cloning
+
+A few seconds of someone speaking is enough for the model to answer in that
+voice, with no transcript of the sample and no training step. The archive ships
+three such recordings in its `test_wavs` folder, reachable by name through
+`BUNDLED_VOICES`.
+
+`bria` is forty seconds of a woman reading calmly. `loona` is a one second clip,
+about the shortest a reference can be. `frenchAccent` is a French speaker, so
+the recording gives the timbre and the accent while the words come from the text
+and stay English.
+
+To clone another voice, pass the path of a wav file instead:
+
+```typescript
+import { BUNDLED_VOICES, PocketTTS } from '@micdrop/pocket-tts'
+
+const tts = new PocketTTS({
+  modelDir: './sherpa-onnx-pocket-tts-int8-2026-01-26',
+  voice: './voices/my-voice.wav',
+})
+```
+
+Pocket TTS reads only the first `referenceLength` seconds, so a long recording
+costs nothing extra. The model reproduces the quality of the sample along with
+the voice, which makes a clean recording worth more than a long one.
+
+<Callout type="warning">
+  Clone a voice only with the consent of the person it belongs to. The [Kyutai
+  license](https://github.com/kyutai-labs/pocket-tts#prohibited-use) makes it a
+  condition of use, and impersonation is the main misuse of voice cloning.
 </Callout>
 
 ## Usage with MicdropServer
@@ -102,44 +142,14 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 | `provider`        | `string`  | `'cpu'`  | Execution provider passed to ONNX Runtime      |
 | `warmup`          | `boolean` | `true`   | Speaks one word at startup                     |
 
-## Voices
-
-A few seconds of someone speaking is enough for the model to answer in that
-voice, with no transcript of the sample and no training step. The archive ships
-three such recordings in its `test_wavs` folder, reachable by name through
-`BUNDLED_VOICES`, and any wav file works in their place.
-
-```typescript
-import { BUNDLED_VOICES, PocketTTS } from '@micdrop/pocket-tts'
-
-const tts = new PocketTTS({
-  modelDir: './sherpa-onnx-pocket-tts-int8-2026-01-26',
-  voice: './voices/my-voice.wav',
-})
-```
-
-`bria` is forty seconds of a woman reading calmly. `loona` is a one second clip,
-about the shortest a reference can be. `frenchAccent` is a French speaker, so
-the recording gives the timbre and the accent while the words come from the text
-and stay English.
-
-Pocket TTS reads only the first `referenceLength` seconds, so a long recording
-costs nothing extra. The model reproduces the quality of the sample along with
-the voice, which makes a clean recording worth more than a long one.
-
-<Callout type="warning">
-  Clone a voice only with the consent of the person it belongs to. The [Kyutai
-  license](https://github.com/kyutai-labs/pocket-tts#prohibited-use) makes it a
-  condition of use, and impersonation is the main misuse of voice cloning.
-</Callout>
-
 ## Languages
 
-Pocket TTS speaks English in this integration. Kyutai also publishes French,
-German, Spanish, Italian and Portuguese checkpoints, which are all still waiting
-for an ONNX conversion, so the addon loads the English model. Hand it French and
-you get fluent nonsense rather than an accent, since it reads every word with
-English phonemes. Use [Piper](./piper) for the other languages.
+Pocket TTS speaks English in this integration. Kyutai's Python package also
+covers French, German, Spanish, Italian, Portuguese and Dutch, with one
+checkpoint per language. The sherpa-onnx project publishes only the English
+checkpoint in ONNX, so that is the one the addon loads. Hand it French and you get fluent nonsense rather
+than an accent, since it reads every word with English phonemes. For French and
+the other languages in Node, use [Piper](./piper).
 
 ## Latency
 
@@ -156,6 +166,14 @@ Micdrop cuts the answer into sentences and hands each sentence over in chunks as
 the model writes it, so the user hears its opening words while the model is
 still generating its end. The generation stops between two chunks rather than at
 the end of the sentence, which makes an interruption immediate.
+
+## The model runs inside your Node server
+
+Kyutai's package starts its own HTTP server with `pocket-tts serve`, a Python
+process with PyTorch that listens on port 8000 and keeps the model in memory
+between requests. With Micdrop, the model loads inside the Node server that
+already handles your calls, so each sentence goes from the agent to the model
+without a network hop.
 
 ## Memory
 
