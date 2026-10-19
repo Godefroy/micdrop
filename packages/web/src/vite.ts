@@ -1,3 +1,6 @@
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
 
@@ -17,12 +20,18 @@ const VIRTUAL_SMART_TURN = '\0micdrop:smart-turn'
  * `@micdrop/smart-turn/web` gets the same runtime, its checkpoint stays where
  * `setSmartTurnOptions` points.
  *
+ * Silero only runs on WebAssembly, so the runtime is the WebAssembly build,
+ * half the size of the full one. Smart Turn runs on the graphics card when
+ * the browser offers it, so the full build is kept when `@micdrop/smart-turn`
+ * is installed. Every import of the runtime gets the same build, so an app
+ * never loads two of them.
+ *
  * @example
  * import { micdrop } from '@micdrop/web/vite'
  *
  * export default defineConfig({ plugins: [micdrop()] })
  */
-export function micdrop(): Plugin {
+export function micdrop(options: MicdropViteOptions = {}): Plugin {
   const sileroModel = fileURLToPath(
     new URL('../assets/silero_vad_v5.onnx', import.meta.url)
   ).replace(/\\/g, '/')
@@ -31,12 +40,28 @@ export function micdrop(): Plugin {
     name: 'micdrop',
     enforce: 'pre',
 
-    config() {
+    config(config) {
+      const webgpu =
+        options.webgpu ??
+        isInstalled(
+          '@micdrop/smart-turn',
+          path.resolve(config.root ?? process.cwd())
+        )
       return {
+        resolve: {
+          alias: webgpu
+            ? []
+            : [
+                {
+                  find: /^onnxruntime-web$/,
+                  replacement: 'onnxruntime-web/wasm',
+                },
+              ],
+        },
         optimizeDeps: {
           // Pre-bundling moves the runtime away from its WebAssembly files,
           // which it looks up relative to its own address
-          exclude: ['onnxruntime-web'],
+          exclude: ['onnxruntime-web', 'onnxruntime-web/wasm'],
         },
       }
     },
@@ -70,5 +95,24 @@ export function micdrop(): Plugin {
       }
       return null
     },
+  }
+}
+
+export interface MicdropViteOptions {
+  /**
+   * Keeps the build of the ONNX runtime that runs on the graphics card, twice
+   * the size of the WebAssembly one. Only Smart Turn uses it, so it defaults
+   * to whether `@micdrop/smart-turn` is installed.
+   */
+  webgpu?: boolean
+}
+
+/** Whether the app at `root` can import the package */
+function isInstalled(name: string, root: string): boolean {
+  try {
+    createRequire(path.join(root, 'package.json')).resolve(name)
+    return true
+  } catch {
+    return false
   }
 }

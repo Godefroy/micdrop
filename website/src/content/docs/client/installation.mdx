@@ -46,6 +46,14 @@ version you installed. Your code stays the same: keep importing
 `@micdrop/web/silero` and `@micdrop/smart-turn/web`, the plugin configures
 them. It works in development and in production builds, whatever your `base`.
 
+Silero only runs on WebAssembly, so the plugin picks the WebAssembly build of
+the ONNX runtime, about 14 MB where the full build weighs 28 MB.
+[Turn detection](/docs/client/turn-detection) runs on the graphics card when
+the browser offers it, so the full build is kept whenever `@micdrop/smart-turn`
+is installed. Every import of the runtime gets the same build, so your app
+never loads two of them. To choose yourself, for instance when your own code
+runs an ONNX model on WebGPU, pass `micdrop({ webgpu: true })`.
+
 With another bundler, serve the files from your own domain and point Micdrop at
 them with `setSileroOptions`, as shown in [Silero VAD](/docs/client/vad#silero-vad-human-speech-detection-with-ai).
 

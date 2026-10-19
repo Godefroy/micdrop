@@ -51,7 +51,7 @@ smartTurn.reset()
 
 Importing `@micdrop/smart-turn/web` is what brings the ONNX runtime into your bundle, so an application that never asks for turn detection never pays for it.
 
-In an app built with Vite, add the `micdrop()` plugin from `@micdrop/web/vite` (strongly recommended). Vite then emits the ONNX runtime WebAssembly with your app, where it would otherwise be fetched from unpkg when the model loads. The checkpoint still comes from Hugging Face unless `setSmartTurnOptions({ model })` points elsewhere.
+In an app built with Vite, add the `micdrop()` plugin from `@micdrop/web/vite` (strongly recommended). Vite then emits the ONNX runtime WebAssembly with your app, where it would otherwise be fetched from unpkg when the model loads. Because this package is installed, the plugin keeps the build of the runtime that runs on the graphics card. The checkpoint still comes from Hugging Face unless `setSmartTurnOptions({ model })` points elsewhere.
 
 ## Usage on a phone
 

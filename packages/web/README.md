@@ -44,6 +44,8 @@ export default defineConfig({
 
 It ships the Silero model with your app and lets Vite emit the ONNX runtime WebAssembly from the version you installed. Without it, both are fetched from jsDelivr and unpkg when a call starts, and a CDN outage, a firewall or an ad blocker keeps voice detection from starting.
 
+The runtime is the WebAssembly build, half the size of the full one, unless `@micdrop/smart-turn` is installed, which runs on the graphics card. `micdrop({ webgpu: true })` keeps the full build in any case.
+
 ## Usage
 
 ```ts
