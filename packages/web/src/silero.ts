@@ -8,11 +8,12 @@ let options: OnnxSileroOptions = {}
 
 /**
  * Says where the Silero model comes from, to serve it from your own domain
- * rather than from a CDN, or to hand over its bytes directly.
+ * rather than from a CDN, or to hand over its bytes directly. Merged into the
+ * options already set, so it keeps what the `@micdrop/web/vite` plugin chose.
  * @param next - Address or bytes of the model, and of the ONNX runtime
  */
 export function setSileroOptions(next: OnnxSileroOptions) {
-  options = next
+  options = { ...options, ...next }
 }
 
 // The ONNX runtime weighs more than the rest of Micdrop put together, so it

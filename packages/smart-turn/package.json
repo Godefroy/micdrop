@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/smart-turn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "\ud83d\udd90\ufe0f\ud83c\udfa4 Micdrop: semantic end of turn detection, in the browser or on a server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

@@ -28,6 +28,22 @@ npm install @micdrop/web
 
 That's it 🎉 No configuration, no asset to copy.
 
+### Vite plugin (strongly recommended)
+
+If your app is built with Vite and uses Silero VAD or turn detection, add the plugin:
+
+```ts
+// vite.config.ts
+import { micdrop } from '@micdrop/web/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [micdrop()],
+})
+```
+
+It ships the Silero model with your app and lets Vite emit the ONNX runtime WebAssembly from the version you installed. Without it, both are fetched from jsDelivr and unpkg when a call starts, and a CDN outage, a firewall or an ad blocker keeps voice detection from starting.
+
 ## Usage
 
 ```ts
@@ -43,7 +59,8 @@ Micdrop.on('StateChange', (state) => {
 ## Browser specifics
 
 - `import '@micdrop/web/silero'` adds the Silero voice detection, and only then does the ONNX runtime enter your bundle
-- `setSileroOptions({ model })` serves the Silero model from your own domain rather than from a CDN
+- `@micdrop/web/vite` bundles the Silero model and the ONNX runtime files with your app, see above
+- `setSileroOptions({ model, wasmPath })` serves the Silero model and the ONNX runtime from your own domain with another bundler
 - `getSpeakerOutput()` gives the node the assistant voice comes out of, to analyse or process it
 - `audioContext` is the shared `AudioContext`
 

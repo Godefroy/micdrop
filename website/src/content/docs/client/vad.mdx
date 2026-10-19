@@ -104,7 +104,7 @@ To use `SileroVAD` for speech detection:
 Micdrop.start({ vad: 'silero' })
 ```
 
-It runs the [Silero](https://github.com/snakers4/silero-vad) model on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) in a browser and on the native runtime on a phone. The model gives each window of sound a probability of speech. Micdrop decides from those probabilities when speech starts and stops, with the same algorithm as [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that runs Silero in the browser. The model is about two megabytes. Micdrop fetches it once, on the first call, from the `@ricky0123/vad-web` npm package on jsDelivr.
+It runs the [Silero](https://github.com/snakers4/silero-vad) model on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) in a browser and on the native runtime on a phone. The model gives each window of sound a probability of speech. Micdrop decides from those probabilities when speech starts and stops, with the same algorithm as [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that runs Silero in the browser. The model is about two megabytes, fetched once, on the first call.
 
 `SileroVAD` is more accurate than `VolumeVAD` and works better with low voice, since it hears the difference between a voice and a noise rather than measuring how loud the room is.
 
@@ -115,13 +115,28 @@ enters your bundle if you ask for it:
 import '@micdrop/web/silero'
 ```
 
-To serve the model from your own domain rather than from jsDelivr:
+<Callout type="warning">
+  In an app built with Vite, add the [Micdrop Vite plugin](/docs/client/installation#vite-plugin).
+  It ships the model and the ONNX runtime with your app. Without it, they are
+  fetched from jsDelivr and unpkg when a call starts, and voice detection fails
+  wherever those CDNs are unreachable or blocked.
+</Callout>
+
+With another bundler, serve the model and the files of the ONNX runtime
+(`ort-wasm-simd-threaded.jsep.mjs` and `ort-wasm-simd-threaded.jsep.wasm`, from
+`onnxruntime-web/dist`) from your own domain:
 
 ```typescript
 import { setSileroOptions } from '@micdrop/web/silero'
 
-setSileroOptions({ model: '/assets/silero_vad_v5.onnx' })
+setSileroOptions({
+  model: '/assets/silero_vad_v5.onnx',
+  wasmPath: '/assets/onnxruntime/',
+})
 ```
+
+`wasmPath: false` leaves the files to the ONNX runtime, which looks for them
+next to itself, for a bundler that emits them on its own.
 
 On a phone the model runs on the native runtime, which asks for one more package and a patch. See [Voice activity detection on React Native](/docs/react-native/vad).
 

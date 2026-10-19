@@ -14,8 +14,12 @@ const DEFAULT_WASM_PATH = 'https://unpkg.com/onnxruntime-web@1.23.2/dist/'
 export interface OnnxSileroOptions {
   /** Address of the Silero v5 model, or the bytes of it */
   model?: string | ArrayBuffer
-  /** Where the ONNX runtime loads its WebAssembly files from */
-  wasmPath?: string
+  /**
+   * Where the ONNX runtime loads its WebAssembly files from. `false` leaves
+   * them to the runtime, which finds them next to itself once a bundler has
+   * emitted them, as the `@micdrop/web/vite` plugin does.
+   */
+  wasmPath?: string | false
 }
 
 let loading: Promise<ArrayBuffer> | undefined
@@ -39,7 +43,10 @@ export class OnnxSileroModel implements SileroModel {
   async load() {
     if (this.session) return
 
-    ort.env.wasm.wasmPaths = this.options.wasmPath ?? DEFAULT_WASM_PATH
+    const wasmPath = this.options.wasmPath ?? DEFAULT_WASM_PATH
+    if (wasmPath !== false) {
+      ort.env.wasm.wasmPaths = wasmPath
+    }
 
     const source = this.options.model ?? DEFAULT_SILERO_MODEL_URL
     let bytes: ArrayBuffer

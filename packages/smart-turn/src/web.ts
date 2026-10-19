@@ -24,8 +24,12 @@ export interface OnnxSmartTurnOptions {
   model?: string | ArrayBuffer
   /** Which backend runs it, taken from what the browser offers by default */
   executionProvider?: 'webgpu' | 'wasm'
-  /** Where the ONNX runtime loads its WebAssembly files from */
-  wasmPath?: string
+  /**
+   * Where the ONNX runtime loads its WebAssembly files from. `false` leaves
+   * them to the runtime, which finds them next to itself once a bundler has
+   * emitted them, as the `@micdrop/web/vite` plugin does.
+   */
+  wasmPath?: string | false
 }
 
 /**
@@ -54,7 +58,10 @@ export class OnnxSmartTurnModel implements SmartTurnModel {
     if (this.session) return
 
     const provider = this.executionProvider
-    ort.env.wasm.wasmPaths = this.options.wasmPath ?? DEFAULT_WASM_PATH
+    const wasmPath = this.options.wasmPath ?? DEFAULT_WASM_PATH
+    if (wasmPath !== false) {
+      ort.env.wasm.wasmPaths = wasmPath
+    }
     ort.env.logLevel = 'error'
 
     const source =
@@ -98,11 +105,12 @@ let options: OnnxSmartTurnOptions = {}
 
 /**
  * Says where the model comes from, to serve it from your own domain rather
- * than from a public one, or to hand over its bytes directly.
+ * than from a public one, or to hand over its bytes directly. Merged into the
+ * options already set, so it keeps what the `@micdrop/web/vite` plugin chose.
  * @param next - Address or bytes of the model, and of the ONNX runtime
  */
 export function setSmartTurnOptions(next: OnnxSmartTurnOptions) {
-  options = next
+  options = { ...options, ...next }
 }
 
 // The ONNX runtime weighs more than the rest of this package put together, so

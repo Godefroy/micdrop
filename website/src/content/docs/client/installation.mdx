@@ -20,6 +20,35 @@ On a phone, install [`@micdrop/react-native`](../react-native/installation)
 instead. Both packages are built on `@micdrop/client`, which comes along on its
 own and which you never install directly.
 
+## Vite Plugin
+
+<Callout type="warning">
+  We strongly recommend this plugin for any app built with Vite that uses
+  [Silero VAD](/docs/client/vad) or [turn detection](/docs/client/turn-detection).
+  Without it, the model and the ONNX runtime are fetched from jsDelivr and unpkg
+  when a call starts, and a CDN outage, a company firewall or an ad blocker is
+  then enough to keep voice detection from starting.
+</Callout>
+
+```typescript
+// vite.config.ts
+import { micdrop } from '@micdrop/web/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [micdrop()],
+})
+```
+
+The plugin ships the Silero model with your app, and Vite emits the
+WebAssembly files of the ONNX runtime next to your other assets, from the very
+version you installed. Your code stays the same: keep importing
+`@micdrop/web/silero` and `@micdrop/smart-turn/web`, the plugin configures
+them. It works in development and in production builds, whatever your `base`.
+
+With another bundler, serve the files from your own domain and point Micdrop at
+them with `setSileroOptions`, as shown in [Silero VAD](/docs/client/vad#silero-vad-human-speech-detection-with-ai).
+
 ## Framework Integration
 
 ### Vanilla JavaScript/TypeScript
