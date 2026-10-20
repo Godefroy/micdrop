@@ -1,12 +1,13 @@
 ---
-title: 'ElevenLabs'
+title: 'ElevenLabs TTS in Node.js, with Eleven v4 Turbo'
+sidebarLabel: 'ElevenLabs'
 description: 'Stream ElevenLabs text to speech into a TypeScript voice pipeline with one npm package, Eleven v4 Turbo and its audio tags included.'
 order: 48
 ---
 
-# ElevenLabs
+# ElevenLabs TTS in Node.js, with Eleven v4 Turbo
 
-`@micdrop/elevenlabs` streams ElevenLabs text to speech for [@micdrop/server](../../server). It sends the agent's answer to ElevenLabs over a WebSocket as the agent writes it, so the audio comes back before the answer is finished. The package works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
+`@micdrop/elevenlabs` streams ElevenLabs text to speech from a Node.js server, for [@micdrop/server](../../server). It sends the agent's answer to ElevenLabs over a WebSocket as the agent writes it, so the audio comes back before the answer is finished. The package works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
 
 ElevenLabs and every other voice engine in Micdrop implement the same interface, so moving to an [ElevenLabs alternative](/blog/elevenlabs-alternatives-typescript) only means replacing `new ElevenLabsTTS(...)` with the other engine's class.
 
@@ -192,3 +193,37 @@ new MicdropServer(socket, {
 ### Finding Voice IDs
 
 You can find voice IDs in the ElevenLabs dashboard, by browsing the voices of your account, or through the public voice library API.
+
+## FAQ
+
+<FaqList>
+  <FaqItem question="Which ElevenLabs WebSocket supports Eleven v4?">
+    Eleven v4 and v4 Turbo stream only over the Text to Dialogue WebSocket,
+    `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input`, like Eleven v3.
+    The Text to Speech WebSocket refuses them with `unsupported_model`.
+    `ElevenLabsTTS` opens the Text to Dialogue one as soon as `modelId` names a
+    v3 or v4 model, and the [Eleven v4 Turbo test](/blog/eleven-v4-turbo-voice-agent)
+    details what changes in its protocol.
+  </FaqItem>
+  <FaqItem question="How do I stream ElevenLabs text to speech in Node.js?">
+    Install `@micdrop/elevenlabs`, create an `ElevenLabsTTS` with your API key
+    and a voice ID, and pass it to `MicdropServer` as `tts`. The server sends
+    each chunk of the LLM answer to ElevenLabs as it arrives and forwards the
+    audio to the browser. Outside Micdrop, call `tts.speak()` with a readable
+    stream of text and listen to the `Audio` event, as in the
+    [usage without MicdropServer](#usage-without-micdropserver).
+  </FaqItem>
+  <FaqItem question="Which ElevenLabs model has the lowest latency?">
+    Flash v2.5, at about 75 ms according to ElevenLabs, network excluded.
+    Eleven v4 Turbo follows at about 100 ms and performs audio tags, which
+    Flash reads out loud. Network included, a Micdrop test measured the first
+    audio of v4 Turbo at about 90 ms in a streamed voice agent. The
+    [table of models](#choosing-a-model) compares them all.
+  </FaqItem>
+  <FaqItem question="Does Flash v2.5 read audio tags out loud?">
+    Yes. Flash v2.5, Turbo v2.5 and Multilingual v2 speak a tag like
+    `[laughs]` as words, and only Eleven v3 and v4 perform it. When Flash
+    serves as a backup voice behind v4 Turbo, keep the tags in the system
+    prompt and [strip them from the text Flash receives](/blog/elevenlabs-audio-tags-voice-agent).
+  </FaqItem>
+</FaqList>
