@@ -52,8 +52,9 @@ from an occasional mispronounced word.
 
 Kokoro and Pocket TTS are limited to English by their tooling, not by their
 models. Kokoro includes Spanish, French, Italian, Japanese, Portuguese and
-Chinese voices, but `kokoro-js` converts all text to phonemes with English
-rules, so these voices speak other languages with an English accent. Pocket TTS
+Chinese voices, but `kokoro-js` accepts only its 28 American and British voice
+ids and throws an error on any other, such as `ff_siwis`. It also converts all
+text to phonemes with English rules. Pocket TTS
 has French, German, Spanish, Italian and Portuguese checkpoints, but they have
 no ONNX export yet, so the addon uses the English one.
 
@@ -62,7 +63,7 @@ no ONNX export yet, so the addon uses the English one.
 Each engine names its voices its own way:
 
 - [Kokoro](../provided-integrations/kokoro) takes shorthands such as
-  `americanFemale` or `britishFemale`, and any voice id the model ships.
+  `americanFemale` or `britishFemale`, and any of its 28 English voice ids.
 - [Piper](../provided-integrations/piper) names its voices after their language,
   their speaker and their quality, such as `fr_FR-siwis-medium`, and publishes
   samples to listen to before downloading one.
@@ -81,3 +82,15 @@ Two other voices were tested and left out, each with its own page. [Voxtral TTS
 machine, so playback stops in the middle of sentences. [AuK and
 AuK-Flash](./explorations/auk) are nine times slower than real time, even after
 fixing a memory issue in their inference code.
+
+## XTTS and Tortoise
+
+Two open source engines often compared with these four have no Micdrop
+integration. XTTS v2, from Coqui, clones a voice in seventeen languages, but its
+weights are under the Coqui Public Model License, which allows only
+non-commercial use. Coqui closed in early 2024, so no commercial license can be
+bought. Tortoise TTS is under Apache 2.0 and chains an autoregressive model with
+a diffusion decoder, which its author calls "insanely slow". On an RTX 3060 Ti,
+its fastest preset needs about 1.5 seconds of computation per second of speech,
+so playback would wait for generation. Both run in Python with PyTorch, in a
+separate process next to your app.
