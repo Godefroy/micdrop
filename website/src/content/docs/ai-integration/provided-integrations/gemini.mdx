@@ -1,5 +1,6 @@
 ---
-title: 'Gemini'
+title: 'Gemini TTS, Transcribe and agent in Node.js'
+sidebarLabel: 'Gemini'
 description: 'Run a voice agent on Google Gemini from your Node server: Gemini models as the agent, Gemini Transcribe and Gemini TTS, or Gemini Live for the whole call.'
 order: 48.5
 ---
@@ -158,9 +159,11 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 
 ## Gemini TTS (Text-to-Speech)
 
-Gives the answers a Gemini voice. The model reads a whole text at once, so the
-answer is cut into sentences, and the audio of each one is sent as the model
-streams it.
+Gemini TTS is the text to speech of the Gemini API: a Gemini model reads the
+text in one of 30 voices, in the tone your instructions ask for. `GeminiTTS`
+gives the answers of your agent that voice. The model reads a whole text at
+once, so the answer is cut into sentences, and the audio of each one is sent as
+the model streams it.
 
 ### Usage with MicdropServer
 
@@ -225,10 +228,55 @@ forbidden, then accepts the very same sentence on the next request.
 `GeminiTTS` asks again, up to `maxRetry` times, as long as no audio of that
 sentence has been played.
 
-`gemini-3.1-flash-tts-preview` starts speaking after about a second, then
-streams the rest slower than it is spoken, which leaves gaps in a long
-sentence. `gemini-2.5-flash-preview-tts` takes about three seconds and sends
-each sentence whole, so it plays without a gap.
+### Models
+
+Set the `model` option to one of the Gemini TTS models. Prices are those of
+the Gemini API per million tokens, text in and audio out.
+
+| Model                          | First audio of a sentence | Free tier | Paid, text / audio |
+| ------------------------------ | ------------------------- | --------- | ------------------ |
+| `gemini-2.5-flash-preview-tts` | About three seconds       | Yes       | $0.50 / $10        |
+| `gemini-2.5-pro-preview-tts`   | Not measured              | No        | $1 / $20           |
+| `gemini-3.1-flash-tts-preview` | About one second          | Yes       | $1 / $20           |
+
+`gemini-2.5-flash-preview-tts` is the default, because it sends each sentence
+whole and the call plays without a gap. `gemini-3.1-flash-tts-preview` starts
+speaking sooner, then streams the rest slower than it is spoken, which leaves
+gaps in a long sentence. `gemini-2.5-pro-preview-tts` is the larger model, and
+the Gemini API serves it to paid accounts only.
+
+Google plans to shut the three models down from November 17, 2026, and names
+`gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts` as their replacements.
+
+### Voices
+
+Gemini TTS offers 30 prebuilt voices. Pass the name as `voice`, and Google
+describes each one by its tone:
+
+| Voice      | Tone        | Voice      | Tone        | Voice         | Tone          |
+| ---------- | ----------- | ---------- | ----------- | ------------- | ------------- |
+| Zephyr     | Bright      | Autonoe    | Bright      | Alnilam       | Firm          |
+| Puck       | Upbeat      | Enceladus  | Breathy     | Schedar       | Even          |
+| Charon     | Informative | Iapetus    | Clear       | Gacrux        | Mature        |
+| Kore       | Firm        | Umbriel    | Easy-going  | Pulcherrima   | Forward       |
+| Fenrir     | Excitable   | Algieba    | Smooth      | Achird        | Friendly      |
+| Leda       | Youthful    | Despina    | Smooth      | Zubenelgenubi | Casual        |
+| Orus       | Firm        | Erinome    | Clear       | Vindemiatrix  | Gentle        |
+| Aoede      | Breezy      | Algenib    | Gravelly    | Sadachbia     | Lively        |
+| Callirrhoe | Easy-going  | Rasalgethi | Informative | Sadaltager    | Knowledgeable |
+| Laomedeia  | Upbeat      | Achernar   | Soft        | Sulafat       | Warm          |
+
+The `instructions` option directs the delivery in plain language.
+`GeminiTTS` writes it before each sentence, as in
+`Say in a calm and friendly tone: Your order has shipped.`, and the model reads
+the sentence in that tone. An instruction can set the emotion, the pace or an
+accent, such as `Speak slowly and warmly` or `Say it with a British accent`.
+It applies to the whole call, so keep it short and give the agent the
+personality through its prompt.
+
+Gemini TTS sits among the
+[ElevenLabs alternatives for a TypeScript voice agent](/blog/elevenlabs-alternatives-typescript),
+next to Cartesia, OpenAI and the models that run locally.
 
 ## Gemini Live
 
