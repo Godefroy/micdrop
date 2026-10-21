@@ -22,7 +22,7 @@ Both client packages are built on [`@micdrop/client`](./packages/client/README.m
 - [`@micdrop/elevenlabs`](./packages/elevenlabs/README.md) - ElevenLabs text-to-speech integration with streaming support
 - [`@micdrop/cartesia`](./packages/cartesia/README.md) - Cartesia text-to-speech integration for real-time voice synthesis
 - [`@micdrop/gradium`](./packages/gradium/README.md) - Gradium speech-to-text and text-to-speech integration with WebSocket streaming
-- [`@micdrop/mistral`](./packages/mistral/README.md) - Mistral AI agent and speech-to-text integration for conversation handling
+- [`@micdrop/mistral`](./packages/mistral/README.md) - Mistral AI agent, speech-to-text and text-to-speech integration (Voxtral 3)
 - [`@micdrop/gladia`](./packages/gladia/README.md) - Gladia speech-to-text integration for audio transcription
 - [`@micdrop/typesafe`](./packages/typesafe/README.md) - Jev, the System One model of TypeSafe, classifying each turn of the user into typed decisions in a few hundred ms
 

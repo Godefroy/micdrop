@@ -27,21 +27,24 @@ Micdrop intègre nativement trois fournisseurs français qui couvrent l'ensemble
 |-----------|-------------|------|
 | **Agent (LLM)** | [Mistral](/docs/ai-integration/provided-integrations/mistral) | Modèle de langage français de classe mondiale |
 | **Speech-to-Text** | [Gladia](/docs/ai-integration/provided-integrations/gladia), [Mistral](/docs/ai-integration/provided-integrations/mistral) ou [Gradium](/docs/ai-integration/provided-integrations/gradium) | Transcription en temps réel, plusieurs options françaises |
-| **Text-to-Speech** | [Gradium](/docs/ai-integration/provided-integrations/gradium) | Synthèse vocale naturelle avec des voix françaises |
+| **Text-to-Speech** | [Gradium](/docs/ai-integration/provided-integrations/gradium) ou [Mistral](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech) | Synthèse vocale naturelle avec des voix françaises |
 
 Ces trois entreprises sont françaises, hébergent leurs données en Europe et sont conformes au RGPD.
 
 Pour la transcription (STT), vous avez le choix entre trois fournisseurs souverains :
 
 - **Gladia** : plus de 90 langues, excellent en français, vocabulaire personnalisable
-- **Mistral** (Voxtral) : transcription temps réel via le même fournisseur que l'agent
+- **Mistral** (Voxtral 3) : transcription temps réel en plus de 40 langues, via le même fournisseur que l'agent
 - **Gradium** : transcription temps réel via le même fournisseur que la synthèse vocale
 
-Regrouper l'agent et la transcription chez Mistral, ou la transcription et la synthèse chez Gradium, permet de réduire le nombre de fournisseurs à gérer.
+Pour la synthèse vocale (TTS), deux fournisseurs souverains sont intégrés :
 
-Gradium est le seul fournisseur souverain de synthèse vocale intégré à Micdrop, et l'article [text-to-speech français souverain avec Gradium](/blog/gradium-text-to-speech-souverain) montre comment régler la voix et ce que coûte un secours qui reste en Europe les jours de panne.
+- **Gradium** : voix françaises en streaming, avec une région `eu`. L'article [text-to-speech français souverain avec Gradium](/blog/gradium-text-to-speech-souverain) montre comment régler la voix et ce que coûte un secours qui reste en Europe les jours de panne.
+- **Mistral** (Voxtral Speech 3) : plus de 35 langues, quatre voix françaises prêtes à l'emploi, clonage de voix à partir de quelques secondes d'audio, à 13 $ le million de caractères
 
-Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`, alors que `@micdrop/mistral` appelle son point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l’agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.
+Mistral peut ainsi tenir toute la chaîne avec une seule clé API : Voxtral 3 transcrit, un modèle Mistral répond et Voxtral Speech 3 parle. Gradium regroupe de son côté la transcription et la synthèse. Dans les deux cas, vous avez moins de fournisseurs à gérer.
+
+Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`. `MistralTTS` s'y connecte avec l'option `baseUrl`, alors que `MistralAgent` et `MistralSTT` appellent le point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l’agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.
 
 ## Mise en place
 
@@ -100,6 +103,22 @@ import { MistralSTT } from '@micdrop/mistral'
 
 const stt = new MistralSTT({
   apiKey: process.env.MISTRAL_API_KEY || '',
+})
+```
+
+:::
+
+:::tip Autre option de synthèse vocale
+
+`MistralTTS` (`@micdrop/mistral`) remplace `GradiumTTS` avec Voxtral Speech 3, sur le point de terminaison européen de Mistral :
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+
+const tts = new MistralTTS({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  voiceId: 'voice_592', // Marie, voix française
+  baseUrl: 'https://api.eu.mistral.ai',
 })
 ```
 

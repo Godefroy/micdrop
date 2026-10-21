@@ -64,7 +64,7 @@ See the [Agent interface](https://micdrop.dev/docs/ai-integration/custom-integra
 
 ## Mistral STT (Speech-to-Text)
 
-Real-time transcription with Voxtral.
+Real-time transcription with Voxtral Mini Transcribe Realtime 3.
 
 ### Usage with MicdropServer
 
@@ -74,7 +74,7 @@ import { MicdropServer } from '@micdrop/server'
 
 const stt = new MistralSTT({
   apiKey: process.env.MISTRAL_API_KEY || '',
-  model: 'voxtral-mini-transcribe-realtime-2602', // Default model
+  model: 'voxtral-mini-transcribe-realtime-3-0', // Default model
 })
 
 // Use with MicdropServer
@@ -109,6 +109,53 @@ stt.transcribe(createReadStream('speech.pcm'))
 | `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
 See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
+
+## Mistral TTS (Text-to-Speech)
+
+Text to speech with Voxtral Speech 3. The answer is cut into sentences, and the audio of each one is sent as Mistral streams it.
+
+### Usage with MicdropServer
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new MistralTTS({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  model: 'voxtral-mini-tts-3-0', // Default model
+  voiceId: 'voice_592', // Marie, French
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+import { Readable } from 'stream'
+
+const tts = new MistralTTS({ apiKey: process.env.MISTRAL_API_KEY || '' })
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+### Events
+
+| Event    | Payload    | Description                                                           |
+| -------- | ---------- | --------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.      |
+| `Failed` | `string[]` | Synthesis gave up after an error, with the text that stayed unspoken. |
+
+See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
 
 ## Documentation
 

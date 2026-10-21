@@ -181,6 +181,29 @@ new MicdropServer(socket, {
 </StackOption>
 
 <StackOption
+  label="One API key"
+  summary="Mistral with Voxtral 3"
+  stt="Voxtral 3"
+  agent="Mistral"
+  tts="Voxtral Speech 3"
+  note="Mistral transcribes, answers and speaks, so the whole call runs on one account and one bill. Voxtral Speech 3 reads more than 35 languages and clones a voice from a few seconds of audio."
+  href="/docs/ai-integration/provided-integrations/mistral"
+>
+
+```typescript wrap hangingIndent=2
+import { MicdropServer } from '@micdrop/server'
+import { MistralSTT, MistralAgent, MistralTTS } from '@micdrop/mistral'
+
+new MicdropServer(socket, {
+  stt: new MistralSTT({ apiKey: MISTRAL_KEY }),
+  agent: new MistralAgent({ apiKey: MISTRAL_KEY, systemPrompt }),
+  tts: new MistralTTS({ apiKey: MISTRAL_KEY, voiceId: 'voice_592' }),
+})
+```
+
+</StackOption>
+
+<StackOption
   label="On your own machine"
   summary="Whisper, Ollama and Kokoro"
   stt="Whisper"

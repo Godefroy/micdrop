@@ -3,6 +3,7 @@ title: 'Agent vocal IA souverain, la stack européenne en TypeScript'
 h1: 'Monter un agent vocal IA souverain avec Mistral, Gladia et Gradium'
 summary: 'Un agent vocal IA qui garde la voix en Europe, avec Mistral, Gladia et Gradium en API ou des modèles open source chez vous. Code TypeScript et limites.'
 date: 2026-10-04
+update: 2026-10-21
 author: godefroy
 image: ./thumbnail.jpg
 lang: fr
@@ -86,13 +87,13 @@ Avec Mistral, le lieu de l’inférence dépend du point de terminaison que vous
 
 L’autre grand acteur européen des LLM, l’allemand Aleph Alpha, a abandonné ses propres modèles pour une plateforme d’entreprise, puis l’éditeur canadien Cohere a annoncé en avril 2026 qu’il le rachetait.
 
-### La voix : Gradium, Voxtral TTS, Voxygen et KugelAudio
+### La voix : Gradium, Voxtral Speech 3, Voxygen et KugelAudio
 
 Gradium a levé 70 millions de dollars en décembre 2025, puis porté ce tour à 100 millions en juillet 2026. Son TTS propose des voix en français, anglais, allemand, espagnol et portugais, le clonage de voix et un streaming par WebSocket. Sa région européenne garde l’inférence et les données du compte dans l’Union. L’option sans conservation des données est disponible sur toutes les offres payantes depuis septembre 2026. Gradium a aussi ouvert un bureau dans la baie de San Francisco, donc vérifiez dans votre contrat quelle entité traite vos données.
 
 Vous pouvez [régler la synthèse vocale française de Gradium](/blog/gradium-text-to-speech-souverain) et lui prévoir un secours en cas de panne.
 
-Mistral vend aussi une synthèse vocale depuis mars 2026, Voxtral TTS, à 0,016 $ les 1 000 caractères et en neuf langues dont le français. Ses poids sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
+Mistral vend aussi une synthèse vocale. Voxtral Speech 3, sortie le 20 octobre 2026, coûte 13 $ le million de caractères, parle plus de 35 langues, propose quatre voix françaises prêtes à l’emploi et clone une voix à partir de quelques secondes d’audio. Micdrop l’intègre avec [`MistralTTS`](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech), qui se connecte au point de terminaison européen `api.eu.mistral.ai`. Les poids de la version précédente, Voxtral TTS, sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
 
 [Voxygen](https://www.voxygen.fr) est une entreprise issue d’Orange Labs, créée en 2011 près de Lannion. Elle fait de la synthèse vocale française et propose un déploiement sur site. [KugelAudio](https://huggingface.co/kugelaudio/kugelaudio-0-open), une équipe allemande liée au Hasso-Plattner-Institut, publie un modèle TTS ouvert de 7 milliards de paramètres sous licence MIT, dans 24 langues européennes.
 
@@ -192,7 +193,7 @@ const stt = new FallbackSTT({
 })
 ```
 
-La voix a moins d’options européennes que la transcription. Pour prendre Voxtral TTS en secours de Gradium, écrivez une [intégration TTS personnalisée](/docs/ai-integration/custom-integrations/custom-tts), puisque Micdrop ne l’intègre pas encore. Pendant une bascule de transcription, Micdrop [garde l’audio reçu et le rejoue au fournisseur suivant](/docs/ai-integration/fallback-strategies/stt-fallback).
+La voix a moins d’options européennes que la transcription. Pour prendre Voxtral Speech 3 en secours de Gradium, placez `MistralTTS` avec `baseUrl: 'https://api.eu.mistral.ai'` en second dans un [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback). Pendant une bascule de transcription, Micdrop [garde l’audio reçu et le rejoue au fournisseur suivant](/docs/ai-integration/fallback-strategies/stt-fallback).
 
 ## La voie open source, auto-hébergée sur votre serveur
 
@@ -310,8 +311,8 @@ Des fournisseurs européens rendent une architecture souveraine possible, mais l
   </FaqItem>
   <FaqItem question="Combien coûte un agent vocal IA européen ?">
     Chaque brique est facturée séparément. En octobre 2026, la transcription coûte 0,006 $ la
-    minute avec Voxtral Realtime ou 0,75 $ de l’heure avec Gladia sur l’offre Starter. Voxtral TTS
-    coûte 0,016 $ les 1 000 caractères. Gradium vend des crédits mensuels à partir de 13 $. Le LLM
+    minute avec Voxtral Realtime, 0,008 $ avec Voxtral 3 Realtime, ou 0,75 $ de l’heure avec Gladia sur
+    l’offre Starter. Voxtral Speech 3 coûte 13 $ le million de caractères. Gradium vend des crédits mensuels à partir de 13 $. Le LLM
     se paie au jeton, avec 10 % de plus sur le point de terminaison européen de Mistral. Micdrop est
     gratuit, sous licence MIT.
   </FaqItem>

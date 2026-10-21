@@ -3,6 +3,7 @@ title: 'Whisper Streaming and Real-Time Transcription in TypeScript'
 h1: 'Real-time transcription over a WebSocket, in TypeScript'
 summary: 'How microphone audio becomes live text over one WebSocket in Node: voice detection in the browser, 16 kHz PCM chunks, five messages and a streaming STT.'
 date: 2026-10-06
+update: 2026-10-21
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -145,7 +146,7 @@ Hosted streaming models transcribe while the audio arrives, so the final text is
 | --- | --- | --- | --- |
 | OpenAI, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-live-transcribe` | Base64 PCM at 24 kHz in JSON | `input_audio_buffer.commit`, with server detection off | Deltas while speaking, then `conversation.item.input_audio_transcription.completed` |
 | Gemini, `gemini-3.5-transcribe-live` | Base64 PCM at 16 kHz in JSON | `activityEnd`, with automatic detection off | Pieces of `inputTranscription` as the user speaks |
-| Mistral, `voxtral-mini-transcribe-realtime-2602` | Base64 PCM at 16 kHz in JSON | `input_audio.flush`, which keeps the session open | `transcription.text.delta`, then `transcription.done` |
+| Mistral, `voxtral-mini-transcribe-realtime-3-0` | Base64 PCM at 16 kHz in JSON | `input_audio.flush`, which keeps the session open | `transcription.text.delta`, then `transcription.done` |
 | Gladia | Raw binary PCM at 16 kHz | Two seconds of silence | `transcript` messages, the last one marked `is_final` |
 
 Mistral also accepts `input_audio.end`, which closes the whole session, so the next sentence would have to open a new connection. A flush ends the sentence and keeps the connection for the next one. Gladia has no end of sentence message, so the integration sends silence to make it close the sentence.

@@ -1,6 +1,6 @@
 ---
 title: 'Mistral'
-description: 'Drive a voice agent with Mistral models in your Node server, then transcribe the user with Voxtral realtime, both from the same TypeScript integration.'
+description: 'Drive a voice agent with Mistral models in your Node server, transcribe the user with Voxtral 3 realtime and speak the answers with Voxtral Speech 3, all from the same TypeScript integration.'
 order: 52
 ---
 
@@ -8,7 +8,7 @@ order: 52
 
 Mistral AI implementation for [@micdrop/server](../../server).
 
-This package provides an AI agent implementation using Mistral AI's API and a real-time speech-to-text implementation using Mistral's Voxtral realtime transcription.
+This package provides an AI agent on Mistral AI's API, real-time speech to text with Voxtral Mini Transcribe Realtime 3, and text to speech with Voxtral Speech 3. The agent, the transcription and the voice can all run on one Mistral account.
 
 ## Installation
 
@@ -124,7 +124,7 @@ The Mistral Agent supports advanced features for improved conversation handling:
 
 ## Mistral STT (Speech-to-Text)
 
-Real-time transcription using Mistral's Voxtral realtime models.
+Real-time transcription with Voxtral Mini Transcribe Realtime 3, in more than 40 languages, with a final transcript in under half a second. It costs $0.008 per minute.
 
 Voxtral also runs on its own. With `stt` as the server's only option, you get [a dictation tool](../../server/dictation) that transcribes each sentence and stays quiet.
 
@@ -176,7 +176,7 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 | Option                   | Type                   | Default                                   | Description                                            |
 | ------------------------ | ---------------------- | ----------------------------------------- | ------------------------------------------------------ |
 | `apiKey`                 | `string`               | Required                                  | Your Mistral AI API key                                |
-| `model`                  | `string`               | `'voxtral-mini-transcribe-realtime-2602'` | Realtime transcription model to use                    |
+| `model`                  | `string`               | `'voxtral-mini-transcribe-realtime-3-0'`  | Realtime transcription model to use                    |
 | `encoding`               | `MistralAudioEncoding` | `'pcm_s16le'`                             | Audio encoding of the incoming stream                  |
 | `targetStreamingDelayMs` | `number`               | Optional                                  | Target streaming delay in milliseconds                 |
 | `connectionTimeout`      | `number`               | `5000`                                    | Timeout in milliseconds for WebSocket connection       |
@@ -185,3 +185,87 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 | `maxRetry`               | `number`               | `3`                                       | Maximum number of reconnection attempts before failing |
 
 The Micdrop client streams 16kHz PCM16 mono audio, which matches Voxtral's default input format, so no resampling is required.
+
+The previous model, `voxtral-mini-transcribe-realtime-2602`, still works through the `model` option.
+
+## Mistral TTS (Text-to-Speech)
+
+Voxtral Speech 3 reads the answers of your agent in more than 35 languages, with preset voices or a voice cloned from a few seconds of audio. The speech endpoint reads a whole text at once, so `MistralTTS` cuts the answer into sentences and sends the audio of each one as Mistral streams it. A sentence starts playing in about half a second and is generated several times faster than it is spoken, so the next one is ready before the current one ends.
+
+### Usage with MicdropServer
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new MistralTTS({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  model: 'voxtral-mini-tts-3-0', // Default model
+  voiceId: 'voice_592', // Marie, French
+})
+
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+import { Readable } from 'stream'
+
+const tts = new MistralTTS({ apiKey: process.env.MISTRAL_API_KEY || '' })
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+### Events
+
+| Event    | Payload    | Description                                                           |
+| -------- | ---------- | --------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.      |
+| `Failed` | `string[]` | Synthesis gave up after an error, with the text that stayed unspoken. |
+
+See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
+
+### Options
+
+| Option     | Type                      | Default                    | Description                                                         |
+| ---------- | ------------------------- | -------------------------- | ------------------------------------------------------------------- |
+| `apiKey`   | `string`                  | Required                   | Your Mistral AI API key                                             |
+| `model`    | `string`                  | `'voxtral-mini-tts-3-0'`   | Speech model to use                                                 |
+| `voiceId`  | `string`                  | `'voice_3150'`             | Preset voice, or the id of a voice saved in your Mistral account    |
+| `refAudio` | `string`                  | `undefined`                | A few seconds of speech to clone, base64 encoded, used over voiceId |
+| `settings` | `Record<string, unknown>` | `undefined`                | Extra fields of the request body, such as `phoneme_hints`           |
+| `baseUrl`  | `string`                  | `'https://api.mistral.ai'` | API address, such as `https://api.eu.mistral.ai` to stay in Europe  |
+
+Voxtral Speech 3 costs $13 per million characters.
+
+### Voices
+
+Each preset voice has a native language and reads the others too. The full list comes from `GET /v1/audio/voices` on the Mistral API.
+
+| Voice        | Name     | Language |
+| ------------ | -------- | -------- |
+| `voice_3150` | James    | en-US    |
+| `voice_478`  | Sheila   | en-US    |
+| `voice_3149` | Hugo     | en-GB    |
+| `voice_590`  | Harriet  | en-GB    |
+| `voice_592`  | Marie    | French   |
+| `voice_3141` | Camille  | French   |
+| `voice_3137` | Manon    | French   |
+| `voice_589`  | Lea      | French   |
+| `voice_481`  | Heidi    | German   |
+| `voice_483`  | Elena    | Spanish  |
+| `voice_482`  | Lorenzo  | Italian  |
+| `voice_480`  | Gabriela | Portuguese |
+
+Mistral also offers voices in Arabic, Catalan, Hindi, Japanese, Korean, Dutch, Polish, Russian, Chinese and more. The Voxtral 2 voices, such as `gb_jane_neutral` or `fr_marie_happy`, still work.
+
+The text can carry emotion and pace tags such as `[emotion=...]`, which Voxtral Speech 3 performs rather than reads out. Ask your agent to write them in its system prompt.

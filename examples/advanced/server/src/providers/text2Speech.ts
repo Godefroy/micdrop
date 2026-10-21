@@ -2,6 +2,7 @@ import { CartesiaLanguage, CartesiaTTS } from '@micdrop/cartesia'
 import { ElevenLabsTTS, ElevenLabsTTSOptions } from '@micdrop/elevenlabs'
 import { GeminiTTS } from '@micdrop/gemini'
 import { GradiumTTS } from '@micdrop/gradium'
+import { MistralTTS } from '@micdrop/mistral'
 import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
 import { OpenaiTTS } from '@micdrop/openai'
 import { PiperTTS } from '@micdrop/piper'
@@ -134,6 +135,33 @@ const text2speech: ProviderRegistry<TTS> = {
       new GradiumTTS({
         apiKey: process.env.GRADIUM_API_KEY || '',
         voiceId: process.env.GRADIUM_VOICE_ID || '',
+      }),
+  },
+
+  // Voxtral 3 voices read every supported language, so the select offers
+  // them all whatever the language of the call
+  mistral: {
+    label: 'Mistral',
+    requiredEnv: ['MISTRAL_API_KEY'],
+    models: [
+      { id: 'voice_3150', label: 'James (en-US)' },
+      { id: 'voice_478', label: 'Sheila (en-US)' },
+      { id: 'voice_3149', label: 'Hugo (en-GB)' },
+      { id: 'voice_590', label: 'Harriet (en-GB)' },
+      { id: 'voice_592', label: 'Marie (fr)' },
+      { id: 'voice_3141', label: 'Camille (fr)' },
+      { id: 'voice_3137', label: 'Manon (fr)' },
+      { id: 'voice_589', label: 'Lea (fr)' },
+      { id: 'voice_481', label: 'Heidi (de)' },
+      { id: 'voice_483', label: 'Elena (es)' },
+      { id: 'voice_482', label: 'Lorenzo (it)' },
+      { id: 'voice_480', label: 'Gabriela (pt)' },
+    ],
+    defaultModel: 'voice_3150',
+    create: ({ model }) =>
+      new MistralTTS({
+        apiKey: process.env.MISTRAL_API_KEY || '',
+        voiceId: model,
       }),
   },
 

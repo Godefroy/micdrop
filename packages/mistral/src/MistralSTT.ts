@@ -5,7 +5,7 @@ import WebSocket from 'ws'
 /**
  * Mistral Real-time STT (Voxtral)
  *
- * @see https://docs.mistral.ai/studio-api/audio/speech_to_text/realtime_transcription
+ * @see https://docs.mistral.ai/studio/audio/speech-to-text/overview
  */
 
 export type MistralAudioEncoding =
@@ -27,7 +27,7 @@ export interface MistralSTTOptions {
   maxRetry?: number
 }
 
-const DEFAULT_MODEL = 'voxtral-mini-transcribe-realtime-2602'
+const DEFAULT_MODEL = 'voxtral-mini-transcribe-realtime-3-0'
 const DEFAULT_ENCODING: MistralAudioEncoding = 'pcm_s16le'
 const SAMPLE_RATE = 16000 // Rate of the incoming audio (Micdrop client)
 const DEFAULT_CONNECTION_TIMEOUT = 5000

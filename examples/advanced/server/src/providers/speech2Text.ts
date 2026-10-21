@@ -54,15 +54,15 @@ const speech2Text: ProviderRegistry<STT> = {
     // Only the realtime Voxtral models answer on the streaming endpoint
     models: [
       {
-        id: 'voxtral-mini-transcribe-realtime-2602',
-        label: 'voxtral-mini-transcribe-realtime',
+        id: 'voxtral-mini-transcribe-realtime-3-0',
+        label: 'voxtral-mini-transcribe-realtime-3',
       },
       {
-        id: 'voxtral-mini-realtime-latest',
-        label: 'voxtral-mini-realtime',
+        id: 'voxtral-mini-transcribe-realtime-2602',
+        label: 'voxtral-mini-transcribe-realtime-2602',
       },
     ],
-    defaultModel: 'voxtral-mini-transcribe-realtime-2602',
+    defaultModel: 'voxtral-mini-transcribe-realtime-3-0',
     create: ({ model }) =>
       new MistralSTT({
         apiKey: process.env.MISTRAL_API_KEY || '',
