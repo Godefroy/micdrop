@@ -8,6 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Don't co-author git commits with Claude.
 - Never commit or push without explicit user approval, even for small follow-up fixes. One approval covers one commit, not the whole session.
 - Before committing changes to a package in `packages/`, propose a version bump for each modified package. A pushed version bump publishes it to npm (`.github/workflows/publish.yml`).
+- A new package in `packages/` can't be published by the workflow until it has a trusted publisher. Give the user these commands to run before pushing its first version:
+  ```bash
+  cd packages/<name> && pnpm install && pnpm build
+  npm login
+  npm publish --access public
+  npm trust github @micdrop/<name> --repo Godefroy/micdrop --file publish.yml --allow-publish
+  ```
 - Commit on the current branch. When already on `main` and the user hasn't asked for a branch, commit directly on `main` (don't auto-create a branch).
 - Never use Claude's user/project memory. When asked to remember something, add a minimal instruction here in `CLAUDE.md` (or in the relevant skill under `.claude/skills/`).
 - Instruction files (`CLAUDE.md`, skills) hold instructions, not history. No account of what went wrong, no commit SHAs, no "the mistake made". Write the rule, keep it short and actionable.
