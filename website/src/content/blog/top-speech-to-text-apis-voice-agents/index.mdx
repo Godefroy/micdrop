@@ -3,6 +3,7 @@ title: 'Best Speech to Text APIs for Voice Agents in 2026'
 h1: 'The best speech to text APIs for voice agents in 2026'
 summary: 'Ten streaming speech to text APIs ranked for voice agents on accuracy, time to final transcript, turn detection, languages and price per minute.'
 date: 2026-10-16
+update: 2026-10-22
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -22,15 +23,15 @@ takeaways:
   - 'A voice agent waits for the final transcript of each sentence before it answers, so the time between the last word and that transcript matters more than how fast partial words appear.'
   - 'AssemblyAI Universal-3.6 Pro had the lowest error rate on the Coval benchmark in October 2026, at 2.1%, with its final transcript 134 ms after the end of speech. Deepgram returned final transcripts fastest on the same benchmark, 85 to 98 ms after the end of speech.'
   - 'Streaming transcription costs from $0.002 a minute on Soniox to $0.017 a minute on OpenAI gpt-live-transcribe in 2026.'
-  - 'Most streaming APIs now detect the end of the user''s turn themselves. Mistral Voxtral Realtime and OpenAI gpt-live-transcribe still expect your code to say when the sentence is over.'
-  - 'Mistral is the only ranked provider that publishes its streaming model as open weights, so you can run Voxtral Realtime on your own GPU under Apache 2.0.'
+  - 'Most streaming APIs now detect the end of the user''s turn themselves, Mistral Voxtral Realtime 3 among them when you turn it on. OpenAI gpt-live-transcribe still expects your code to say when the sentence is over.'
+  - 'Mistral is the only ranked provider that publishes a streaming model as open weights, so you can run the first Voxtral Realtime on your own GPU under Apache 2.0.'
 ---
 
 The best speech to text API for a voice agent in 2026 is AssemblyAI Universal-3.6 Pro when accuracy comes first, and Deepgram Flux when every millisecond counts. AssemblyAI had the lowest error rate on the Coval benchmark in October 2026, while Deepgram returned its final transcripts fastest there. ElevenLabs Scribe v2 Realtime, Soniox, Gemini 3.5 Transcribe and Speechmatics complete the top six. This ranking compares ten streaming APIs on what a voice agent needs from transcription: the time to the final transcript, accuracy, built-in turn detection, languages, price per minute and where the audio is processed.
 
 Micdrop publishes this ranking. [Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. It does no transcription itself, so it has no place in the ranking. It ships ready integrations for OpenAI, Gemini, Mistral, Gladia and Gradium, plus one interface for plugging in any other API. Coval measured a higher error rate for Gladia than for every ranked API it covers. Gradium returned its final transcript later than every ranked API in the Pipecat benchmark. Both stay outside the top ten.
 
-Prices come from each vendor's pricing page. Accuracy and speed figures come from independent benchmarks, unless the text marks them as the vendor's own. All figures were collected on 16 October 2026. Providers release a new model every few weeks, so check the numbers again before you commit.
+Prices come from each vendor's pricing page. Accuracy and speed figures come from independent benchmarks, unless the text marks them as the vendor's own. All figures were collected on 16 October 2026, and on 22 October for Mistral. Providers release a new model every few weeks, so check the numbers again before you commit.
 
 ## How the APIs were ranked
 
@@ -59,7 +60,7 @@ An API enters the ranking once it is generally available and documents how it ha
 | **xAI** Grok Voice Transcribe 2.0 | $0.0033 | Not listed | 2.7%, 490 ms | 38+, switching | Yes | None published |
 | **Cartesia** Ink-2 | $0.0065 on Scale | Not listed | Not verified | 5 | Yes | None published |
 | **OpenAI** gpt-4o-transcribe, gpt-live-transcribe | $0.003 to $0.017 | 3.7%, 786 ms (gpt-4o-transcribe) | Not listed for these models | Many, set by a hint | gpt-4o-transcribe only | EU endpoint, 10% extra |
-| **Mistral** Voxtral Realtime | $0.006 | 5.3%, 418 ms | 5.3% | 13 | No | Default, or self-hosted |
+| **Mistral** Voxtral Realtime 3 | $0.008 | 5.3%, 418 ms (first version) | 5.3% (first version) | 40+ | Yes, when turned on | Default, or self-hosted |
 
 The two benchmarks measure on different audio, so compare APIs within one column only. Across every model Coval tracks, the median time to the final transcript is 195 ms.
 
@@ -155,15 +156,15 @@ Cartesia bills [three credits per second](https://cartesia.ai/pricing), about $0
 
 OpenAI processes data in Europe through `eu.api.openai.com`, at 10% extra for models released since March 2026. OpenAI sells no self-hosted option. Its realtime models return no speaker labels or timestamps.
 
-### 10. Mistral Voxtral Realtime
+### 10. Mistral Voxtral Realtime 3
 
-![Screenshot of the Mistral announcement of Voxtral Transcribe 2, including Voxtral Realtime under the Apache 2.0 license](./mistral.png)
+![Screenshot of the Mistral announcement of Voxtral 3, published on 20 October 2026](./mistral.png)
 
-[Mistral](https://mistral.ai/news/voxtral-transcribe-2) released Voxtral Realtime on 4 February 2026 with its weights under Apache 2.0. It is the only ranked model you can download and run on your own GPU, through vLLM with an OpenAI-compatible endpoint. The 4 billion parameter model fits on a single GPU.
+[Mistral](https://mistral.ai/news/voxtral-3) released Voxtral Mini Transcribe Realtime 3 on 20 October 2026, as `voxtral-mini-transcribe-realtime-3-0`. It recognises more than 40 languages in streaming, against 13 for the first version, although the benchmark Mistral publishes covers 35. Mistral announces a final transcript in under 500 ms. [We measured a median of about 590 ms](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral) on 22 October. No independent benchmark lists version 3 yet.
 
-The hosted API costs [$0.006 a minute](https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-26-02). A `target_streaming_delay_ms` setting sets how long the model waits before writing a word, from under 200 ms to 2.4 seconds. Mistral reports that at 480 ms the error rate stays within one or two points of its file model. Coval measures 5.3% WER and 418 ms to the final transcript. Artificial Analysis also gives 5.3%.
+The hosted API costs [$0.008 a minute](https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0). A streaming delay setting sets how long the model waits before writing a word, from 80 ms to 2.4 seconds, and Mistral charts its error rate on FLEURS at 240, 480, 960 and 2,400 ms. Version 3 detects the end of the turn from sound and meaning when you turn it on. It can also label speakers in streaming, in a session without turn detection, and accepts context biasing. The [Micdrop Mistral integration](/docs/ai-integration/provided-integrations/mistral) uses version 3 by default.
 
-Voxtral Realtime recognises 13 languages, among them English, French, German, Spanish, Arabic, Hindi and Chinese. It detects no end of turn, so your code decides when a sentence is over. Only the file model accepts context biasing. Mistral, based in Paris, processes data in Europe by default and sells on-premises deployment.
+Mistral publishes the weights of the first version, `voxtral-mini-transcribe-realtime-2602`, under Apache 2.0. It is the only ranked model you can download and run on your own GPU, through vLLM with an OpenAI-compatible endpoint, and its 4 billion parameters fit on a single GPU. Coval measures that first version at 5.3% WER and 418 ms to the final transcript, and Artificial Analysis also at 5.3%. Version 3 runs on Mistral's API, or on your servers through a deal with Mistral. Mistral, based in Paris, processes data in Europe by default.
 
 ## Strong newcomers outside the ranking
 
@@ -183,11 +184,11 @@ Open source engines such as Whisper, Moonshine and Kyutai STT can [transcribe sp
 
 ## How to choose between them
 
-Start from the language of your calls. An English agent can use any ranked API. When callers switch language mid-call, pick AssemblyAI, Soniox, Gemini, ElevenLabs or xAI, or Deepgram within its 10 switching languages. Cartesia covers five languages and Mistral 13.
+Start from the language of your calls. An English agent can use any ranked API. When callers switch language mid-call, pick AssemblyAI, Soniox, Gemini, ElevenLabs or xAI, or Deepgram within its 10 switching languages. Cartesia covers five languages and Mistral more than 40.
 
 Then look at the time to the final transcript, measured from where your server runs. Deepgram, ElevenLabs, AssemblyAI and Soniox return it in about 150 ms or less, against 786 ms for OpenAI gpt-4o-transcribe. In [Micdrop](/docs/ai-integration), the voice detection in the browser closes the turn and tells the API the sentence is complete, so the delay that counts is the one after that signal. On 28 September 2026 we measured that delay for two of the integrated providers, with [Gemini at about 320 ms median and Gladia at about 480 ms](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral). Gemini's figure matches Coval's 321 ms. Gladia came out faster in our test than on Coval, which gives 556 ms.
 
-Built-in turn detection saves code when your stack has none. Deepgram Flux, AssemblyAI and Soniox decide the end of turn from meaning as well as silence. Micdrop already closes the turn in the browser and adds [semantic end of turn detection](/docs/server/semantic-turn-detection) on the server, so a model without turn detection, such as Voxtral, needs no extra code in Micdrop.
+Built-in turn detection saves code when your stack has none. Deepgram Flux, AssemblyAI and Soniox decide the end of turn from meaning as well as silence. Micdrop already closes the turn in the browser and adds [semantic end of turn detection](/docs/server/semantic-turn-detection) on the server, so a model without turn detection, such as gpt-live-transcribe, needs no extra code in Micdrop.
 
 Price matters at volume. A thousand hours of calls costs $120 on Soniox, $200 on xAI, $300 on Speechmatics, $390 on ElevenLabs, $450 on AssemblyAI and $1,020 on gpt-live-transcribe.
 
@@ -205,7 +206,7 @@ Plan for outages too, since a voice agent stops answering when its transcription
     On Artificial Analysis, Soniox returns the final transcript 54 ms after the end of speech and Deepgram Nova-3 60 ms. On Coval, Deepgram Nova-3 measures 85 ms, Flux 98 ms and ElevenLabs Scribe v2 Realtime 121 ms. The network distance between your server and the provider adds to these figures, so measure from where your agent runs.
   </FaqItem>
   <FaqItem question="What is the cheapest streaming speech to text API?">
-    Soniox costs $0.12 an hour of streamed audio, about $0.002 a minute. OpenAI gpt-4o-mini-transcribe and Meta Muse Voice Transcribe cost about $0.18 an hour, and xAI Grok Voice Transcribe 2.0 $0.20. Running Whisper or Voxtral Realtime on your own hardware removes the per-minute bill but adds the cost of the machine.
+    Soniox costs $0.12 an hour of streamed audio, about $0.002 a minute. OpenAI gpt-4o-mini-transcribe and Meta Muse Voice Transcribe cost about $0.18 an hour, and xAI Grok Voice Transcribe 2.0 $0.20. Running Whisper or the first Voxtral Realtime on your own hardware removes the per-minute bill but adds the cost of the machine.
   </FaqItem>
   <FaqItem question="Who does Deepgram compete with?">
     Deepgram competes with AssemblyAI, ElevenLabs Scribe, Soniox, Speechmatics, Google Gemini Transcribe, OpenAI's transcription models, Cartesia Ink and xAI Grok Voice Transcribe for streaming speech to text. AssemblyAI is more accurate on the Coval benchmark, Soniox is cheaper, and Speechmatics has more deployment options. Deepgram remains the fastest to the final transcript on Coval.
@@ -214,10 +215,10 @@ Plan for outages too, since a voice agent stops answering when its transcription
     AssemblyAI, Deepgram and Speechmatics run EU endpoints. Soniox opens an EU region on request. OpenAI processes data in Europe at 10% extra on recent models. Google offers an EU endpoint for Gemini 3.5 Transcribe on its Gemini Enterprise Agent Platform. Mistral processes data in Europe by default. Outside the ranking, Gladia can store data in Europe and Gradium has an EU endpoint. ElevenLabs reserves EU residency for Enterprise plans. xAI and Cartesia publish no European region.
   </FaqItem>
   <FaqItem question="Can I self-host a streaming speech to text model?">
-    Mistral publishes Voxtral Realtime under Apache 2.0, so you can run it on your own GPU through vLLM. Speechmatics, Deepgram, AssemblyAI and Cartesia sell self-hosted or on-premises deployments, AssemblyAI from a $20,000 commitment.
+    Mistral publishes its first Voxtral Realtime model under Apache 2.0, so you can run it on your own GPU through vLLM. Voxtral Realtime 3 runs on your servers through a deal with Mistral. Speechmatics, Deepgram, AssemblyAI and Cartesia sell self-hosted or on-premises deployments, AssemblyAI from a $20,000 commitment.
   </FaqItem>
   <FaqItem question="Do I need end of turn detection in the speech to text API?">
-    A voice agent needs end of turn detection somewhere, but it can come from the API or from your own code. Deepgram Flux, AssemblyAI, Soniox, ElevenLabs, Cartesia and xAI detect it themselves. Mistral Voxtral Realtime and OpenAI gpt-live-transcribe expect your code to say when the sentence is over, for instance with voice activity detection in the browser.
+    A voice agent needs end of turn detection somewhere, but it can come from the API or from your own code. Deepgram Flux, AssemblyAI, Soniox, ElevenLabs, Cartesia and xAI detect it themselves, and Mistral Voxtral Realtime 3 when you turn it on. OpenAI gpt-live-transcribe expects your code to say when the sentence is over, for instance with voice activity detection in the browser.
   </FaqItem>
   <FaqItem question="Is Whisper good enough for a real-time voice agent?">
     Whisper reads up to thirty seconds of audio at a time and was built for files, so streaming it means re-running it on a growing buffer or transcribing each sentence after it ends. OpenAI's gpt-4o-transcribe costs $0.006 a minute, the price of Whisper on OpenAI's API, and streams over the Realtime API. Whisper remains useful on your own server, where it costs nothing per minute and no audio leaves the machine.
@@ -226,7 +227,7 @@ Plan for outages too, since a voice agent stops answering when its transcription
 
 ## Getting started
 
-Pick AssemblyAI when accuracy on names, numbers and addresses comes first, Deepgram when the time to answer matters most, and Soniox when the bill does. Gemini 3.5 Transcribe suits a multilingual agent, and Voxtral Realtime a team that wants to host the model itself later.
+Pick AssemblyAI when accuracy on names, numbers and addresses comes first, Deepgram when the time to answer matters most, and Soniox when the bill does. Gemini 3.5 Transcribe suits a multilingual agent, and Voxtral Realtime a European team that may host the open weights version itself later.
 
 Whichever you choose, test it on your own calls, with real callers who pause, interrupt and switch language. Micdrop lets you swap the speech to text provider without touching the browser or the rest of the pipeline:
 
@@ -249,5 +250,5 @@ You can [compare the transcription, agent and voice integrations](/docs/ai-integ
   <RankingEntry name="xAI Grok Voice Transcribe" url="https://docs.x.ai/developers/model-capabilities/audio/speech-to-text" />
   <RankingEntry name="Cartesia Ink" url="https://cartesia.ai/ink" />
   <RankingEntry name="OpenAI" url="https://developers.openai.com/api/docs/guides/realtime-transcription" />
-  <RankingEntry name="Mistral Voxtral Realtime" url="https://mistral.ai/news/voxtral-transcribe-2" />
+  <RankingEntry name="Mistral Voxtral Realtime" url="https://mistral.ai/news/voxtral-3" />
 </RankingJsonLd>
