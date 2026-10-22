@@ -1,3 +1,7 @@
+import {
+  ElevenLabsRealtime,
+  ElevenLabsRealtimeModel,
+} from '@micdrop/elevenlabs'
 import { GeminiLive } from '@micdrop/gemini'
 import { OpenaiRealtime } from '@micdrop/openai'
 import { Realtime } from '@micdrop/server'
@@ -49,6 +53,25 @@ const realtime: ProviderRegistry<Realtime> = {
         // The model reasoning at length is the one refusing to start without
         // a level, the other one refuses any
         thinkingLevel: model?.includes('extended-thinking') ? 'low' : undefined,
+        systemPrompt: getSystemPrompt(lang, prompt),
+        ...auto,
+      }),
+  },
+
+  elevenlabs: {
+    label: 'ElevenLabs Realtime',
+    requiredEnv: ['ELEVENLABS_API_KEY'],
+    models: [
+      { id: 'eleven_realtime_v1_mini', label: 'eleven_realtime_v1_mini' },
+      { id: 'eleven_realtime_v1_max', label: 'eleven_realtime_v1_max' },
+    ],
+    defaultModel: 'eleven_realtime_v1_mini',
+    create: ({ lang, model, auto, prompt }) =>
+      new ElevenLabsRealtime({
+        apiKey: process.env.ELEVENLABS_API_KEY || '',
+        model: model as ElevenLabsRealtimeModel | undefined,
+        // Sets the language of the answers too, English otherwise
+        language: lang.split('-')[0],
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),

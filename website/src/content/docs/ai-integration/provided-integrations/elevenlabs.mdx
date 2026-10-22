@@ -9,6 +9,8 @@ order: 48
 
 `@micdrop/elevenlabs` streams ElevenLabs text to speech from a Node.js server, for [@micdrop/server](../../server). It sends the agent's answer to ElevenLabs over a WebSocket as the agent writes it, so the audio comes back before the answer is finished. The package works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
 
+The package also runs [Eleven Realtime](#eleven-realtime), the speech-to-speech models of ElevenLabs, as a [realtime model](../../server/realtime) that hears the user and answers with its own voice.
+
 ElevenLabs and every other voice engine in Micdrop implement the same interface, so moving to an [ElevenLabs alternative](/blog/elevenlabs-alternatives-typescript) only means replacing `new ElevenLabsTTS(...)` with the other engine's class.
 
 ## Installation
@@ -193,6 +195,71 @@ new MicdropServer(socket, {
 ### Finding Voice IDs
 
 You can find voice IDs in the ElevenLabs dashboard, by browsing the voices of your account, or through the public voice library API.
+
+## Eleven Realtime
+
+`ElevenLabsRealtime` runs a call on Eleven Realtime, in place of a speech to text, an agent and a text to speech. It takes the place of the other [realtime models](../../server/realtime), with the same client, tools and conversation.
+
+### Usage with MicdropServer
+
+```typescript
+import { ElevenLabsRealtime } from '@micdrop/elevenlabs'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new ElevenLabsRealtime({
+  apiKey: process.env.ELEVENLABS_API_KEY || '',
+  model: 'eleven_realtime_v1_mini', // Default model
+  voice: 'brian', // Default voice, a name or a voice ID
+  language: 'en', // Language of the call, English by default
+  systemPrompt: 'You are a helpful assistant',
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+### Choosing a model
+
+| Model                     | Best for                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `eleven_realtime_v1_mini` | Simple conversations where latency comes first, at the lowest cost                                |
+| `eleven_realtime_v1_max`  | Long or complex instructions and multi-step tool calls, since it reasons before it answers        |
+
+Both models chain a speech to text, an LLM and a voice that ElevenLabs tuned to work together, behind one connection. ElevenLabs bills the per-minute rate of ElevenAgents plus the tokens of the model, and lists the rates on its [pricing page](https://elevenlabs.io/pricing).
+
+### How it runs
+
+The Eleven Realtime API speaks the protocol of the OpenAI Realtime API. The Micdrop client detects when the user speaks, so `ElevenLabsRealtime` turns the turn detection of ElevenLabs off, commits the audio of each turn when the client closes it and asks for the answer right after. When the user interrupts, the answer stops and the model keeps in memory only the part the user heard.
+
+`language` sets the language of the transcription, of the voice and of the answers. ElevenLabs speaks English when it is missing, so set it for a call in any other language.
+
+`voice` takes the name of a voice, such as `brian`, or the ID of any voice of your ElevenLabs account.
+
+The voice performs audio tags such as `[happy]` that the model writes on its own. `ElevenLabsRealtime` removes them from the transcript, so the conversation and the partial messages carry only the spoken words.
+
+ElevenLabs ignores system messages in the conversation, so `realtime.addMessage('system', text)` reaches the model as a message of the user marked as coming from the system. The first message and `server.speak(text)` go through a message of the user as well.
+
+ElevenLabs closes a session after `maxDuration` seconds, two hours at most. `ElevenLabsRealtime` asks for two hours, then opens a new session with the conversation written so far.
+
+### Options
+
+| Option                | Type                      | Default                     | Description                                                     |
+| --------------------- | ------------------------- | --------------------------- | --------------------------------------------------------------- |
+| `apiKey`              | `string`                  | Required                    | Your ElevenLabs API key                                         |
+| `systemPrompt`        | `string`                  | Required                    | Instructions of the model                                       |
+| `model`               | `ElevenLabsRealtimeModel` | `'eleven_realtime_v1_mini'` | `eleven_realtime_v1_mini` or `eleven_realtime_v1_max`           |
+| `voice`               | `string`                  | `'brian'`                   | Name or ID of an ElevenLabs voice                               |
+| `language`            | `string`                  | `'en'`                      | Language of the call, as an ISO 639-1 code                      |
+| `temperature`         | `number`                  | `0.7`                       | Temperature of the model                                        |
+| `maxDuration`         | `number`                  | `7200`                      | Length of a session in seconds, up to 7200, before it is renewed |
+| `autoEndCall`         | `boolean \| string`       | `false`                     | Ends the call when the user asks for it                         |
+| `autoSemanticTurn`    | `boolean \| string`       | `false`                     | Lets the model wait silently for the end of a sentence          |
+| `autoIgnoreUserNoise` | `boolean \| string`       | `false`                     | Drops a turn that carries no meaning, such as a cough           |
+| `connectionTimeout`   | `number`                  | `5000`                      | Timeout in milliseconds to open the connection                  |
+| `retryDelay`          | `number`                  | `1000`                      | Delay in milliseconds between reconnection attempts             |
+| `maxRetry`            | `number`                  | `3`                         | Maximum number of reconnection attempts before failing          |
 
 ## FAQ
 

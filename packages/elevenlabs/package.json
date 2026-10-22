@@ -32,14 +32,16 @@
     "voice",
     "conversation",
     "elevenlabs",
-    "tts"
+    "tts",
+    "realtime"
   ],
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.36.0",
     "ws": "^8.19.0"
   },
   "peerDependencies": {
-    "@micdrop/server": "*"
+    "@micdrop/server": ">=2.9.0",
+    "zod": "^4"
   },
   "devDependencies": {
     "@types/node": "^22.19.13",

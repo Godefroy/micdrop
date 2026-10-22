@@ -4,6 +4,8 @@
 
 `@micdrop/elevenlabs` streams ElevenLabs text to speech for [@micdrop/server](https://micdrop.dev/docs/server). It works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
 
+It also runs Eleven Realtime, the speech-to-speech models of ElevenLabs, as a [realtime model](https://micdrop.dev/docs/server/realtime).
+
 ## Installation
 
 ```bash
@@ -74,6 +76,30 @@ See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrati
 `voiceSettings` takes the `VoiceSettings` type of the ElevenLabs SDK, with its keys in camel case. Eleven v3 and v4 only read its `stability`.
 
 ElevenLabs counts each open connection to the Text to Dialogue WebSocket as one of the [dialogue sessions your plan allows at once](https://elevenlabs.io/docs/overview/models#text-to-dialogue-concurrency), so each call holds one session from start to end.
+
+## Eleven Realtime
+
+`ElevenLabsRealtime` hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
+
+```typescript
+import { ElevenLabsRealtime } from '@micdrop/elevenlabs'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new ElevenLabsRealtime({
+  apiKey: process.env.ELEVENLABS_API_KEY || '',
+  model: 'eleven_realtime_v1_mini', // Or 'eleven_realtime_v1_max'
+  voice: 'brian', // A voice name or a voice ID
+  language: 'en', // Language of the call, English by default
+  systemPrompt: 'You are a helpful assistant',
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+The Micdrop client detects when the user speaks, so the turn detection of ElevenLabs stays off and the audio of each turn is committed when the client closes it. Tools are added with `addTool()`. The audio tags the voice performs, such as `[happy]`, are removed from the transcript.
 
 ## Documentation
 

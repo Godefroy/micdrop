@@ -803,11 +803,14 @@ importers:
         specifier: ^2.36.0
         version: 2.70.0
       '@micdrop/server':
-        specifier: '*'
+        specifier: '>=2.9.0'
         version: link:../server
       ws:
         specifier: ^8.19.0
         version: 8.22.0
+      zod:
+        specifier: ^4
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: ^22.19.13

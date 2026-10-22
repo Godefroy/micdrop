@@ -1,6 +1,6 @@
 ---
 title: 'Realtime Models'
-description: 'Run a call on a speech-to-speech model such as Gemini Live or the OpenAI Realtime API, in place of speech to text, an agent and a voice, with the same client.'
+description: 'Run a call on a speech-to-speech model such as Gemini Live, the OpenAI Realtime API or Eleven Realtime, in place of speech to text, an agent and a voice, with the same client.'
 order: 33.5
 ---
 
@@ -10,8 +10,9 @@ A realtime model hears the user and answers with its own voice, over a single
 connection. The answer starts sooner, and the model understands the tone of the
 voice as well as the words.
 
-Micdrop ships two of them, [`GeminiLive`](../ai-integration/provided-integrations/gemini)
-and [`OpenaiRealtime`](../ai-integration/provided-integrations/openai#openai-realtime).
+Micdrop ships three of them, [`GeminiLive`](../ai-integration/provided-integrations/gemini),
+[`OpenaiRealtime`](../ai-integration/provided-integrations/openai#openai-realtime)
+and [`ElevenLabsRealtime`](../ai-integration/provided-integrations/elevenlabs#eleven-realtime).
 Gemini Live and the OpenAI Realtime API [differ in price per minute, session length and reasoning](/blog/gpt-live-vs-gpt-realtime-vs-gemini-live).
 A pipeline of speech to text, an agent and a voice loses the tone of the voice,
 but it [lets you pick each provider and often costs less per minute](/blog/openai-realtime-api-vs-pipeline).
@@ -48,6 +49,21 @@ new MicdropServer(socket, {
 })
 ```
 
+`ElevenLabsRealtime` too:
+
+```typescript
+import { ElevenLabsRealtime } from '@micdrop/elevenlabs'
+
+new MicdropServer(socket, {
+  generateFirstMessage: true,
+  realtime: new ElevenLabsRealtime({
+    apiKey: process.env.ELEVENLABS_API_KEY || '',
+    language: 'en',
+    systemPrompt: 'You are a helpful assistant',
+  }),
+})
+```
+
 On the browser side, the [client](../client) connects to this server like to
 any other. A React Native app connects the same way, which lets a phone
 [talk to the OpenAI Realtime API without WebRTC](/blog/openai-realtime-api-react-native).
@@ -78,8 +94,8 @@ behaves the same whatever the model.
    and the answer after it.
 
 When the user speaks over the answer, the model stops, and the server opens the
-next turn. `OpenaiRealtime` also cuts its own memory of the answer where the
-user most likely stopped hearing it.
+next turn. `OpenaiRealtime` and `ElevenLabsRealtime` also cut the model's
+memory of the answer where the user most likely stopped hearing it.
 
 [Turn detection in the client](../client/turn-detection) and the
 [server-side turn detector](./semantic-turn-detection) hold the turn open while
@@ -140,8 +156,8 @@ shape what it says and how it says it: length, tone, pace, language.
 
 Each provider limits the length of a session, and the model reconnects on its
 own when it ends. `GeminiLive` resumes the session on a new connection
-when Gemini asks for it, and `OpenaiRealtime` opens a new session with the
-conversation written so far.
+when Gemini asks for it. `OpenaiRealtime` and `ElevenLabsRealtime` open a new
+session with the conversation written so far.
 
 ## Writing your own
 
@@ -176,3 +192,5 @@ The provider reports what the model does with these protected methods:
 The sources of [`GeminiLive`](https://github.com/Godefroy/micdrop/blob/main/packages/gemini/src/GeminiLive.ts)
 and [`OpenaiRealtime`](https://github.com/Godefroy/micdrop/blob/main/packages/openai/src/OpenaiRealtime.ts)
 show both ways a provider can handle tools and interruptions.
+[`ElevenLabsRealtime`](https://github.com/Godefroy/micdrop/blob/main/packages/elevenlabs/src/ElevenLabsRealtime.ts)
+shows how to adapt to a provider that departs from the protocol it follows.

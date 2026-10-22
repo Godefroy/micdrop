@@ -67,7 +67,7 @@ they document.
 
 **Realtime** (`packages/server/src/realtime/Realtime.ts`):
 
-- Agent for speech-to-speech models (`GeminiLive`, `OpenaiRealtime`), passed to `MicdropServer` as `realtime` in place of `stt`, `agent` and `tts`
+- Agent for speech-to-speech models (`GeminiLive`, `OpenaiRealtime`, `ElevenLabsRealtime`), passed to `MicdropServer` as `realtime` in place of `stt`, `agent` and `tts`
 - Adds the `Audio` and `PartialMessage` events, and handles turns, interruptions and the order of transcripts for every provider
 
 **Agent** (`packages/server/src/agent/Agent.ts`):
