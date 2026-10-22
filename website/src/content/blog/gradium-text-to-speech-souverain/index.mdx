@@ -2,7 +2,7 @@
 title: 'Text-to-speech français souverain avec Gradium et Micdrop'
 summary: 'Intégrez Gradium, le TTS français issu de Kyutai, dans une application web avec Micdrop. Vos données passent par des serveurs européens, avec un fallback.'
 date: 2026-03-03
-update: 2026-10-12
+update: 2026-10-23
 author: godefroy
 image: ./thumbnail.jpg
 lang: fr
@@ -30,6 +30,8 @@ Le package `@micdrop/gradium` fait la connexion, la région européenne est le r
 Gradium est une startup parisienne fondée par d'anciens chercheurs de Meta, Google DeepMind, Google Brain et Jane Street. Elle a levé 70 millions de dollars en seed fin 2025 auprès de FirstMark Capital, Eurazeo et d'investisseurs comme Eric Schmidt et Yann LeCun.
 
 Gradium développe des **modèles de langage audio-natifs** pour le text-to-speech et le speech-to-text en temps réel.
+
+Gradium publie aussi Phonon, un TTS local construit sur Pocket TTS de Kyutai. Son modèle français, `phonon-40m-fr`, tourne dans votre serveur Node sans clé API avec [`@micdrop/phonon`](/docs/ai-integration/provided-integrations/phonon). Sur un MacBook Pro M2, nous avons mesuré le premier son entre 30 et 100 ms avec un seul cœur. Quand on transcrit l’audio avec Whisper, on retrouve le texte presque mot pour mot, date et heure comprises. Ce modèle propose 15 voix françaises. Il est pourtant sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Le seul modèle Phonon utilisable librement dans un produit, `phonon-31m-en`, parle uniquement anglais. Pour un produit commercial en français, l’API hébergée de Gradium reste donc le bon choix. Nous avons comparé Phonon aux autres [voix françaises pour un agent vocal, hébergées ou locales](/blog/french-text-to-speech-voice-agent).
 
 ### Les caractéristiques de Gradium
 
@@ -148,7 +150,7 @@ Le `FallbackTTS` fonctionne ainsi :
 4. Le texte bufferisé est **rejoué** sur le nouveau fournisseur
 5. L'utilisateur perçoit une micro-interruption, et rien de plus
 
-Vous gardez donc Gradium au quotidien, et la conversation tient les jours de panne. Le secours choisi ici sort de l'Union pendant ce temps. Prendre un second fournisseur européen garde la chaîne entière en Europe, au prix d'un catalogue de voix plus court.
+Vous gardez donc Gradium au quotidien sans perdre la conversation les jours de panne. ElevenLabs, le secours choisi ici, traite alors le texte hors de l’Union. Prenez plutôt Voxtral Speech 3 comme secours, sur le point de terminaison européen de Mistral, pour garder toute la chaîne en Europe avec moins de voix françaises au choix.
 
 ## Comparaison avec les alternatives
 
@@ -164,6 +166,34 @@ Vous gardez donc Gradium au quotidien, et la conversation tient les jours de pan
 | **Tarification** | Par caractère | Par caractère | Par caractère |
 
 ElevenLabs reste devant sur le nombre de langues et Cartesia clone une voix à partir d'un extrait plus court. Les deux traitent par défaut vos données aux États-Unis.
+
+## Gradium ou Voxtral Speech 3 pour une voix française
+
+Mistral, autre entreprise française, vend aussi une synthèse vocale, Voxtral Speech 3. Micdrop la branche avec `MistralTTS`, dans le package [`@micdrop/mistral`](/docs/ai-integration/provided-integrations/mistral). Les deux fournisseurs génèrent l’audio en Europe, mais ils diffèrent sur le prix, les voix et la façon de recevoir le texte. Nous avons relevé les prix sur les pages tarifaires des deux fournisseurs le 21 octobre 2026.
+
+| Critère | Gradium | Voxtral Speech 3 |
+|---|---|---|
+| **Voix françaises** | Une partie des 150+ voix du catalogue | Quatre voix prêtes à l’emploi, Marie (`voice_592`), Camille (`voice_3141`), Manon (`voice_3137`) et Lea (`voice_589`) |
+| **Clonage vocal** | À partir de 10 secondes d’audio | À partir de quelques secondes d’audio (`refAudio`) |
+| **Expressivité** | Réglages `temp`, `cfg_coef` et `padding_bonus` | Balises d’émotion et de rythme comme `[emotion=happy]`, interprétées plutôt que lues |
+| **Prix** | 1 crédit par caractère, de 36 à 58 $ le million selon l’offre | 13 $ le million de caractères |
+| **Région européenne** | `region: 'eu'`, la valeur par défaut | `baseUrl: 'https://api.eu.mistral.ai'` |
+| **Envoi du texte** | En continu sur un WebSocket | Une requête par phrase |
+| **Premier son** | 258 ms en médiane, selon Gradium | 0,5 à 0,6 s par phrase, mesuré par nos soins |
+
+`GradiumTTS` envoie la réponse de l’agent à Gradium au fur et à mesure que le LLM l’écrit, sur un seul WebSocket. L’API de Mistral attend un texte complet par requête, donc `MistralTTS` découpe la réponse en phrases et envoie une requête par phrase. Mistral génère chaque phrase environ quatre fois plus vite qu’elle ne dure à l’écoute, si bien que la phrase suivante est prête avant la fin de la précédente. L’utilisateur sent surtout la demi-seconde d’attente sur la première phrase.
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+
+const tts = new MistralTTS({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  voiceId: 'voice_592', // Marie, voix française
+  baseUrl: 'https://api.eu.mistral.ai', // Serveurs européens
+})
+```
+
+Gradium répond plus vite et propose plus de voix, ce qui compte dans une conversation. Voxtral Speech 3 coûte de 2,8 à 4,5 fois moins cher au caractère et fait un bon fournisseur de secours européen pour Gradium dans le `FallbackTTS`.
 
 ## Cas d'usage
 
@@ -187,6 +217,7 @@ Un établissement scolaire traite les données d'élèves souvent mineurs, ce qu
 
 - [Documentation Gradium dans Micdrop](/docs/ai-integration/provided-integrations/gradium)
 - [Guide IA Vocale Souveraine](/docs/ai-integration/sovereign-voice-ai)
+- [Voxtral Speech 3 dans Micdrop](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech)
 - [Stratégies de fallback TTS](/docs/ai-integration/fallback-strategies/tts-fallback)
 - [Site officiel Gradium](https://gradium.ai)
 
