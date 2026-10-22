@@ -20,7 +20,7 @@ import { MicdropServer } from '@micdrop/server'
 
 const tts = new GradiumTTS({
   apiKey: process.env.GRADIUM_API_KEY || '',
-  voiceId: 'YTpq7expH9539ERJ', // Gradium voice ID
+  voiceId: 'Bla6SbVMczYnOhfK', // Gradium voice ID
   modelName: 'default', // Optional: model name
   outputFormat: 'pcm_16000', // Optional: audio format
   region: 'eu', // Optional: 'eu' or 'us'
@@ -47,7 +47,7 @@ import { Readable } from 'stream'
 
 const tts = new GradiumTTS({
   apiKey: process.env.GRADIUM_API_KEY || '',
-  voiceId: 'YTpq7expH9539ERJ',
+  voiceId: 'Bla6SbVMczYnOhfK',
 })
 
 // Audio is raw PCM, 16 bits, 16 kHz, mono
