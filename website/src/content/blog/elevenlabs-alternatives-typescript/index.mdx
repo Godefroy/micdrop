@@ -1,8 +1,8 @@
 ---
 title: 'ElevenLabs Alternatives for a TypeScript Voice Agent'
-summary: 'Cartesia, Gradium, OpenAI, Gemini and four local engines share one TypeScript interface. Switching engine takes one line. FallbackTTS keeps a backup ready.'
+summary: 'Cartesia, Gradium, Mistral, OpenAI, Gemini and four local engines share one TypeScript interface. Switching engine takes one line. FallbackTTS keeps a backup ready.'
 date: 2026-09-12
-update: 2026-10-15
+update: 2026-10-23
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -20,12 +20,12 @@ similarPosts:
   - 'openai-realtime-api-vs-pipeline'
 takeaways:
   - 'Your ElevenLabs plan caps how many syntheses run at once. Pro allows 20 concurrent Flash requests, or 70 calls on Eleven v4, since each v4 call holds one dialogue session from start to end. A voice product hits that ceiling long before it uses up the characters its plan includes.'
-  - 'Cartesia, Gradium, OpenAI, Gemini, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
-  - 'Gradium synthesises on an EU endpoint, so you can name the region when a customer asks where the audio is generated.'
+  - 'Cartesia, Gradium, Mistral, OpenAI, Gemini, Kokoro, Piper, Pocket TTS and Qwen3-TTS all speak PCM16 at 16 kHz behind a single TypeScript interface in Micdrop, so switching engine means replacing the line that creates it.'
+  - 'Gradium and Mistral can both synthesise on an EU endpoint, so you can name the region when a customer asks where the audio is generated.'
   - 'Micdrop ships a FallbackTTS class that holds a list of providers and replays the unspoken text to the next one when the first gives up mid-sentence.'
 ---
 
-Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word, Gradium generates the audio in Europe, OpenAI uses the key your agent already has, Gemini follows the tone you describe in plain words, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
+Teams look for an alternative to [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) when the voice engine of their agent starts to limit them: a plan that caps simultaneous calls, a per-character bill that grows with usage, customers who need the audio generated in Europe, or the wish to run the voice on their own servers. No single engine fixes all of that. Cartesia is built for a fast first word, Gradium generates the audio in Europe, Mistral covers the agent, the transcription and the voice under one contract, OpenAI uses the key your agent already has, Gemini follows the tone you describe in plain words, and Kokoro, Piper, Pocket TTS and Qwen3-TTS run locally with no bill at all.
 
 This article compares these engines on languages, voices, where they run and how they bill, then shows how to switch from ElevenLabs to one of them in a TypeScript voice agent built on Micdrop, where the change fits in one line of code.
 
@@ -39,17 +39,18 @@ Every hosted provider has outages. When text to speech fails, your agent goes si
 
 Data residency comes up with European buyers. Teams in health, education and the public sector ask where the audio is synthesised.
 
-| Engine                                                              | Runs                         | Languages            | Voice catalog        | Reach for it when                              |
-| ------------------------------------------------------------------- | ---------------------------- | -------------------- | -------------------- | ---------------------------------------------- |
-| [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Hosted API                   | 29 to 90+            | 17,500+              | The voice is what sells the product            |
-| [Cartesia](/docs/ai-integration/provided-integrations/cartesia)     | Hosted API                   | 15                   | 50+                  | The pause before the first word matters        |
-| [Gradium](/docs/ai-integration/provided-integrations/gradium)       | Hosted API, EU endpoint      | 5                    | 150+                 | The audio has to stay in Europe                |
-| [Gemini](/docs/ai-integration/provided-integrations/gemini)         | Hosted API                   | About 90             | 30                   | You want to describe the tone in plain words   |
-| [OpenAI](/docs/ai-integration/provided-integrations/openai)         | Hosted API                   | The one you write in | 13                   | You already hold an OpenAI key                 |
-| [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | Your Node process            | English              | 28                   | The whole setup has to be one npm install      |
-| [Piper](/docs/ai-integration/provided-integrations/piper)           | A subprocess you spawn       | 43                   | 100+, one file each  | The call happens in a language besides English |
-| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | Your Node process            | English              | Cloned from a sample | A specific voice has to come back              |
-| [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)    | An mlx-audio server on a Mac | 10                   | 9                    | A local voice takes style instructions         |
+| Engine                                                              | Runs                         | Languages            | Voice catalog                      | Reach for it when                              |
+| ------------------------------------------------------------------- | ---------------------------- | -------------------- | ---------------------------------- | ---------------------------------------------- |
+| [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Hosted API                   | 29 to 90+            | 17,500+                            | The voice is what sells the product            |
+| [Cartesia](/docs/ai-integration/provided-integrations/cartesia)     | Hosted API                   | 15                   | 50+                                | The pause before the first word matters        |
+| [Gradium](/docs/ai-integration/provided-integrations/gradium)       | Hosted API, EU endpoint      | 5                    | 150+                               | The audio has to stay in Europe                |
+| [Mistral](/docs/ai-integration/provided-integrations/mistral)       | Hosted API, EU endpoint      | 35+                  | Presets in 18 languages, or cloned | You want one vendor for the whole call         |
+| [Gemini](/docs/ai-integration/provided-integrations/gemini)         | Hosted API                   | About 90             | 30                                 | You want to describe the tone in plain words   |
+| [OpenAI](/docs/ai-integration/provided-integrations/openai)         | Hosted API                   | The one you write in | 13                                 | You already hold an OpenAI key                 |
+| [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | Your Node process            | English              | 28                                 | The whole setup has to be one npm install      |
+| [Piper](/docs/ai-integration/provided-integrations/piper)           | A subprocess you spawn       | 43                   | 100+, one file each                | The call happens in a language besides English |
+| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | Your Node process            | English              | Cloned from a sample               | A specific voice has to come back              |
+| [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)    | An mlx-audio server on a Mac | 10                   | 9                                  | A local voice takes style instructions         |
 
 OpenAI's speech API takes no language parameter and speaks whatever text you send it. The `gpt-4o-mini-tts` model adds prosody instructions written in plain English, so you can ask it for a slower delivery or a French accent. Listen to OpenAI, ElevenLabs and Gradium back to back and OpenAI sounds the least polished. You stay with one vendor, though, since the same key covers the agent and the speech.
 
@@ -88,7 +89,7 @@ const tts = new GradiumTTS({
 })
 ```
 
-Voice is one of the three parts of a call, so the residency answer holds only when the agent and the transcription stay in Europe too. [Mistral](/docs/ai-integration/provided-integrations/mistral) drives the agent and transcribes with Voxtral, while Gladia and Gradium both transcribe. With these three providers you can build a [sovereign voice AI pipeline that keeps the audio inside the European Union](/docs/ai-integration/sovereign-voice-ai). Compliance still depends on where you host and on the terms you sign with each provider.
+Voice is one of the three parts of a call, so the residency answer holds only when the agent and the transcription stay in Europe too. A Mistral model can run the agent on Mistral's EU endpoint through `@micdrop/ai-sdk`, while Gladia and Gradium both transcribe. With these three providers you can build a [sovereign voice AI pipeline that keeps the audio inside the European Union](/docs/ai-integration/sovereign-voice-ai). Compliance still depends on where you host and on the terms you sign with each provider.
 
 ## Gemini TTS, when you want to describe the tone of the voice
 
@@ -108,6 +109,24 @@ The caller waits longer for the first word than with ElevenLabs or Cartesia. `ge
 
 Google bills by token rather than by character. A million audio tokens cost [$10 on 2.5 Flash and $20 on 3.1 Flash](https://ai.google.dev/gemini-api/docs/pricing) in September 2026, with a free tier on both models.
 
+## Voxtral Speech 3, when you want one vendor for the whole call
+
+Mistral's [Voxtral Speech 3](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech) speaks more than 35 languages. Its preset voices cover 18 of them, with four voices in French. It also clones a voice from a few seconds of audio. You set the emotion and the pace with tags such as `[emotion=happy]`, which the voice acts out instead of reading aloud. Micdrop already runs the agent on Mistral with `MistralAgent` and transcribes with `MistralSTT`, so a single Mistral key covers the whole call.
+
+```typescript
+import { MistralTTS } from '@micdrop/mistral'
+
+const tts = new MistralTTS({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  voiceId: 'voice_592', // Marie, French
+  baseUrl: 'https://api.eu.mistral.ai',
+})
+```
+
+Mistral's speech endpoint expects the whole text in one request, so `MistralTTS` sends one request per sentence and the caller hears the first sentence while the agent is still writing the rest. In our measurements, the first audio of a sentence arrived after about half a second. A 3.4 second sentence took 0.85 seconds to generate, so the next sentence is ready before the current one ends.
+
+Voxtral Speech 3 costs [$13 per million characters](https://mistral.ai/news/voxtral-3) in October 2026, about a third of what Cartesia charges. The `baseUrl` option points `MistralTTS` at Mistral's EU endpoint, where inference stays in Europe. `MistralAgent` and `MistralSTT` call the global endpoint, though. When the whole call has to stay in Europe, run the Mistral model through `@micdrop/ai-sdk` on the EU endpoint and transcribe with Gladia or Gradium.
+
 ## Kokoro, Piper, Pocket TTS and Qwen3-TTS, when the voice runs on your own machine
 
 These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 43 languages, more than the other three put together. Pocket TTS clones a voice from a few seconds of audio and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
@@ -126,6 +145,7 @@ import { OpenaiAgent } from '@micdrop/openai'
 import { GladiaSTT } from '@micdrop/gladia'
 // Was: import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 import { CartesiaTTS } from '@micdrop/cartesia'
+// Or: import { MistralTTS } from '@micdrop/mistral'
 
 new MicdropServer(socket, {
   agent: new OpenaiAgent({
@@ -138,6 +158,7 @@ new MicdropServer(socket, {
     modelId: 'sonic-3.6',
     voiceId: process.env.CARTESIA_VOICE_ID || '',
   }),
+  // Or: tts: new MistralTTS({ apiKey: process.env.MISTRAL_API_KEY || '' }),
 })
 ```
 
@@ -147,7 +168,7 @@ One interface also makes A/B testing cheap. Read the provider from an environmen
 
 ## Writing your own integration for another provider
 
-Micdrop packages nine engines, so the tenth is yours to write. Deepgram, Azure, Google Cloud Text-to-Speech and Amazon all publish streaming speech endpoints. So does a model you fine-tuned and host yourself.
+Micdrop packages eleven engines, the ten in this article plus Gradium's local Phonon model, so the twelfth is yours to write. Deepgram, Azure, Google Cloud Text-to-Speech and Amazon all publish streaming speech endpoints. So does a model you fine-tuned and host yourself.
 
 [Inworld TTS](https://inworld.ai/pricing) is one more candidate. Its Node SDK, `@inworld/tts`, offers `generate()` for a whole clip and `stream()` for chunks as they come, and a browser gets short-lived JWTs from your backend instead of the API key. In October 2026, a million characters cost $25 on TTS-2 and $15 on TTS-2 Flash at the on-demand rate, falling to $12.50 and $7 on the Growth plan.
 
@@ -202,11 +223,13 @@ Set `maxRetry` low on the first provider so the caller barely notices the switch
 
 ## Which engine to pick
 
-Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length. Moving from Flash to v4 Turbo also means switching to the Text to Dialogue WebSocket, where [the latency depends on flushing each sentence](/blog/eleven-v4-turbo-voice-agent).
+Stay on ElevenLabs when the voice itself is the product and your peak call count fits under your plan's concurrency limit. Cartesia, Gradium, Mistral, OpenAI, Gemini and the local engines all have smaller voice catalogs. Eleven v4 Turbo also acts out [audio tags](/docs/ai-integration/provided-integrations/elevenlabs#eleven-v4-and-audio-tags) like `[laughs]` or `[whispers]` as it speaks, so the agent can sound amused or lower its voice. Count dialogue sessions when you choose a plan for v4 Turbo, since each call holds one for its whole length. Moving from Flash to v4 Turbo also means switching to the Text to Dialogue WebSocket, where [the latency depends on flushing each sentence](/blog/eleven-v4-turbo-voice-agent).
 
 Switch to Cartesia when callers complain about the silence before the first word.
 
 Pick Gradium when your buyer needs the audio synthesised in Europe. Before you promise anything, check how to [move the agent and the transcription to Europe with the voice](/docs/ai-integration/sovereign-voice-ai).
+
+Choose Voxtral Speech 3 when you want one vendor for the agent, the transcription and the voice, at about a third of Cartesia's price per character. Its preset catalog is short, so plan on a cloned voice when none of the presets fits your brand.
 
 OpenAI suits a team that would rather keep one vendor for the agent and the voice, when the exact timbre matters less than the number of contracts.
 
@@ -223,8 +246,10 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     It depends on which constraint pushed you off ElevenLabs. Cartesia is the
     closest match, a hosted streaming API billed per character and built around
     time to first audio. Gradium answers the European data residency question.
-    Kokoro, Piper, Pocket TTS and Qwen3-TTS remove the bill entirely by running
-    on your own hardware. All of them have a smaller voice catalog than
+    Mistral's Voxtral Speech 3 costs about a third of Cartesia's price per
+    character and keeps the agent, the transcription and the voice with one
+    vendor. Kokoro, Piper, Pocket TTS and Qwen3-TTS remove the bill entirely by
+    running on your own hardware. All of them have a smaller voice catalog than
     ElevenLabs, so when your product sells on one specific voice, stay on
     ElevenLabs and add a fallback rather than switch.
   </FaqItem>
@@ -245,8 +270,8 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     before the first speech](https://elevenlabs.io/v4) on v4 Turbo. Treat every
     published number as a floor, since your own latency includes the round trip
     from your server and the provider's queue at that moment. Measure the
-    engines you shortlisted from the region you deploy in,
-    on sentences your agent actually says.
+    engines you shortlisted from the region you deploy in, on sentences your
+    agent actually says.
   </FaqItem>
   <FaqItem question="Can I use ElevenLabs and another provider at the same time?">
     Yes, and that is what `FallbackTTS` is for. It takes a list of factory
@@ -257,13 +282,15 @@ Whichever you pick, configure two of them. The second engine costs one factory f
     which callers accept more easily than silence.
   </FaqItem>
   <FaqItem question="Is there a European alternative to ElevenLabs?">
-    Gradium is the European voice provider Micdrop integrates. It is French, it
-    covers both transcription and voice, and its API has an EU endpoint that the
-    integration uses by default. For a whole call to stay in Europe the agent
-    and the transcription have to follow. Mistral, Gladia and Gradium together
-    cover all three parts inside the European Union. Micdrop makes
-    that architecture possible. The compliance claim belongs to your deployment
-    and to the contracts you sign with each provider.
+    Gradium and Mistral are the European voice providers Micdrop integrates.
+    Both are French and cover transcription and voice. Gradium's integration
+    uses its EU endpoint by default. `MistralTTS` reaches Mistral's EU endpoint
+    once you set its `baseUrl` option, while `MistralSTT` stays on the global
+    endpoint. For a whole call to stay in Europe the agent and the transcription
+    have to follow. Mistral, Gladia and Gradium together cover all three parts
+    inside the European Union. Micdrop makes that architecture possible. The
+    compliance claim belongs to your deployment and to the contracts you sign
+    with each provider.
   </FaqItem>
   <FaqItem question="How do I switch text to speech provider without rewriting my app?">
     Put the engine behind an interface. Micdrop does that with its abstract
