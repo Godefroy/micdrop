@@ -10,6 +10,8 @@ Mistral AI implementation for [@micdrop/server](../../server).
 
 This package provides an AI agent on Mistral AI's API, real-time speech to text with Voxtral Mini Transcribe Realtime 3, and text to speech with Voxtral Speech 3. The agent, the transcription and the voice can all run on one Mistral account.
 
+Mistral guarantees inference in the EU only on its European endpoint, `api.eu.mistral.ai`, billed 10% more. `MistralTTS` reaches it through its `baseUrl` option. `MistralAgent` and `MistralSTT` call the global endpoint, `api.mistral.ai`, where Mistral makes no commitment on where requests run. To keep the agent in Europe, use [`@micdrop/ai-sdk`](/docs/ai-integration/provided-integrations/ai-sdk) with a Mistral model set to `api.eu.mistral.ai`, as in this [sovereign voice AI setup](/docs/ai-integration/sovereign-voice-ai).
+
 ## Installation
 
 ```bash
@@ -124,7 +126,7 @@ The Mistral Agent supports advanced features for improved conversation handling:
 
 ## Mistral STT (Speech-to-Text)
 
-Real-time transcription with Voxtral Mini Transcribe Realtime 3, in more than 40 languages, with a final transcript in under half a second. It costs $0.008 per minute.
+Real-time transcription with Voxtral Mini Transcribe Realtime 3, in more than 40 languages, with a final transcript in under half a second. It costs $0.008 per minute. `MistralSTT` connects to Mistral's global endpoint, so pick Gladia or Gradium when the audio has to stay in the EU.
 
 Voxtral also runs on its own. With `stt` as the server's only option, you get [a dictation tool](../../server/dictation) that transcribes each sentence and stays quiet.
 

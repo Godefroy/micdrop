@@ -3,7 +3,7 @@ title: 'Agent vocal IA souverain, la stack européenne en TypeScript'
 h1: 'Monter un agent vocal IA souverain avec Mistral, Gladia et Gradium'
 summary: 'Un agent vocal IA qui garde la voix en Europe, avec Mistral, Gladia et Gradium en API ou des modèles open source chez vous. Code TypeScript et limites.'
 date: 2026-10-04
-update: 2026-10-21
+update: 2026-10-23
 author: godefroy
 image: ./thumbnail.jpg
 lang: fr
@@ -93,7 +93,7 @@ Gradium a levé 70 millions de dollars en décembre 2025, puis porté ce tour à
 
 Vous pouvez [régler la synthèse vocale française de Gradium](/blog/gradium-text-to-speech-souverain) et lui prévoir un secours en cas de panne.
 
-Mistral vend aussi une synthèse vocale. Voxtral Speech 3, sortie le 20 octobre 2026, coûte 13 $ le million de caractères, parle plus de 35 langues, propose quatre voix françaises prêtes à l’emploi et clone une voix à partir de quelques secondes d’audio. Micdrop l’intègre avec [`MistralTTS`](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech), qui se connecte au point de terminaison européen `api.eu.mistral.ai`. Les poids de la version précédente, Voxtral TTS, sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
+Mistral vend aussi une synthèse vocale. Voxtral Speech 3, sortie le 20 octobre 2026, coûte 13 $ le million de caractères, parle plus de 35 langues, propose quatre voix françaises prêtes à l’emploi et clone une voix à partir de quelques secondes d’audio. Micdrop l’intègre avec [`MistralTTS`](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech), qui se connecte au point de terminaison européen `api.eu.mistral.ai` avec son option `baseUrl`. Les poids de la version précédente, Voxtral TTS, sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
 
 [Voxygen](https://www.voxygen.fr) est une entreprise issue d’Orange Labs, créée en 2011 près de Lannion. Elle fait de la synthèse vocale française et propose un déploiement sur site. [KugelAudio](https://huggingface.co/kugelaudio/kugelaudio-0-open), une équipe allemande liée au Hasso-Plattner-Institut, publie un modèle TTS ouvert de 7 milliards de paramètres sous licence MIT, dans 24 langues européennes.
 
@@ -109,7 +109,7 @@ Micdrop est une bibliothèque TypeScript open source, sous licence MIT, pour les
 npm install @micdrop/server @micdrop/web @micdrop/ai-sdk @ai-sdk/mistral @micdrop/gladia @micdrop/gradium
 ```
 
-Le serveur ci-dessous garde chaque appel en Europe. L’intégration Mistral de Micdrop appelle le point de terminaison global de Mistral, alors l’agent passe ici par `@micdrop/ai-sdk`. Ce package accepte n’importe quel modèle du [Vercel AI SDK](https://ai-sdk.dev), dont un modèle Mistral configuré sur `api.eu.mistral.ai`.
+Le serveur ci-dessous garde chaque appel en Europe. `MistralAgent`, dans l’intégration Mistral de Micdrop, appelle le point de terminaison global de Mistral, alors l’agent passe ici par `@micdrop/ai-sdk`. Ce package accepte n’importe quel modèle du [Vercel AI SDK](https://ai-sdk.dev), dont un modèle Mistral configuré sur `api.eu.mistral.ai`.
 
 ```typescript
 import { createMistral } from '@ai-sdk/mistral'
@@ -165,7 +165,7 @@ import { Micdrop } from '@micdrop/web'
 Micdrop.start({ url: 'wss://voix.votre-domaine.fr' })
 ```
 
-Pour transcrire avec Voxtral, remplacez `GladiaSTT` par `MistralSTT`, l’une des [intégrations Mistral de Micdrop](/docs/ai-integration/sovereign-voice-ai).
+Pour transcrire avec Voxtral, remplacez `GladiaSTT` par `MistralSTT`, l’une des [intégrations Mistral de Micdrop](/docs/ai-integration/provided-integrations/mistral). `MistralSTT` appelle le point de terminaison global de Mistral, qui ne garantit aucun traitement en Europe. Gardez Gladia ou Gradium quand la transcription doit y rester.
 
 ### Un secours qui reste en Europe
 

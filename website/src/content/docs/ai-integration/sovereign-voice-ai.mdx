@@ -7,7 +7,7 @@ lang: fr
 
 # IA Vocale Souveraine 🇫🇷🇪🇺
 
-Micdrop permet de construire une solution d'**IA vocale entièrement souveraine**, en combinant des fournisseurs d'IA français et européens. Aucune donnée ne quitte l'Union Européenne.
+Micdrop permet de construire une solution d'**IA vocale entièrement souveraine**, en combinant des fournisseurs d'IA français et européens. Avec une région ou un point de terminaison européen pour chaque brique, les données restent dans l'Union européenne.
 
 ## Pourquoi une IA vocale souveraine ?
 
@@ -29,12 +29,12 @@ Micdrop intègre nativement trois fournisseurs français qui couvrent l'ensemble
 | **Speech-to-Text** | [Gladia](/docs/ai-integration/provided-integrations/gladia), [Mistral](/docs/ai-integration/provided-integrations/mistral) ou [Gradium](/docs/ai-integration/provided-integrations/gradium) | Transcription en temps réel, plusieurs options françaises |
 | **Text-to-Speech** | [Gradium](/docs/ai-integration/provided-integrations/gradium) ou [Mistral](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech) | Synthèse vocale naturelle avec des voix françaises |
 
-Ces trois entreprises sont françaises, hébergent leurs données en Europe et sont conformes au RGPD.
+Ces trois entreprises françaises sont conformes au RGPD et traitent les données en Europe dès que vous choisissez leur région ou leur point de terminaison européen.
 
 Pour la transcription (STT), vous avez le choix entre trois fournisseurs souverains :
 
 - **Gladia** : plus de 90 langues, excellent en français, vocabulaire personnalisable
-- **Mistral** (Voxtral 3) : transcription temps réel en plus de 40 langues, via le même fournisseur que l'agent
+- **Mistral** (Voxtral 3) : transcription temps réel en plus de 40 langues, via le même fournisseur que l'agent, sur le point de terminaison global de Mistral, sans garantie de traitement en Europe
 - **Gradium** : transcription temps réel via le même fournisseur que la synthèse vocale
 
 Pour la synthèse vocale (TTS), deux fournisseurs souverains sont intégrés :
@@ -46,28 +46,34 @@ Pour que la voix ne quitte pas du tout votre serveur, [Phonon](/docs/ai-integrat
 
 Mistral peut ainsi tenir toute la chaîne avec une seule clé API : Voxtral 3 transcrit, un modèle Mistral répond et Voxtral Speech 3 parle. Gradium regroupe de son côté la transcription et la synthèse. Dans les deux cas, vous avez moins de fournisseurs à gérer.
 
-Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`. `MistralTTS` s'y connecte avec l'option `baseUrl`, alors que `MistralAgent` et `MistralSTT` appellent le point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l’agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.
+Mistral garantit une inférence en Europe uniquement sur son point de terminaison `api.eu.mistral.ai`. `MistralTTS` s'y connecte avec l'option `baseUrl`, alors que `MistralAgent` et `MistralSTT` appellent le point de terminaison global. Pour [monter un agent vocal IA souverain](/blog/agent-vocal-ia-souverain), faites passer l'agent par `@micdrop/ai-sdk` avec un modèle Mistral configuré sur `api.eu.mistral.ai`, ou hébergez des modèles open source chez vous.
 
 ## Mise en place
 
 ### Installation
 
 ```bash
-npm install @micdrop/server @micdrop/web @micdrop/mistral @micdrop/gladia @micdrop/gradium
+npm install @micdrop/server @micdrop/web @micdrop/ai-sdk @ai-sdk/mistral @micdrop/mistral @micdrop/gladia @micdrop/gradium
 ```
 
 ### Configuration du serveur
 
 ```typescript
+import { createMistral } from '@ai-sdk/mistral'
+import { AiSdkAgent } from '@micdrop/ai-sdk'
 import { MicdropServer } from '@micdrop/server'
-import { MistralAgent } from '@micdrop/mistral'
 import { GladiaSTT } from '@micdrop/gladia'
 import { GradiumTTS } from '@micdrop/gradium'
 
+// Point de terminaison européen de Mistral, inférence garantie dans l'UE
+const mistralEu = createMistral({
+  apiKey: process.env.MISTRAL_API_KEY,
+  baseURL: 'https://api.eu.mistral.ai/v1',
+})
+
 // Agent conversationnel avec Mistral
-const agent = new MistralAgent({
-  apiKey: process.env.MISTRAL_API_KEY || '',
-  model: 'mistral-large-latest',
+const agent = new AiSdkAgent({
+  model: mistralEu('mistral-large-latest'),
   systemPrompt: 'Tu es un assistant vocal en français. Réponds de manière concise et naturelle.',
 })
 
@@ -108,6 +114,8 @@ const stt = new MistralSTT({
 })
 ```
 
+`MistralSTT` appelle le point de terminaison global de Mistral, où Mistral ne s'engage sur aucun lieu d'exécution. Gardez Gladia ou Gradium quand la transcription doit rester en Europe.
+
 :::
 
 :::tip Autre option de synthèse vocale
@@ -147,7 +155,7 @@ Les services publics français peuvent déployer des assistants vocaux conformes
 
 ### Santé
 
-Les données de santé nécessitent un hébergement HDS (Hébergeur de Données de Santé). Avec une stack souveraine, les données vocales des patients restent en France.
+Les données de santé nécessitent un hébergement HDS (Hébergeur de Données de Santé). Avec une stack souveraine, les données vocales des patients restent dans l'Union européenne.
 
 ### Entreprises
 
@@ -159,7 +167,7 @@ Offrez aux établissements scolaires des outils d'IA vocale sans exposer les don
 
 ## Avantages de cette approche
 
-- **Aucune donnée hors UE** : toute la chaîne de traitement reste en Europe
+- **Données dans l'UE** : toute la chaîne de traitement reste en Europe quand la transcription passe par Gladia ou Gradium, l'agent par le point de terminaison européen de Mistral et la voix par une région ou un point de terminaison européen
 - **Conformité RGPD native** : pas de transfert de données vers des pays tiers
 - **Latence réduite** : les serveurs européens sont plus proches de vos utilisateurs
 - **Qualité française** : Mistral, Gladia et Gradium sont spécialement optimisés pour le français
