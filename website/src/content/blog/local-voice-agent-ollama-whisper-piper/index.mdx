@@ -3,6 +3,7 @@ title: 'Local Voice AI: Ollama, Whisper and Piper in Node'
 h1: 'A Voice Agent That Runs Entirely on Your Machine'
 summary: 'Ollama, Whisper and Piper make a voice agent that answers in about a second on a laptop, with no API key. We cover the setup, the latency and the traps we hit.'
 date: 2026-10-07
+update: 2026-10-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -38,7 +39,7 @@ A voice call chains three models. Speech to text turns the user's sentence into 
 | LLM            | Qwen3 4B Instruct, served by Ollama                              | The Ollama daemon, on the GPU       | 2.5 GB in Q4 |
 | Text to speech | [Piper](/docs/ai-integration/provided-integrations/piper)        | A subprocess, on the CPU            | A few dozen MB per voice |
 
-We picked Piper over the other local voices because it speaks around forty languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner. We measured all three side by side for [local text to speech in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
+We picked Piper over the other local voices because it speaks 53 languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner. We measured all three side by side for [local text to speech in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
 
 Micdrop drives the LLM through its [AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port.
 

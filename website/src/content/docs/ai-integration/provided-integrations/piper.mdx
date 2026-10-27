@@ -1,7 +1,7 @@
 ---
 title: 'Piper TTS in Node.js'
 sidebarLabel: 'Piper'
-description: 'Run offline text to speech in a Node voice agent with Piper. Install the binary, download a voice in one of 43 languages and hear it in about 390 ms.'
+description: 'Run offline text to speech in a Node voice agent with Piper. Install the binary, download a voice in one of 53 languages and hear it in about 390 ms.'
 order: 54
 ---
 
@@ -9,14 +9,14 @@ order: 54
 
 Piper TTS is an open source text to speech engine that runs offline on a CPU.
 Each voice is a small VITS model of a few dozen megabytes, for one language and
-one speaker. The project lists 43 languages, French, German and Spanish among
+one speaker. The project lists 178 voices in 53 languages, French, German and Spanish among
 them. `@micdrop/piper` drives the
 [Piper binary](https://github.com/OHF-Voice/piper1-gpl) as a subprocess of
 [@micdrop/server](../../server), so a Node voice agent speaks any of these
 languages with no API key.
 
 Piper starts speaking about 390 ms after it receives a sentence and generates
-much faster than real time, even on a modest CPU. With its 43 languages, it is
+much faster than real time, even on a modest CPU. With its 53 languages, it is
 the local voice to pick for a language beyond the five of [Phonon](./phonon),
 and for a commercial product in a language other than English, since the
 Phonon models for those languages are free for non-commercial use only.

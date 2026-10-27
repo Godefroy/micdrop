@@ -2,7 +2,7 @@
 title: 'ElevenLabs Alternatives for a TypeScript Voice Agent'
 summary: 'Cartesia, Gradium, Mistral, OpenAI, Gemini and four local engines share one TypeScript interface. Switching engine takes one line. FallbackTTS keeps a backup ready.'
 date: 2026-09-12
-update: 2026-10-23
+update: 2026-10-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -48,7 +48,7 @@ Data residency comes up with European buyers. Teams in health, education and the
 | [Gemini](/docs/ai-integration/provided-integrations/gemini)         | Hosted API                   | About 90             | 30                                 | You want to describe the tone in plain words   |
 | [OpenAI](/docs/ai-integration/provided-integrations/openai)         | Hosted API                   | The one you write in | 13                                 | You already hold an OpenAI key                 |
 | [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | Your Node process            | English              | 28                                 | The whole setup has to be one npm install      |
-| [Piper](/docs/ai-integration/provided-integrations/piper)           | A subprocess you spawn       | 43                   | 100+, one file each                | The call happens in a language besides English |
+| [Piper](/docs/ai-integration/provided-integrations/piper)           | A subprocess you spawn       | 53                   | 178, one file each                 | The call happens in a language besides English |
 | [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | Your Node process            | English              | Cloned from a sample               | A specific voice has to come back              |
 | [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)    | An mlx-audio server on a Mac | 10                   | 9                                  | A local voice takes style instructions         |
 
@@ -129,7 +129,7 @@ Voxtral Speech 3 costs [$13 per million characters](https://mistral.ai/news/voxt
 
 ## Kokoro, Piper, Pocket TTS and Qwen3-TTS, when the voice runs on your own machine
 
-These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 43 languages, more than the other three put together. Pocket TTS clones a voice from a few seconds of audio and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
+These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 53 languages, more than the other three put together. Pocket TTS clones a voice from a few seconds of audio and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
 
 Run the voice yourself and you drop both the per-character bill and the residency question. In exchange, the first word comes later and you have one more service to keep running. Kokoro, Piper and Pocket TTS differ a lot on [local text to speech latency and memory](/blog/local-tts-node-kokoro-vs-piper), measured on the same laptop.
 

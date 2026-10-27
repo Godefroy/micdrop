@@ -3,7 +3,7 @@ title: 'Best Open Source Voice AI Agent Frameworks in 2026'
 h1: 'The best open source voice AI agent frameworks in 2026'
 summary: 'Thirteen voice agent frameworks and hosted platforms compared on language, transport, licence and cost. Micdrop publishes this ranking and sits third in it.'
 date: 2026-08-13
-update: 2026-10-14
+update: 2026-10-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -225,7 +225,7 @@ Two questions get skipped at selection time and asked in production. What happen
     There is no single best one, because the projects target different kinds of application. Pipecat is the best default for a Python backend, LiveKit Agents for anything needing WebRTC, telephony, video or many client platforms, and Micdrop for adding voice to a Node and TypeScript web app without running a media server. Community size argues for the first two: Pipecat and LiveKit each carry more than 10,000 stars and hundreds of contributors, while Micdrop is a young project with one maintainer. Choose on the language your backend already speaks, on what infrastructure you are prepared to operate, and on how much you need a large community behind the code.
   </FaqItem>
   <FaqItem question="What is the best open source voice model?">
-    Whisper is the open default for speech to text. Outside English, a checkpoint fine-tuned on the language does better than a heavier generic one on both accuracy and cost. For speech synthesis, Piper is the only open engine covering around forty languages, while Pocket TTS and Kokoro speak English only. Piper needs its binary downloaded and Pocket TTS its weights archive extracted. Kokoro is the one that installs with npm alone. Each of these is a model your framework calls, so swapping one for another leaves the rest of the pipeline alone. The [local models guide](/docs/ai-integration/local-models) has the measurements, taken on a MacBook rather than a GPU server.
+    Whisper is the open default for speech to text. Outside English, a checkpoint fine-tuned on the language does better than a heavier generic one on both accuracy and cost. For speech synthesis, Piper is the only open engine covering 53 languages, while Pocket TTS and Kokoro speak English only. Piper needs its binary downloaded and Pocket TTS its weights archive extracted. Kokoro is the one that installs with npm alone. Each of these is a model your framework calls, so swapping one for another leaves the rest of the pipeline alone. The [local models guide](/docs/ai-integration/local-models) has the measurements, taken on a MacBook rather than a GPU server.
   </FaqItem>
   <FaqItem question="Can I build a voice AI agent entirely in TypeScript?">
     Yes, though only three projects qualify. LiveKit Agents ships a Node distribution with roughly half the plugin catalogue of its Python side, the OpenAI Agents SDK runs a server-side voice loop over WebSocket if you use OpenAI's realtime model, and Micdrop is TypeScript on both the browser and the server, with swappable providers or a realtime model from OpenAI or Google, though it is much the smallest and youngest of the three. Everything else labelled a Node or TypeScript SDK by a voice vendor is a REST client that calls a service running the conversation elsewhere.

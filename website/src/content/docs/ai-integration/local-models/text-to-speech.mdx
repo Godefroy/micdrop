@@ -12,7 +12,7 @@ then by what you can install next to your app.
 | Engine                                            | Runs                   | Languages    | Voice comes from                        | First audio    |
 | ------------------------------------------------- | ---------------------- | ------------ | --------------------------------------- | -------------- |
 | [Phonon](../provided-integrations/phonon)         | In the Node process    | Five         | A catalog of 102 voices                 | 30 to 100 ms   |
-| [Piper](../provided-integrations/piper)           | In a subprocess        | Around forty | A voice file downloaded next to the app | ~390 ms        |
+| [Piper](../provided-integrations/piper)           | In a subprocess        | 53           | A voice file downloaded next to the app | ~390 ms        |
 | [Pocket TTS](../provided-integrations/pocket-tts) | In the Node process    | English      | A bundled voice, or a sample to clone   | 250 to 430 ms  |
 | [Kokoro](../provided-integrations/kokoro)         | In the Node process    | English      | A bundled voice                         | 900 to 1300 ms |
 | [Qwen3-TTS](../provided-integrations/qwen-tts)    | On an mlx-audio server | Ten          | Nine speakers, a description, a sample  | ~400 ms        |
@@ -36,7 +36,7 @@ Whisper transcribes its French back word for word, dates and times included.
 These models are gated on Hugging Face and free for non-commercial use only,
 so a commercial product in those languages turns to Piper or Qwen3-TTS.
 
-Piper covers around forty languages, with voice files of a few dozen megabytes,
+Piper covers 53 languages, with voice files of a few dozen megabytes,
 and generates much faster than real time on any CPU. Its voices are small VITS
 models and sound less natural than the other engines.
 

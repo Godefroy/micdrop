@@ -1,9 +1,9 @@
 ---
 title: 'Local TTS in Node: Phonon, Kokoro, Piper, Pocket TTS'
 h1: 'Local Text to Speech in Node: Phonon, Kokoro, Piper, Pocket TTS'
-summary: 'Five engines speak from Node with no API key. Phonon speaks first, Piper covers 43 languages, Kokoro installs in one command, Qwen3-TTS needs a GPU.'
+summary: 'Five engines speak from Node with no API key. Phonon speaks first, Piper covers 53 languages, Kokoro installs in one command, Qwen3-TTS needs a GPU.'
 date: 2026-09-02
-update: 2026-10-21
+update: 2026-10-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -28,7 +28,7 @@ similarPosts:
   - 'voice-activity-detection-browser'
 takeaways:
   - 'Phonon puts out its first sound 30 to 100 ms after it receives a sentence, on one CPU core of a MacBook Pro M2. On the same laptop, Pocket TTS takes 250 to 430 ms, Piper around 390 ms and Kokoro 900 to 1300 ms.'
-  - 'Kokoro and Pocket TTS speak English only. Piper covers 43 languages with one voice file per language. Phonon reads five languages, but only its English 31M model allows commercial use.'
+  - 'Kokoro and Pocket TTS speak English only. Piper covers 53 languages with one voice file per language. Phonon reads five languages, but only its English 31M model allows commercial use.'
   - 'Kokoro installs with one npm command and nothing else. It is also the slowest of the five engines to start speaking, by about a second.'
   - 'Pocket TTS clones a voice from a few seconds of audio and holds 600 MB while it generates. Its license requires the consent of the person whose voice you clone.'
   - 'Qwen3-TTS sounds the most natural and reads ten languages, with its first sound after about 400 ms. It needs a GPU, and its mlx-audio server takes 2.5 GB of memory next to your app.'
@@ -36,7 +36,7 @@ takeaways:
 
 Running the voice locally removes the per-character bill, the network round trip, and the question of what a provider does with every sentence your assistant speaks. Five engines make that practical from a Node server today. Each one is the best on a different measure.
 
-Phonon speaks first, 30 to 100 ms after it is handed a sentence, on a single CPU core. Pocket TTS clones a voice from a few seconds of audio. Piper covers 43 languages on any CPU. Kokoro installs in one npm command and asks for nothing else. Qwen3-TTS sounds closest to a hosted voice and reads ten languages, but it needs a GPU. Every number here comes from the [local model measurements](/docs/ai-integration/local-models) taken on a MacBook Pro M2, on the CPU for Phonon, Pocket TTS, Piper and Kokoro, and on the Apple Silicon GPU for Qwen3-TTS.
+Phonon speaks first, 30 to 100 ms after it is handed a sentence, on a single CPU core. Pocket TTS clones a voice from a few seconds of audio. Piper covers 53 languages on any CPU. Kokoro installs in one npm command and asks for nothing else. Qwen3-TTS sounds closest to a hosted voice and reads ten languages, but it needs a GPU. Every number here comes from the [local model measurements](/docs/ai-integration/local-models) taken on a MacBook Pro M2, on the CPU for Phonon, Pocket TTS, Piper and Kokoro, and on the Apple Silicon GPU for Qwen3-TTS.
 
 ## What runs locally in Node today
 
@@ -44,7 +44,7 @@ Phonon speaks first, 30 to 100 ms after it is handed a sentence, on a single CPU
 | ------------------------------------------------------------------- | ----------------------- | --------- | -------------- | ---------------------------------------- |
 | [Phonon](/docs/ai-integration/provided-integrations/phonon)         | On a Node worker thread | 5         | 30 to 100 ms   | A catalog of 102 voices                  |
 | [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | In the Node process     | English   | 250 to 430 ms  | A few seconds of reference audio         |
-| [Piper](/docs/ai-integration/provided-integrations/piper)           | In a subprocess         | 43        | ~390 ms        | A voice file you download                |
+| [Piper](/docs/ai-integration/provided-integrations/piper)           | In a subprocess         | 53        | ~390 ms        | A voice file you download                |
 | [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | In the Node process     | English   | 900 to 1300 ms | A catalog bundled with the model         |
 | [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)    | On an mlx-audio server  | 10        | ~400 ms        | Nine speakers, a description or a sample |
 
@@ -199,7 +199,7 @@ Phonon, Kokoro and Pocket TTS pay a warm-up on their first inference, so Micdrop
 
 We measured speed only. For accuracy, [Gradium's own benchmarks](https://gradium.ai/content/gradium-phonon-on-device-tts-benchmarks-2026) transcribe the English Seed-TTS set with Whisper large v3. With a fixed voice, Phonon makes 0.83% word errors against 0.89% for NVIDIA's Magpie and 0.90% for Kokoro. When it clones a voice, it makes 1.00% against 1.27% for Pocket TTS and 1.71% for NeuTTS Nano. Gradium also reports [fewer errors than Magpie in French, German and Spanish](https://gradium.ai/blog/phonon-multilingual-smaller-clearer-better).
 
-## Piper covers 43 languages, Qwen3-TTS ten, Phonon five, Kokoro and Pocket TTS only English
+## Piper covers 53 languages, Qwen3-TTS ten, Phonon five, Kokoro and Pocket TTS only English
 
 Kokoro and Pocket TTS stop at English for different reasons.
 
@@ -211,7 +211,7 @@ Kyutai, the lab behind Pocket TTS, publishes French, German, Spanish, Italian an
 
 Phonon, the model Gradium built on Pocket TTS, reads English, French, German, Spanish and Portuguese, with one 40M model per language and a multilingual one that reads all five. The 102 voices of its catalog work with every model. Every 40M model is licensed CC BY-NC 4.0, the English one included, so a commercial product keeps Phonon for English, on the 31M model. Pick the model for the language of the call. Whisper transcribed the 40M French model nearly word for word, a date and a time included, while the English 31M model reading the same French came out unintelligible. Phonon 40M French is also the [fastest local French voice we measured](/blog/french-text-to-speech-voice-agent).
 
-Piper handles languages one voice at a time. Each voice is a small VITS model of a few dozen megabytes, trained on a single language, named after its language, its speaker and its quality: `fr_FR-siwis-medium`, `en_GB-alba-medium`, `de_DE-thorsten-high`. The project lists 43 languages, with [samples](https://rhasspy.github.io/piper-samples/) to listen to before you download one.
+Piper handles languages one voice at a time. Each voice is a small VITS model of a few dozen megabytes, trained on a single language, named after its language, its speaker and its quality: `fr_FR-siwis-medium`, `en_GB-alba-medium`, `de_DE-thorsten-high`. The project lists 178 voices in 53 languages, with [samples](https://rhasspy.github.io/piper-samples/) to listen to before you download one.
 
 Qwen3-TTS reads ten languages from a single checkpoint: Chinese, English, French, German, Italian, Japanese, Korean, Portuguese, Russian and Spanish. Each of its nine speakers was recorded in one language and reads all ten, so `Serena`, recorded in Chinese, reads French as accurately as `Ryan`, recorded in English. In a test of nine French sentences across four speakers, Whisper transcribed eight word for word.
 
@@ -275,7 +275,7 @@ All five plug into the same pipeline as the hosted providers, speech to text the
     lists them. It catalogs 28 voices, all American or British English, and it
     throws on any other id instead of mispronouncing the language. Pocket TTS is
     English only too, since its French checkpoint has no ONNX conversion. Use
-    Piper for French. It covers 43 languages with voices trained one language at
+    Piper for French. It covers 53 languages with voices trained one language at
     a time, such as `fr_FR-siwis-medium`. Qwen3-TTS also reads French, on a GPU.
     Phonon reads it with its 40M French model, for non-commercial use.
   </FaqItem>
