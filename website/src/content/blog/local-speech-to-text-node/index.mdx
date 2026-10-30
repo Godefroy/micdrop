@@ -3,6 +3,7 @@ title: 'Local Speech to Text in Node: Whisper and Its Alternatives'
 h1: 'Local Speech to Text in Node: Whisper, faster-whisper, Vosk, Parakeet'
 summary: 'Whisper transcribes in Node with no API key but pads every sentence to thirty seconds. Vosk, Moonshine and Parakeet read audio at its real length.'
 date: 2026-09-15
+update: 2026-10-30
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -18,6 +19,7 @@ keywords:
   - 'nvidia parakeet'
   - 'moonshine stt'
   - 'kyutai stt'
+  - 'whisperx'
 similarPosts:
   - 'local-tts-node-kokoro-vs-piper'
   - 'speech-to-text-react-native'
@@ -29,7 +31,7 @@ takeaways:
   - 'Hosted transcription costs $0.18 to $0.75 per hour of audio. Running it locally is worth it for privacy, for offline use, or on a server with CPU to spare.'
 ---
 
-To transcribe speech locally in a Node server, with no API key, no bill per minute and no audio leaving the machine, start with Whisper. It installs with one npm command and is accurate enough for a voice call on a laptop CPU. It is slow on short sentences, though, because it reads thirty seconds of audio whatever the length of the sentence. Outside English, a Whisper checkpoint fine-tuned on the language of the call is more accurate than a bigger generic one. Parakeet, Moonshine and Vosk read only the audio the user spoke. Pick Parakeet for the lowest error rate in English, and Moonshine or Vosk for the smallest model.
+To transcribe speech locally in a Node server, with no API key, no bill per minute and no audio leaving the machine, start with Whisper. It installs with one npm command and is accurate enough for a voice call on a laptop CPU. It is slow on short sentences, though, because it reads thirty seconds of audio whatever the length of the sentence. Outside English, a Whisper checkpoint fine-tuned on the language of the call is more accurate than a bigger generic one. Parakeet, Moonshine and Vosk read only the audio the user spoke. Pick Parakeet for the lowest error rate in English, and Moonshine or Vosk for the smallest model. For long recordings where word-level timestamps and batch transcription matter, [WhisperX](https://github.com/m-bain/whisperX) adds voice activity detection and forced alignment to Whisper, though it runs as a Python process alongside Node.
 
 We measured every `@micdrop/whisper` latency on CPU, with the model already loaded, on a MacBook Pro M2 with 24 GB of memory. The [benchmark of a fully local voice pipeline](/docs/ai-integration/local-models) ran on the same machine.
 
@@ -84,6 +86,34 @@ Both projects run OpenAI's weights, so they transcribe as accurately as the orig
 - `@kutalia/whisper-node-addon` ships prebuilt binaries with GPU support.
 
 Both runtimes pad to thirty seconds by default, like the original, so a short sentence still costs a full window. They make each of those thirty seconds cheaper to encode. A server transcribing many calls at once gains the most. Micdrop already runs ONNX weights quantized to `q8`, so on a laptop expect a smaller gain than the one faster-whisper measured against OpenAI's Python code.
+
+## WhisperX batches long recordings and aligns words to the audio
+
+WhisperX uses faster-whisper for recognition, then adds voice activity detection, batched transcription and forced alignment with a phoneme model. It adds a start and end time to each aligned word. Use WhisperX's VAD and alignment for long recordings and subtitle workflows. Compared with faster-whisper alone, WhisperX adds VAD, batching and alignment models. Compared with whisper.cpp, it needs a Python runtime and separate language-specific alignment models. Researchers evaluated this approach in [a study of time-accurate transcription for long-form audio](https://arxiv.org/abs/2303.00747).
+
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Create a clear left-to-right four-stage pipeline infographic for a developer article about WhisperX. Show a local audio waveform entering four connected labeled blocks, then a JSON transcript with word timestamps. Use exactly these labels: "Audio", "Voice activity detection", "Batched Whisper transcription", "Phoneme alignment", "Words + timestamps". Beneath the pipeline, add a small caption: "Python runtime · local models". Each stage should be distinct and legible, with simple geometric audio and model symbols, no other text or numbers. Landscape 16:9 layout." */}
+![WhisperX processes audio through voice activity detection, batched transcription and phoneme alignment to produce word timestamps](./whisperx-pipeline.jpg)
+
+A Node server can run WhisperX's Python CLI as a child process. Install WhisperX in a Python environment with `pip install whisperx`, then run its `whisperx` command. This example writes the transcript to a JSON file:
+
+```typescript
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
+
+const child = spawn('whisperx', [
+  'recording.wav',
+  '--model', 'small',
+  '--device', 'cpu',
+  '--compute_type', 'int8',
+  '--output_dir', './transcripts',
+  '--output_format', 'json',
+], { stdio: 'inherit' })
+
+const [code] = await once(child, 'close')
+if (code !== 0) throw new Error(`WhisperX exited with code ${code}`)
+```
+
+WhisperX downloads model weights on the first run and needs a separate alignment model for the recording's language. Its code uses the BSD 2-Clause license, while model weights can have separate terms, so check each model before commercial use. CPU mode works with `--device cpu`. GPU acceleration needs a compatible CUDA setup. Its batched decoding uses VAD segments, and its CLI offers options for carrying context between segments. Words missing from the alignment model's vocabulary may lack timestamps, and WhisperX can have trouble with overlapping speech or mislabel speakers. Diarization also needs the optional speaker model, a Hugging Face access token and acceptance of that model's terms. For a short live call, Whisper in Node or whisper.cpp avoids the Python runtime and alignment stages. For long recordings where word timing or speaker labels matter, WhisperX adds those stages at the cost of extra models and setup.
 
 ## Vosk, Moonshine, Parakeet and Kyutai STT read audio at its real length
 
@@ -141,8 +171,8 @@ Use a hosted API when the server is short on CPU, or when the call switches betw
 
 ## The models compared on latency, size, license and Node support
 
-| Model                  | Languages                   | Latency on a 3 s sentence | Size                 | License                         | From Node                         |
-| ---------------------- | --------------------------- | ------------------------- | -------------------- | ------------------------------- | --------------------------------- |
+| Model                  | Languages                 | Latency on a 3 s sentence | Size                      | License                         | From Node                      |
+| ---------------------- | ------------------------- | ------------------------- | ------------------------- | ------------------------------- | ------------------------------ |
 | Whisper `base`         | ~100                        | ~440 ms                   | 85 MB in `q8`        | MIT                             | `@micdrop/whisper`                |
 | Whisper `french`       | French                      | ~1100 ms                  | 390 MB in `q8`       | Apache 2.0                      | `@micdrop/whisper`                |
 | faster-whisper         | Same as Whisper             | Not measured here         | Same as Whisper      | MIT                             | Python service                    |
@@ -151,8 +181,12 @@ Use a hosted API when the server is short on CPU, or when the call switches betw
 | Moonshine              | English and 7 others        | Not measured here         | 34M to 245M params   | MIT, community license for some | `sherpa-onnx-node`                |
 | Parakeet TDT 0.6B      | English (v2), 25 (v3)       | Not measured here         | 600M params          | CC-BY 4.0                       | `sherpa-onnx-node`                |
 | Kyutai STT             | English and French (1B)     | Not measured here         | 1B and 2.6B params   | CC-BY 4.0                       | `moshi-server` over a WebSocket   |
+| WhisperX               | Varies by alignment model  | Not measured here         | Whisper + alignment models | [BSD 2-Clause](https://github.com/m-bain/whisperX/blob/main/LICENSE) | Python CLI started from Node |
 
-Start with Whisper `base` for an English call, since it is the only English option here that installs with one npm command and has a measured latency on a laptop. For a call in another language, move to a checkpoint fine-tuned on that language. Look at Parakeet once transcription runs on a server and the English error rate matters more than setup time. Pick Moonshine Tiny or Vosk when the model has to stay as small as possible.
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Create a balanced two-column decision infographic for a developer choosing a local speech-to-text runtime. Left column: a short audio waveform flowing directly into a simple Node.js block and transcript. Right column: a long waveform split into batches, flowing through a Python block and word-alignment markers into a transcript. Use exactly these labels and no others: "Short live calls", "Whisper in Node", "Long recordings", "WhisperX in Python", "Word timestamps", "Lower setup". Make clear the two approaches solve different workloads, not that one is universally faster or better. Use emerald accents for the Node path and restrained sky-blue accents for the WhisperX path. No logos, numbers or extra text. Landscape 16:9." */}
+![Whisper in Node fits short live calls while WhisperX in Python adds word timestamps for long recordings](./local-stt-choice.jpg)
+
+Start with Whisper `base` for an English call, since it is the only English option here that installs with one npm command and has a measured latency on a laptop. For a call in another language, move to a checkpoint fine-tuned on that language. Look at Parakeet once transcription runs on a server and the English error rate matters more than setup time. Pick Moonshine Tiny or Vosk when the model has to stay as small as possible. Use WhisperX for long recordings when word-level timestamps, batching or diarization justify a separate Python runtime.
 
 To switch models, replace the transcription class. The agent and the voice stay as they are. The voice can run on the same machine too, with a [local text to speech model](/blog/local-tts-node-kokoro-vs-piper). Whisper `base`, Piper and an LLM served by Ollama give you a [local voice agent](/blog/local-voice-agent-ollama-whisper-piper) that answers in about a second on a MacBook Pro M2. You can [compare every transcription and voice provider](/docs/ai-integration) or [start a first voice call in about five minutes](/docs/getting-started).
 
