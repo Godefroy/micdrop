@@ -1,18 +1,18 @@
 ---
-title: 'Voice Activity Detection (VAD)'
+title: 'Voice Activity Detection in the Micdrop Client'
 description: 'Micdrop uses a VAD (Voice Activity Detection) to detect speech and silence and send chunks of audio to the server only when speech is detected.'
 order: 12
 ---
 
-# Voice Activity Detection (VAD)
+# Voice Activity Detection in the Micdrop Client
 
-Micdrop uses a VAD (Voice Activity Detection) to detect speech and silence and send chunks of audio to the server only when speech is detected.
+Voice activity detection (VAD) classifies short audio frames as speech or non-speech. Micdrop runs VAD in its browser client, which holds the microphone, so it can decide when to send audio to the server without a network round trip. VAD detects speech and silence. [Turn detection](/docs/client/turn-detection) decides whether a pause ends the speaker’s thought.
 
-Each VAD setting trades latency against false positives. [Silero VAD, WebRTC VAD and a volume threshold](/blog/voice-activity-detection-browser) misfire on background noise at very different rates, so the detector you pick limits how far you can tune for speed.
+Micdrop offers a volume detector and Silero. Each trades latency against false positives, and [Silero, WebRTC VAD and a volume threshold](/blog/voice-activity-detection-browser) react differently to background noise.
 
-Whichever VAD decides, Micdrop keeps the last moments of audio in reserve, so the syllable spoken before it reacted is sent along with the rest of the sentence.
+Micdrop keeps recent audio in reserve while the detector confirms speech, so the first syllable reaches the server with the rest of the sentence.
 
-When the user can interrupt the assistant, everything they say over it is recorded, and echo cancellation keeps the assistant voice out of it. When interruptions are disabled, what the microphone hears while the assistant speaks, and for 300 ms after, is never sent to the server. Micdrop disables interruptions by itself when the browser reports that echo cancellation is off.
+When interruptions are enabled, the microphone records speech over the assistant’s reply, with echo cancellation keeping the assistant’s voice out of the recording. When interruptions are disabled, Micdrop does not send microphone audio captured while the assistant speaks or for 300 ms afterward. The client disables interruptions automatically when the browser reports that echo cancellation is off.
 
 ## Supported VAD Types
 
@@ -26,6 +26,12 @@ You can also pass instances of these VADs, or combine them in an array. See belo
 > **Note:** Only `'volume'` and `'silero'` are supported as string names. Custom VADs must be passed as instances.
 
 ## Quick Start
+
+Install the browser client:
+
+```bash
+npm install @micdrop/web
+```
 
 Configure VAD when starting a call:
 
