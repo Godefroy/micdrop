@@ -121,9 +121,14 @@ lists them with their language, locale and gender. A voice from the catalog
 also sets how the text is normalized when `language` is left out, so
 `voice: 'Noémie'` reads numbers and dates the French way.
 
-Left out, the voice is the model's own. A path to a `.safetensors` file works
-too, such as a voice made with the `create_voice` tool of the
-[Phonon runtime](https://github.com/gradium-ai/xn-ptts).
+Left out, the voice is the model's own. Gradium's API can create a custom voice
+by cloning about ten seconds of clear speech with
+`scripts/clone-voice.py speaker.wav --lang en -o voice.safetensors`. Gradium
+returns a `.safetensors` file and saves the voice to your Gradium account, where
+`scripts/download-voice.py` can fetch it again by ID. You can also design a
+voice in Gradium Studio and download it the same way. Phonon runs the resulting
+voice file locally with any checkpoint. Get the speaker's consent before
+cloning their voice.
 
 ## Numbers, dates and symbols
 

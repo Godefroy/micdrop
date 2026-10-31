@@ -3,7 +3,7 @@ title: 'Local TTS in Node: Phonon, Kokoro, Piper, Pocket TTS'
 h1: 'Local Text to Speech in Node: Phonon, Kokoro, Piper, Pocket TTS'
 summary: 'Five engines speak from Node with no API key. Phonon speaks first, Piper covers 53 languages, Kokoro installs in one command, Qwen3-TTS needs a GPU.'
 date: 2026-09-02
-update: 2026-10-27
+update: 2026-10-31
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -247,7 +247,7 @@ Pick **Phonon** for an English call that has to answer fast. The 31M model, free
 
 Pick **Piper** as soon as a commercial call happens in a language other than English on a machine without a GPU. Kokoro and Pocket TTS speak English only, and Phonon's other languages are licensed for non-commercial use. You pay for that with a Python interpreter in your image, a voice file to ship, and a GPL check on what you redistribute. Piper, Whisper and a Qwen3 model served by Ollama are enough for a [voice agent that runs entirely on your machine](/blog/local-voice-agent-ollama-whisper-piper). It answers in about a second in English and about 1.6 seconds in French, both measured on a MacBook Pro M2.
 
-Pick **Pocket TTS** for an English call that needs a specific voice. It clones a voice on the fly from a few seconds of audio, with no training step. Phonon makes a custom voice only through its offline `create_voice` tool. Pocket TTS starts speaking in 250 to 430 ms, close to Piper. You pay 600 MB of memory while it generates and an archive to fetch at build time, and you need the consent of whoever you clone.
+Pick **Pocket TTS** for an English call that needs a specific voice. It clones a voice on the fly from a few seconds of audio, with no training step. Phonon makes a custom voice through Gradium's API, then plays it locally. Pocket TTS starts speaking in 250 to 430 ms, close to Piper. You pay 600 MB of memory while it generates and an archive to fetch at build time, and you need the consent of whoever you clone.
 
 Pick **Kokoro** for an English call when you want the shortest setup. One npm dependency is the whole setup, since the weights download on first use. It costs roughly one extra second before the first word, which a person on a call hears.
 
