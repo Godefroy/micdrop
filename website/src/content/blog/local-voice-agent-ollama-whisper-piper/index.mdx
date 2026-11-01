@@ -3,7 +3,7 @@ title: 'Local Voice AI: Ollama, Whisper and Piper in Node'
 h1: 'A Voice Agent That Runs Entirely on Your Machine'
 summary: 'Ollama, Whisper and Piper make a voice agent that answers in about a second on a laptop, with no API key. We cover the setup, the latency and the traps we hit.'
 date: 2026-10-07
-update: 2026-10-27
+update: 2026-11-01
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -39,7 +39,9 @@ A voice call chains three models. Speech to text turns the user's sentence into 
 | LLM            | Qwen3 4B Instruct, served by Ollama                              | The Ollama daemon, on the GPU       | 2.5 GB in Q4 |
 | Text to speech | [Piper](/docs/ai-integration/provided-integrations/piper)        | A subprocess, on the CPU            | A few dozen MB per voice |
 
-We picked Piper over the other local voices because it speaks 53 languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner. We measured all three side by side for [local text to speech in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
+[Phonon](/docs/ai-integration/provided-integrations/phonon) is another local voice for Node. It runs on a worker thread without a subprocess or native addon, and sends its first audio 30 to 100 ms after receiving a sentence. We compare it with Piper and other [local text-to-speech engines in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
+
+We picked Piper for this setup because it speaks 53 languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner.
 
 Micdrop drives the LLM through its [AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port.
 
@@ -127,16 +129,38 @@ Run one call before showing the agent to anyone. The first call downloads the Wh
 
 Ollama has its own timer. It unloads a model after five minutes without a request, so the next call waits several seconds while the model reloads. On a machine dedicated to the agent, start the daemon with `OLLAMA_KEEP_ALIVE=-1` to keep the model in memory.
 
+## Swapping Piper for Phonon
+
+Install Phonon alongside the other packages:
+
+```bash
+npm install @micdrop/phonon
+```
+
+Then replace the Piper import and `tts` option in the server setup:
+
+```typescript
+import { PhononTTS } from '@micdrop/phonon'
+
+// In MicdropServer options:
+tts: new PhononTTS({ voice: 'Easton' }),
+```
+
+Phonon's first audio arrives 30 to 100 ms after it receives a sentence, compared with about 390 ms for Piper on the same MacBook Pro M2. That saves roughly 290 to 360 ms from the speech-generation part of the latency budget. With the measured Whisper and Qwen3 steps, the first audio arrives in roughly 0.6 to 0.7 seconds, before any extra tool-call time. Phonon uses about 450 MB RSS while loaded and generating. Its model downloads into the Hugging Face cache on first use, then starts offline. The [on-device voice-agent comparison](/blog/on-device-ai-voice-agent) covers where this Node setup fits beside browser and phone models.
+
+The English Phonon 31M model uses Apache 2.0. Every 40M model, including English, uses CC BY-NC 4.0 and requires accepting Hugging Face's gated-model terms. Phonon's French, German, Spanish and Portuguese models are 40M, so Piper remains the suitable choice for commercial use in those languages.
+
 ## The latency you get
 
-The user hears the first word once Whisper has transcribed the sentence, the LLM has written its first tokens and Piper has synthesized the first sentence of the answer:
+The user hears the first word once Whisper has transcribed the sentence, the LLM has written its first tokens and the voice has generated its first audio:
 
 | Step                                  | Time on a MacBook Pro M2 |
 | ------------------------------------- | ------------------------ |
 | Whisper `base` on a 3 second sentence | ~440 ms                  |
 | First token from Qwen3 4B Instruct    | 100 to 150 ms            |
-| First sentence from Piper             | ~390 ms                  |
-| Total, end of speech to first audio   | about 1 s                |
+| First audio from Piper                | ~390 ms                  |
+| First audio from Phonon               | 30 to 100 ms             |
+| Total with Phonon, end of speech to first audio | roughly 0.6 to 0.7 s |
 
 We measured each step with the model already loaded. We also measured one call end to end in the demo app, with the assistant speaking first so that nothing needed transcribing. The first audio reached the browser 1.66 seconds after the call opened.
 
@@ -209,7 +233,7 @@ The Mac's GPU stays busy during the call anyway. Ollama runs the LLM, by far the
 
 A local stack makes sense for a product whose health or legal conversations must stay on the machine, for a demo on a network you do not control, or for a development setup where nobody wants to share API keys. It costs nothing per minute, since Micdrop is MIT-licensed and the recommended models carry permissive licenses. Piper's engine is GPL-3.0. Micdrop runs it as a separate process, so the GPL terms come into play when you redistribute the Piper binary yourself.
 
-A local stack makes less sense when the agent has to follow a long script, call several tools reliably or hang up on its own. A 4B model handles a short exchange well and falls behind a hosted model as soon as the conversation needs judgment. The voice is the other limit. Piper sounds less natural than a hosted voice from ElevenLabs or Cartesia. The local voices that sound better either speak only English, like Kokoro and Pocket TTS, or need a GPU and a server next to your app, like Qwen3-TTS.
+A local stack makes less sense when the agent has to follow a long script, call several tools reliably or hang up on its own. A 4B model handles a short exchange well and falls behind a hosted model as soon as the conversation needs judgment. The voice is the other limit. Piper sounds less natural than a hosted voice from ElevenLabs or Cartesia. Phonon gives you a faster local option, though its French, German, Spanish and Portuguese models carry a non-commercial license. Kokoro and Pocket TTS speak only English, while Qwen3-TTS needs a GPU and a server next to your app.
 
 You can mix the two. Each part is one line in the server, so a product can keep transcription local and send the text to a hosted LLM, or run everything locally in development and switch to [a European hosted stack](/docs/ai-integration/sovereign-voice-ai) in production. The browser code stays the same either way.
 
