@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/gemini",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Google Gemini implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -39,7 +39,7 @@
     "realtime"
   ],
   "dependencies": {
-    "@google/genai": "^2.22.0",
+    "@google/genai": "^2.31.0",
     "eventemitter3": "^5",
     "ws": "^8.19.0"
   },

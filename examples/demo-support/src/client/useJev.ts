@@ -31,7 +31,7 @@ export function useJev(): JevState {
   const handleClassification = useCallback(
     (classification: MicdropClassification<JevResult>) => {
       setState((previous) => {
-        const tokens = classification.result.usage.input_tokens
+        const tokens = classification.result.usage.input_tokens ?? 0
         return {
           last: classification,
           byTranscript: {

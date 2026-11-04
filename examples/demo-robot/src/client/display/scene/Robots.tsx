@@ -24,7 +24,7 @@ const CLAUDE_BLUE = '#6a9bcc'
 
 export interface BodyProps {
   face: CanvasTexture
-  antenna: RefObject<MeshStandardMaterial>
+  antenna: RefObject<MeshStandardMaterial | null>
   asleep: boolean
 }
 

@@ -57,7 +57,7 @@ const BALL_RADIUS = 0.17
 /** A football, which rolls when it moves */
 export function Ball() {
   const mesh = useRef<Mesh>(null)
-  const last = useRef<Vector3>()
+  const last = useRef<Vector3>(undefined)
   const geometry = useMemo(() => footballGeometry(), [])
 
   useFrame(() => {

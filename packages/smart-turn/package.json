@@ -52,9 +52,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.13",
-    "onnxruntime-node": "^1.23.2",
+    "onnxruntime-node": "^1.31.1",
     "onnxruntime-react-native": "^1.24.3",
-    "onnxruntime-web": "^1.23.2",
+    "onnxruntime-web": "^1.31.1",
     "tsup": "^8.5.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"

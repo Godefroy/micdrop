@@ -215,7 +215,7 @@ function Caret() {
   return (
     <span
       aria-hidden="true"
-      className="ml-1 inline-block h-3.5 w-1.5 translate-y-px animate-breathe rounded-sm bg-accent align-middle"
+      className="ml-1 inline-block h-3.5 w-1.5 translate-y-px animate-breathe rounded-xs bg-accent align-middle"
     />
   )
 }

@@ -44,7 +44,7 @@ export default function Display({
             listening={call.listening}
           />
           {call.error && (
-            <p className="absolute left-1/2 top-4 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur">
+            <p className="absolute left-1/2 top-4 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur-sm">
               {call.error}
             </p>
           )}

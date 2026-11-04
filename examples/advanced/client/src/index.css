@@ -1,8 +1,160 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
 /**
+ * The demo reads its colours from the semantic tokens declared below, so
+ * switching the theme is one attribute on `<html>` rather than a `dark:` variant
+ * on every utility. Tokens hold finished colour values, which rules out the `/50`
+ * opacity shorthand: anything translucent gets its own `-soft` token.
+ */
+@theme {
+  /* Surfaces, from the page down to the sunken wells inside a card */
+  --color-base: var(--base);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-inset: var(--inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-knob: var(--knob);
+
+  /* Text, from the reading size down to the labels */
+  --color-main: var(--main);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+
+  /* Emerald carries the live signal: the call is up, the mic hears you */
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+
+  /* Sky is the other voice in the room, the one the assistant speaks in */
+  --color-voice: var(--voice);
+  --color-voice-soft: var(--voice-soft);
+  --color-voice-ink: var(--voice-ink);
+
+  /* Amber waits, red stops. Neither ever decorates anything */
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  /* Two steps and no more: `xl` on panels, `lg` on controls */
+  --radius-xl: 0.75rem;
+  --radius-lg: 0.5rem;
+
+  /* The single curve the demo animates on */
+  --ease-rise: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-rise: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  --animate-breathe: breathe 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+  @keyframes breathe {
+    50% {
+      opacity: 0.35;
+      transform: scale(1.08);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility slider {
+  /**
+   * The sliders are what the demo is tuned with, so they get a real track:
+   * the part behind the thumb fills in the accent, the rest stays a rail.
+   * `--fill` is written by the component as a percentage.
+   */
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1rem;
+  background: transparent;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &::-webkit-slider-runnable-track {
+    height: 0.25rem;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--accent) 0 var(--fill),
+      var(--line-strong) var(--fill) 100%
+    );
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -0.375rem;
+    height: 1rem;
+    width: 1rem;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    transition: box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &::-moz-range-track {
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--line-strong);
+  }
+
+  &::-moz-range-progress {
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  &::-moz-range-thumb {
+    height: 0.875rem;
+    width: 0.875rem;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 2px solid var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+
+  &:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+}
+
+@layer utilities {
+  /**
  * The demo wears the language of the micdrop site: dark by default, emerald on
  * whatever is live, slate on every surface. The values below are the ones the
  * site declares in `website/src/styles/global.css`, so a page of the docs and
@@ -16,72 +168,73 @@
  * round, a slider thumb and a status dot.
  */
 
-:root,
-[data-theme='dark'] {
-  color-scheme: dark;
+  :root,
+  [data-theme='dark'] {
+    color-scheme: dark;
 
-  --base: #020617;
-  --panel: #0f172a;
-  --raised: #1e293b;
-  --inset: #0b1120;
-  --line: #1e293b;
-  --line-strong: #334155;
-  --knob: #e2e8f0;
+    --base: #020617;
+    --panel: #0f172a;
+    --raised: #1e293b;
+    --inset: #0b1120;
+    --line: #1e293b;
+    --line-strong: #334155;
+    --knob: #e2e8f0;
 
-  --main: #e2e8f0;
-  --dim: #94a3b8;
-  --faint: #7d8da5;
+    --main: #e2e8f0;
+    --dim: #94a3b8;
+    --faint: #7d8da5;
 
-  --accent: #34d399;
-  --accent-soft: rgba(52, 211, 153, 0.14);
-  --accent-ink: #6ee7b7;
-  --on-accent: #022c22;
+    --accent: #34d399;
+    --accent-soft: rgba(52, 211, 153, 0.14);
+    --accent-ink: #6ee7b7;
+    --on-accent: #022c22;
 
-  --voice: #38bdf8;
-  --voice-soft: rgba(56, 189, 248, 0.14);
-  --voice-ink: #7dd3fc;
+    --voice: #38bdf8;
+    --voice-soft: rgba(56, 189, 248, 0.14);
+    --voice-ink: #7dd3fc;
 
-  --warn: #fbbf24;
-  --warn-soft: rgba(251, 191, 36, 0.14);
-  --danger: #f87171;
-  --danger-soft: rgba(248, 113, 113, 0.14);
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.14);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.14);
 
-  --shadow-panel: 0 1px 2px rgba(2, 6, 23, 0.6);
-  --shadow-dock: 0 -1px 0 var(--line), 0 12px 32px rgba(2, 6, 23, 0.5);
-}
+    --shadow-panel: 0 1px 2px rgba(2, 6, 23, 0.6);
+    --shadow-dock: 0 -1px 0 var(--line), 0 12px 32px rgba(2, 6, 23, 0.5);
+  }
 
-[data-theme='light'] {
-  color-scheme: light;
+  [data-theme='light'] {
+    color-scheme: light;
 
-  /* The page sits a step below the cards, so a panel still reads as a panel */
-  --base: #f1f5f9;
-  --panel: #ffffff;
-  --raised: #f8fafc;
-  --inset: #eef2f7;
-  --line: #e2e8f0;
-  --line-strong: #cbd5e1;
-  --knob: #ffffff;
+    /* The page sits a step below the cards, so a panel still reads as a panel */
+    --base: #f1f5f9;
+    --panel: #ffffff;
+    --raised: #f8fafc;
+    --inset: #eef2f7;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --knob: #ffffff;
 
-  --main: #0f172a;
-  --dim: #334155;
-  --faint: #64748b;
+    --main: #0f172a;
+    --dim: #334155;
+    --faint: #64748b;
 
-  --accent: #10b981;
-  --accent-soft: rgba(5, 150, 105, 0.1);
-  --accent-ink: #047857;
-  --on-accent: #022c22;
+    --accent: #10b981;
+    --accent-soft: rgba(5, 150, 105, 0.1);
+    --accent-ink: #047857;
+    --on-accent: #022c22;
 
-  --voice: #0284c7;
-  --voice-soft: rgba(2, 132, 199, 0.1);
-  --voice-ink: #0369a1;
+    --voice: #0284c7;
+    --voice-soft: rgba(2, 132, 199, 0.1);
+    --voice-ink: #0369a1;
 
-  --warn: #b45309;
-  --warn-soft: rgba(180, 83, 9, 0.1);
-  --danger: #dc2626;
-  --danger-soft: rgba(220, 38, 38, 0.08);
+    --warn: #b45309;
+    --warn-soft: rgba(180, 83, 9, 0.1);
+    --danger: #dc2626;
+    --danger-soft: rgba(220, 38, 38, 0.08);
 
-  --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-dock: 0 -1px 0 var(--line), 0 12px 32px rgba(15, 23, 42, 0.08);
+    --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-dock: 0 -1px 0 var(--line), 0 12px 32px rgba(15, 23, 42, 0.08);
+  }
 }
 
 @layer base {
@@ -121,81 +274,6 @@
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-  }
-}
-
-@layer components {
-  /**
-   * The sliders are what the demo is tuned with, so they get a real track:
-   * the part behind the thumb fills in the accent, the rest stays a rail.
-   * `--fill` is written by the component as a percentage.
-   */
-  .slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 1rem;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .slider:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  .slider::-webkit-slider-runnable-track {
-    height: 0.25rem;
-    border-radius: 999px;
-    background: linear-gradient(
-      to right,
-      var(--accent) 0 var(--fill),
-      var(--line-strong) var(--fill) 100%
-    );
-  }
-
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    margin-top: -0.375rem;
-    height: 1rem;
-    width: 1rem;
-    border-radius: 999px;
-    background: var(--panel);
-    border: 2px solid var(--accent);
-    transition: box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .slider::-moz-range-track {
-    height: 0.25rem;
-    border-radius: 999px;
-    background: var(--line-strong);
-  }
-
-  .slider::-moz-range-progress {
-    height: 0.25rem;
-    border-radius: 999px;
-    background: var(--accent);
-  }
-
-  .slider::-moz-range-thumb {
-    height: 0.875rem;
-    width: 0.875rem;
-    border-radius: 999px;
-    background: var(--panel);
-    border: 2px solid var(--accent);
-  }
-
-  .slider:focus-visible {
-    outline: none;
-  }
-
-  .slider:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px var(--accent-soft);
-  }
-
-  .slider:focus-visible::-moz-range-thumb {
-    box-shadow: 0 0 0 4px var(--accent-soft);
   }
 }
 

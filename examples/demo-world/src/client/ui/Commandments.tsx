@@ -25,7 +25,7 @@ export default function Commandments({ commandments }: CommandmentsProps) {
       {commandments.map((text, index) => (
         <p
           key={text}
-          className="animate-carve border-l border-[#c69a5c]/40 pl-3 text-[13px] leading-snug tracking-[0.1em] text-[#e8d3ae]"
+          className="animate-carve border-l border-[#c69a5c]/40 pl-3 text-[13px] leading-snug tracking-widest text-[#e8d3ae]"
           style={{ animationDelay: `${index * 80}ms` }}
         >
           {text}

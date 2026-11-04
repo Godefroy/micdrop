@@ -150,7 +150,7 @@ export function Burst({
   emoji: string
 }) {
   const ref = useRef<InstancedMesh>(null)
-  const born = useRef<number>()
+  const born = useRef<number>(undefined)
   const color = useMemo(
     () =>
       BURST_COLORS.find(([emojis]) =>

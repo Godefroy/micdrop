@@ -43,7 +43,7 @@ export default function Toasts({ toasts }: ToastsProps) {
       {shown.map((toast) => (
         <div
           key={toast.id}
-          className="animate-rise rounded-full border border-white/10 bg-black/40 px-4 py-1.5 text-sm text-[#e5e1f0] backdrop-blur-sm"
+          className="animate-rise rounded-full border border-white/10 bg-black/40 px-4 py-1.5 text-sm text-[#e5e1f0] backdrop-blur-xs"
         >
           {label(toast, lang)}
         </div>

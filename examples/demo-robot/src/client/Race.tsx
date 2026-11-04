@@ -82,20 +82,20 @@ export default function Race() {
         ))}
       </div>
       {transcript && (
-        <p className="pointer-events-none absolute left-1/2 top-24 max-w-[70%] -translate-x-1/2 rounded-2xl bg-slate-950/70 px-5 py-2 text-center text-lg text-white shadow-xl backdrop-blur">
+        <p className="pointer-events-none absolute left-1/2 top-24 max-w-[70%] -translate-x-1/2 rounded-2xl bg-slate-950/70 px-5 py-2 text-center text-lg text-white shadow-xl backdrop-blur-sm">
           “{transcript}”
         </p>
       )}
       {call.error && (
-        <p className="absolute left-1/2 top-40 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur">
+        <p className="absolute left-1/2 top-40 max-w-lg -translate-x-1/2 rounded-2xl bg-rose-950/90 px-4 py-2 text-sm text-rose-100 shadow-xl backdrop-blur-sm">
           {call.error}
         </p>
       )}
       <Hint call={call} />
       {!call.started && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0c1222]/80 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0c1222]/80 backdrop-blur-xs">
           <button
-            className="rounded-full bg-gradient-to-r from-orange-400 to-rose-500 px-10 py-4 text-xl font-bold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110 disabled:opacity-60"
+            className="rounded-full bg-linear-to-r from-orange-400 to-rose-500 px-10 py-4 text-xl font-bold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110 disabled:opacity-60"
             onClick={startCall}
             disabled={call.starting}
           >
@@ -129,7 +129,7 @@ function Side({
         asleep={!call.started}
         listening={call.listening}
       />
-      <div className="pointer-events-none absolute left-4 top-4 rounded-2xl bg-slate-950/70 px-4 py-2 shadow-xl backdrop-blur">
+      <div className="pointer-events-none absolute left-4 top-4 rounded-2xl bg-slate-950/70 px-4 py-2 shadow-xl backdrop-blur-sm">
         <p className="text-xl font-bold leading-tight text-white">
           {NAMES[brain]}
         </p>
@@ -159,7 +159,7 @@ function Clock({ timer }: { timer?: Timer }) {
   const ms = Math.max(0, Math.round((timer.end ?? now) - timer.start))
   return (
     <div
-      className={`pointer-events-none absolute bottom-16 left-1/2 -translate-x-1/2 rounded-2xl px-5 py-2 font-mono text-4xl font-bold tabular-nums shadow-xl backdrop-blur ${
+      className={`pointer-events-none absolute bottom-16 left-1/2 -translate-x-1/2 rounded-2xl px-5 py-2 font-mono text-4xl font-bold tabular-nums shadow-xl backdrop-blur-sm ${
         done
           ? 'bg-emerald-400/90 text-emerald-950'
           : 'bg-slate-950/70 text-white'

@@ -9,7 +9,7 @@ export default function SlideView({ slide }: { slide: Slide }) {
   switch (slide.layout) {
     case 'title':
       return (
-        <Frame className="flex flex-col items-center justify-center gap-[2cqw] bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 px-[8cqw] text-center">
+        <Frame className="flex flex-col items-center justify-center gap-[2cqw] bg-linear-to-br from-indigo-700 via-violet-700 to-fuchsia-700 px-[8cqw] text-center">
           <h1 className="text-[6.5cqw] font-bold leading-tight">
             {slide.title}
           </h1>
@@ -74,7 +74,7 @@ export default function SlideView({ slide }: { slide: Slide }) {
       return (
         <Frame className="relative bg-slate-900">
           <Picture slide={slide} className="absolute inset-0" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
           <h2 className="absolute bottom-[5cqw] left-[6cqw] right-[6cqw] text-[5cqw] font-bold leading-tight">
             {slide.title}
           </h2>
@@ -83,7 +83,7 @@ export default function SlideView({ slide }: { slide: Slide }) {
 
     case 'quote':
       return (
-        <Frame className="flex flex-col justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-[10cqw]">
+        <Frame className="flex flex-col justify-center bg-linear-to-br from-slate-900 to-slate-800 px-[10cqw]">
           <p className="text-[4cqw] font-serif italic leading-snug">
             “{slide.quote ?? slide.title}”
           </p>
@@ -139,7 +139,7 @@ export default function SlideView({ slide }: { slide: Slide }) {
             <div className="absolute left-0 right-0 top-[0.9cqw] h-[0.3cqw] bg-white/20" />
             {slide.items?.map((item, index) => (
               <div key={index} className="relative">
-                <span className="absolute -top-[3cqw] h-[2cqw] w-[2cqw] rounded-full bg-amber-400" />
+                <span className="absolute top-[-3cqw] h-[2cqw] w-[2cqw] rounded-full bg-amber-400" />
                 <p className="text-[2.4cqw] font-semibold">{item.title}</p>
                 <p className="mt-[0.8cqw] text-[1.7cqw] text-white/70">
                   {item.text}
@@ -176,7 +176,7 @@ function Picture({ slide, className }: { slide: Slide; className: string }) {
   if (!image) {
     return (
       <div
-        className={`bg-gradient-to-br from-sky-800 to-indigo-900 ${className}`}
+        className={`bg-linear-to-br from-sky-800 to-indigo-900 ${className}`}
       />
     )
   }
@@ -191,7 +191,7 @@ function Picture({ slide, className }: { slide: Slide; className: string }) {
         href={image.creditUrl}
         target="_blank"
         rel="noreferrer"
-        className="absolute bottom-[1cqw] right-[1cqw] rounded bg-black/50 px-[0.8cqw] text-[1.1cqw] text-white/80"
+        className="absolute bottom-[1cqw] right-[1cqw] rounded-sm bg-black/50 px-[0.8cqw] text-[1.1cqw] text-white/80"
       >
         {image.credit}
       </a>

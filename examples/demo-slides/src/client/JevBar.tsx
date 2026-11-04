@@ -9,7 +9,7 @@ export default function JevBar({ deck }: { deck: DeckState }) {
 
   return (
     <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-900/60 px-6 py-2 text-sm">
-      <span className="rounded bg-amber-400/15 px-2 py-0.5 font-mono text-amber-300">
+      <span className="rounded-sm bg-amber-400/15 px-2 py-0.5 font-mono text-amber-300">
         Jev {classification.duration} ms
       </span>
       <span className="truncate text-slate-400">

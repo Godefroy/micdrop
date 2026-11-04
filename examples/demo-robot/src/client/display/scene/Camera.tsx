@@ -30,7 +30,7 @@ export default function Camera({ focus, quests, won }: CameraProps) {
   const controls = useRef<CameraControlsImpl>(null)
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const size = useThree((s) => s.size)
-  const framing = useRef<{ target: Vector3; distance: number }>()
+  const framing = useRef<{ target: Vector3; distance: number }>(undefined)
   const flewIn = useRef(false)
   const lastQuests = useRef(quests)
 

@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/elevenlabs",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "ElevenLabs implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "tts"
   ],
   "dependencies": {
-    "@elevenlabs/elevenlabs-js": "^2.36.0",
+    "@elevenlabs/elevenlabs-js": "^2.74.0",
     "ws": "^8.19.0"
   },
   "peerDependencies": {

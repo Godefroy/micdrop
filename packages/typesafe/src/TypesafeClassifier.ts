@@ -35,7 +35,7 @@ export interface TypesafeClassifierOptions<Q extends Questions> {
    * Builds what Jev reads from the input, to add fields next to it for
    * instance. The input itself by default.
    */
-  state?: (input: ClassifierInput) => EntryType
+  state?: (input: ClassifierInput) => NonNullable<EntryType>
 
   /** Timeout of each request in ms, 3000 by default */
   timeout?: number
@@ -67,7 +67,7 @@ export class TypesafeClassifier<Q extends Questions> extends Classifier<
     const { questions, state } = this.options
     return this.client.systemOne(
       {
-        state: state ? state(input) : (input as EntryType),
+        state: state ? state(input) : (input as NonNullable<EntryType>),
         questions:
           typeof questions === 'function' ? questions(input) : questions,
       },

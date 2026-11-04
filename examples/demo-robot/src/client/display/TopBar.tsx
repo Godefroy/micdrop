@@ -20,7 +20,7 @@ export default function TopBar({
 }) {
   return (
     <header className="flex shrink-0 items-center gap-4 border-b border-white/10 bg-[#0c1222] px-5 py-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-xl shadow-lg shadow-orange-500/20">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-orange-400 to-rose-500 text-xl shadow-lg shadow-orange-500/20">
         🤖
       </div>
       <div className="min-w-0 flex-1">
@@ -38,7 +38,7 @@ export default function TopBar({
         </button>
       ) : (
         <button
-          className="rounded-full bg-gradient-to-r from-orange-400 to-rose-500 px-5 py-2 font-bold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110 disabled:opacity-60"
+          className="rounded-full bg-linear-to-r from-orange-400 to-rose-500 px-5 py-2 font-bold text-white shadow-lg shadow-rose-500/30 transition hover:brightness-110 disabled:opacity-60"
           onClick={onStart}
           disabled={call.starting}
         >

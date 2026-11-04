@@ -132,7 +132,7 @@ function ModeTabs({ mode, disabled, onChange }: ModeTabsProps) {
             className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors
               duration-150 ease-rise disabled:cursor-not-allowed ${
                 selected
-                  ? 'bg-raised text-main shadow-sm'
+                  ? 'bg-raised text-main shadow-xs'
                   : 'text-dim hover:text-main disabled:hover:text-dim'
               }`}
           >

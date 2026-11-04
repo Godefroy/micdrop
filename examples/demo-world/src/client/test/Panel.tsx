@@ -8,7 +8,7 @@ import { ReactNode } from 'react'
  */
 export function Group({ title }: { title: string }) {
   return (
-    <h2 className="border-b border-white/10 bg-white/[0.03] px-4 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-[#9d9ab5]">
+    <h2 className="border-b border-white/10 bg-white/3 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-[#9d9ab5]">
       {title}
     </h2>
   )
@@ -54,7 +54,7 @@ export function TestButton({
         if (event.key === 'Enter') onClick()
       }}
       className={[
-        'rounded border px-2 py-1 text-xs transition',
+        'rounded-sm border px-2 py-1 text-xs transition',
         active
           ? 'border-[#9db8ff]/60 bg-[#9db8ff]/15 text-[#dbe6ff]'
           : 'border-white/10 bg-white/5 text-[#b6b3c8] hover:border-white/30 hover:text-white',

@@ -50,7 +50,7 @@ export default function Switch({
           after:rounded-full after:bg-knob after:transition-transform
           after:duration-150 after:ease-rise
           peer-checked:bg-accent peer-checked:after:translate-x-4
-          peer-focus-visible:outline peer-focus-visible:outline-2
+          peer-focus-visible:outline-solid peer-focus-visible:outline-2
           peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent
           peer-disabled:opacity-50"
       />

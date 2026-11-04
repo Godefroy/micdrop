@@ -72,7 +72,7 @@ export default function Panel({
 
   return (
     <section
-      className={`rounded-xl border border-line bg-panel shadow-[var(--shadow-panel)]
+      className={`rounded-xl border border-line bg-panel shadow-(--shadow-panel)
         transition-opacity duration-150 ease-rise ${muted ? 'opacity-60' : ''} ${className}`}
     >
       <div className="flex items-start gap-3 p-4">

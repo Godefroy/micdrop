@@ -28,7 +28,7 @@ export default function Sidebar({
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto border-t border-white/10 lg:border-l lg:border-t-0 bg-[#0c1222] p-4 lg:w-80">
-      <section className="rounded-2xl bg-white/[0.04] p-4">
+      <section className="rounded-2xl bg-white/4 p-4">
         <h2 className="flex items-center justify-between font-semibold">
           Quests
           <span className="text-sm text-amber-300">
@@ -37,7 +37,7 @@ export default function Sidebar({
         </h2>
         <div className="mb-3 mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-400 transition-all duration-700"
+            className="h-full rounded-full bg-linear-to-r from-amber-300 to-orange-400 transition-all duration-700"
             style={{ width: `${(done / quests.length) * 100}%` }}
           />
         </div>
@@ -67,7 +67,7 @@ export default function Sidebar({
         </ul>
       </section>
 
-      <section className="rounded-2xl bg-white/[0.04] p-4">
+      <section className="rounded-2xl bg-white/4 p-4">
         <h2 className="mb-2 font-semibold">What {BRAIN_NAME} heard</h2>
         {heard ? (
           <>
@@ -107,7 +107,7 @@ export default function Sidebar({
         )}
       </section>
 
-      <section className="rounded-2xl bg-white/[0.04] p-4">
+      <section className="rounded-2xl bg-white/4 p-4">
         <h2 className="mb-2 font-semibold">Try saying</h2>
         <ul className="flex flex-col gap-1 text-sm text-slate-300">
           {SUGGESTIONS.map((suggestion) => (

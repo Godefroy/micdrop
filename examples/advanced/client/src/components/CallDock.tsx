@@ -89,7 +89,7 @@ export default function CallDock() {
   })
 
   return (
-    <div className="shrink-0 rounded-xl border border-line bg-panel p-3 shadow-[var(--shadow-dock)]">
+    <div className="shrink-0 rounded-xl border border-line bg-panel p-3 shadow-(--shadow-dock)">
       <div className="flex flex-wrap items-center gap-3">
         <CallStatusOrb />
 

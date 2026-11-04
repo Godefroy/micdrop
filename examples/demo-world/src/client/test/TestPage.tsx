@@ -71,7 +71,7 @@ export default function TestPage() {
         type="button"
         tabIndex={0}
         aria-label={open ? 'Masquer le panneau' : 'Afficher le panneau'}
-        className="absolute right-4 top-4 z-20 rounded border border-white/15 bg-black/50 px-3 py-1 text-xs text-[#b6b3c8] backdrop-blur transition hover:border-white/40"
+        className="absolute right-4 top-4 z-20 rounded-sm border border-white/15 bg-black/50 px-3 py-1 text-xs text-[#b6b3c8] backdrop-blur-sm transition hover:border-white/40"
         onClick={() => setOpen((value) => !value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') setOpen((value) => !value)
