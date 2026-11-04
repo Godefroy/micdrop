@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@micdrop/client": "*",
-    "@types/react": "^18.3.28",
-    "react": "^18.3.1",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
