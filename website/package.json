@@ -25,7 +25,7 @@
     "astro": "^7.4.2",
     "astro-expressive-code": "^0.44.3",
     "astrocms": "^0.4.1",
-    "glob": "^13.0.6",
+    "glob": "^14.0.2",
     "mdast-util-to-string": "^4.0.0",
     "mermaid": "^11.17.2",
     "playwright": "^1.64.1",
