@@ -17,8 +17,10 @@ export class WebSpeaker extends SpeakerDriver {
   private stream: Pcm16AudioStream | undefined
   private _deviceId: string | undefined
   // Firefox cannot pick an output on an audio context, so a non default device
-  // is played back through an audio element instead
+  // is played back through an audio element instead. iOS reports echo
+  // cancellation on and still hears an audio context, but not an element.
   private element: HTMLAudioElement | undefined
+  private isEchoFallback = false
 
   get isPlaying(): boolean {
     return this.stream?.isPlaying ?? false
@@ -61,11 +63,54 @@ export class WebSpeaker extends SpeakerDriver {
     this.stream = undefined
     this.sink?.output.disconnect()
     this.sink = undefined
+    this.isEchoFallback = false
     if (this.element) {
       this.element.pause()
       this.element.srcObject = null
       this.element = undefined
     }
+  }
+
+  /**
+   * Moves the sound to an audio element, while it plays. The audio context
+   * keeps playing until the element is known to be allowed to.
+   */
+  async useEchoFallback(): Promise<boolean> {
+    const sink = this.sink
+    if (!sink || this.element) return false
+
+    const destination = audioContext.createMediaStreamDestination()
+    const element = new Audio()
+    element.srcObject = destination.stream
+    try {
+      await element.play()
+    } catch (error) {
+      console.error('[Micdrop] Playing through an element failed', error)
+      element.srcObject = null
+      return false
+    }
+
+    // The call ended in the meantime
+    if (this.sink !== sink || this.element) {
+      element.pause()
+      element.srcObject = null
+      return false
+    }
+    sink.output.disconnect(audioContext.destination)
+    sink.output.connect(destination)
+    this.element = element
+    this.isEchoFallback = true
+    return true
+  }
+
+  resetEchoFallback(): void {
+    if (!this.isEchoFallback || !this.sink || !this.element) return
+    this.isEchoFallback = false
+    this.element.pause()
+    this.element.srcObject = null
+    this.element = undefined
+    this.sink.output.disconnect()
+    this.sink.output.connect(audioContext.destination)
   }
 
   async changeDevice(deviceId: string): Promise<void> {
@@ -78,7 +123,7 @@ export class WebSpeaker extends SpeakerDriver {
     const devices = await this.getDevices()
     const isDefault = devices.length === 0 || devices[0].id === deviceId
 
-    if (isDefault || 'setSinkId' in audioContext) {
+    if (!this.isEchoFallback && (isDefault || 'setSinkId' in audioContext)) {
       // Playing through the audio context is the preferred way, it is the only
       // one that keeps echo cancellation working
       await (audioContext as any).setSinkId?.(isDefault ? '' : deviceId)
@@ -102,7 +147,7 @@ export class WebSpeaker extends SpeakerDriver {
         this.element.autoplay = true
         this.element.srcObject = destination.stream
       }
-      await this.element.setSinkId(deviceId)
+      await this.element.setSinkId?.(deviceId)
     }
 
     this._deviceId = deviceId

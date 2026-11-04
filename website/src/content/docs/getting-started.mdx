@@ -238,6 +238,11 @@ would answer its own voice. Micdrop then turns interruptions off
 does a microphone the browser can cancel echo on (some USB and Bluetooth
 headsets lose it).
 
+Some browsers report echo cancellation on and hear the assistant anyway. A call
+detects it during the first seconds of the first answer and adapts on its own,
+which can end with interruptions off for that call. `Micdrop.echoStage` tells
+where it stands, see [Echo and interruptions](./client/vad#echo-and-interruptions).
+
 ### No sound on Safari or iOS
 
 Browsers keep audio locked until the user interacts with the page. Call

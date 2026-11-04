@@ -135,7 +135,7 @@ The hooks live in [`@micdrop/react`](../react) and are the same ones a web app u
 The call itself is the very same code, [`@micdrop/client`](../client), which this package and [`@micdrop/web`](../web) both build on. What changes is the hardware underneath:
 
 - Outputs are routes rather than devices: `Micdrop.changeSpeakerDevice('speaker' | 'earpiece')`. Headphones and Bluetooth are routed by the operating system.
-- The audio session is configured as a phone call, which is what turns on echo cancellation
+- The audio session is configured as a phone call, which is what turns on echo cancellation. When a call still hears the assistant in its first seconds, it [turns interruptions off](https://micdrop.dev/docs/client/vad#echo-and-interruptions)
 - Settings are not persisted unless the app installs a storage with `setMicdropStorage()`
 
 ## Voice activity detection

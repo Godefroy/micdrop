@@ -14,6 +14,28 @@ Micdrop keeps recent audio in reserve while the detector confirms speech, so the
 
 When interruptions are enabled, the microphone records speech over the assistant’s reply, with echo cancellation keeping the assistant’s voice out of the recording. When interruptions are disabled, Micdrop does not send microphone audio captured while the assistant speaks or for 300 ms afterward. The client disables interruptions automatically when the browser reports that echo cancellation is off.
 
+## Echo and Interruptions
+
+A browser can report echo cancellation on while the microphone still hears the assistant, as iOS does with an audio context. The assistant then sounds like someone speaking over it, and cuts itself off. Micdrop handles this on its own, with nothing to configure.
+
+Very few people speak over a voice that has only just started, so speech confirmed during the first 2 seconds of the first answer of a call is treated as echo. The assistant keeps talking, the server hears nothing of it, and the call moves to the next stage. `Micdrop.echoStage` tells which stage it is on.
+
+| `echoStage` | What the call does |
+| --- | --- |
+| `'normal'` | Plays as usual. Every call starts here. |
+| `'fallback'` | Plays by the other route of the platform, an audio element in a browser. The same watch runs for the next 2 seconds of sound, and if the answer ends first, it carries over to the next one. When the call passes it, it stays here. |
+| `'disabled'` | Disables interruptions until the call ends, as `disableInterruption` does. Reached on a second detection, or on the first one when the platform has no other route or the browser refuses it. |
+
+When the first watch ends without hearing anything, the call stays on `'normal'` and interruptions work as usual from then on. Nothing is remembered from one call to the next.
+
+This has three limits:
+
+- When someone really does speak in those first 2 seconds, they are taken for an echo and those words are lost.
+- When echo cancellation needs a moment to adapt, the call can leave the normal route without needing to.
+- When an echo only appears later in the call, once the volume goes up for instance, it goes unnoticed.
+
+Pass `disableInterruption: true` to skip all of this and never let the user interrupt. It also applies when the browser reports that echo cancellation is off.
+
 ## Supported VAD Types
 
 Micdrop supports the following VADs by name:

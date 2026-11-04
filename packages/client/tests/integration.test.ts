@@ -162,6 +162,8 @@ describe('a whole call, from the microphone to the speaker', () => {
   })
 
   it('stops the assistant as soon as the user speaks', async () => {
+    // A voice right as the first message starts would be taken for its echo
+    speaker.setPlaying(false)
     speaker.setPlaying(true)
     const stopCalls = speaker.stopAudioCalls
     await speak(0.5, true)

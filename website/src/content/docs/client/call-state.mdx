@@ -73,7 +73,7 @@ stateDiagram-v2
 
 **Notes:**
 
-- User can interrupt the assistant at any time by speaking during the `isProcessing` or `isAssistantSpeaking` states. This allows for natural conversation flow. To prevent interruptions during assistant responses, use the [`disableInterruption` setting](./utility-classes/micdrop-client#options).
+- User can interrupt the assistant at any time by speaking during the `isProcessing` or `isAssistantSpeaking` states. This allows for natural conversation flow. To prevent interruptions during assistant responses, use the [`disableInterruption` setting](./utility-classes/micdrop-client#options). Speech heard during the first 2 seconds of the first answer is taken for [echo](./vad#echo-and-interruptions) rather than an interruption.
 - When `isPaused` is true, `isStarted` stays true.
 - When `isReconnecting` is true, `isStarted` stays true.
 - On a phone, `speakerDeviceId` is a route rather than a device, `'speaker'` or `'earpiece'`. See [Audio output and devices](/docs/react-native/audio-output).

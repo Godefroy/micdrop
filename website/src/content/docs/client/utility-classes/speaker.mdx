@@ -70,6 +70,16 @@ Lists the outputs the system offers.
 Plays with another library. See
 [Using another audio library](../../react-native/custom-audio).
 
+#### `useEchoFallback(): Promise<boolean>`
+
+Plays by another route, for when the microphone hears the current one. Resolves
+to false if the platform has no other route. The call uses it on its own, see
+[Echo and interruptions](../vad#echo-and-interruptions).
+
+#### `resetEchoFallback(): void`
+
+Goes back to the usual route. The call does it as it ends.
+
 ### Properties
 
 #### `isPlaying: boolean`

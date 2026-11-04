@@ -19,6 +19,7 @@ import {
   MicdropClientErrorCode,
   WSCloseEvent,
 } from './MicdropClientError'
+import { EchoGuard, EchoStage } from './EchoGuard'
 
 export interface MicdropEvents {
   EndCall: []
@@ -53,7 +54,8 @@ export interface MicdropOptions {
   turnMaxWait?: number
   /**
    * Keeps the user from interrupting the assistant, whose voice they cannot
-   * speak over. Forced on when the microphone has no echo cancellation.
+   * speak over. Forced on when the microphone has no echo cancellation, and
+   * by the call itself when the assistant keeps cutting itself off.
    */
   disableInterruption?: boolean
   debugLog?: boolean
@@ -116,6 +118,7 @@ export class MicdropClient
   private reconnectAttempt = 0
   private reconnectTimer?: ReturnType<typeof setTimeout>
   private connectionTimer?: ReturnType<typeof setTimeout>
+  private echoGuard = new EchoGuard()
 
   constructor(public options: MicdropOptions = {}) {
     super()
@@ -203,10 +206,20 @@ export class MicdropClient
   /**
    * Whether the user is kept from speaking over the assistant. Without echo
    * cancellation the microphone hears the assistant, which would interrupt
-   * itself and end up in the transcript.
+   * itself and end up in the transcript. A call also gets here on its own when
+   * the assistant keeps cutting itself off, see {@link EchoGuard}.
    */
   get isInterruptionDisabled(): boolean {
-    return !!this.options.disableInterruption || Mic.echoCancellation === false
+    return (
+      !!this.options.disableInterruption ||
+      Mic.echoCancellation === false ||
+      this.echoGuard.stage === 'disabled'
+    )
+  }
+
+  /** How far this call has gone to keep the assistant out of the microphone */
+  get echoStage(): EchoStage {
+    return this.echoGuard.stage
   }
 
   get micDeviceId(): string | undefined {
@@ -297,6 +310,10 @@ export class MicdropClient
     // Stop speaker, before the microphone releases the audio session
     Speaker.stopAudio()
 
+    // What a call learned about the echo may not hold for the next one
+    this.echoGuard.reset()
+    Speaker.resetEchoFallback()
+
     try {
       // Stop microphone
       await this.stopMic()
@@ -367,6 +384,8 @@ export class MicdropClient
         this.micRecorder.setSpeakerPlaying(
           this.isInterruptionDisabled && Speaker.isPlaying
         )
+
+        this.micRecorder.isEcho = this.isEchoOfAssistant
 
         // Notify mic recorder state change
         this.micRecorder.on('StateChange', () => {
@@ -710,6 +729,10 @@ export class MicdropClient
 
   private onSpeakerStartPlaying = () => {
     this.log('Speaker started')
+    // A speaker test before the call says nothing about the call
+    if (this.isWSStarted) {
+      this.echoGuard.speakerStarted(Date.now())
+    }
     // Interrupting relies on echo cancellation to keep the assistant out of
     // the recording. Without it, what the speaker plays is left out.
     if (this.isInterruptionDisabled) {
@@ -721,6 +744,7 @@ export class MicdropClient
 
   private onSpeakerStopPlaying = () => {
     this.log('Speaker stopped')
+    this.echoGuard.speakerStopped(Date.now())
     this.micRecorder?.setSpeakerPlaying(false)
     if (this.isInterruptionDisabled) {
       setTimeout(() => {
@@ -733,6 +757,40 @@ export class MicdropClient
     } else {
       this.notifyStateChange()
     }
+  }
+
+  /**
+   * Treats speech heard just as the assistant starts as its echo, and steps up
+   * what keeps it out of the microphone. The interruption never happens, so
+   * neither the speaker nor the server hear of it.
+   */
+  private isEchoOfAssistant = () => {
+    if (this.isInterruptionDisabled || !Speaker.isPlaying) return false
+    if (!this.echoGuard.speechHeard(Date.now())) return false
+
+    this.log('Echo of the assistant, moving to', this.echoGuard.stage)
+    if (this.echoGuard.stage === 'fallback') {
+      Speaker.useEchoFallback().then((moved) => {
+        if (!moved && this.echoGuard.stage === 'fallback') {
+          this.echoGuard.stage = 'disabled'
+          this.onInterruptionsGivenUp()
+        }
+      })
+    } else {
+      this.onInterruptionsGivenUp()
+    }
+    this.notifyStateChange()
+    return true
+  }
+
+  // The same as when the speaker starts on a call without interruptions
+  private onInterruptionsGivenUp() {
+    this.log('Interruptions disabled until the end of the call')
+    if (Speaker.isPlaying) {
+      this.micRecorder?.setSpeakerPlaying(true)
+      this.vad?.pause()
+    }
+    this.notifyStateChange()
   }
 
   private addMessage(message: MicdropConversationItem) {

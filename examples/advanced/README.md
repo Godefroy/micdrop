@@ -145,6 +145,32 @@ first sentence, so run one call before a demo.
 The [local models guide](https://micdrop.dev/docs/ai-integration/local-models)
 covers the models worth picking and what they cost in latency and memory.
 
+## Testing on a phone
+
+A browser only opens the microphone over HTTPS, and a phone cannot reach the
+`localhost` address the client targets. `vite.tunnel.config.ts` sends the page,
+the catalog and the call through one public address:
+
+```bash
+pnpm dev:server
+npx vite --config vite.tunnel.config.ts
+cloudflared tunnel --url http://localhost:8080
+```
+
+Anyone with the link can start calls on the API keys of your `.env`, so stop the
+tunnel once you are done.
+
+## Interruptions and echo
+
+The **Interruptions** switch in the Devices panel decides whether the user may
+speak over the assistant on the next call. Turning it off passes
+`disableInterruption` to `Micdrop.start()`.
+
+During a call, the line under it shows `Micdrop.echoStage`, which says whether
+the call heard the assistant through the microphone and what it did about it.
+The [echo documentation](https://micdrop.dev/docs/client/vad#echo-and-interruptions)
+explains the stages.
+
 ## Dependencies
 
 - React, Vite and Tailwind for the client

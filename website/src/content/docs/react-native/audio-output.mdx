@@ -59,7 +59,9 @@ The list is filled once the call has started, since the audio session has to be 
 
 The audio session is configured as a voice call, which is what tells iOS and Android to apply echo cancellation. Without it, the microphone would hear the assistant and the call would interrupt itself.
 
-On a device where cancellation is weak, turn interruption off so the microphone is ignored while the assistant speaks:
+A call also watches for it by itself: speech heard during the first 2 seconds of the first answer is taken for [echo](/docs/client/vad#echo-and-interruptions), and since a phone has no other route to fall back on, interruptions turn off until the call ends.
+
+To rule out interruptions from the start on a device where cancellation is weak, so the microphone is ignored while the assistant speaks:
 
 ```ts
 await Micdrop.start({

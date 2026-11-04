@@ -68,6 +68,11 @@ export interface MicRecorderEvents {
 export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   public state: MicRecorderState
   public vad: VAD
+  /**
+   * Asked as speech is confirmed, before anyone hears of it. Saying it is echo
+   * drops the speech, and listens again in case the echo goes on.
+   */
+  public isEcho?: () => boolean
 
   private mic: MicSource | undefined
   private isRecording = false
@@ -88,6 +93,8 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   private turnTimer: ReturnType<typeof setTimeout> | undefined
   // Bumped whenever the turn moves on, so a late answer is dropped
   private turnRound = 0
+  // The VAD is being restarted, what it reports on the way is not speech
+  private isDroppingSpeech = false
 
   constructor(
     private vadConfig?: VADConfig,
@@ -268,6 +275,7 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   }
 
   private onStartSpeaking = () => {
+    if (this.isDroppingSpeech) return
     this.speakingConfirmed = false
 
     // Start recording, from the reserve so nothing is cut off
@@ -287,6 +295,14 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   }
 
   private onConfirmSpeaking = () => {
+    if (this.isDroppingSpeech) return
+
+    // An open turn is someone who already spoke, whatever the speaker does
+    if (!this.turnOpen && this.isEcho?.()) {
+      this.dropSpeech()
+      return
+    }
+
     this.speakingConfirmed = true
     this.changeState({ isSpeaking: true })
 
@@ -303,6 +319,8 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   }
 
   private onCancelSpeaking = () => {
+    if (this.isDroppingSpeech) return
+
     // It was only noise, forget it. A turn already open keeps waiting, and
     // keeps whatever timer it was running.
     this.stopRecording()
@@ -312,6 +330,7 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
   }
 
   private onStopSpeaking = () => {
+    if (this.isDroppingSpeech) return
     const wasConfirmed = this.speakingConfirmed
     this.changeState({ isSpeaking: false })
 
@@ -321,6 +340,29 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
     }
     this.stopRecording()
     this.closeTurn()
+  }
+
+  /**
+   * Forgets the speech heard so far.
+   *
+   * The VAD starts over rather than staying on it: an echo that carries on
+   * would keep it speaking past the moment it could be told from a person.
+   */
+  private async dropSpeech() {
+    this.isDroppingSpeech = true
+    this.stopRecording()
+    this.turnListening = false
+    const vad = this.vad
+    try {
+      await vad.pause()
+      // A call that gave up on interruptions keeps it paused until the speaker
+      // goes quiet
+      if (!this.speakerPlaying) await vad.resume()
+    } catch (error) {
+      console.error('[Micdrop] Restarting the VAD failed', error)
+    } finally {
+      this.isDroppingSpeech = false
+    }
   }
 
   /**

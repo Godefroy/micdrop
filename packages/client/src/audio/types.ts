@@ -108,6 +108,17 @@ export abstract class SpeakerDriver extends EventEmitter<SpeakerDriverEvents> {
 
   /** Lists the output devices the system offers */
   abstract getDevices(): Promise<MicdropDevice[]>
+
+  /**
+   * Plays by another route, for when the microphone hears the current one
+   * @returns False if the platform has no other route to offer
+   */
+  async useEchoFallback(): Promise<boolean> {
+    return false
+  }
+
+  /** Goes back to the usual route */
+  resetEchoFallback(): void {}
 }
 
 /** A buffer handed to an {@link AudioSink}, that can still be cancelled */

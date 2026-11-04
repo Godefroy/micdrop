@@ -7,11 +7,22 @@ import {
   PiSpeakerHighBold,
 } from 'react-icons/pi'
 import { getVADConfig } from '../detection'
+import {
+  setInterruptionsEnabled,
+  useInterruptionsEnabled,
+} from '../interruptions'
 import Button from './ui/Button'
 import Field from './ui/Field'
 import Panel from './ui/Panel'
 import Select from './ui/Select'
+import Switch from './ui/Switch'
 import SpeakerTestButton from './SpeakerTestButton'
+
+const ECHO_LABELS = {
+  normal: 'Playing through the audio context',
+  fallback: 'Echo heard, playing through an audio element',
+  disabled: 'Echo heard again, interruptions are off for this call',
+}
 
 /**
  * Which microphone is being heard and which speaker is answering.
@@ -29,7 +40,10 @@ export default function DevicesPanel() {
     speakerDeviceId,
     speakerDevices,
     isMuted,
+    isStarted,
   } = useMicdropState()
+  const echoLabel = isStarted ? ECHO_LABELS[Micdrop.echoStage] : undefined
+  const interruptions = useInterruptionsEnabled()
   const [isStartingMic, setIsStartingMic] = useState(false)
 
   // The microphone starts with the detectors picked below, the same ones the
@@ -131,6 +145,20 @@ export default function DevicesPanel() {
           </div>
         </div>
       )}
+
+      <div className="flex flex-col gap-3 border-t border-line pt-4">
+        <Switch
+          label="Interruptions"
+          help="Speak over the assistant to cut it off. If it keeps cutting itself off, the microphone is hearing its voice: turn this off and the microphone waits for the assistant to finish."
+          checked={interruptions}
+          disabled={isStarted}
+          reason={isStarted ? 'Applied on the next call' : undefined}
+          onChange={setInterruptionsEnabled}
+        />
+        {echoLabel && (
+          <p className="text-xs leading-relaxed text-faint">{echoLabel}</p>
+        )}
+      </div>
     </Panel>
   )
 }

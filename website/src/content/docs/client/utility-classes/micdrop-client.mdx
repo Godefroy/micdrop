@@ -69,7 +69,7 @@ You can pass options to `MicdropClient` constructor or to the `start` method:
 - `url`: URL of the WebSocket server (using @micdrop/server)
 - `params`: Parameters (optional) to check auth or provide other data
 - `vad`: VAD configuration (see [VAD](../vad) section)
-- `disableInterruption`: If true, the microphone stops listening while the assistant speaks, so the user cannot interrupt it (default: false). It is forced on when the browser reports that echo cancellation is off, and `isInterruptionDisabled` tells whether it applies
+- `disableInterruption`: If true, the microphone stops listening while the assistant speaks, so the user cannot interrupt it (default: false). It is forced on when the browser reports that echo cancellation is off, and `isInterruptionDisabled` tells whether it applies. A call can also turn it on by itself, see [Echo and interruptions](../vad#echo-and-interruptions)
 - `debugLog`: Boolean flag to enable/disable debug logging
 - `reconnect`: Automatic reconnection configuration
   - `maxAttempts`: Maximum number of reconnection attempts (default: Infinity)
@@ -96,6 +96,8 @@ Accessible properties that must not be changed:
 - `micRecorder`: Instance of `MicRecorder` for handling microphone input
 - `micDevices`: Array of available microphone devices
 - `speakerDevices`: Array of available speaker devices
+- `isInterruptionDisabled`: Whether the user is kept from speaking over the assistant, by the option, by the browser or by the call itself
+- `echoStage`: How far the call has gone to keep the assistant out of the microphone, `'normal'`, `'fallback'` or `'disabled'` (see [Echo and interruptions](../vad#echo-and-interruptions))
 
 ## State
 

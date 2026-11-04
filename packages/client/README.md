@@ -45,6 +45,8 @@ Speaker.setDriver(new MySpeaker())
 
 `Pcm16AudioStream` does the playback scheduling for you if the platform offers something like Web Audio: give it an `AudioSink`, which is the small slice of it that Micdrop needs, and call its `destroy()` when the driver stops. When the output needs a moment once the microphone opens, as with Firefox and a Bluetooth headset switching to its call profile, call `warmUp(duration)`: the stream plays silence that long and holds the first answer until it is over.
 
+When a speaker has a second way of playing, it can offer it through `useEchoFallback()` and `resetEchoFallback()`. A call moves there when the microphone hears the assistant [despite echo cancellation](https://micdrop.dev/docs/client/vad#echo-and-interruptions), and turns interruptions off when there is no such route.
+
 For Silero, provide the inference and the state machine comes from here:
 
 ```ts

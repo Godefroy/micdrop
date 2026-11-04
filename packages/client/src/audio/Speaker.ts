@@ -111,6 +111,19 @@ export class SpeakerController extends EventEmitter<SpeakerEvents> {
     return this.driver.getDevices()
   }
 
+  /**
+   * Plays by another route, for when the microphone hears the current one
+   * @returns False if the platform has no other route to offer
+   */
+  async useEchoFallback(): Promise<boolean> {
+    return (await this.driver?.useEchoFallback()) ?? false
+  }
+
+  /** Goes back to the usual route */
+  resetEchoFallback() {
+    this.driver?.resetEchoFallback()
+  }
+
   private onStartPlaying = () => this.emit('StartPlaying')
   private onStopPlaying = () => {
     this.volume = -Infinity

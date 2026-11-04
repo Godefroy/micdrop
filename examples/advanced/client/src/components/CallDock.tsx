@@ -14,6 +14,7 @@ import {
 } from 'react-icons/pi'
 import { getServerTurnDetection, getVADConfig } from '../detection'
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { getInterruptionsEnabled } from '../interruptions'
 import {
   formatWait,
   ReplyLatency,
@@ -70,7 +71,7 @@ export default function CallDock() {
         // The server weighs the turns when the browser is not doing it
         smartTurn: getServerTurnDetection(),
       },
-      // disableInterruption: true,
+      disableInterruption: !getInterruptionsEnabled(),
       debugLog: true,
     })
   }
