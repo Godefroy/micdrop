@@ -26,7 +26,7 @@
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.17.10",
     "@react-three/postprocessing": "^2.19.1",
-    "camera-controls": "^2.10.1",
+    "camera-controls": "^3.1.2",
     "dotenv": "^17.0.0",
     "fastify": "^5.12.5",
     "postprocessing": "^6.39.5",
