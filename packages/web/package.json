@@ -35,7 +35,7 @@
   ],
   "dependencies": {
     "@micdrop/client": "^3.4.0",
-    "onnxruntime-web": "^1.23.2"
+    "onnxruntime-web": "^1.31.1"
   },
   "peerDependencies": {
     "vite": ">=5.0.0"

@@ -35,7 +35,7 @@
     "tts"
   ],
   "dependencies": {
-    "@elevenlabs/elevenlabs-js": "^2.36.0",
+    "@elevenlabs/elevenlabs-js": "^2.75.0",
     "ws": "^8.19.0"
   },
   "peerDependencies": {

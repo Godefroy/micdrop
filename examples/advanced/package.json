@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.0",
-    "@fastify/cors": "^11.3.0",
-    "@fastify/websocket": "^11.2.0",
+    "@fastify/cors": "^11.3.1",
+    "@fastify/websocket": "^11.3.4",
     "@micdrop/ai-sdk": "*",
     "@micdrop/cartesia": "*",
     "@micdrop/elevenlabs": "*",
@@ -36,12 +36,12 @@
     "@micdrop/web": "*",
     "@micdrop/whisper": "*",
     "dotenv": "^17.0.0",
-    "fastify": "^5.12.5",
-    "onnxruntime-node": "^1.21.0",
+    "fastify": "^5.12.7",
+    "onnxruntime-node": "^1.31.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@huggingface/transformers": "^3.8.1",
@@ -50,9 +50,9 @@
     "@types/react-dom": "^18.3.7",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.1.4",
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.6.2",
     "concurrently": "^9.2.1",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.32",
     "tailwindcss": "^3.4.19",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3",

@@ -34,7 +34,7 @@
     "openai"
   ],
   "dependencies": {
-    "openai": "^7.30.0",
+    "openai": "^7.45.1",
     "ws": "^8.19.0"
   },
   "peerDependencies": {

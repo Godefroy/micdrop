@@ -39,7 +39,7 @@
     "realtime"
   ],
   "dependencies": {
-    "@google/genai": "^2.22.0",
+    "@google/genai": "^2.31.0",
     "eventemitter3": "^5",
     "ws": "^8.19.0"
   },
