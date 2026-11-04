@@ -99,10 +99,16 @@ describe('Mic', () => {
     console.warn = (message: string) => warnings.push(message)
 
     try {
-      // 10 ms of audio every 10 ms, which is real time
+      // Pushed against the clock, since a timer runs late on a busy machine and
+      // would deliver less than real time
       const start = Date.now()
+      let pushed = 0
       while (Date.now() - start < 2200) {
-        driver.push(sine(0.01), 16000)
+        const elapsed = (Date.now() - start) / 1000
+        if (elapsed > pushed) {
+          driver.push(sine(elapsed - pushed), 16000)
+          pushed = elapsed
+        }
         await new Promise((resolve) => setTimeout(resolve, 10))
       }
     } finally {

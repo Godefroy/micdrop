@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@expo/dom-webview": "~58.0.2",
     "@micdrop/react": "*",
     "@micdrop/react-native": "*",
     "@micdrop/smart-turn": "*",

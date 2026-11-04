@@ -2,3 +2,10 @@ packages:
   - 'packages/*'
   - 'examples/*'
   - 'website'
+linkWorkspacePackages: true
+onlyBuiltDependencies:
+  - esbuild
+  - onnxruntime-node
+  - protobufjs
+ignoredBuiltDependencies:
+  - '@google/genai'
