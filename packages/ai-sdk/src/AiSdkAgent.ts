@@ -43,6 +43,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
       // Generate response using AI SDK
       const result = streamText({
         model: this.options.model,
+        instructions: this.buildInstructions(),
         messages: this.buildMessages(),
         tools: this.buildTools(),
         maxRetries: this.options.maxRetry ?? DEFAULT_MAX_RETRY,
@@ -100,12 +101,20 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
     }
   }
 
+  // The AI SDK takes the system prompt apart from the conversation
+  private buildInstructions() {
+    return this.conversation
+      .flatMap((message) => (message.role === 'system' ? message.content : []))
+      .join('\n\n')
+  }
+
   private buildMessages(): ModelMessage[] {
-    return this.conversation.map((message): ModelMessage => {
+    return this.conversation.flatMap((message): ModelMessage | [] => {
       switch (message.role) {
+        case 'system':
+          return []
         case 'user':
         case 'assistant':
-        case 'system':
           return {
             role: message.role,
             content: message.content,

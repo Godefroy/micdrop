@@ -6,7 +6,7 @@ import { Row, Section, TestButton } from './Panel'
 export default function ScenarioPanel() {
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(-1)
-  const stop = useRef<(() => void) | undefined>()
+  const stop = useRef<(() => void) | undefined>(undefined)
 
   useEffect(() => () => stop.current?.(), [])
 

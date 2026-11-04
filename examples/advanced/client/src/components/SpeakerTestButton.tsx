@@ -8,7 +8,7 @@ import Button from './ui/Button'
 export default function SpeakerTestButton() {
   const { isAssistantSpeaking } = useMicdropState()
   const [loading, setLoading] = useState(false)
-  const timeoutRef = useRef<number | undefined>()
+  const timeoutRef = useRef<number | undefined>(undefined)
 
   const handleClick = async () => {
     clearTimeout(timeoutRef.current)

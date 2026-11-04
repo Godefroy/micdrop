@@ -1,9 +1,12 @@
 {
   "name": "@micdrop/ai-sdk",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "AI SDK implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -34,8 +37,8 @@
     "ai-sdk"
   ],
   "dependencies": {
-    "@ai-sdk/provider-utils": "^4.0.0",
-    "ai": "^6.0.0"
+    "@ai-sdk/provider-utils": "^5.0.70",
+    "ai": "^7.0.155"
   },
   "peerDependencies": {
     "@micdrop/server": "*",
