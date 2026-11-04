@@ -6,6 +6,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # Expo decides these versions, with each of its SDK upgrades
+    ignore:
+      - dependency-name: react-native
+      - dependency-name: react-native-reanimated
+      - dependency-name: react-native-safe-area-context
+      - dependency-name: react-native-worklets
     commit-message:
       prefix: "chore"
     groups:
