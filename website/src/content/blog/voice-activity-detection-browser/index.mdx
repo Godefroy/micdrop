@@ -2,7 +2,7 @@
 title: 'Voice Activity Detection in the Browser: Silero vs WebRTC'
 summary: 'A browser voice agent needs voice activity detection to tell when the user speaks. Compare volume thresholds, WebRTC VAD and Silero, then tune your choice.'
 date: 2026-08-13
-update: 2026-09-25
+update: 2026-11-05
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -29,7 +29,7 @@ takeaways:
   - 'A VAD only hears that the sound stopped. A turn detector decides whether that pause ends the turn, judging from the sound of the sentence or from its transcript.'
 ---
 
-Voice activity detection (VAD) is the piece of code that decides, frame by frame, whether an audio signal carries human speech or silence. In a voice agent it runs in the browser and gates everything downstream: when to record, when to send audio to the server, when to stop the assistant mid-sentence. Three detectors cover almost every browser project: a volume threshold, WebRTC VAD and Silero VAD. Silero is the one to pick for a voice agent, because it tells a voice from a television or a fan far more reliably than the other two, and it still scores a frame in under a millisecond.
+Voice activity detection (VAD) is the piece of code that decides, frame by frame, whether an audio signal carries human speech or only silence and noise. In a voice AI app it sits between the microphone and speech to text, where it marks when each utterance starts and stops. A separate turn detector then judges whether a pause ends the user's turn. In a voice agent the VAD runs in the browser and gates everything downstream: when to record, when to send audio to the server, when to stop the assistant mid-sentence. Three detectors cover almost every browser project: a volume threshold, WebRTC VAD and Silero VAD. Silero is the one to pick for a voice agent, because it tells a voice from a television or a fan far more reliably than the other two, and it still scores a frame in under a millisecond. For most apps, [@ricky0123/vad-web](https://github.com/ricky0123/vad) is the JavaScript library that runs it. TEN VAD and Picovoice Cobra are the two other neural detectors with a browser build.
 
 Get it wrong and the symptoms are immediate. The agent answers a door slam, or it keeps listening three seconds after you finished, or it talks over you because it never noticed you started. Users read all three as a broken product, and all three happen before a single byte reaches the transcription API.
 
@@ -77,7 +77,7 @@ Silero separates a human voice from a television, a fan or a passing truck, whic
 
 In the browser, the model runs on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) with its WebAssembly backend. Microphone audio is resampled to 16 kHz, sliced into 512-sample frames and scored one frame at a time. The model and the runtime download on the first call and stay in the browser cache afterwards.
 
-Silero reached JavaScript through [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that packages the model for the browser as `@ricky0123/vad-web`. Micdrop follows [its algorithm](https://docs.vad.ricky0123.com/user-guide/algorithm/), which rests on two probability thresholds and two frame counts. By default, Micdrop also fetches the Silero model file from that package.
+Silero reached JavaScript through [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that packages the model for the browser as `@ricky0123/vad-web`. Its `MicVAD` class opens the microphone, calls `onSpeechStart` when the user starts talking, and passes the recorded speech to `onSpeechEnd` as 16 kHz samples. It loads the original Silero model by default and offers versions 5 and 6 as options. Micdrop follows [its algorithm](https://docs.vad.ricky0123.com/user-guide/algorithm/), which rests on two probability thresholds and two frame counts. By default, Micdrop also fetches its Silero model file, version 5, from that package.
 
 Micdrop turns Silero on with one import and one option:
 
@@ -114,7 +114,7 @@ Frames are the unit, so translate them into time before tuning anything. At 32 m
 The thresholds are deliberately low here. ricky0123/vad ships higher defaults. Micdrop uses 0.18 because soft-spoken users get cut out at the higher values. A lower threshold fires more often on noise. Those misfires cost nothing, because Micdrop confirms speech in two stages before any audio leaves the browser.
 
 <Callout type="warning" title="Serving the wasm assets">
-ONNX Runtime Web needs its `.wasm` files reachable at runtime. By default Micdrop fetches the Silero model from jsDelivr and the ONNX runtime from unpkg, because the runtime's `dist` folder exceeds the jsDelivr size limit and every file 404s from there. To keep the call free of third-party requests, host both yourself and pass their addresses to `setSileroOptions({ model, wasmPath })`.
+ONNX Runtime Web needs its `.wasm` files reachable at runtime. By default Micdrop fetches the Silero model from jsDelivr and the ONNX runtime from unpkg, because the runtime's `dist` folder exceeds the jsDelivr size limit and every file 404s from there. In an app built with Vite, the [Micdrop Vite plugin](/docs/client/installation#vite-plugin) ships the model and the WebAssembly build of the runtime with your app, so the call loads both from your own server. With another bundler, host both yourself and pass their addresses to `setSileroOptions({ model, wasmPath })`.
 </Callout>
 
 ## Silero VAD vs WebRTC VAD vs a volume threshold
@@ -132,6 +132,32 @@ Pick the detector from the room your users sit in and from where the audio gets 
 - For a live conversation in an open space, a car or a kitchen, Silero is worth its two megabytes.
 
 The code of all three is on GitHub. [snakers4/silero-vad](https://github.com/snakers4/silero-vad) holds the Silero model and its benchmarks, [ricky0123/vad](https://github.com/ricky0123/vad) runs it in JavaScript, [wiseman/py-webrtcvad](https://github.com/wiseman/py-webrtcvad) and [dpirch/libfvad](https://github.com/dpirch/libfvad) carry WebRTC VAD, and [Godefroy/micdrop](https://github.com/Godefroy/micdrop) holds the browser and server code shown in this article.
+
+## Browser voice activity detection libraries compared
+
+Six JavaScript libraries run a voice activity detector in a web page. I took their sizes, licenses and release dates from each project's repository and npm page in November 2026.
+
+| Library | Detector | Download | License | Maintenance |
+|---|---|---|---|---|
+| [@ricky0123/vad-web](https://github.com/ricky0123/vad) | Silero VAD on ONNX Runtime Web, original model by default, versions 5 and 6 as options | About 2 MB model, plus the ONNX runtime | ISC, Silero model under MIT | Active, last release in September 2026 |
+| [@echogarden/fvad-wasm](https://github.com/echogarden-project/fvad-wasm), [libfvad-wasm](https://github.com/OzymandiasTheGreat/libfvad-wasm) | WebRTC VAD, compiled from libfvad | About 38 KB for fvad-wasm | BSD-3-Clause | Quiet, last fvad-wasm release in October 2024, libfvad-wasm archived |
+| [TEN VAD](https://github.com/TEN-framework/ten-vad) | Neural model from the TEN framework, 10 or 16 ms frames | 277 KB WebAssembly library | Apache 2.0 with extra conditions | Active, browser build and demo added in November 2025 |
+| [Picovoice Cobra Web](https://github.com/Picovoice/cobra) | Picovoice's own model, as `@picovoice/cobra-web` | About 7 MB npm package | Apache 2.0 SDK, needs a Picovoice AccessKey | Active, last release in May 2026 |
+| [@micdrop/web](/docs/client/vad) | Volume threshold and Silero VAD version 5, alone or combined | Nothing for the volume threshold, 2.3 MB Silero model plus the ONNX runtime | MIT | Active |
+
+`@ricky0123/vad-web` is the default choice for a page that only needs speech segments. It handles the microphone, the resampling and the two thresholds. Its defaults, though, wait 1.4 seconds of silence before closing an utterance, which suits dictation better than conversation.
+
+TEN VAD is the newest neural detector with a browser build. Its authors measure it as more precise than Silero and WebRTC VAD on their own test set, and say Silero takes several hundred milliseconds longer to notice that speech stopped. Read its license before shipping it, because the extra conditions forbid deploying it in a way that competes with the offerings of Agora, the real-time voice and video company behind the TEN framework. It also ships as files in its GitHub repository, so you wire the WebAssembly module and the frames yourself.
+
+Picovoice Cobra returns a voice probability per frame, as Silero does, but every app needs an AccessKey from the Picovoice Console, which ties the detector to a Picovoice account.
+
+The WebAssembly ports of WebRTC VAD are tiny and fast, but they inherit its trouble with voice-like noise. Their repositories have seen little work since 2024.
+
+Micdrop wraps its volume and Silero detectors in a full voice agent client, with the WebSocket, the two-stage confirmation and the interruption path.
+
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "a decision guide laid out as five horizontal rows. Heading: Which browser VAD to pick. Rows, situation tile then arrow then detector tile with caption: Quiet room, headset / Volume threshold / No download. Noisy room, live conversation / Silero VAD / @ricky0123/vad-web or @micdrop/web (focal row, glowing emerald). Smallest neural build / TEN VAD / 277 KB WebAssembly, license conditions. Classic, tiny detector / WebRTC VAD / About 38 KB WebAssembly. Commercial SDK / Picovoice Cobra / Needs an AccessKey. Flat vector geometric rendering, straight-on frontal view."
+    Regenerate if the library sizes or licenses change. Last data sync: 2026-11-05. */}
+![Decision guide matching five browser situations to a voice activity detector: volume threshold, Silero VAD, TEN VAD, WebRTC VAD and Picovoice Cobra](./vad-library-picker.jpg)
 
 ## Tuning latency, false positives and background noise
 
@@ -177,6 +203,9 @@ Turn detection runs on top of the VAD and checks each pause the VAD reports. In 
 <FaqList>
   <FaqItem question="What is VAD?">
     VAD stands for voice activity detection. It is the process of classifying short frames of audio as speech or non-speech, usually every 10 to 32 milliseconds. Voice agents use it to know when to start recording, when an utterance has ended, and when the user is interrupting the assistant.
+  </FaqItem>
+  <FaqItem question="What is the best JavaScript library for voice activity detection in the browser?">
+    `@ricky0123/vad-web` suits most apps. It runs the Silero VAD model in the browser with ONNX Runtime Web, opens the microphone and calls you back when speech starts and ends. TEN VAD is a neural detector lighter than Silero, with a WebAssembly build. Its license adds extra conditions. Picovoice Cobra needs a Picovoice account key. For a voice agent, Micdrop runs Silero, a volume threshold or both [in its browser package](/docs/client/vad), alongside the WebSocket and interruption handling.
   </FaqItem>
   <FaqItem question="Does voice activity detection run offline in the browser?">
     Yes. A volume-based VAD uses the Web Audio API and needs no network at all. A Silero VAD downloads a model of about 2 MB plus the ONNX Runtime Web wasm files on first load, then runs entirely on the CPU of the device. No audio is sent anywhere for detection, which also means the microphone stream stays local until speech is actually detected.
