@@ -1,13 +1,32 @@
 ---
-title: 'Build Your First Voice AI Agent in TypeScript'
+title: 'Build a Voice AI Agent with Node.js and TypeScript'
 sidebarLabel: 'Getting Started'
 description: 'Get up and running with Micdrop to build real-time voice conversations with AI agents.'
 order: 1
 ---
 
-# Build Your First Voice AI Agent in TypeScript
+# Build a Voice AI Agent with Node.js and TypeScript
 
-Get up and running with [Micdrop](/) to build real-time voice conversations with AI agents.
+A real-time voice AI agent needs a browser client that captures the microphone and detects when the user speaks, and a Node.js server that receives the audio over a WebSocket. On that server, speech to text transcribes what the user says, an LLM writes the answer and text to speech streams it back as audio. [Micdrop](/) is an open source TypeScript library for both the browser client and the server. Follow the setup below to get a first call running in five minutes.
+
+## How a real-time voice AI agent works
+
+A call is a loop of turns. Each turn goes through six steps:
+
+1. The browser captures the microphone and runs voice activity detection (VAD) to tell when the user is speaking. Audio leaves the browser only during speech.
+2. A WebSocket carries that audio to your Node.js server. Your provider API keys stay on the server, so the browser never needs a session token.
+3. Speech to text (STT) transcribes the audio as it arrives.
+4. When the user stops speaking, the LLM writes the answer.
+5. Text to speech (TTS) turns the answer into audio while the LLM is still writing it. The server streams that audio to the browser, which plays it.
+6. When the user speaks over the answer, the browser stops playback and the server cancels the LLM and the TTS.
+
+Interruptions need echo cancellation. Without it, the microphone picks up the assistant's voice. If interruptions stayed on, the assistant would answer itself, so Micdrop turns them off. The [browser's echo cancellation](./client/vad#echo-and-interruptions) usually removes the assistant's voice from the microphone signal. With headphones, that voice never reaches the microphone.
+
+A realtime speech to speech model, such as the OpenAI Realtime API or Gemini Live, can replace speech to text, the LLM and text to speech on its own. It answers sooner and hears the tone of the voice. With three separate providers, you choose each one and often pay less per minute. Micdrop lets you [switch a call to a realtime model](./server/realtime) on the server and keep the same client code.
+
+The OpenAI Realtime API and LiveKit connect the browser over WebRTC. Micdrop connects it over a WebSocket to your own backend instead, so you deploy only the server you already run. WebRTC is [worth choosing over a WebSocket](/blog/websocket-or-webrtc-voice-agent) for group calls, video, phone lines and weak mobile networks.
+
+Micdrop is MIT licensed and runs on your infrastructure with your own provider keys. You build yourself what a hosted platform includes: transcript storage, call history and a dashboard.
 
 ## Quick Setup
 
@@ -254,3 +273,9 @@ Browsers keep audio locked until the user interacts with the page. Call
 Most of the delay is the silence the client waits for before it ends your
 turn. [Latency](./client/latency) breaks down a turn and lists the settings
 worth changing.
+
+## Next steps
+
+- Let the agent act in your app with [tool calls on the server](./server/tools), then [show their results in the client](./client/handling-tool-calls).
+- Read the call state, errors and audio levels in your components with the [React hooks](./client/react-hooks).
+- Pick another provider for the LLM, the transcription or the voice among the [AI providers Micdrop integrates](./ai-integration), or [write your own integration](./ai-integration/custom-integrations/custom-agent).
