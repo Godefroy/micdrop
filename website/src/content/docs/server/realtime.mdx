@@ -146,6 +146,10 @@ conversation written so far.
 
 ## Writing your own
 
+To run one of the other
+[speech to speech APIs](/blog/top-speech-to-speech-apis-voice-agents), such as
+Grok Voice or Amazon Nova Sonic, write a class of your own.
+
 Extend the `Realtime` class of `@micdrop/server`. It keeps what every provider
 shares: when a turn opens, which answer the output belongs to, dropping the
 output of an interrupted answer, and the order of the conversation. A provider

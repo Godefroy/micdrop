@@ -3,7 +3,7 @@ title: 'GPT-Live vs GPT-Realtime-2 vs Gemini Live in 2026'
 h1: 'GPT-Live, GPT-Realtime-2 or Gemini Live: picking a speech-to-speech model'
 summary: 'GPT-Live-1 listens while it speaks, GPT-Realtime-2.1 reasons and calls tools in one session, and Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1.'
 date: 2026-09-18
-update: 2026-10-15
+update: 2026-11-06
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -25,11 +25,11 @@ takeaways:
   - 'GPT-Realtime-2.1 keeps hearing, reasoning, tool calls and speech in a single session, with a reasoning effort you set from minimal to xhigh.'
   - 'A minute of conversation, split evenly between the user and the agent, costs about $0.012 on Gemini 3.8 Live, $0.015 on GPT-Realtime-2.1-mini, $0.048 on GPT-Realtime-2.1, and $0.05 on GPT-Live-1 before the backend model.'
   - 'A Gemini Live connection lasts about ten minutes. Session resumption and context compression let a call run longer than that.'
-  - 'AWS, Alibaba, SpaceXAI, Hume, StepFun and several open-weight projects also ship a model that answers in a voice. Some of those models accept the same events as the OpenAI Realtime API, so one client reaches them by changing the base URL.'
+  - 'Grok Voice, Amazon Nova Sonic, Qwen Audio Realtime, Deepslate Opal and several open-weight projects also answer in a voice. Some of those models accept the same events as the OpenAI Realtime API, so one client reaches them by changing the base URL.'
   - 'Micdrop runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same client and server, so switching from one to the other means changing the class you pass as realtime.'
 ---
 
-A dozen models now hear a user and answer with a voice, from OpenAI, Google, AWS, Alibaba, SpaceXAI and a handful of open-weight projects. Three of them get the detailed comparison here: OpenAI's GPT-Live-1, OpenAI's GPT-Realtime-2.1 and Google's Gemini 3.8 Live. They are the reference points, since several competitors copy OpenAI's API and say less about their prices than these two providers do. These three differ in where the reasoning happens, in price and in how long a call can last. GPT-Live-1 is built for natural turn-taking and hands the thinking to another model. GPT-Realtime-2.1 reasons and calls tools inside the same session. Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute and keeps long calls going by resuming the session on a new connection. Pick GPT-Live-1 for the most human conversation, GPT-Realtime-2.1 for tool-heavy agents in a single session, and Gemini 3.8 Live when the price per minute matters most. The other models get a shorter section of their own.
+A dozen models now hear a user and answer with a voice, from OpenAI, Google, AWS, Alibaba, SpaceXAI and a handful of open-weight projects. Three of them get the detailed comparison here: OpenAI's GPT-Live-1, OpenAI's GPT-Realtime-2.1 and Google's Gemini 3.8 Live. They are the reference points, since several competitors copy OpenAI's API and say less about their prices than these two providers do. These three differ in where the reasoning happens, in price and in how long a call can last. GPT-Live-1 is built for natural turn-taking and hands the thinking to another model. GPT-Realtime-2.1 reasons and calls tools inside the same session. Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute and keeps long calls going by resuming the session on a new connection. Pick GPT-Live-1 for the most human conversation, GPT-Realtime-2.1 for tool-heavy agents in a single session, and Gemini 3.8 Live when the price per minute matters most. A short section at the end points to the others.
 
 This comparison is for developers and CTOs choosing the model behind a voice feature. The prices come from the providers' own pages, read on September 17, 2026. The other figures come from the providers' announcements and documentation, unless the text names another source.
 
@@ -125,22 +125,7 @@ GPT-Live-1 leaves reasoning to its backend. The depth of thinking depends on the
 
 ## Speech-to-speech models beyond OpenAI and Google
 
-Other providers ship a model that hears audio and speaks its answer. Several of them accept the same events as the OpenAI Realtime API, so a client written for OpenAI reaches them by changing the base URL.
-
-| Model | Access | What stands out |
-| --- | --- | --- |
-| Amazon Nova 2 Sonic | Bedrock bidirectional streaming | $3 per million tokens heard and $12 per million spoken, seven languages, and an integration with Amazon Connect for phone calls |
-| Grok Voice Think Fast 2.0 | WebSocket, drop-in for the OpenAI Realtime API | $0.08 per minute. SpaceXAI runs its own Starlink phone sales on it |
-| Hume EVI 3 and EVI 4-mini | Hume API | $0.04 to $0.07 per minute, built around prosody. EVI 3 answers on its own in English. EVI 4-mini takes the text model you give it |
-| Azure Voice Live API | One WebSocket on Azure | An orchestration layer rather than a model, with one interface for the OpenAI realtime models and for pipelines |
-| Qwen Audio 3.0 Realtime | Alibaba Model Studio | Eleven languages plus about twenty Chinese dialects, with an Omni line that also takes video |
-| StepAudio 3 Realtime | StepFun platform | Reasoning while it speaks, hosted only, with no published price |
-| Higgs Realtime | Drop-in for the OpenAI Realtime API | $0.014 per minute, the lowest published rate outside OpenAI and Google |
-| Deepslate Opal | REST, WebSocket, SIP, or self-hosted | European data residency, 27 languages and regional accents |
-
-Four models run on your own GPU. Moshi, from the Kyutai lab, came first in September 2024 and is still the reference, with weights under CC BY 4.0. Step-Audio-R1.1, 33.5 billion parameters under Apache 2.0, reasons before it answers. NVIDIA's Nemotron VoiceChat 11B calls tools in the middle of a conversation. Qwen3-Omni-30B-A3B, also Apache 2.0, listens to audio and video and answers in a voice. You supply the GPU, the monitoring and the support that a hosted provider sells with its API.
-
-Watch the naming. ElevenLabs sells a feature called Speech to Speech, which converts one voice into another for dubbing. ElevenLabs Agents, Deepgram's Voice Agent API, Inworld's Realtime API and Kyutai's Unmute assemble transcription, a text model and a voice behind one connection, which is the pipeline architecture rather than a single model. Inworld follows the OpenAI Realtime protocol, so a client written for OpenAI keeps its event loop and changes only the endpoint, the authentication and the models named in the session. Mistral's Voxtral models transcribe and speak without holding a conversation, while Ultravox hears audio and answers in text. Read what comes out of the model before counting it as an alternative.
+Other providers sell a model that hears audio and speaks its answer, such as Grok Voice, Amazon Nova Sonic, Alibaba's Qwen Audio Realtime and Deepslate Opal. Several of them accept the OpenAI Realtime events, so a client written for OpenAI reaches them by changing the endpoint, while Moshi, Qwen3-Omni and a few other models publish their weights for your own GPU. You can compare their scores, prices and protocols in the [ranking of speech to speech APIs](/blog/top-speech-to-speech-apis-voice-agents), which also sorts out the products that run a pipeline behind one connection.
 
 ## Micdrop runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same client
 
@@ -173,7 +158,7 @@ The comparison stays fair because the client decides when the user starts and st
 
 [`OpenaiRealtime`](/docs/ai-integration/provided-integrations/openai#openai-realtime) passes its `model` option to the Realtime endpoint, so `gpt-realtime-2.1-mini` works the same way. It leaves the reasoning effort at OpenAI's default, `low`. [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) runs `gemini-3.8-live-extended-thinking` when you set it as `model` along with a `thinkingLevel` such as `'low'`. It also reconnects with the resumption handle when Gemini closes a connection.
 
-The [`Realtime` base class](/docs/server/realtime#writing-your-own) holds what every provider shares: the turn boundaries, the interruptions and the order of the transcripts. To run a model Micdrop does not ship, such as Nova 2 Sonic or Hume EVI 3, extend it with the calls to that provider's API.
+The [`Realtime` base class](/docs/server/realtime#writing-your-own) holds what every provider shares: the turn boundaries, the interruptions and the order of the transcripts. To run a model Micdrop does not ship, such as Amazon Nova Sonic or Grok Voice, extend it with the calls to that provider's API.
 
 Micdrop does not run GPT-Live-1. The model needs its own endpoint and events, while `OpenaiRealtime` connects to the Realtime endpoint. GPT-Live-1 also decides when each turn ends, a decision Micdrop leaves to its client.
 
@@ -221,7 +206,7 @@ Keep your prompt and your tools in your own code, whichever model you start with
     Gemini 3.8 Live costs $3 per million audio input tokens and $12 per million audio output tokens, which Google estimates at $0.005 per minute heard and $0.018 per minute spoken. The extended thinking model has the same rates, with thinking tokens billed as output. Google also offers a free tier, where it uses your data to improve its products.
   </FaqItem>
   <FaqItem question="Which speech-to-speech models exist besides OpenAI and Google?">
-    Amazon Nova 2 Sonic on Bedrock, Grok Voice Think Fast 2.0 from SpaceXAI, Hume EVI 3 and EVI 4-mini, Qwen Audio 3.0 Realtime from Alibaba, StepAudio 3 Realtime from StepFun, Higgs Realtime from Boson AI and Deepslate Opal all hear audio and answer in a voice. Azure Voice Live API puts one interface over several of them. Moshi, Step-Audio-R1.1, NVIDIA Nemotron VoiceChat and Qwen3-Omni have open weights and run on your own GPU. Products named Voice Agent or Speech to Speech often turn out to be a pipeline of transcription, a text model and a voice, so check what the model itself outputs.
+    Grok Voice, Amazon Nova Sonic, Alibaba's Qwen Audio Realtime, Deepslate Opal and Boson AI's Higgs Realtime all hear audio and answer in a voice, and Moshi or Qwen3-Omni run on your own GPU. The [ranking of speech to speech APIs](/blog/top-speech-to-speech-apis-voice-agents) compares them on benchmark scores, price per minute, protocol and EU processing.
   </FaqItem>
   <FaqItem question="What are the key differences between Gemini Live and the OpenAI Realtime API?">
     Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute, supports 97 languages according to Google, and has 30 voices. Resumption keeps a call going across connections that last about ten minutes each. The OpenAI Realtime API holds a session for up to sixty minutes, accepts remote MCP servers and lets you set the reasoning effort. Gemini offers deeper reasoning in a separate extended thinking model.

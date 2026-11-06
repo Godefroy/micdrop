@@ -164,6 +164,8 @@ Three things change in realtime mode. The voice is one of OpenAI's, and the syst
 
 Google's Gemini Live takes the same place in the server. Replace `OpenaiRealtime` with [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) from `@micdrop/gemini`, which runs `gemini-3.8-live` by default, or `gemini-3.8-live-extended-thinking` for tools that take several seconds to answer. Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute. `GeminiLive` resumes the session on a new connection whenever Gemini closes one, so long calls go on. The trade-off with a pipeline stays the same, since one provider still hears, reasons and speaks.
 
+Grok Voice, Amazon Nova Sonic and other providers sell [speech to speech APIs](/blog/top-speech-to-speech-apis-voice-agents) built the same way, at other prices and over other protocols.
+
 ## Switching providers without rewriting the orchestration
 
 The reason to keep the three stages separate shows up the day one of them disappoints you. Changing a provider is one import and one constructor, and everything around it stays as it was:
