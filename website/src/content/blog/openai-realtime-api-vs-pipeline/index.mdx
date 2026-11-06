@@ -3,11 +3,12 @@ title: 'OpenAI Realtime API vs an STT-LLM-TTS Pipeline'
 h1: 'OpenAI Realtime API or a swappable STT → LLM → TTS pipeline?'
 summary: 'The Realtime API gives you speech to speech in one connection. A pipeline gives you provider choice, voices and cost control. Here is how to pick between them.'
 date: 2026-08-19
-update: 2026-09-25
+update: 2026-11-06
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
   - 'openai realtime api'
+  - 'openai realtime api alternative'
   - 'openai realtime api pricing'
   - 'openai realtime voice api'
   - 'openai realtime api webrtc'
@@ -22,14 +23,16 @@ similarPosts:
   - 'open-source-voice-agent-frameworks'
   - 'alternative-to-vapi'
   - 'gpt-live-vs-gpt-realtime-vs-gemini-live'
+  - 'top-speech-to-speech-apis-voice-agents'
 takeaways:
   - 'The Realtime API sends audio straight to the model, tone, hesitation and interruptions included. A transcription step strips those clues before the model sees the text.'
   - 'One connection means one provider for hearing, reasoning and speaking. You inherit its voice list, its prices and its regions, and swapping any one of those three functions means swapping the provider itself.'
-  - 'A pipeline costs you a transcription hop and buys you a specific voice, a European stack, a second provider to fall back on, and a bill that OpenAI''s own list prices put around three times lower than a full-size realtime stack.'
+  - 'A pipeline costs you a transcription hop and buys you a specific voice, a European stack, a second provider to fall back on, and a bill per minute that OpenAI''s own list prices put at about half the cost of a full-size realtime session.'
+  - 'The alternatives to the OpenAI Realtime API are other speech to speech APIs, with Gemini Live at about a quarter of its price per minute, or a pipeline, either run on your own servers with LiveKit Agents, Pipecat or Micdrop, or hosted by Vapi or Retell for a fee per minute.'
   - 'Micdrop runs a pipeline and a speech-to-speech session, on OpenAI Realtime or Gemini Live, behind the same browser client, so switching between the two leaves the front end untouched.'
 ---
 
-You are adding a voice mode to a web application, and the first architecture decision splits in two. Either you open a single connection to a speech-to-speech model and let it hear and answer, or you assemble three services: speech-to-text, a language model, text-to-speech. OpenAI's Realtime API made speech to speech easy enough that plenty of teams take it without weighing the pipeline. Both are good answers, to different products.
+For a production voice agent, the OpenAI Realtime API is the better choice when the tone of the user's voice changes the answer, when the delay before the first word matters most, or when the rest of your stack already runs on OpenAI. A pipeline of speech-to-text, a language model and text-to-speech is the better choice for most other requirements. You pick each provider, you pay about half the price per minute of a full-size realtime session on OpenAI's list prices, you get any voice including a cloned one, the language model you choose makes the tool calls, the transcript is your primary output, and the whole stack can run on European providers. The alternatives to the Realtime API are other speech to speech APIs, led by Gemini Live, and pipelines, either run on your own servers with an open source framework or hosted by a platform that bills per minute.
 
 [Micdrop](/), an open source TypeScript library for real-time voice conversations, runs both architectures behind the same browser client and Node server. The question is then which one fits a given call, knowing you can switch later.
 
@@ -68,7 +71,7 @@ Provider choice collapses to one. Hearing, reasoning and speaking come from the 
 
 The voice list is short. The realtime models ship ten voices, and OpenAI recommends two of them, `marin` and `cedar`. [ElevenLabs](https://elevenlabs.io) publishes a library of more than ten thousand community voices and [Cartesia](https://cartesia.ai) around five hundred, both with cloning. If your product needs a recognisable brand voice, or a specific accent in a language OpenAI's voices pronounce unnaturally, you need a text-to-speech provider of your own. An ElevenLabs voice on Eleven v4 Turbo also [acts out the laughs and whispers the LLM writes](/blog/eleven-v4-turbo-voice-agent).
 
-Everything is billed as audio. OpenAI's [pricing page](https://developers.openai.com/api/docs/pricing) lists the full-size realtime models at $32 per million audio input tokens and $64 per million audio output tokens, with a mini tier at $10 and $20, as of September 2026.
+Everything is billed as audio. OpenAI's [pricing page](https://developers.openai.com/api/docs/pricing) lists the full-size realtime models at $32 per million audio input tokens and $64 per million audio output tokens, with a mini tier at $10 and $20, as of November 2026.
 
 Data residency gets harder. OpenAI offers regional processing in Europe for eligible projects, with zero data retention, and its own data controls guide notes that tracing is not currently EU data residency compliant for the realtime endpoint. Beyond the endpoint itself, a single-provider architecture rules out a fully European stack, transcription, model and voice included.
 
@@ -93,15 +96,15 @@ Cost is the largest difference, and OpenAI publishes every rate it needs. Audio 
 | One minute of conversation | Realtime, `gpt-realtime-2.1` | Pipeline, small models | Pipeline, European providers |
 |---|---|---|---|
 | Hearing 30 seconds | $0.010 | $0.009, `gpt-live-transcribe` | $0.006, Gladia |
-| Reasoning | Included in the audio tokens | $0.0004, `gpt-5-nano` | $0.003, Mistral Large |
-| Speaking 30 seconds | $0.038 | $0.007, `gpt-4o-mini-tts` | $0.018, Gradium |
-| **Total** | **$0.048** | **$0.016** | **$0.027** |
+| Reasoning | Included in the audio tokens | $0.0015, `gpt-5.6-luna` | $0.003, Mistral Large |
+| Speaking 30 seconds | $0.038 | $0.012, `gpt-realtime-2.1-mini` | $0.018, Gradium |
+| **Total** | **$0.048** | **$0.023** | **$0.027** |
 
-Those figures come from audio at $32 and $64 per million tokens on `gpt-realtime-2.1`, $0.017 a minute on `gpt-live-transcribe`, $12 per million on `gpt-4o-mini-tts`, $0.05 and $0.40 per million on `gpt-5-nano` over four turns of 1,500 tokens, $0.75 an hour on Gladia streaming, $0.50 and $1.50 per million on Mistral Large, and Gradium's S plan at $43 for 900,000 characters, which its own count of 45,000 characters an hour puts at 375 characters for that half minute.
+Those figures come from audio at $32 and $64 per million tokens on `gpt-realtime-2.1`, $0.017 a minute on `gpt-live-transcribe`, $20 per million audio tokens on `gpt-realtime-2.1-mini` reading each sentence aloud, $0.20 and $1.20 per million on `gpt-5.6-luna` over four turns of 1,500 tokens, $0.75 an hour on Gladia streaming, $0.50 and $1.50 per million on Mistral Large, and Gradium's S plan at $43 for 900,000 characters, which its own count of 45,000 characters an hour puts at 375 characters for that half minute.
 
-Speech billed as audio costs several times the same content billed as text, and one rate applies to every turn, however trivial. A pipeline prices each stage on its own, so you buy each one from whoever fits the requirement. On small OpenAI models that lands about three times below the realtime session. The European stack costs more than that and still undercuts the single session, because a premium voice is the expensive stage and Gradium charges for it. Paying more on one stage while staying cheaper overall is the whole point of pricing them separately. Live transcription bills by audio duration and costs more than transcribing a recording afterwards, so a batch price list makes a pipeline look cheaper than it is.
+Speech billed as audio costs several times the same content billed as text, and one rate applies to every turn, however trivial. A pipeline prices each stage on its own, so you buy each one from whoever fits the requirement. A pipeline on small OpenAI models costs about half as much as the realtime session. The European stack costs more than that and still undercuts the single session, because a premium voice is the expensive stage and Gradium charges for it. Paying more on one stage while staying cheaper overall is the whole point of pricing them separately. Live transcription bills by audio duration and costs more than transcribing a recording afterwards, so a batch price list makes a pipeline look cheaper than it is.
 
-Both architectures re-send the conversation history on every turn, and they pay for it differently. The pipeline pays in text tokens, which the reasoning figure already includes. A realtime session pays in audio tokens, cached at a discount but still added on top, which is what makes long calls diverge. The mini realtime tier also closes part of the difference on its own, at $10 and $20 per million.
+Both architectures re-send the conversation history on every turn, and they pay for it differently. The pipeline pays in text tokens, which the reasoning figure already includes. A realtime session pays in audio tokens, cached at a discount but still added on top, which is what makes long calls diverge. The mini realtime tier, at $10 and $20 per million, comes to about $0.015 a minute, below the small-model pipeline. Its answers are weaker, though, with a score of 54.4 at minimal reasoning on the [Artificial Analysis speech to speech index](https://artificialanalysis.ai/speech-to-speech), against 75.2 for the full-size model at high reasoning.
 
 Regulation leads to a pipeline too. A European deployment can run [Mistral for the model, Gladia for transcription and Gradium for the voice](/docs/ai-integration/sovereign-voice-ai), where the data stays in the EU and every company in the chain is European. Regional processing on a US endpoint moves the servers, and the chain stays American.
 
@@ -119,6 +122,19 @@ A pipeline also lets you remove stages. Keep transcription alone and the server 
 | European stack | Regional processing, single provider | Fully European if you pick European providers |
 | Transcript | Emitted alongside the audio | The primary output |
 | Moving parts | One session | Three services to wire together |
+
+## Alternatives to the OpenAI Realtime API
+
+The first alternative keeps the speech to speech architecture with another provider. Google's [Gemini 3.8 Live](https://ai.google.dev/gemini-api/docs/live) costs $3 per million audio tokens heard and $12 per million spoken, about $0.012 for a minute split evenly, or a quarter of GPT-Realtime-2.1. xAI's Grok Voice 3.0 scores highest on the Artificial Analysis index and accepts the events of the Realtime API, at $0.08 a minute. OpenAI's own GPT-Live-1 runs on a separate endpoint at $0.05 a minute plus the cost of its backend model. Amazon Nova Sonic, Alibaba's Qwen Audio Realtime and the other [speech to speech APIs for voice agents](/blog/top-speech-to-speech-apis-voice-agents) differ in price, in protocol and in the regions where they process audio.
+
+The second alternative is the pipeline, which you can run yourself or rent:
+
+- [LiveKit Agents](https://docs.livekit.io/agents) runs in Python or Node under the Apache 2.0 licence, with a hosted LiveKit Cloud that charges $0.01 per agent minute.
+- [Pipecat](https://docs.pipecat.ai) runs in Python under the BSD 2-Clause licence. The speech-to-text provider Deepgram announced on 29 October 2026 that it is acquiring Daily, the company behind Pipecat. Pipecat stays open source.
+- Micdrop runs the pipeline in TypeScript, inside the Node server you already ship.
+- [Vapi](https://vapi.ai) and [Retell AI](https://www.retellai.com) host the whole conversation, with phone numbers and a dashboard. Vapi charges $0.05 a minute on top of the providers' bills, while Retell charges between $0.07 and $0.31 a minute depending on the voice and the model.
+
+LiveKit Agents, Pipecat and Micdrop also run the Realtime API and Gemini Live. Vapi and Retell offer OpenAI's realtime models too, so you can pick any of the five and still switch architecture later. The five differ more in licence, language and telephony than in price. You can [compare the open source voice agent frameworks](/blog/open-source-voice-agent-frameworks) on each of these points, or weigh [Vapi against a library you host](/blog/alternative-to-vapi).
 
 ## Driving the Realtime API from TypeScript with Micdrop
 
@@ -150,11 +166,14 @@ new MicdropServer(socket, {
     apiKey: process.env.OPENAI_API_KEY,
     systemPrompt: 'You are a helpful assistant',
   }),
-  tts: new OpenaiTTS({ apiKey: process.env.OPENAI_API_KEY, voice: 'alloy' }),
+  tts: new OpenaiTTS({
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'gpt-realtime-2.1-mini',
+  }),
 })
 ```
 
-`OpenaiSTT` streams the browser's audio to the Realtime endpoint in transcription mode, so the pipeline keeps OpenAI's realtime transcription and lets you change the agent or the voice one at a time. Each of the four OpenAI classes takes [its own options, from the model to the voice](/docs/ai-integration/provided-integrations/openai).
+`OpenaiSTT` streams the browser's audio to the Realtime endpoint in transcription mode, so the pipeline keeps OpenAI's realtime transcription and lets you change the agent or the voice one at a time. Here `OpenaiTTS` reads each sentence with `gpt-realtime-2.1-mini`, the model OpenAI recommends in place of its text-to-speech endpoint, which shuts down on 6 January 2027. Each of the four OpenAI classes takes [its own options, from the model to the voice](/docs/ai-integration/provided-integrations/openai).
 
 Most of the call works the same way in both modes. The client decides when the user starts and stops speaking, since Micdrop turns off the provider's own voice detection. When the user speaks over the answer, the model stops, and `OpenaiRealtime` also truncates the answer in the session history at the point the user most likely stopped hearing it. [Tools](/docs/server/tools) added with `addTool()` run on your server. Your code receives the conversation as the same messages in both modes, ready to save.
 
@@ -162,9 +181,7 @@ Three things change in realtime mode. The voice is one of OpenAI's, and the syst
 
 ### The same trade-off on Gemini Live
 
-Google's Gemini Live takes the same place in the server. Replace `OpenaiRealtime` with [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) from `@micdrop/gemini`, which runs `gemini-3.8-live` by default, or `gemini-3.8-live-extended-thinking` for tools that take several seconds to answer. Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute. `GeminiLive` resumes the session on a new connection whenever Gemini closes one, so long calls go on. The trade-off with a pipeline stays the same, since one provider still hears, reasons and speaks.
-
-Grok Voice, Amazon Nova Sonic and other providers sell [speech to speech APIs](/blog/top-speech-to-speech-apis-voice-agents) built the same way, at other prices and over other protocols.
+Google's Gemini Live takes the same place in the server. Replace `OpenaiRealtime` with [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) from `@micdrop/gemini`, which runs `gemini-3.8-live` by default, or `gemini-3.8-live-extended-thinking` for tools that take several seconds to answer. `GeminiLive` resumes the session on a new connection whenever Gemini closes one, so long calls go on. The trade-off with a pipeline stays the same, since one provider still hears, reasons and speaks.
 
 ## Switching providers without rewriting the orchestration
 
@@ -215,6 +232,9 @@ You can [get a browser talking to a Node server in about five minutes](/docs/get
   </FaqItem>
   <FaqItem question="How much does the OpenAI Realtime API cost?">
     Billing is per token, with audio priced separately from text. OpenAI's pricing page lists the full-size realtime models at $32 per million audio input tokens and $64 per million audio output tokens, with a mini tier at $10 and $20, and cached audio input far cheaper. Since audio tokens track duration, a talkative agent costs more than a listening one. Those figures move with each model generation, so check the page before you budget.
+  </FaqItem>
+  <FaqItem question="What are the alternatives to the OpenAI Realtime API?">
+    You can move to another speech to speech API or to a pipeline. Gemini Live costs about a quarter of GPT-Realtime-2.1 per minute, and Grok Voice accepts the Realtime API's events. A pipeline chains speech-to-text, a language model and text-to-speech from providers you pick, run by a framework on your servers (LiveKit Agents, Pipecat, Micdrop) or by a hosted platform such as Vapi or Retell. Micdrop runs both behind the same browser client, with [a realtime model taking the place of the three pipeline stages](/docs/server/realtime).
   </FaqItem>
   <FaqItem question="What is the difference between GPT-Realtime and GPT-Realtime-2?">
     GPT-Realtime-2, released in May 2026, added reasoning with five effort levels from `minimal` to `xhigh`, parallel tool calls, and a context window of 128K tokens instead of 32K. GPT-Realtime-2.1 followed in July with better recognition of letters and numbers and better handling of silence, noise and interruptions. The full-size models have the same audio prices, $32 and $64 per million tokens, and reasoning tokens are billed on top as output.
