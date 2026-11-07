@@ -3,7 +3,7 @@ title: 'Best Speech to Text APIs for Voice Agents in 2026'
 h1: 'The best speech to text APIs for voice agents in 2026'
 summary: 'Ten streaming speech to text APIs ranked for voice agents on accuracy, time to final transcript, turn detection, languages and price per minute.'
 date: 2026-10-16
-update: 2026-10-22
+update: 2026-11-07
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -31,7 +31,7 @@ The best speech to text API for a voice agent in 2026 is AssemblyAI Universal-3.
 
 Micdrop publishes this ranking. [Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. It does no transcription itself, so it has no place in the ranking. It ships ready integrations for OpenAI, Gemini, Mistral, Gladia and Gradium, plus one interface for plugging in any other API. Coval measured a higher error rate for Gladia than for every ranked API it covers. Gradium returned its final transcript later than every ranked API in the Pipecat benchmark. Both stay outside the top ten.
 
-Prices come from each vendor's pricing page. Accuracy and speed figures come from independent benchmarks, unless the text marks them as the vendor's own. All figures were collected on 16 October 2026, and on 22 October for Mistral. Providers release a new model every few weeks, so check the numbers again before you commit.
+Prices come from each vendor's pricing page. Accuracy and speed figures come from independent benchmarks, unless the text marks them as the vendor's own. We collected most figures on 16 October 2026, Mistral's on 22 October, and the sentiment analysis details and Soniox release dates on 7 November. Providers release a new model every few weeks, so check the numbers again before you commit.
 
 ## How the APIs were ranked
 
@@ -104,7 +104,7 @@ The [price](https://elevenlabs.io/pricing/api) is $0.39 an hour, about $0.0065 a
 
 One model covers more than 60 languages and follows a speaker who changes language within a session. Soniox detects the end of a turn from pauses, intonation and context, with an adjustable sensitivity. It accepts up to 8,000 tokens of context for names and domain terms. SDKs cover Node, the browser, React and React Native.
 
-Soniox publishes no latency or accuracy figure of its own and names a single customer, the German voicebot company mobilApp. Artificial Analysis rated the previous version at 11.9% WER in June 2026, so expect these numbers to keep moving. Soniox processes and stores the audio in an EU region when you ask its sales team. Soniox holds SOC 2 Type 2, HIPAA and ISO 27001.
+Soniox publishes no latency or accuracy figure of its own and names a single customer, the German voicebot company mobilApp. Artificial Analysis rated the version before stt-rt-v5 at 11.9% WER in June 2026, so expect these numbers to keep moving. Soniox released [stt-rt-v6](https://docs.soniox.com/stt/models) on 3 November 2026 and retires stt-rt-v5 on 15 December. The benchmark figures here still describe stt-rt-v5. Soniox processes and stores the audio in an EU region when you ask its sales team. Soniox holds SOC 2 Type 2, HIPAA and ISO 27001.
 
 ### 5. Google Gemini 3.5 Transcribe Live
 
@@ -182,6 +182,19 @@ Mistral publishes the weights of the first version, `voxtral-mini-transcribe-rea
 
 Open source engines such as Whisper, Moonshine and Kyutai STT can [transcribe speech locally in Node](/blog/local-speech-to-text-node), with no per-minute bill. The browser's own [Web Speech API](/blog/web-speech-api) costs nothing but behaves differently from one browser to the next.
 
+## Which APIs add sentiment analysis to real-time transcription
+
+None of the ten ranked APIs returns sentiment or emotion on its streaming connection, according to their documentation on 7 November 2026. AssemblyAI and [Speechmatics](https://docs.speechmatics.com/speech-to-text/batch/speech-intelligence/sentiment-analysis) offer sentiment analysis on recorded files only. Deepgram marks its [sentiment analysis](https://developers.deepgram.com/docs/sentiment-analysis), intent and topic detection as unavailable in streaming. Speechmatics tags laughter, applause and music as [audio events](https://docs.speechmatics.com/speech-to-text/features/audio-events) in its standard real-time API, but Agent STT, the Linden 1 service ranked here, returns none of them.
+
+Two APIs outside the ranking score sentiment during the call:
+
+- [Gladia](https://docs.gladia.io/chapters/audio-intelligence/sentiment-analysis) returns a sentiment (positive, negative, neutral or mixed) and an emotion label such as anger or amusement for each sentence of a live session, once you turn on `sentiment_analysis` in its real-time processing settings.
+- [Amazon Transcribe Call Analytics](https://docs.aws.amazon.com/transcribe/latest/dg/call-analytics-streaming.html) rates each speech segment of a streamed call as positive, neutral, mixed or negative.
+
+[Hume AI](https://dev.hume.ai/expression-measurement/docs/audio/realtime) reads emotion from the sound of the voice instead of the words. Its real-time API, in limited release since October 2026, sends emotion scores every few seconds with no transcript, so you run it alongside your speech to text API.
+
+A voice agent rarely needs an extra service to read the caller's mood. It already sends every final transcript to a language model, which can return the mood in its structured output. A small model can also [classify the mood and intent of each turn](/blog/intent-classification-voice-agent) before the agent answers. Pick a service that reads the voice, such as Hume, when the tone matters more than the words, as in coaching or when reviewing sales calls.
+
 ## How to choose between them
 
 Start from the language of your calls. An English agent can use any ranked API. When callers switch language mid-call, pick AssemblyAI, Soniox, Gemini, ElevenLabs or xAI, or Deepgram within its 10 switching languages. Cartesia covers five languages and Mistral more than 40.
@@ -219,6 +232,9 @@ Plan for outages too, since a voice agent stops answering when its transcription
   </FaqItem>
   <FaqItem question="Do I need end of turn detection in the speech to text API?">
     A voice agent needs end of turn detection somewhere, but it can come from the API or from your own code. Deepgram Flux, AssemblyAI, Soniox, ElevenLabs, Cartesia and xAI detect it themselves, and Mistral Voxtral Realtime 3 when you turn it on. OpenAI gpt-live-transcribe expects your code to say when the sentence is over, for instance with voice activity detection in the browser.
+  </FaqItem>
+  <FaqItem question="Which speech to text APIs return sentiment analysis in real time?">
+    Gladia returns a sentiment and an emotion label for each sentence of a live transcription. Amazon Transcribe Call Analytics rates the sentiment of each segment of a streamed call. None of the ten APIs ranked here returns sentiment while streaming. AssemblyAI, Deepgram and Speechmatics offer sentiment analysis on recorded audio only. In a voice agent, the language model that reads each transcript can also return the caller's mood.
   </FaqItem>
   <FaqItem question="Is Whisper good enough for a real-time voice agent?">
     Whisper reads up to thirty seconds of audio at a time and was built for files, so streaming it means re-running it on a growing buffer or transcribing each sentence after it ends. OpenAI's gpt-4o-transcribe costs $0.006 a minute, the price of Whisper on OpenAI's API, and streams over the Realtime API. Whisper remains useful on your own server, where it costs nothing per minute and no audio leaves the machine.
