@@ -3,16 +3,21 @@ title: 'Audio Sampling Rate in a Voice Agent: 16, 24 or 48 kHz'
 h1: 'Audio sampling rate in a voice pipeline, from the microphone to the speech model and back'
 summary: 'Browsers record at 44.1 or 48 kHz, speech models read 16 kHz and many voices speak at 24 kHz. Learn the rate each stage expects and what resampling costs.'
 date: 2026-10-14
+update: 2026-11-07
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
   - 'audio sampling rate'
+  - 'sample rate for audio'
   - 'sample rate audio'
   - 'sampling rate of audio'
   - 'audio sampling rates'
   - 'what is sampling rate in audio'
   - 'sample frequency'
   - 'pcm audio'
+  - 'what is pcm audio'
+  - 'lpcm audio'
+  - 'bit depth audio'
   - 'what is the best audio format'
 similarPosts:
   - 'real-time-transcription-websocket-typescript'
@@ -26,11 +31,13 @@ takeaways:
   - 'Raw 16 bit mono PCM at the rate the model reads is the safest format to stream to a speech to text API.'
 ---
 
-The audio sampling rate is the number of times per second a recording measures the sound wave, given in hertz: 16,000 measurements a second is 16 kHz. A voice agent handles three rates at once. The browser microphone records at 44.1 or 48 kHz, most speech to text models read 16 kHz (OpenAI's Realtime API wants 24 kHz), and voice engines generate at 16, 22.05 or 24 kHz. Each boundary between two of them needs a conversion. A rate declared wrong at one boundary is the usual reason an agent mishears its user or speaks like a slowed tape. This article lists the rate each stage uses, what a conversion costs, why sending more than the model reads brings nothing, and which format to stream to a speech model.
+The audio sampling rate, also called the sample rate or sampling frequency, is the number of times per second a recording measures the sound wave, given in hertz: 16,000 measurements a second is 16 kHz. A voice agent handles three rates at once. The browser microphone records at 44.1 or 48 kHz, most speech to text models read 16 kHz (OpenAI's Realtime API wants 24 kHz), and voice engines generate at 16, 22.05 or 24 kHz. Each boundary between two of them needs a conversion. A rate declared wrong at one boundary is the usual reason an agent mishears its user or speaks like a slowed tape. This article lists the rate each stage uses, what a conversion costs, why audio above the model's rate only adds bytes, what PCM audio is and which format to stream to a speech model.
 
-## What the audio sampling rate measures
+## What the sample rate and the bit depth of audio measure
 
-A microphone produces a continuous wave. To store it, the sound card measures its height at regular intervals. Each measurement is a sample. The sampling rate says how many samples are taken per second.
+A microphone produces a continuous wave. To store it, the sound card measures its height at regular intervals. Each measurement is a sample. The sampling rate is the number of samples taken per second. The bit depth is the number of bits that store each one.
+
+The bit depth sets how finely each measurement is rounded. A 16 bit sample takes one of 65,536 levels, which gives about 96 dB between the quietest and the loudest sound the recording can hold. An 8 bit sample has only 256 levels, so its rounding adds an audible hiss. Recording studios work in 24 bit, the Web Audio API in 32 bit floats. Speech models and voice engines exchange 16 bit audio, since the background noise a microphone picks up in a room is far louder than the smallest step of a 16 bit sample.
 
 The rate sets the highest frequency the recording can hold, which is half the rate. Engineers call that limit the Nyquist frequency. A 16 kHz recording carries sound up to 8 kHz, and a 48 kHz one up to 24 kHz, beyond what an adult hears. The human voice carries most of what makes words intelligible between 300 Hz and 3,400 Hz, the band the telephone network was designed for. Consonants such as "s" and "f" put energy higher, up to about 8 kHz, which is why speech recognition settled on 16 kHz.
 
@@ -154,15 +161,17 @@ The voice going back to the user is the one place where a higher rate can be hea
     Infographic only: regenerate if the rates compared change. Last data sync: 2026-10-14. */}
 ![One second of mono speech weighs 8 KB at 8 kHz μ-law, 32 KB at 16 kHz, 48 KB at 24 kHz and 96 KB at 48 kHz in 16 bit PCM](./bandwidth-per-rate.jpg)
 
-## PCM audio is the format a voice pipeline carries
+## What is PCM audio?
 
-PCM, for pulse code modulation, stores each sample as a plain number, one after the other, with no compression. Three settings describe a PCM stream, and both ends have to agree on all three:
+PCM audio, for pulse code modulation, is uncompressed digital audio: a sequence of numbers, one per sample, each giving the height of the sound wave at that instant. It is the format a voice pipeline carries between the microphone, the speech model and the speaker. Three settings describe a PCM stream, and both ends have to agree on all three:
 
 - the sampling rate, such as 16 kHz,
 - the bit depth, the size of each number,
 - the number of channels.
 
-Speech pipelines use 16 bit signed integers, written little endian, which providers call `pcm_s16le`, `linear16` or `audio/pcm`. Sixteen bits give 65,536 levels and about 96 dB between the quietest and the loudest sound, more than a microphone in a room delivers. The Web Audio API hands out 32 bit floats between -1 and 1, so the browser converts them before sending:
+LPCM, for linear PCM, spaces the levels evenly. WAV files and the raw audio of speech APIs use it, so in a voice pipeline "PCM" means LPCM. Phone networks use another variant: G.711 μ-law and A-law store each sample in 8 bits on a logarithmic scale, with finer levels for quiet sounds. Those 8 bits and the 8 kHz rate are why a phone call sounds rougher than 16 bit PCM.
+
+Speech pipelines use 16 bit signed integers, a format often called PCM16. Each sample takes two bytes, written little endian, with the low byte first, which is the byte order of x86 and ARM processors. Providers name this format `pcm_s16le`, `linear16` or `audio/pcm`. The Web Audio API hands out 32 bit floats between -1 and 1, so the browser converts them before sending:
 
 ```ts
 function floatToPcm16(input: Float32Array): Int16Array {
@@ -176,6 +185,8 @@ function floatToPcm16(input: Float32Array): Int16Array {
 ```
 
 Speech uses one channel. A second channel doubles the bytes and gives a speech model nothing it can use, so record and send mono.
+
+PCM travels over a WebSocket in one of two ways. A binary message carries the bytes of the `Int16Array` as they are: 100 ms at 16 kHz is 1,600 samples, so 3,200 bytes. An API built on JSON messages takes the same bytes encoded in base64 inside a text message, as OpenAI's Realtime API does with its `input_audio_buffer.append` event. Base64 makes each chunk a third heavier. A WebSocket delivers each message whole, so when every message holds whole samples, each sample reaches the receiver in one piece.
 
 A WAV file is PCM with a 44 byte header in front, which holds the rate, the depth and the channel count. A raw PCM stream drops that header, so the rate travels in the provider's parameters or in your own protocol. The slow, deep voices and the high squeaks of a rate mismatch come from that missing header.
 
@@ -234,11 +245,18 @@ Doing the same work by hand means writing an `AudioWorklet`, the float to 16 bit
     other rate to 16 kHz before computing the spectrogram, so sending more
     only adds bytes.
   </FaqItem>
+  <FaqItem question="What is bit depth in audio?">
+    The bit depth is the number of bits that store each sample. A 16 bit sample
+    takes one of 65,536 levels, which gives about 96 dB between the quietest and
+    the loudest sound. Speech models use 16 bit audio, studios record in 24 bit,
+    and the Web Audio API computes in 32 bit floats.
+  </FaqItem>
   <FaqItem question="What is PCM audio?">
-    PCM stores audio as a plain sequence of numbers, one per sample, with no
-    compression. A PCM stream is described by its sampling rate, its bit depth
-    and its number of channels. Voice pipelines use 16 bit mono PCM, often
-    called pcm_s16le or linear16.
+    PCM, for pulse code modulation, is uncompressed digital audio stored as a
+    plain sequence of numbers, one per sample. A PCM stream is described by its
+    sampling rate, its bit depth and its number of channels. Voice pipelines use
+    linear PCM in 16 bit little endian, mono, often called PCM16, pcm_s16le or
+    linear16.
   </FaqItem>
   <FaqItem question="What is the best audio format for speech to text?">
     For streaming, send raw 16 bit mono PCM at the rate the model reads, usually 16
