@@ -144,7 +144,7 @@ So on a Mac, the CPU is the best option today, and quantized weights are the
 fastest setting on it, which is why `q8` is the default. On Linux with an
 NVIDIA card, try `device: 'cuda'` and measure on your own server.
 
-`src/tests/onnx-device-bench.ts` in the demo server runs this comparison
+`src/benchmarks/onnx-device-bench.ts` in the demo server runs this comparison
 against any encoder from the Transformers.js cache. Run it to measure another
 machine.
 

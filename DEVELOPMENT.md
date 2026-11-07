@@ -62,12 +62,21 @@ The website runs on 4321, the Astro default.
 
 ### Tests
 
-`@micdrop/client` has a test suite that runs in Node, from the audio helpers up
-to a whole call against a real `MicdropServer`. It covers the code both the
-browser and React Native run.
+`@micdrop/client`, `@micdrop/server` and `@micdrop/smart-turn` have unit test
+suites that run in Node, up to a whole call between a client and a real
+`MicdropServer`. They call no external service.
 
 ```bash
-pnpm --filter @micdrop/client test
+pnpm test
+```
+
+The end-to-end tests run every integration against its real API, which costs
+money for the cloud providers, and against the local models installed. See
+[e2e/README.md](e2e/README.md).
+
+```bash
+pnpm test:e2e             # Every provider whose keys are set
+pnpm test:e2e cartesia    # One provider, or one kind (tts, stt, agent, realtime)
 ```
 
 ### Publishing to npm

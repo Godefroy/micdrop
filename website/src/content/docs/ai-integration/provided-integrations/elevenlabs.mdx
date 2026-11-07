@@ -119,6 +119,12 @@ The Text to Dialogue WebSocket has no message to stop a synthesis halfway. When 
 
 ElevenLabs counts each connection to the Text to Dialogue WebSocket as one dialogue session for as long as it stays open, speaking or silent, so each call holds one session from start to end. ElevenLabs allows 14 sessions at once on its free plan and 105 on Scale, and publishes the [session limit of each plan](https://elevenlabs.io/docs/overview/models#text-to-dialogue-concurrency). Past the limit, it rejects new connections with `too_many_concurrent_requests`. ElevenLabs counts only the time spent generating audio on the Text to Speech WebSocket, so the same plan usually allows more calls at once with Flash.
 
+### Interruptions and reconnections
+
+Flash v2.5, Turbo v2.5 and Multilingual v2 have no message to stop a synthesis either. When the user interrupts the assistant, `ElevenLabsTTS` drops their connection too and opens a new one while the user is still speaking, so no audio of the interrupted answer plays after the cut.
+
+When a connection drops in the middle of an answer, `ElevenLabsTTS` reconnects and sends the answer again. Flash v2.5, Turbo v2.5 and Multilingual v2 pick it up where its audio stopped, while Eleven v3 and v4 speak it again from its start. ElevenLabs accepts a connection before it checks the key and the voice, so a connection that closes before carrying any audio counts as a failed attempt. After more than `maxRetry` failed attempts in a row, `ElevenLabsTTS` emits `Failed` with the text left unspoken, and the next call to `speak()` connects again with a full retry budget.
+
 ### Options
 
 | Option              | Type                                    | Default               | Description                                                                         |
@@ -131,7 +137,7 @@ ElevenLabs counts each connection to the Text to Dialogue WebSocket as one dialo
 | `voiceSettings`     | `VoiceSettings`                         | Optional              | Voice customization settings. Eleven v3 and v4 only read `stability`                |
 | `connectionTimeout` | `number`                                | `5000`                | Timeout in milliseconds for WebSocket connection                                    |
 | `retryDelay`        | `number`                                | `1000`                | Delay in milliseconds between reconnection attempts                                 |
-| `maxRetry`          | `number`                                | `3`                   | Maximum number of reconnection attempts before failing                              |
+| `maxRetry`          | `number`                                | `3`                   | Failed connection attempts in a row allowed before emitting `Failed`                |
 
 ### Voice Settings
 

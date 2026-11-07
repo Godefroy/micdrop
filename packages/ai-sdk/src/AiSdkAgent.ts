@@ -26,13 +26,13 @@ export interface AiSdkAgentOptions extends AgentOptions {
 
 const DEFAULT_MAX_RETRY = 3
 
-export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
-  private abortController?: AbortController
+const FIRST_MESSAGE_PROMPT = 'The call starts now.'
 
-  protected async generateAnswer(stream: PassThrough): Promise<void> {
-    const abortController = new AbortController()
-    this.abortController = abortController
-    const signal = this.abortController.signal
+export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
+  protected async generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void> {
     let skipAnswer = false
 
     // Prepare extracting
@@ -62,7 +62,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
       })
 
       for await (const textPart of result.textStream) {
-        if (skipAnswer) return
+        if (skipAnswer || signal.aborted) return
         this.log(`Answer chunk: "${textPart}"`)
 
         // Extracting value?
@@ -84,16 +84,20 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
         // Send chunk
         stream.write(textPart)
       }
-      if (skipAnswer) return
+      if (skipAnswer || signal.aborted) return
 
       const fullText = await result.text
+      // A cancelled answer was never heard in full, it stays out of the
+      // conversation
+      if (signal.aborted) return
       const { message, metadata } = this.extract(fullText)
 
       // Emit message
       this.addAssistantMessage(message, metadata)
-      this.abortController = undefined
     } catch (error: any) {
-      if (abortController === this.abortController) {
+      // An aborted request throws too, but that is the cancellation the base
+      // asked for, not a failure to report
+      if (!signal.aborted) {
         console.error('[AiSdkAgent] Error answering:', error)
         this.log('Generation failed, giving up')
         this.emit('Failed')
@@ -109,7 +113,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
   }
 
   private buildMessages(): ModelMessage[] {
-    return this.conversation.flatMap((message): ModelMessage | [] => {
+    const messages = this.conversation.flatMap((message): ModelMessage | [] => {
       switch (message.role) {
         case 'system':
           return []
@@ -148,6 +152,13 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
           }
       }
     })
+
+    // Asked for the opening line, with nothing said yet: the SDK refuses a
+    // prompt without a message, and the model needs something to answer to
+    if (messages.length === 0) {
+      messages.push({ role: 'user', content: FIRST_MESSAGE_PROMPT })
+    }
+    return messages
   }
 
   private buildTools() {
@@ -171,12 +182,5 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
       })
     })
     return tools
-  }
-
-  cancel() {
-    if (!this.abortController) return
-    this.log('Cancel')
-    this.abortController.abort()
-    this.abortController = undefined
   }
 }

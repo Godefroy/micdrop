@@ -59,10 +59,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                                               |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
+| `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
 
@@ -111,10 +111,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                    |
-| ------------ | ---------- | ------------------------------------------------------------------------------ |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
+| Event        | Payload    | Description                                                                                                                                                |
+| ------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Transcript` | `string`   | Transcription of one utterance, emitted once per utterance even when the next one starts before it returns. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Every reconnection attempt failed, with the audio of the utterances still waiting for their transcript. The next utterance connects again.                 |
 
 See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
 

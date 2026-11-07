@@ -4,7 +4,6 @@ import { filterHallucination } from './hallucinations'
 import { WhisperModelName } from './models'
 import {
   loadTranscriber,
-  Transcriber,
   TranscriberOptions,
   warmupTranscriber,
 } from './transcriber'
@@ -73,15 +72,21 @@ const DEFAULT_CHUNK_DURATION_MS = 30000
 const SAMPLE_RATE = 16000 // Rate of the incoming audio (Micdrop client)
 
 export class WhisperSTT extends STT {
-  private transcriber: Promise<Transcriber>
   private generation = 0 // Bumped by destroy() to drop work in flight
+  // Settles once the latest utterance has been emitted. Utterances are
+  // transcribed at the same time but emitted in the order they were spoken,
+  // each one waiting for the previous: a short sentence would otherwise
+  // overtake a long one said before it.
+  private emitted: Promise<void> = Promise.resolve()
 
   constructor(private readonly options: WhisperSTTOptions = {}) {
     super()
 
+    // Start loading now rather than on the first sentence. The promise is not
+    // kept: a failed load leaves the shared cache, and the next utterance
+    // loads again instead of failing forever on this rejection.
     const transcriberOptions = this.getTranscriberOptions()
-    this.transcriber = loadTranscriber(transcriberOptions)
-    this.transcriber.catch((error) => {
+    loadTranscriber(transcriberOptions).catch((error) => {
       console.error('[WhisperSTT] Failed to load model:', error)
     })
 
@@ -104,29 +109,17 @@ export class WhisperSTT extends STT {
       this.log('Error in audio stream', error)
     })
 
-    audioStream.on('end', async () => {
+    audioStream.on('end', () => {
       if (generation !== this.generation) return
-
-      const audio = Buffer.concat(chunks)
-      const durationMs = (audio.length / 2 / SAMPLE_RATE) * 1000
-      const minDuration = this.options.minDurationMs ?? DEFAULT_MIN_DURATION_MS
-
-      if (durationMs < minDuration) {
-        this.log(`Utterance too short (${Math.round(durationMs)}ms), skipping`)
-        this.emit('Transcript', '')
-        return
-      }
-
-      try {
-        const transcript = await this.run(audio, durationMs)
-        if (generation !== this.generation) return
-        this.log(`Transcript: "${transcript}"`)
-        this.emit('Transcript', transcript)
-      } catch (error) {
-        if (generation !== this.generation) return
-        console.error('[WhisperSTT] Transcription error:', error)
-        this.emit('Failed', chunks)
-      }
+      const outcome = this.process(Buffer.concat(chunks), chunks)
+      this.emitted = this.emitted
+        .then(() => outcome)
+        .then((emitOutcome) => {
+          if (generation === this.generation) emitOutcome()
+        })
+        .catch((error) => {
+          console.error('[WhisperSTT] Error emitting transcript:', error)
+        })
     })
   }
 
@@ -136,8 +129,37 @@ export class WhisperSTT extends STT {
     super.destroy()
   }
 
+  /**
+   * Transcribes one utterance, resolving with the function that emits its
+   * outcome. It never rejects, a failure is emitted as Failed.
+   */
+  private async process(audio: Buffer, chunks: Buffer[]): Promise<() => void> {
+    const durationMs = (audio.length / 2 / SAMPLE_RATE) * 1000
+    const minDuration = this.options.minDurationMs ?? DEFAULT_MIN_DURATION_MS
+
+    if (durationMs < minDuration) {
+      return () => {
+        this.log(`Utterance too short (${Math.round(durationMs)}ms), skipping`)
+        this.emit('Transcript', '')
+      }
+    }
+
+    try {
+      const transcript = await this.run(audio, durationMs)
+      return () => {
+        this.log(`Transcript: "${transcript}"`)
+        this.emit('Transcript', transcript)
+      }
+    } catch (error) {
+      return () => {
+        console.error('[WhisperSTT] Transcription error:', error)
+        this.emit('Failed', chunks)
+      }
+    }
+  }
+
   private async run(audio: Buffer, durationMs: number): Promise<string> {
-    const transcriber = await this.transcriber
+    const transcriber = await loadTranscriber(this.getTranscriberOptions())
     const samples = pcm16ToFloat32(audio)
     const chunkDurationMs =
       this.options.chunkDurationMs ?? DEFAULT_CHUNK_DURATION_MS

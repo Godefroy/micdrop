@@ -1,6 +1,6 @@
-import { Pcm16Resampler, STT } from '@micdrop/server'
+import { Pcm16Resampler, ReconnectingSocket, STT } from '@micdrop/server'
 import { Readable } from 'stream'
-import WebSocket from 'ws'
+import { parseMessage, sessionHandshake } from './session'
 import { transcriptionLanguage } from './transcription'
 
 /**
@@ -26,83 +26,111 @@ const DEFAULT_MODEL = 'gpt-4o-transcribe'
 const DEFAULT_LANGUAGE = 'en'
 const SAMPLE_RATE = 16000 // Rate of the incoming audio (Micdrop client)
 const OPENAI_SAMPLE_RATE = 24000 // Min rate accepted by the GA Realtime API
-const DEFAULT_CONNECTION_TIMEOUT = 5000
 const DEFAULT_TRANSCRIPTION_TIMEOUT = 4000
-const DEFAULT_RETRY_DELAY = 1000
-const DEFAULT_MAX_RETRY = 3
+
+/**
+ * Where one utterance stands, until its transcript is emitted.
+ *
+ * - `streaming`: its audio is coming in
+ * - `committed`: its audio is complete and committed, its transcript awaited
+ */
+type UtteranceStatus = 'streaming' | 'committed'
+
+interface Utterance {
+  // Sent as the event id of its commit, so an error can name it
+  id: string
+  status: UtteranceStatus
+  // Kept until the transcript arrives, to send them again after a reconnection
+  chunks: Buffer[]
+  // Its own, so replaying one utterance never disturbs the state of another
+  resampler: Pcm16Resampler
+  // Given by the API when it acknowledges the commit
+  itemId?: string
+  // Gives up on the transcript, a single one per utterance
+  timer?: NodeJS.Timeout
+  // Settled, and waiting for the utterances spoken before it to be given
+  transcript?: string
+}
 
 export class OpenaiSTT extends STT {
-  private socket?: WebSocket
-  private initPromise: Promise<void>
-  private reconnectTimeout?: NodeJS.Timeout
-  private connectionTimeout?: NodeJS.Timeout
-  private retryCount = 0
-  private destroyed = false
-  private transcriptionTimeout?: NodeJS.Timeout
-  private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
-  private resampler = new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE)
+  private socket: ReconnectingSocket
+  private utteranceCount = 0
+  // Utterances not transcribed yet, in the order they were spoken. Each one
+  // leaves the list with the single transcript it emits.
+  private utterances: Utterance[] = []
+  // Commits sent and not acknowledged yet, in the order the API handles them
+  private unacknowledged: Utterance[] = []
 
   constructor(private options: OpenaiSTTOptions) {
     super()
 
-    // Setup WebSocket connection
-    this.initPromise = this.initWS().catch((error) => {
-      console.error('[OpenaiSTT] Connection error:', error)
-      this.reconnect()
+    this.socket = new ReconnectingSocket({
+      url: 'wss://api.openai.com/v1/realtime?intent=transcription',
+      clientOptions: {
+        headers: { Authorization: `Bearer ${this.options.apiKey}` },
+      },
+      connectionTimeout: options.connectionTimeout,
+      retryDelay: options.retryDelay,
+      maxRetry: options.maxRetry,
+      handshake: sessionHandshake,
+      log: (...message) => this.log(...message),
     })
+    this.socket.on('Open', () => this.onOpen())
+    this.socket.on('Close', () => {
+      // The acknowledgements of the lost session will never come
+      this.unacknowledged = []
+    })
+    this.socket.on('Message', (data) => this.handleMessage(parseMessage(data)))
+    this.socket.on('Failed', () => this.onFailed())
+    this.socket.connect()
   }
 
+  /**
+   * Transcribes one utterance, and emits its transcript once, possibly empty
+   * when none comes in time.
+   *
+   * After the connection was given up on, the next utterance tries it again.
+   */
   transcribe(audioStream: Readable) {
-    // New utterance: OpenAI commits and clears its buffer after each one, so
-    // resample this stream independently from the previous one.
-    this.resampler.reset()
+    const utterance: Utterance = {
+      id: `micdrop-stt-${++this.utteranceCount}`,
+      status: 'streaming',
+      chunks: [],
+      resampler: new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE),
+    }
+    this.utterances.push(utterance)
+    this.socket.connect()
 
-    // Read audio stream and send to OpenAI
-    audioStream.on('data', async (chunk: Buffer) => {
-      this.audioChunksPending.push(chunk)
-      await this.initPromise
-      this.sendAudioChunk(chunk)
-      this.log(`Sent audio chunk (${chunk.byteLength} bytes)`)
+    // Read audio stream and send to OpenAI. Audio read while the connection is
+    // not open is sent once it opens.
+    audioStream.on('data', (chunk: Buffer) => {
+      // Dropped by a failure or by destroy()
+      if (!this.utterances.includes(utterance)) return
+      utterance.chunks.push(chunk)
+      this.sendAudioChunk(utterance, chunk)
     })
 
     // Handle stream end
-    audioStream.on('end', async () => {
-      await this.initPromise
-      if (this.audioChunksPending.length === 0) return
-      this.commitAudio()
-
-      // Timeout transcription if no transcript is received
-      this.transcriptionTimeout = setTimeout(() => {
-        this.transcriptionTimeout = undefined
-        this.log('Transcription timeout')
-        this.emit('Transcript', '')
-        this.audioChunksPending.length = 0
-      }, this.options.transcriptionTimeout || DEFAULT_TRANSCRIPTION_TIMEOUT)
+    audioStream.on('end', () => {
+      if (!this.utterances.includes(utterance)) return
+      if (utterance.chunks.length === 0) {
+        this.remove(utterance)
+        return
+      }
+      utterance.status = 'committed'
+      this.commitAudio(utterance)
     })
   }
 
   destroy() {
     super.destroy()
-    this.destroyed = true
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    if (this.transcriptionTimeout) {
-      clearTimeout(this.transcriptionTimeout)
-      this.transcriptionTimeout = undefined
-    }
-    if (this.connectionTimeout) {
-      clearTimeout(this.connectionTimeout)
-      this.connectionTimeout = undefined
-    }
-    if (this.socket) closeSocket(this.socket)
-    this.socket = undefined
+    this.socket.destroy()
+    this.utterances.forEach((utterance) => clearTimeout(utterance.timer))
+    this.utterances = []
+    this.unacknowledged = []
   }
 
   private sendSessionUpdate() {
-    if (!this.socket) return
-
     const model = this.options.model || DEFAULT_MODEL
 
     // Configure the transcription session (GA Realtime API schema)
@@ -141,65 +169,41 @@ export class OpenaiSTT extends STT {
     )
   }
 
-  private async initWS(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(
-        'wss://api.openai.com/v1/realtime?intent=transcription',
-        {
-          headers: {
-            Authorization: `Bearer ${this.options.apiKey}`,
-          },
-        }
-      )
-      this.socket = socket
-
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        closeSocket(socket)
-        this.socket = undefined
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-      this.connectionTimeout = timeout
-
-      socket.addEventListener('open', () => {
-        clearTimeout(timeout)
-        this.sendSessionUpdate()
-        this.log('Connection opened')
-        resolve()
-      })
-
-      socket.addEventListener('error', (error: any) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.addEventListener(
-        'close',
-        ({ code, reason }: { code: number; reason: string }) => {
-          clearTimeout(timeout)
-          this.socket?.removeAllListeners()
-          this.socket = undefined
-
-          if (code !== 1000) {
-            this.reconnect()
-          } else {
-            this.log('Connection closed', { code, reason })
-          }
-        }
-      )
-
-      socket.addEventListener('message', (event: any) => {
-        this.handleMessage(JSON.parse(event.data.toString()))
-      })
-    })
+  /**
+   * Configures the session, then sends again what a previous connection did
+   * not get transcribed. The OpenAI buffer of a new session is empty, so each
+   * utterance is replayed through a fresh resampler, which reproduces the exact
+   * same stream, and committed again if it was.
+   */
+  private onOpen() {
+    this.sendSessionUpdate()
+    this.unacknowledged = []
+    if (this.utterances.length > 0) this.log('Sending audio chunks again')
+    for (const utterance of this.utterances) {
+      // Already transcribed, it only waits for its turn to be given
+      if (utterance.transcript !== undefined) continue
+      utterance.itemId = undefined
+      utterance.resampler = new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE)
+      utterance.chunks.forEach((chunk) => this.sendAudioChunk(utterance, chunk))
+      if (utterance.status === 'committed') this.commitAudio(utterance)
+    }
   }
 
-  private sendAudioChunk(chunk: Buffer) {
-    if (!this.socket) return
+  /** Every retry failed: the audio waiting for a transcript is handed back */
+  private onFailed() {
+    const chunks = this.utterances.flatMap((utterance) => utterance.chunks)
+    this.utterances.forEach((utterance) => clearTimeout(utterance.timer))
+    this.utterances = []
+    this.unacknowledged = []
+    this.emit('Failed', chunks)
+  }
+
+  private sendAudioChunk(utterance: Utterance, chunk: Buffer) {
+    // Fed only with what is sent, so a replay starts from a clean state
+    if (!this.socket.isOpen) return
 
     // Resample 16kHz -> 24kHz (GA Realtime API requires a rate >= 24kHz)
-    const resampled = this.resampler.process(chunk)
+    const resampled = utterance.resampler.process(chunk)
     if (resampled.length === 0) return
 
     this.socket.send(
@@ -210,107 +214,112 @@ export class OpenaiSTT extends STT {
     )
   }
 
+  private commitAudio(utterance: Utterance) {
+    // Committed on the next connection otherwise
+    if (!this.socket.isOpen) return
+    this.socket.send(
+      JSON.stringify({
+        type: 'input_audio_buffer.commit',
+        event_id: utterance.id,
+      })
+    )
+    this.unacknowledged.push(utterance)
+    this.log('Committed audio buffer')
+
+    // Timeout transcription if no transcript is received. A commit sent again
+    // after a reconnection gives the new session the full delay.
+    clearTimeout(utterance.timer)
+    utterance.timer = setTimeout(() => {
+      utterance.timer = undefined
+      this.log('Transcription timeout')
+      this.finish(utterance, '')
+    }, this.options.transcriptionTimeout || DEFAULT_TRANSCRIPTION_TIMEOUT)
+  }
+
+  /**
+   * Settles the transcript of an utterance, the only one it gets.
+   *
+   * The API transcribes each utterance on its own and may finish a short one
+   * before a long one spoken earlier, so transcripts go out in the order the
+   * utterances were spoken.
+   */
+  private finish(utterance: Utterance, transcript: string) {
+    if (!this.utterances.includes(utterance)) return
+    if (utterance.transcript !== undefined) return
+    clearTimeout(utterance.timer)
+    utterance.timer = undefined
+    utterance.transcript = transcript
+    while (this.utterances[0]?.transcript !== undefined) {
+      const first = this.utterances[0]
+      this.remove(first)
+      this.emit('Transcript', first.transcript!)
+    }
+  }
+
+  private remove(utterance: Utterance) {
+    clearTimeout(utterance.timer)
+    utterance.timer = undefined
+    this.utterances = this.utterances.filter((other) => other !== utterance)
+    this.unacknowledged = this.unacknowledged.filter(
+      (other) => other !== utterance
+    )
+  }
+
+  /**
+   * The utterance a transcript event is about. The API names the item, and
+   * the item of each utterance is known from the acknowledgement of its
+   * commit. A transcript of an utterance that timed out matches none.
+   */
+  private findUtterance(itemId?: string) {
+    if (!itemId) {
+      return this.utterances.find(
+        ({ status, transcript }) =>
+          status === 'committed' && transcript === undefined
+      )
+    }
+    return this.utterances.find((utterance) => utterance.itemId === itemId)
+  }
+
   private handleMessage(message: any) {
-    switch (message.type) {
-      // case 'input_audio_buffer.committed':
-      //   this.log('Audio buffer committed')
-      //   break
+    switch (message?.type) {
+      case 'input_audio_buffer.committed': {
+        const utterance = this.unacknowledged.shift()
+        if (utterance) utterance.itemId = message.item_id
+        break
+      }
 
-      // case 'input_audio_buffer.speech_started':
-      //   this.log('Speech started')
-      //   break
-
-      // case 'input_audio_buffer.speech_stopped':
-      //   this.log('Speech stopped')
-      //   break
-
-      // case 'conversation.item.input_audio_transcription.delta':
-      //   this.log(`Received transcript delta: "${message.delta}"`)
-      //   break
-
-      case 'conversation.item.input_audio_transcription.completed':
+      case 'conversation.item.input_audio_transcription.completed': {
         const transcript = message.transcript || ''
         this.log(`Received completed transcript: "${transcript}"`)
-        this.emit('Transcript', transcript)
-        // Reset audio chunks and clear timeout
-        this.audioChunksPending.length = 0
-        if (this.transcriptionTimeout) {
-          clearTimeout(this.transcriptionTimeout)
-          this.transcriptionTimeout = undefined
+        const utterance = this.findUtterance(message.item_id)
+        if (!utterance) {
+          this.log('Transcript of an utterance already given up on, ignored')
+          break
         }
+        this.finish(utterance, transcript)
         break
+      }
 
-      case 'session.created':
-        // The server accepted the key, so the connection is usable
-        this.retryCount = 0
+      case 'conversation.item.input_audio_transcription.failed': {
+        this.log('Transcription failed:', message.error)
+        const utterance = this.findUtterance(message.item_id)
+        if (utterance) this.finish(utterance, '')
         break
+      }
 
-      case 'error':
+      case 'error': {
         this.log('Error:', message.error)
+        // A refused commit, of a buffer too short for instance, is never
+        // acknowledged nor transcribed
+        const utterance = this.utterances.find(
+          ({ id }) => id === message.error?.event_id
+        )
+        if (utterance) this.finish(utterance, '')
         break
+      }
 
       default:
         break
     }
-  }
-
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      this.emit('Failed', this.audioChunksPending)
-      return
-    }
-
-    this.initPromise = new Promise((resolve) => {
-      this.log('Reconnecting...')
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectTimeout = undefined
-        // The count starts over once the server accepts the session, since it
-        // opens the connection before checking the setup
-        this.initWS()
-          .then(() => {
-            // Send audio chunks again if reconnecting during transcription.
-            // The OpenAI buffer is fresh, so replay them through a reset
-            // resampler to reproduce the exact same stream.
-            if (this.audioChunksPending.length > 0) {
-              this.log('Sending audio chunks again')
-              this.resampler.reset()
-              this.audioChunksPending.forEach((chunk) =>
-                this.sendAudioChunk(chunk)
-              )
-            }
-          })
-          .then(resolve)
-          .catch((error) => {
-            this.log('Reconnection error:', error)
-            this.reconnect()
-          })
-      }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-    })
-  }
-
-  private commitAudio() {
-    if (!this.socket) return
-    this.socket.send(JSON.stringify({ type: 'input_audio_buffer.commit' }))
-    this.log('Committed audio buffer')
-  }
-}
-
-/**
- * Closes a socket without hearing from it again.
- *
- * A socket closed while still connecting emits an error, and an error nobody
- * listens to crashes the process, so a listener that ignores it stays.
- */
-function closeSocket(socket: WebSocket) {
-  socket.removeAllListeners()
-  socket.on('error', () => {})
-  if (
-    socket.readyState === WebSocket.OPEN ||
-    socket.readyState === WebSocket.CONNECTING
-  ) {
-    socket.close(1000)
   }
 }

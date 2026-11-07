@@ -62,7 +62,33 @@ export interface MicdropOptions {
   reconnect?: MicdropReconnectOptions
 }
 
+/**
+ * Where the call stands.
+ *
+ * - `stopped`: no call, the microphone may still be on for a test
+ * - `starting`: opening the microphone and the connection
+ * - `started`: the call is on
+ * - `reconnecting`: the connection dropped, the call waits for a new one
+ */
+export type MicdropStatus = 'stopped' | 'starting' | 'started' | 'reconnecting'
+
+/**
+ * Who has the floor, one at a time.
+ *
+ * - `idle`: nothing is heard nor awaited, when stopped, paused or muted
+ * - `listening`: waiting for the user to speak
+ * - `userSpeaking`: the user speaks
+ * - `processing`: the server prepares the answer
+ * - `assistantSpeaking`: the answer is playing
+ */
+export type MicdropActivity =
+  'idle' | 'listening' | 'userSpeaking' | 'processing' | 'assistantSpeaking'
+
 export interface MicdropState {
+  /** Where the call stands, which `isStarting`, `isStarted` and `isReconnecting` spell out */
+  status: MicdropStatus
+  /** Who has the floor, which `isListening`, `isUserSpeaking`, `isProcessing` and `isAssistantSpeaking` spell out */
+  activity: MicdropActivity
   isStarting: boolean
   isStarted: boolean
   isMuted: boolean
@@ -111,14 +137,15 @@ export class MicdropClient
   private _isProcessing = false
   private _isMuted = false
   private _isPaused = false
-  private _isReconnecting = false
-  // From start() until the connection opens, the microphone included: opening
-  // it can take a while, for the permission prompt or the browser itself
-  private _isStartingCall = false
+  // The call as start() and the connection leave it. The public status also
+  // weighs the microphone, which a device change restarts during a call.
+  private callStatus: MicdropStatus = 'stopped'
   private reconnectAttempt = 0
   private reconnectTimer?: ReturnType<typeof setTimeout>
   private connectionTimer?: ReturnType<typeof setTimeout>
   private echoGuard = new EchoGuard()
+  // Waiting for the answer to end before stopping, see stopAfterAnswer()
+  private pendingStop?: () => void
 
   constructor(public options: MicdropOptions = {}) {
     super()
@@ -135,25 +162,36 @@ export class MicdropClient
     return this.micRecorder?.vad
   }
 
+  get status(): MicdropStatus {
+    const mic = this.micRecorder?.state
+    if (this.callStatus === 'reconnecting') return 'reconnecting'
+    if (this.callStatus === 'started' && mic?.isStarted) return 'started'
+    // Opening the microphone can take a while, for the permission prompt or
+    // the browser itself, and a device change restarts it during a call
+    if (this.callStatus !== 'stopped' || mic?.isStarting) return 'starting'
+    return 'stopped'
+  }
+
+  get activity(): MicdropActivity {
+    if (this.isUserSpeaking) return 'userSpeaking'
+    if (this.isAssistantSpeaking) return 'assistantSpeaking'
+    if (this.isProcessing) return 'processing'
+    if (this.isListening) return 'listening'
+    return 'idle'
+  }
+
+  /** The call is on, reconnecting included */
   get isStarted(): boolean {
-    return (
-      (this.isWSStarted || this._isReconnecting) &&
-      (this.micRecorder?.state.isStarted || false)
-    )
+    const status = this.status
+    return status === 'started' || status === 'reconnecting'
   }
 
   get isStarting(): boolean {
-    return (
-      (this._isStartingCall ||
-        this.isWSStarting ||
-        this.micRecorder?.state.isStarting ||
-        false) &&
-      !this._isReconnecting
-    )
+    return this.status === 'starting'
   }
 
   get isReconnecting(): boolean {
-    return this._isReconnecting
+    return this.status === 'reconnecting'
   }
 
   get isMuted(): boolean {
@@ -232,6 +270,8 @@ export class MicdropClient
 
   get state(): MicdropState {
     return {
+      status: this.status,
+      activity: this.activity,
       isStarting: this.isStarting,
       isStarted: this.isStarted,
       isReconnecting: this.isReconnecting,
@@ -254,6 +294,8 @@ export class MicdropClient
   }
 
   start = async (options: MicdropOptions) => {
+    // A stop waiting for the previous answer is no longer wanted
+    this.cancelPendingStop()
     this.error = undefined
     this.options = { ...this.options, ...options }
 
@@ -264,41 +306,43 @@ export class MicdropClient
     this._isProcessing = true
     this._isMuted = false
     this._isPaused = false
-    this._isReconnecting = false
-    this._isStartingCall = true
+    this.callStatus = 'starting'
     this.reconnectAttempt = 0
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = undefined
-    }
+    this.clearReconnectTimer()
     this.notifyStateChange()
 
-    // Start mic if not already started
-    if (!this.micRecorder || options?.vad) {
-      await this.startMic({ vad: options?.vad })
+    try {
+      // Start mic if not already started
+      if (!this.micRecorder || options?.vad) {
+        await this.startMic({ vad: options?.vad })
+      }
+      // Stopped while the microphone was opening
+      if (this.callStatus !== 'starting') return
+      this.openWS()
+    } catch (error) {
+      // A refused microphone has already stopped the call and said why
+      if ((this.callStatus as MicdropStatus) !== 'stopped') {
+        this.setError(toClientError(error))
+        await this.stop()
+      }
+      throw error
     }
 
-    // Start websocket
-    await this.startWS()
-
     // Already connected, the socket was kept from a previous start
-    if (this.isWSStarted && this._isStartingCall) {
-      this._isStartingCall = false
+    if (this.isWSStarted) {
+      this.callStatus = 'started'
       this.notifyStateChange()
     }
   }
 
   stop = async () => {
+    this.cancelPendingStop()
     this.partialAssistantMessage = ''
-    this._isStartingCall = false
+    this.callStatus = 'stopped'
     this._isProcessing = false
     this._isMuted = false
     this._isPaused = false
-    this._isReconnecting = false
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = undefined
-    }
+    this.clearReconnectTimer()
 
     try {
       // Stop websocket
@@ -320,6 +364,46 @@ export class MicdropClient
     } catch (error) {
       console.error('[MicdropClient] Error stopping microphone', error)
     }
+  }
+
+  /** The assistant prepares or speaks an answer */
+  private get isAnswering(): boolean {
+    const { activity } = this
+    return activity === 'processing' || activity === 'assistantSpeaking'
+  }
+
+  /**
+   * Stops the call once the assistant finished its answer, the one it is
+   * still preparing included, such as the goodbye that follows an `EndCall`.
+   * Stops right away when no answer is under way.
+   *
+   * A `start()` or a `stop()` meanwhile cancels the wait, so it never acts on
+   * the next call.
+   * @returns Resolves once the call is stopped, or the wait cancelled
+   */
+  stopAfterAnswer = async (): Promise<void> => {
+    if (!this.isAnswering) return this.stop()
+    this.cancelPendingStop()
+    return new Promise((resolve) => {
+      const detach = () => {
+        this.off('StateChange', onStateChange)
+        this.pendingStop = undefined
+      }
+      const onStateChange = () => {
+        if (this.isAnswering) return
+        detach()
+        this.stop().then(resolve)
+      }
+      this.on('StateChange', onStateChange)
+      this.pendingStop = () => {
+        detach()
+        resolve()
+      }
+    })
+  }
+
+  private cancelPendingStop() {
+    this.pendingStop?.()
   }
 
   mute = () => {
@@ -425,7 +509,11 @@ export class MicdropClient
         options.deviceId ??
         storage.getItem(MicdropStorageKeys.MicDevice) ??
         undefined
+      const recorder = this.micRecorder
       await Mic.start(deviceId)
+      // Stopped while the microphone was opening, a hang-up during the
+      // permission prompt for instance: there is nothing left to start
+      if (this.micRecorder !== recorder || !Mic.isStarted) return
       if (Mic.deviceId) {
         storage.setItem(MicdropStorageKeys.MicDevice, Mic.deviceId)
       } else {
@@ -509,52 +597,43 @@ export class MicdropClient
     this.notifyStateChange()
   }
 
-  private async startWS() {
-    try {
-      if (this.ws) {
-        this.log('WebSocket is already started')
-        return
-      }
-      if (!this.isMicStarted) {
-        throw new MicdropClientError(MicdropClientErrorCode.Mic)
-      }
-      if (!this.options.url) {
-        throw new MicdropClientError(MicdropClientErrorCode.MissingUrl)
-      }
-
-      // Start websocket
-      this.ws = new WebSocket(this.options.url)
-      this.ws.binaryType = 'arraybuffer'
-      this.notifyStateChange()
-
-      // Events
-      this.ws.onopen = this.onWSOpen
-      this.ws.onmessage = this.onWSMessage
-      this.ws.onclose = this.onWSClose
-      this.ws.onerror = this.onWSError
-
-      // Connection timeout
-      this.connectionTimer = setTimeout(() => {
-        this.connectionTimer = undefined
-        if (this.ws?.readyState === 0) {
-          this.log('WebSocket connection timeout')
-          this.ws.close()
-        }
-      }, this.options.reconnect?.connectionTimeout ?? DEFAULT_RECONNECT_OPTIONS.connectionTimeout)
-    } catch (error) {
-      // A missing address or a refused microphone already says what went
-      // wrong, only an unnamed failure is reported as a connection error
-      this.setError(
-        error instanceof MicdropClientError
-          ? error
-          : new MicdropClientError(
-              MicdropClientErrorCode.Connection,
-              (error as any)?.message
-            )
-      )
-      await this.stop()
-      throw error
+  /**
+   * Opens the connection, unless one is already open or opening.
+   *
+   * The socket answers through handlers bound to it, so one left behind by a
+   * stop or a reconnection never acts on the call that followed.
+   */
+  private openWS() {
+    if (this.ws) {
+      this.log('WebSocket is already started')
+      return
     }
+    if (!this.isMicStarted) {
+      throw new MicdropClientError(MicdropClientErrorCode.Mic)
+    }
+    if (!this.options.url) {
+      throw new MicdropClientError(MicdropClientErrorCode.MissingUrl)
+    }
+
+    const ws = new WebSocket(this.options.url)
+    ws.binaryType = 'arraybuffer'
+    this.ws = ws
+    this.notifyStateChange()
+
+    const isCurrent = () => this.ws === ws
+    ws.onopen = () => isCurrent() && this.onWSOpen()
+    ws.onmessage = (event) => isCurrent() && this.onWSMessage(event)
+    ws.onclose = (event) => isCurrent() && this.onWSClose(event)
+    ws.onerror = () => isCurrent() && this.onWSError()
+
+    // Connection timeout
+    this.connectionTimer = setTimeout(() => {
+      this.connectionTimer = undefined
+      if (isCurrent() && ws.readyState === 0) {
+        this.log('WebSocket connection timeout')
+        ws.close()
+      }
+    }, this.options.reconnect?.connectionTimeout ?? DEFAULT_RECONNECT_OPTIONS.connectionTimeout)
   }
 
   private onWSOpen = () => {
@@ -563,8 +642,7 @@ export class MicdropClient
       clearTimeout(this.connectionTimer)
       this.connectionTimer = undefined
     }
-    this._isReconnecting = false
-    this._isStartingCall = false
+    this.callStatus = 'started'
     this.reconnectAttempt = 0
     this.error = undefined
     this.notifyStateChange()
@@ -672,7 +750,7 @@ export class MicdropClient
       error && isRecoverableError(error) && config.maxAttempts > 0
 
     if (canReconnect) {
-      this._isReconnecting = true
+      this.callStatus = 'reconnecting'
       this.stopWS()
       this.scheduleReconnect(config)
     } else {
@@ -689,15 +767,18 @@ export class MicdropClient
       clearTimeout(this.connectionTimer)
       this.connectionTimer = undefined
     }
-    if (!this.ws) return
-    if (this.ws.readyState === 1 || this.ws.readyState === 0) {
-      this.ws.close()
-    }
+    const ws = this.ws
+    if (!ws) return
+    // Forgotten before it closes, so its close event finds nobody to act on
     this.ws = undefined
+    if (ws.readyState === 1 || ws.readyState === 0) {
+      ws.close()
+    }
     this.notifyStateChange()
   }
 
   private scheduleReconnect(config: Required<MicdropReconnectOptions>) {
+    if (this.callStatus !== 'reconnecting') return
     if (this.reconnectAttempt >= config.maxAttempts) {
       this.stop()
       this.setError(new MicdropClientError(MicdropClientErrorCode.Connection))
@@ -714,17 +795,25 @@ export class MicdropClient
       this.vad?.pause?.()
     }
 
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-    }
-
-    this.reconnectTimer = setTimeout(async () => {
+    this.clearReconnectTimer()
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined
+      // Stopped meanwhile
+      if (this.callStatus !== 'reconnecting') return
       try {
-        await this.startWS()
-      } catch {
-        this.scheduleReconnect(config)
+        this.openWS()
+      } catch (error) {
+        // Nothing a new attempt would change, a bad address for instance
+        this.setError(toClientError(error))
+        this.stop()
       }
     }, config.delayMs)
+  }
+
+  private clearReconnectTimer() {
+    if (!this.reconnectTimer) return
+    clearTimeout(this.reconnectTimer)
+    this.reconnectTimer = undefined
   }
 
   private onSpeakerStartPlaying = () => {
@@ -832,4 +921,16 @@ export class MicdropClient
     if (!this.options.debugLog) return
     console.log(`[MicdropClient ${Date.now() - this.startTime}]`, ...message)
   }
+}
+
+/**
+ * A missing address or a refused microphone already says what went wrong,
+ * only an unnamed failure is reported as a connection error
+ */
+function toClientError(error: unknown): MicdropClientError {
+  if (error instanceof MicdropClientError) return error
+  return new MicdropClientError(
+    MicdropClientErrorCode.Connection,
+    (error as any)?.message
+  )
 }

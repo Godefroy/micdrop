@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/ai-sdk",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "AI SDK implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "ai": "^7.0.155"
   },
   "peerDependencies": {
-    "@micdrop/server": "*",
+    "@micdrop/server": ">=2.10.0",
     "zod": "^4"
   },
   "devDependencies": {

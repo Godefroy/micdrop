@@ -10,9 +10,8 @@ export class MockAgent extends Agent {
 
   protected async generateAnswer(stream: PassThrough): Promise<void> {
     const message = `Assistant Message ${this.i++}`
-    this.addAssistantMessage(message)
+    // Written, then recorded once complete, as a real agent does
     stream.write(message)
+    this.addAssistantMessage(message)
   }
-
-  cancel() {}
 }

@@ -114,6 +114,8 @@ const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
 export class PhononTTS extends SentenceTTS {
   private readonly catalogVoice?: PhononVoice
   private voicePath?: Promise<string>
+  // The language is checked once, not again on each retry of a failed voice
+  private languageChecked = false
 
   constructor(private readonly options: PhononTTSOptions = {}) {
     super()
@@ -182,10 +184,16 @@ export class PhononTTS extends SentenceTTS {
   }> {
     const synthesizer = await loadSynthesizer(this.getSynthesizerOptions())
     if (!this.voicePath) {
-      this.voicePath = this.resolveVoicePath(synthesizer)
-      this.checkLanguage(synthesizer)
+      const voicePath = this.resolveVoicePath(synthesizer)
+      this.voicePath = voicePath
+      if (!this.languageChecked) {
+        this.languageChecked = true
+        this.checkLanguage(synthesizer)
+      }
       // A failed download must not stick, the next sentence retries it
-      this.voicePath.catch(() => (this.voicePath = undefined))
+      voicePath.catch(() => {
+        if (this.voicePath === voicePath) this.voicePath = undefined
+      })
     }
     return { synthesizer, voicePath: await this.voicePath }
   }

@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/openai",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "OpenAI implementation for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",
@@ -38,7 +38,7 @@
     "ws": "^8.19.0"
   },
   "peerDependencies": {
-    "@micdrop/server": ">=2.9.0",
+    "@micdrop/server": ">=2.10.0",
     "zod": "^4"
   },
   "devDependencies": {

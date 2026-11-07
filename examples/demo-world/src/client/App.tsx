@@ -1,4 +1,4 @@
-import { Micdrop, Speaker } from '@micdrop/web'
+import { Micdrop } from '@micdrop/web'
 import { useMicdropEndCall, useMicdropState } from '@micdrop/react'
 import { useEffect } from 'react'
 import { Lang } from '../shared/lang'
@@ -37,13 +37,7 @@ export default function App() {
 
   useMicdropEndCall(() => {
     // Let her finish her last sentence before the line goes quiet.
-    setTimeout(() => {
-      if (Speaker.isPlaying) {
-        Speaker.on('StopPlaying', Micdrop.stop)
-      } else {
-        Micdrop.stop()
-      }
-    }, 3000)
+    Micdrop.stopAfterAnswer()
   })
 
   return (

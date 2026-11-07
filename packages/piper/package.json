@@ -1,6 +1,6 @@
 {
   "name": "@micdrop/piper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local Piper text to speech for @micdrop/server",
   "author": "Godefroy de Compreignac",
   "license": "MIT",

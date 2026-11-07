@@ -158,6 +158,7 @@ export interface GladiaLiveSessionPayload {
     chapterization: boolean
   }
   messages_config: {
+    receive_partial_transcripts: boolean
     receive_final_transcripts: boolean
     receive_speech_events: boolean
     receive_pre_processing_events: boolean

@@ -32,16 +32,35 @@ const DEFAULT_MODEL = 'gemini-3.5-transcribe-live'
 const SAMPLE_RATE = 16000 // Rate of the Micdrop client, taken as is by Gemini
 const DEFAULT_TRANSCRIPTION_TIMEOUT = 4000
 
-export class GeminiSTT extends STT {
-  private socket: LiveSocket
-  private goingAway = false
+/**
+ * What was said in one audio stream given to `transcribe`.
+ *
+ * - `open`: its audio is going out
+ * - `ended`: the stream ended, its transcript is on its way
+ * - `given`: its transcript went out on a timeout. It stays first in line to
+ *   take the late answer of Gemini, which belongs to no other utterance,
+ *   until that answer ends or another timeout passes.
+ */
+interface Utterance {
+  state: 'open' | 'ended' | 'given'
+  // Whether its audio went to Gemini, which hears the first one only
+  sent: boolean
   // Audio of the utterance, sent again if the connection drops before its
   // transcript comes back
-  private chunks: Buffer[] = []
-  private utteranceOpen = false
-  private utteranceEnded = false
-  private transcript = ''
-  private transcriptionTimeout?: NodeJS.Timeout
+  chunks: Buffer[]
+  transcript: string
+  timeout?: NodeJS.Timeout
+}
+
+export class GeminiSTT extends STT {
+  private socket: LiveSocket
+  // Gemini closes the session soon, and it is renewed once nothing waits
+  private goingAway = false
+  // Utterances waiting for their transcript, in the order they were spoken.
+  // Gemini names no utterance in what it sends, and goes on to the next one
+  // before it is done with the previous. So it hears one at a time: the first
+  // one, and the audio of the next waits here until its transcript is in.
+  private utterances: Utterance[] = []
 
   constructor(private readonly options: GeminiSTTOptions) {
     super()
@@ -50,37 +69,33 @@ export class GeminiSTT extends STT {
       () => this.buildSetup(),
       (...message) => this.log(...message)
     )
+    this.socket.on('Ready', this.onReady)
     this.socket.on('Message', this.onMessage)
     this.socket.on('Reconnecting', this.onReconnecting)
-    this.socket.on('Failed', () => this.emit('Failed', this.chunks))
+    this.socket.on('Failed', this.onFailed)
     this.socket.connect()
   }
 
   transcribe(audioStream: Readable) {
+    // Each stream has an utterance of its own, opened by its first audio
+    let utterance: Utterance | undefined
+
     audioStream.on('data', (chunk: Buffer) => {
-      if (!this.utteranceOpen) this.openUtterance()
-      this.chunks.push(chunk)
-      this.sendAudio(chunk)
+      if (!utterance) utterance = this.openUtterance()
+      // Ended early by the stream that came next
+      if (utterance.state !== 'open') return
+      utterance.chunks.push(chunk)
+      if (utterance.sent) this.sendAudio(chunk)
     })
 
     audioStream.on('end', () => {
-      if (!this.utteranceOpen || this.utteranceEnded) return
-      this.utteranceEnded = true
-      this.socket.send({ realtimeInput: { activityEnd: {} } })
-
-      // Give up on a transcript that never comes
-      this.clearTranscriptionTimeout()
-      this.transcriptionTimeout = setTimeout(() => {
-        this.transcriptionTimeout = undefined
-        this.log('Transcription timeout')
-        this.finishUtterance()
-      }, this.options.transcriptionTimeout ?? DEFAULT_TRANSCRIPTION_TIMEOUT)
+      if (utterance?.state === 'open') this.endUtterance(utterance)
     })
   }
 
   destroy() {
     super.destroy()
-    this.clearTranscriptionTimeout()
+    this.dropUtterances()
     this.socket.destroy()
   }
 
@@ -104,14 +119,46 @@ export class GeminiSTT extends STT {
     }
   }
 
-  private openUtterance() {
-    // An utterance still waiting for its transcript is left behind
-    if (this.utteranceOpen) this.finishUtterance()
-    this.utteranceOpen = true
-    this.utteranceEnded = false
-    this.chunks = []
-    this.transcript = ''
+  private openUtterance(): Utterance {
+    // Gemini hears one utterance at a time, so one still open ends here
+    const last = this.utterances[this.utterances.length - 1]
+    if (last?.state === 'open') this.endUtterance(last)
+    const utterance: Utterance = {
+      state: 'open',
+      sent: false,
+      chunks: [],
+      transcript: '',
+    }
+    this.utterances.push(utterance)
+    this.sendFirst()
+    return utterance
+  }
+
+  private endUtterance(utterance: Utterance) {
+    utterance.state = 'ended'
+    if (utterance.sent) this.sendEnd(utterance)
+  }
+
+  /** Sends the first utterance to Gemini, with the audio it held meanwhile */
+  private sendFirst() {
+    const utterance = this.utterances[0]
+    if (!utterance || utterance.sent) return
+    utterance.sent = true
     this.socket.send({ realtimeInput: { activityStart: {} } })
+    utterance.chunks.forEach((chunk) => this.sendAudio(chunk))
+    if (utterance.state === 'ended') this.sendEnd(utterance)
+  }
+
+  private sendEnd(utterance: Utterance) {
+    this.socket.send({ realtimeInput: { activityEnd: {} } })
+
+    // Give up on a transcript that never comes. It counts from the moment
+    // Gemini heard the whole utterance, not from when it waited its turn.
+    utterance.timeout = setTimeout(() => {
+      utterance.timeout = undefined
+      this.log('Transcription timeout')
+      this.give(utterance)
+    }, this.options.transcriptionTimeout ?? DEFAULT_TRANSCRIPTION_TIMEOUT)
   }
 
   private sendAudio(chunk: Buffer) {
@@ -125,57 +172,92 @@ export class GeminiSTT extends STT {
     })
   }
 
-  /** Emits what was transcribed of the utterance, possibly nothing */
-  private finishUtterance() {
-    this.clearTranscriptionTimeout()
-    const transcript = this.transcript.trim()
-    this.utteranceOpen = false
-    this.utteranceEnded = false
-    this.chunks = []
-    this.transcript = ''
+  /**
+   * Emits what was transcribed of an utterance, possibly nothing, and keeps
+   * it in line for what Gemini still sends about it
+   */
+  private give(utterance: Utterance) {
+    if (utterance.timeout) clearTimeout(utterance.timeout)
+    utterance.state = 'given'
+    const transcript = utterance.transcript.trim()
     this.log(`Transcript: "${transcript}"`)
     this.emit('Transcript', transcript)
-    if (this.goingAway) {
-      this.goingAway = false
-      this.socket.renew()
-    }
+    utterance.timeout = setTimeout(
+      () => this.remove(utterance),
+      this.options.transcriptionTimeout ?? DEFAULT_TRANSCRIPTION_TIMEOUT
+    )
+  }
+
+  private remove(utterance: Utterance) {
+    if (utterance.timeout) clearTimeout(utterance.timeout)
+    utterance.timeout = undefined
+    this.utterances = this.utterances.filter((other) => other !== utterance)
+    this.renewIfGoingAway()
+    this.sendFirst()
+  }
+
+  /** Moves to a new connection once no utterance waits on this one */
+  private renewIfGoingAway() {
+    if (!this.goingAway || this.utterances.length > 0) return
+    this.goingAway = false
+    this.socket.renew()
+  }
+
+  private onReady = () => {
+    this.goingAway = false
   }
 
   private onMessage = (message: any) => {
     const content = message.serverContent
-    if (content?.inputTranscription?.text && this.utteranceOpen) {
-      this.transcript += content.inputTranscription.text
+    const utterance = this.utterances[0]
+    if (content?.inputTranscription?.text && utterance) {
+      utterance.transcript += content.inputTranscription.text
     }
-    if (content?.generationComplete && this.utteranceEnded) {
-      this.finishUtterance()
+    if (content?.generationComplete && utterance) {
+      if (utterance.state === 'ended') this.give(utterance)
+      if (utterance.state === 'given') this.remove(utterance)
     }
 
     // Gemini closes a session after some minutes, move on between utterances
     if (message.goAway) {
       this.log('Connection ending in', message.goAway.timeLeft)
-      if (this.utteranceOpen) {
-        this.goingAway = true
-      } else {
-        this.socket.renew()
-      }
+      this.goingAway = true
+      this.renewIfGoingAway()
     }
   }
 
   private onReconnecting = () => {
-    // A new session knows nothing of the utterance, so it starts over
+    // A new session knows nothing of the utterances, so they start over
+    this.goingAway = false
     this.socket.clearPending()
-    if (!this.utteranceOpen) return
-    this.transcript = ''
-    this.socket.send({ realtimeInput: { activityStart: {} } })
-    this.chunks.forEach((chunk) => this.sendAudio(chunk))
-    if (this.utteranceEnded) {
-      this.socket.send({ realtimeInput: { activityEnd: {} } })
+    // Those already given wait for nothing more from the old session
+    for (const utterance of this.utterances) {
+      if (utterance.state === 'given') this.remove(utterance)
     }
+    for (const utterance of this.utterances) {
+      if (utterance.timeout) clearTimeout(utterance.timeout)
+      utterance.timeout = undefined
+      utterance.sent = false
+      utterance.transcript = ''
+    }
+    this.sendFirst()
   }
 
-  private clearTranscriptionTimeout() {
-    if (!this.transcriptionTimeout) return
-    clearTimeout(this.transcriptionTimeout)
-    this.transcriptionTimeout = undefined
+  private onFailed = () => {
+    // The audio nobody transcribed goes to whoever takes over
+    const chunks = this.utterances
+      .filter((utterance) => utterance.state !== 'given')
+      .flatMap((utterance) => utterance.chunks)
+    this.dropUtterances()
+    this.emit('Failed', chunks)
+  }
+
+  private dropUtterances() {
+    for (const utterance of this.utterances) {
+      if (utterance.timeout) clearTimeout(utterance.timeout)
+      // A stream still open stops sending audio
+      if (utterance.state === 'open') utterance.state = 'ended'
+    }
+    this.utterances = []
   }
 }

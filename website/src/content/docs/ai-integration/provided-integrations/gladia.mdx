@@ -64,14 +64,22 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 
 ## Options
 
-| Option                 | Type                                    | Default  | Description                                            |
-| ---------------------- | --------------------------------------- | -------- | ------------------------------------------------------ |
-| `apiKey`               | `string`                                | Required | Your Gladia API key                                    |
-| `settings`             | `DeepPartial<GladiaLiveSessionPayload>` | Optional | Advanced configuration for Gladia live session         |
-| `connectionTimeout`    | `number`                                | `5000`   | Timeout in milliseconds for WebSocket connection       |
-| `transcriptionTimeout` | `number`                                | `4000`   | Timeout in milliseconds to wait for transcription      |
-| `retryDelay`           | `number`                                | `1000`   | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`             | `number`                                | `3`      | Maximum number of reconnection attempts before failing |
+| Option                 | Type                                    | Default  | Description                                                                        |
+| ---------------------- | --------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `apiKey`               | `string`                                | Required | Your Gladia API key                                                                |
+| `settings`             | `DeepPartial<GladiaLiveSessionPayload>` | Optional | Advanced configuration for Gladia live session                                     |
+| `connectionTimeout`    | `number`                                | `5000`   | Timeout in milliseconds for the session request, then for the WebSocket connection |
+| `transcriptionTimeout` | `number`                                | `4000`   | Timeout in milliseconds to wait for transcription                                  |
+| `retryDelay`           | `number`                                | `1000`   | Delay in milliseconds between reconnection attempts                                |
+| `maxRetry`             | `number`                                | `3`      | Maximum number of failed attempts in a row before `Failed`                         |
+
+## Connection and Retries
+
+`GladiaSTT` requests a session URL and opens its WebSocket on every connection attempt, so a failed session request and a failed connection share the same budget of `maxRetry` attempts in a row, `retryDelay` apart. A connection that drops, even a clean close by Gladia, is opened again, and the audio of every utterance still waiting for its transcript is sent again to the new session. Once the budget runs out, `Failed` hands that audio back, and the next utterance tries to connect again.
+
+## How an Utterance Ends
+
+Each stream given to `transcribe()` is one utterance and gets exactly one `Transcript` event. Gladia cuts the speech into segments at each pause and finalizes them one by one, so a long sentence can span several of them. `GladiaSTT` joins the final text of every segment heard during the stream, and emits it once the stream ended and all of them stayed final for half a second, the time for a segment that starts after a pause to show up. Partial transcripts are turned on by default for that purpose: they reveal the segments still being heard. With nothing heard at all, the transcript is empty after `transcriptionTimeout`, and a segment Gladia never finalizes is emitted with its latest partial text at that point.
 
 ## Configuration Settings
 

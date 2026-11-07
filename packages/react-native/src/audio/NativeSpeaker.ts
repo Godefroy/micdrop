@@ -1,6 +1,6 @@
 import { MicdropDevice, Pcm16AudioStream, SpeakerDriver } from '@micdrop/client'
-import { AudioManager } from 'react-native-audio-api'
 import { NativeSink } from './NativeSink'
+import { configureCallSession } from './session'
 
 /** Playing loud, or against the ear, is what choosing an output means on a phone */
 export const SPEAKER_DEVICE = 'speaker'
@@ -41,8 +41,7 @@ export class NativeSpeaker extends SpeakerDriver {
   }
 
   async stop(): Promise<void> {
-    this.stream?.stopAudio()
-    this.stream?.removeAllListeners()
+    this.stream?.destroy()
     this.stream = undefined
     this.sink?.close()
     this.sink = undefined
@@ -56,15 +55,9 @@ export class NativeSpeaker extends SpeakerDriver {
     }
 
     // Choosing between the loudspeaker and the earpiece is a matter of audio
-    // session options rather than of picking a device
-    const earpiece = deviceId === EARPIECE_DEVICE
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'voiceChat',
-      iosOptions: earpiece
-        ? ['allowBluetoothHFP']
-        : ['defaultToSpeaker', 'allowBluetoothHFP', 'allowBluetoothA2DP'],
-    })
+    // session options rather than of picking a device. They are remembered, so
+    // the microphone keeps them when it switches inputs.
+    configureCallSession({ earpiece: deviceId === EARPIECE_DEVICE })
     this._deviceId = deviceId
   }
 

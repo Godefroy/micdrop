@@ -4,7 +4,7 @@ import {
   useMicdropState,
   useSpeakerVolume,
 } from '@micdrop/react'
-import { Micdrop, MicdropState, Speaker } from '@micdrop/web'
+import { Micdrop, MicdropState } from '@micdrop/web'
 import {
   PiCircleNotchBold,
   PiPauseFill,
@@ -78,15 +78,8 @@ export default function CallDock() {
 
   useMicdropEndCall(() => {
     console.log('Call ended')
-
-    // Stop after last speech end
-    setTimeout(async () => {
-      if (Speaker.isPlaying) {
-        Speaker.on('StopPlaying', Micdrop.stop)
-      } else {
-        Micdrop.stop()
-      }
-    }, 5000)
+    // Lets the assistant say goodbye before the line goes quiet
+    Micdrop.stopAfterAnswer()
   })
 
   return (

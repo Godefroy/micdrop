@@ -26,7 +26,11 @@ const port = parentPort!
 const data = workerData as WorkerData
 const require = createRequire(import.meta.url)
 
+// A job is queued, then generating, then done. Only queued and generating
+// jobs can be cancelled: a cancel crossing the "done" reply on its way would
+// otherwise leave its id in the set forever.
 const queue: Job[] = []
+let current: number | undefined
 const cancelled = new Set<number>()
 // Voices are registered once, the model keeps their state by index
 const voiceIndexes = new Map<string, number>()
@@ -118,6 +122,7 @@ async function drain() {
   running = true
   while (queue.length) {
     const job = queue.shift()!
+    current = job.id
     if (!cancelled.has(job.id)) {
       try {
         await generate(model, job)
@@ -125,6 +130,7 @@ async function drain() {
         reply({ type: 'failed', id: job.id, message: String(error) })
       }
     }
+    current = undefined
     cancelled.delete(job.id)
     reply({ type: 'done', id: job.id })
   }
@@ -138,7 +144,12 @@ port.on('message', (message: WorkerRequest) => {
       drain()
       break
     case 'cancel':
-      cancelled.add(message.id)
+      if (
+        message.id === current ||
+        queue.some((job) => job.id === message.id)
+      ) {
+        cancelled.add(message.id)
+      }
       break
   }
 })

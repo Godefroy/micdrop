@@ -1,4 +1,5 @@
 import { InferenceSession, Tensor } from 'onnxruntime-react-native'
+import { createDownloadCache, LazySession } from './lazySession'
 import { FEATURE_SHAPE, setSmartTurnModelLoader, SmartTurnModel } from './model'
 
 const BASE_URL = 'https://huggingface.co/pipecat-ai/smart-turn-v3/resolve/main'
@@ -30,24 +31,25 @@ export interface NativeSmartTurnOptions {
   executionProviders?: string[]
 }
 
-// Eight megabytes, fetched once and kept for as long as the app runs
-let loading: Promise<Uint8Array> | undefined
-
 /**
  * Runs Smart Turn on a phone, on the native ONNX runtime.
  *
  * The features it reads are built in Javascript while the speaker talks, one
  * short transform every ten milliseconds, so the phone has almost nothing left
  * to do when the sentence ends.
+ *
+ * Once released, the model is done with: create a new one to load it again.
  */
 export class NativeSmartTurnModel implements SmartTurnModel {
-  private session: InferenceSession | undefined
+  private session = new LazySession('Smart Turn', () => this.createSession())
 
   constructor(private options: NativeSmartTurnOptions = {}) {}
 
   async load() {
-    if (this.session) return
+    await this.session.get()
+  }
 
+  private async createSession(): Promise<InferenceSession> {
     const source = this.options.model ?? QUANTISED_MODEL_URL
     const sessionOptions = this.options.executionProviders
       ? { executionProviders: this.options.executionProviders }
@@ -55,40 +57,41 @@ export class NativeSmartTurnModel implements SmartTurnModel {
 
     if (typeof source === 'string' && !source.startsWith('http')) {
       // A file already on the device, the runtime reads it itself
-      this.session = await InferenceSession.create(source, sessionOptions)
-      return
+      return InferenceSession.create(source, sessionOptions)
     }
 
     if (typeof source === 'string') {
-      loading = loading ?? fetchModel(source)
-      this.session = await InferenceSession.create(await loading, sessionOptions)
-      return
+      return InferenceSession.create(await fetchModel(source), sessionOptions)
     }
 
-    this.session = await InferenceSession.create(source, sessionOptions)
+    return InferenceSession.create(source, sessionOptions)
   }
 
   async predict(features: Float32Array): Promise<number> {
-    if (!this.session) await this.load()
-    const outputs = await this.session!.run({
-      input_features: new Tensor('float32', features, [...FEATURE_SHAPE]),
-    })
+    const outputs = await this.session.use((session) =>
+      session.run({
+        input_features: new Tensor('float32', features, [...FEATURE_SHAPE]),
+      })
+    )
     return Number(Object.values(outputs)[0].data[0])
   }
 
   async release() {
-    await this.session?.release()
-    this.session = undefined
+    await this.session.release()
   }
 }
 
-async function fetchModel(url: string): Promise<Uint8Array> {
+// Eight megabytes for each address, fetched once and kept for as long as the
+// app runs
+const fetchModel = createDownloadCache(async (url): Promise<Uint8Array> => {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Could not load the Smart Turn model from ${url}`)
+    throw new Error(
+      `Could not load the Smart Turn model from ${url} (${response.status})`
+    )
   }
   return new Uint8Array(await response.arrayBuffer())
-}
+})
 
 let options: NativeSmartTurnOptions = {}
 

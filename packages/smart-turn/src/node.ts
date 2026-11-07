@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import { InferenceSession, Tensor } from 'onnxruntime-node'
+import { LazySession } from './lazySession'
 import { FEATURE_SHAPE, setSmartTurnModelLoader, SmartTurnModel } from './model'
 
 const BASE_URL = 'https://huggingface.co/pipecat-ai/smart-turn-v3/resolve/main'
@@ -23,15 +24,19 @@ export interface NodeSmartTurnOptions {
  * A single core answers in about forty milliseconds and four cores in fifteen,
  * against the several hundred milliseconds and the tokens an agent spends when
  * it is asked the same question in words.
+ *
+ * Once released, the model is done with: create a new one to load it again.
  */
 export class NodeSmartTurnModel implements SmartTurnModel {
-  private session: InferenceSession | undefined
+  private session = new LazySession('Smart Turn', () => this.createSession())
 
   constructor(private options: NodeSmartTurnOptions = {}) {}
 
   async load() {
-    if (this.session) return
+    await this.session.get()
+  }
 
+  private async createSession(): Promise<InferenceSession> {
     const source = this.options.model ?? QUANTISED_MODEL_URL
     let bytes: ArrayBuffer | Uint8Array
     if (typeof source !== 'string') {
@@ -48,26 +53,28 @@ export class NodeSmartTurnModel implements SmartTurnModel {
       bytes = await fs.readFile(source)
     }
 
-    this.session = await InferenceSession.create(bytes as Uint8Array, {
+    return InferenceSession.create(bytes as Uint8Array, {
       executionMode: 'sequential',
       interOpNumThreads: 1,
       graphOptimizationLevel: 'all',
       // Left to the runtime unless the caller says otherwise
-      ...(this.options.threads ? { intraOpNumThreads: this.options.threads } : {}),
+      ...(this.options.threads
+        ? { intraOpNumThreads: this.options.threads }
+        : {}),
     })
   }
 
   async predict(features: Float32Array): Promise<number> {
-    if (!this.session) await this.load()
-    const outputs = await this.session!.run({
-      input_features: new Tensor('float32', features, [...FEATURE_SHAPE]),
-    })
+    const outputs = await this.session.use((session) =>
+      session.run({
+        input_features: new Tensor('float32', features, [...FEATURE_SHAPE]),
+      })
+    )
     return Number(Object.values(outputs)[0].data[0])
   }
 
   async release() {
-    await this.session?.release()
-    this.session = undefined
+    await this.session.release()
   }
 }
 

@@ -38,10 +38,16 @@ export abstract class Agent<
   answer(): Readable
 
   // Generate answer implementation (to be implemented by subclasses)
-  protected abstract generateAnswer(stream: PassThrough): Promise<void>
+  protected abstract generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void>
 
-  // Cancel the current answer generation process
-  abstract cancel(): void
+  // Whether an answer is being generated
+  get isAnswering(): boolean
+
+  // Cancel the current answer, by aborting its signal
+  cancel(): void
 }
 ```
 
@@ -133,24 +139,33 @@ constructor(protected options: Options) {
 
 ## Abstract Methods
 
-### `generateAnswer(stream: PassThrough): Promise<void>`
+### `generateAnswer(stream: PassThrough, signal: AbortSignal): Promise<void>`
 
 Implementation method for generating answers. This is what subclasses should implement.
 
 **Implementation Requirements:**
 
 - Write response chunks to the provided stream
-- Handle cancellation via the `cancel()` method
 - Add the complete response to conversation history when finished with `addAssistantMessage()`
-- Check cancellation state regularly during generation
+- Pass `signal` to the API request, so a cancelled answer stops costing tokens
+- Check `signal.aborted` before a retry and before adding a message: once it is aborted, the answer is no longer wanted
+
+The signal is aborted when the answer is cancelled, and when a new answer replaces it.
+
+## Cancellation
 
 ### `cancel(): void`
 
-Cancels the current answer generation process. Should:
+Cancels the current answer by aborting its signal. An agent that only relies on the signal has nothing to override.
 
-- Abort any ongoing API requests
-- Clean up resources
-- Stop the answer stream
+An agent that holds more than the request, a queue or a connection of its own, overrides it and calls `super.cancel()`:
+
+```typescript
+cancel() {
+  super.cancel()
+  this.queue = []
+}
+```
 
 ## Public Methods
 
@@ -165,8 +180,8 @@ Generates a streaming response based on the current conversation history.
 - Calls `onBeforeAnswer` hook if provided
 - If hook returns `true`, skips answer generation
 - If hook returns a text, speaks it and adds it to the conversation as the answer, without generating
-- Otherwise calls `generateAnswer()` implementation
-- Handles cancellation and cleanup automatically
+- Otherwise calls `generateAnswer()` implementation, with the signal of this answer
+- Aborts the previous answer, if one was still being generated
 
 ### `addMessage(role: 'user' | 'assistant' | 'system', text: string, metadata?: MicdropAnswerMetadata)`
 
@@ -336,15 +351,11 @@ The full conversation history, starting with the system message.
 
 Array of available tools that the agent can use.
 
+### `isAnswering: boolean`
+
+Whether an answer is being generated, from `answer()` until its stream ends or the answer is cancelled.
+
 ## Protected Properties
-
-### `answerCount: number`
-
-Counter used for cancellation handling. Incremented each time `answer()` is called.
-
-### `answering: boolean`
-
-Flag indicating whether the agent is currently generating an answer.
 
 ### `options: Options`
 
@@ -449,9 +460,10 @@ class CustomAgent extends Agent<CustomAgentOptions> {
     super(options)
   }
 
-  protected async generateAnswer(stream: PassThrough): Promise<void> {
-    const answerCount = this.answerCount
-
+  protected async generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void> {
     try {
       // Build messages for your AI provider
       const messages = this.conversation.map((msg) => ({
@@ -472,6 +484,8 @@ class CustomAgent extends Agent<CustomAgentOptions> {
           stream: true,
           ...this.options.settings,
         }),
+        // Stops the request as soon as the answer is cancelled
+        signal,
       })
 
       if (!response.ok) {
@@ -482,9 +496,6 @@ class CustomAgent extends Agent<CustomAgentOptions> {
       let fullResponse = ''
 
       while (reader) {
-        // Check if this answer was cancelled
-        if (answerCount !== this.answerCount) return
-
         const { done, value } = await reader.read()
         if (done) break
 
@@ -498,21 +509,14 @@ class CustomAgent extends Agent<CustomAgentOptions> {
         }
       }
 
-      // Only add to conversation if this answer wasn't cancelled
-      if (answerCount === this.answerCount) {
+      // A cancelled answer stays out of the conversation
+      if (!signal.aborted) {
         this.addAssistantMessage(fullResponse)
       }
     } catch (error: any) {
-      console.error('[CustomAgent] Error:', error)
+      // Aborting the request throws, which is no failure
+      if (!signal.aborted) console.error('[CustomAgent] Error:', error)
     }
-  }
-
-  cancel(): void {
-    if (!this.answering) return
-    this.log('Cancel')
-
-    // Increment answer count to cancel current generation
-    this.answerCount++
   }
 }
 ```
@@ -549,7 +553,10 @@ import { Agent, MicdropConversationMessage } from '@micdrop/server'
 import { PassThrough } from 'stream'
 
 class EchoAgent extends Agent {
-  protected async generateAnswer(stream: PassThrough): Promise<void> {
+  protected async generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void> {
     // Get the last user message
     const lastUserMessage = this.conversation
       .filter((msg) => msg.role === 'user')
@@ -558,6 +565,7 @@ class EchoAgent extends Agent {
     if (lastUserMessage) {
       // Simulate a delay before responding
       await new Promise((resolve) => setTimeout(resolve, 100))
+      if (signal.aborted) return
 
       const response = `You said: "${lastUserMessage.content}"`
 
@@ -567,10 +575,6 @@ class EchoAgent extends Agent {
       // Add to conversation
       this.addAssistantMessage(response)
     }
-  }
-
-  cancel(): void {
-    // Nothing to cancel for this simple implementation
   }
 }
 

@@ -65,7 +65,7 @@ Micdrop.on('StateChange', (state) => {
 
 // The storyteller can end the call when the traveler says goodbye.
 // https://micdrop.dev/docs/server/auto-end-call
-Micdrop.on('EndCall', () => Micdrop.stop())
+Micdrop.on('EndCall', () => Micdrop.stopAfterAnswer())
 
 // Microphone refused, server unreachable, and so on.
 // https://micdrop.dev/docs/client/error-handling

@@ -1,6 +1,6 @@
-import { STT } from '@micdrop/server'
+import { ReconnectingSocket, STT } from '@micdrop/server'
 import { Readable } from 'stream'
-import WebSocket from 'ws'
+import type { RawData } from 'ws'
 
 /**
  * Mistral Real-time STT (Voxtral)
@@ -21,10 +21,35 @@ export interface MistralSTTOptions {
   model?: string
   encoding?: MistralAudioEncoding
   targetStreamingDelayMs?: number
+  /** How long a connection attempt may take */
   connectionTimeout?: number
+  /** How long an utterance waits for its transcript once it ended */
   transcriptionTimeout?: number
+  /** Delay between two connection attempts */
   retryDelay?: number
+  /** How many attempts in a row may fail before `Failed` is emitted */
   maxRetry?: number
+}
+
+/**
+ * Where an utterance stands.
+ *
+ * - `streaming`: its audio is still coming
+ * - `flushing`: its audio ended and was flushed, it waits for
+ *   `transcription.done`
+ * - `done`: its transcript was emitted, or it was dropped
+ */
+type UtteranceStatus = 'streaming' | 'flushing' | 'done'
+
+/** One audio stream given to `transcribe()`, which gets exactly one transcript */
+interface Utterance {
+  status: UtteranceStatus
+  // Audio of the utterance, kept to send it again on a new session
+  chunks: Buffer[]
+  // Accumulated transcription.text.delta chunks of the current session
+  text: string
+  // Runs once the flush went out
+  timeout?: ReturnType<typeof setTimeout>
 }
 
 const DEFAULT_MODEL = 'voxtral-mini-transcribe-realtime-3-0'
@@ -36,87 +61,70 @@ const DEFAULT_RETRY_DELAY = 1000
 const DEFAULT_MAX_RETRY = 3
 
 export class MistralSTT extends STT {
-  private socket?: WebSocket
-  private initPromise: Promise<void>
-  private reconnectTimeout?: NodeJS.Timeout
-  private connectionTimeout?: NodeJS.Timeout
-  private transcriptionTimeout?: NodeJS.Timeout
-  private audioChunksPending: Buffer[] = [] // Store audio chunks to send them again if reconnecting
-  private transcriptDelta = '' // Accumulated transcription.text.delta chunks
-  private retryCount = 0
-  private destroyed = false
+  private socket: ReconnectingSocket
+  // Utterances not done yet, oldest first. The server answers them in the
+  // order their audio went out, so the transcript in progress is the oldest's.
+  private utterances: Utterance[] = []
+  // Flushes of utterances that timed out on this session, whose deltas and
+  // transcription.done may still arrive and must not go to the next one. Each
+  // is forgotten after another timeout, so an answer that never comes does not
+  // swallow every transcript after it.
+  private staleFlushes: number[] = []
 
   constructor(private options: MistralSTTOptions) {
     super()
 
-    // Setup WebSocket connection
-    this.initPromise = this.connect()
+    this.socket = new ReconnectingSocket({
+      url: this.getURL(),
+      clientOptions: {
+        headers: {
+          Authorization: `Bearer ${this.options.apiKey}`,
+        },
+      },
+      connectionTimeout:
+        this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT,
+      retryDelay: this.options.retryDelay ?? DEFAULT_RETRY_DELAY,
+      maxRetry: this.options.maxRetry ?? DEFAULT_MAX_RETRY,
+      // The audio format must be set before any audio is appended
+      handshake: {
+        start: (socket) => socket.send(this.getSessionUpdate()),
+      },
+      log: (...message) => this.log(...message),
+    })
+    this.socket.on('Open', this.onOpen)
+    this.socket.on('Message', this.onMessage)
+    this.socket.on('Failed', this.onFailed)
+    this.socket.connect()
   }
 
   transcribe(audioStream: Readable) {
-    let started = false
+    // After giving up, a new utterance gives the connection another chance
+    this.socket.connect()
+
+    const utterance: Utterance = { status: 'streaming', chunks: [], text: '' }
+    this.utterances.push(utterance)
 
     // Read audio stream and send to Mistral
-    audioStream.on('data', async (chunk: Buffer) => {
-      // New utterance: a flush finalizes and resets the transcription context,
-      // so start from a clean transcript for this stream, but only once it
-      // carries something. Voice detection opens a stream on any noise and many
-      // of them never carry a word, and clearing here rather than on entry
-      // keeps those from wiping the transcript of the utterance before, whose
-      // flush may still be on its way back.
-      if (!started) {
-        started = true
-        this.transcriptDelta = ''
+    audioStream.on('data', (chunk: Buffer) => {
+      if (utterance.status !== 'streaming') return
+      utterance.chunks.push(chunk)
+      // A chunk that does not go out now goes with the others once connected
+      if (this.sendAudioChunk(chunk)) {
+        this.log(`Sent audio chunk (${chunk.byteLength} bytes)`)
       }
-      this.audioChunksPending.push(chunk)
-      await this.initPromise
-      this.sendAudioChunk(chunk)
-      this.log(`Sent audio chunk (${chunk.byteLength} bytes)`)
     })
 
     // Handle stream end: flush buffered audio so the server finalizes the
     // transcription (transcription.done). Unlike input_audio.end, a flush keeps
     // the session alive, so the same connection is reused for the next utterance.
-    audioStream.on('end', async () => {
-      await this.initPromise
-      if (this.audioChunksPending.length === 0) return
-      this.flushAudio()
-
-      // Timeout transcription if no transcript is received
-      this.transcriptionTimeout = setTimeout(() => {
-        this.transcriptionTimeout = undefined
-        this.log('Transcription timeout')
-        this.emit('Transcript', this.transcriptDelta.trim())
-        this.transcriptDelta = ''
-        this.audioChunksPending.length = 0
-      }, this.options.transcriptionTimeout || DEFAULT_TRANSCRIPTION_TIMEOUT)
-    })
+    audioStream.on('end', () => this.endUtterance(utterance))
   }
 
   destroy() {
     super.destroy()
-    this.destroyed = true
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    if (this.transcriptionTimeout) {
-      clearTimeout(this.transcriptionTimeout)
-      this.transcriptionTimeout = undefined
-    }
-    if (this.connectionTimeout) {
-      clearTimeout(this.connectionTimeout)
-      this.connectionTimeout = undefined
-    }
-    if (this.socket) closeSocket(this.socket)
-    this.socket = undefined
-  }
-
-  private connect(): Promise<void> {
-    return this.initWS().catch((error) => {
-      console.error('[MistralSTT] Connection error:', error)
-      this.reconnect()
-    })
+    this.socket.destroy()
+    this.utterances.forEach((utterance) => this.dropUtterance(utterance))
+    this.utterances = []
   }
 
   private getURL() {
@@ -126,118 +134,80 @@ export class MistralSTT extends STT {
     )}`
   }
 
-  private async initWS(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(this.getURL(), {
-        headers: {
-          Authorization: `Bearer ${this.options.apiKey}`,
+  private getSessionUpdate() {
+    // Configure the audio format. Must be sent before any audio is appended;
+    // Mistral rejects format updates once audio has started.
+    return JSON.stringify({
+      type: 'session.update',
+      session: {
+        audio_format: {
+          encoding: this.options.encoding || DEFAULT_ENCODING,
+          sample_rate: SAMPLE_RATE,
         },
-      })
-      this.socket = socket
-
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        closeSocket(socket)
-        this.socket = undefined
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-      this.connectionTimeout = timeout
-
-      socket.addEventListener('open', () => {
-        clearTimeout(timeout)
-        this.sendSessionUpdate()
-        this.log('Connection opened')
-        resolve()
-      })
-
-      socket.addEventListener('error', (error) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.addEventListener('close', ({ code, reason }) => {
-        clearTimeout(timeout)
-        this.socket?.removeAllListeners()
-        this.socket = undefined
-
-        if (code !== 1000) {
-          this.reconnect()
-        } else {
-          this.log('Connection closed', { code, reason })
-        }
-      })
-
-      socket.addEventListener('message', (event) => {
-        this.handleMessage(JSON.parse(event.data.toString()))
-      })
+        ...(this.options.targetStreamingDelayMs !== undefined && {
+          target_streaming_delay_ms: this.options.targetStreamingDelayMs,
+        }),
+      },
     })
   }
 
-  private sendSessionUpdate() {
-    if (!this.socket) return
-
-    // Configure the audio format. Must be sent before any audio is appended;
-    // Mistral rejects format updates once audio has started.
-    this.socket.send(
-      JSON.stringify({
-        type: 'session.update',
-        session: {
-          audio_format: {
-            encoding: this.options.encoding || DEFAULT_ENCODING,
-            sample_rate: SAMPLE_RATE,
-          },
-          ...(this.options.targetStreamingDelayMs !== undefined && {
-            target_streaming_delay_ms: this.options.targetStreamingDelayMs,
-          }),
-        },
-      })
+  // A new session knows nothing of the previous one: every pending utterance
+  // is sent again in full and replays its whole transcript, so the deltas it
+  // gathered start over to avoid duplicating them
+  private onOpen = ({ reconnected }: { reconnected: boolean }) => {
+    this.staleFlushes = []
+    const pending = this.utterances.filter(
+      (utterance) => utterance.chunks.length > 0
     )
-  }
-
-  private sendAudioChunk(chunk: Buffer) {
-    if (!this.socket) return
-    this.socket.send(
-      JSON.stringify({
-        type: 'input_audio.append',
-        audio: chunk.toString('base64'),
-      })
+    if (pending.length === 0) return
+    this.log(
+      reconnected ? 'Sending audio chunks again' : 'Sending queued audio chunks'
     )
+    for (const utterance of pending) {
+      utterance.text = ''
+      utterance.chunks.forEach((chunk) => this.sendAudioChunk(chunk))
+      if (utterance.status === 'flushing') this.flushAudio(utterance)
+    }
   }
 
-  private flushAudio() {
-    if (!this.socket) return
-    // Flush buffered audio so the server processes the tail and emits a final
-    // transcription.done for this utterance. We deliberately do NOT send
-    // input_audio.end: that terminates the session (the server drops the
-    // connection), whereas a flush finalizes the current utterance and keeps the
-    // session ready for the next one.
-    this.socket.send(JSON.stringify({ type: 'input_audio.flush' }))
-    this.log('Flushed audio input')
-  }
+  private onMessage = (data: RawData) => {
+    let message: any
+    try {
+      message = JSON.parse(data.toString())
+    } catch {
+      this.log('Ignoring a message that is not JSON')
+      return
+    }
 
-  private handleMessage(message: any) {
     switch (message.type) {
-      case 'transcription.text.delta':
-        if (typeof message.text === 'string') {
-          this.transcriptDelta += message.text
-          this.log(`Received transcript delta: "${message.text}"`)
-        }
+      case 'transcription.text.delta': {
+        if (typeof message.text !== 'string') break
+        this.log(`Received transcript delta: "${message.text}"`)
+        // Deltas of an utterance that timed out are dropped with it
+        if (this.hasStaleFlush()) break
+        const utterance = this.utterances[0]
+        if (utterance) utterance.text += message.text
         break
+      }
 
       case 'transcription.done': {
-        const transcript =
-          typeof message.text === 'string' ? message.text : this.transcriptDelta
-        this.log(`Received completed transcript: "${transcript}"`)
-        this.emit('Transcript', transcript.trim())
-        // Reset state and clear timeout. The session stays alive after a flush,
-        // so the same connection is reused for the next utterance.
-        this.transcriptDelta = ''
-        this.audioChunksPending.length = 0
-        if (this.transcriptionTimeout) {
-          clearTimeout(this.transcriptionTimeout)
-          this.transcriptionTimeout = undefined
+        // The answer to a flush whose utterance already timed out
+        if (this.hasStaleFlush()) {
+          this.staleFlushes.shift()
+          this.log('Ignoring the transcript of a timed out utterance')
+          break
         }
+        const utterance = this.utterances[0]
+        // Only a flush finalizes a transcript: one that was not asked for
+        // leaves the utterance in progress alone
+        if (utterance?.status !== 'flushing') {
+          this.log('Ignoring an unexpected transcription.done')
+          break
+        }
+        const transcript =
+          typeof message.text === 'string' ? message.text : utterance.text
+        this.log(`Received completed transcript: "${transcript}"`)
+        this.complete(utterance, transcript)
         break
       }
 
@@ -250,57 +220,86 @@ export class MistralSTT extends STT {
     }
   }
 
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      this.emit('Failed', this.audioChunksPending)
+  private onFailed = () => {
+    // Every pending utterance goes back to the caller, for another STT
+    const chunks = this.utterances.flatMap((utterance) => utterance.chunks)
+    this.utterances.forEach((utterance) => this.dropUtterance(utterance))
+    this.utterances = []
+    this.emit('Failed', chunks)
+  }
+
+  private endUtterance(utterance: Utterance) {
+    if (utterance.status !== 'streaming') return
+    // A stream that carried no audio expects no transcript
+    if (utterance.chunks.length === 0) {
+      this.removeUtterance(utterance)
       return
     }
-
-    this.initPromise = new Promise((resolve) => {
-      this.log('Reconnecting...')
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectTimeout = undefined
-        this.initWS()
-          .then(() => {
-            this.retryCount = 0
-
-            // Resend audio chunks if reconnecting during transcription. The new
-            // session is fresh and replays the whole utterance, so reset the
-            // accumulated deltas to avoid duplicating them.
-            if (this.audioChunksPending.length > 0) {
-              this.log('Sending audio chunks again')
-              this.transcriptDelta = ''
-              this.audioChunksPending.forEach((chunk) =>
-                this.sendAudioChunk(chunk)
-              )
-            }
-          })
-          .then(resolve)
-          .catch((error) => {
-            this.log('Reconnection error:', error)
-            this.reconnect()
-          })
-      }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-    })
+    utterance.status = 'flushing'
+    // Not connected yet: the flush goes out with the audio, on `Open`
+    if (this.socket.isOpen) this.flushAudio(utterance)
   }
-}
 
-/**
- * Closes a socket without hearing from it again.
- *
- * A socket closed while still connecting emits an error, and an error nobody
- * listens to crashes the process, so a listener that ignores it stays.
- */
-function closeSocket(socket: WebSocket) {
-  socket.removeAllListeners()
-  socket.on('error', () => {})
-  if (
-    socket.readyState === WebSocket.OPEN ||
-    socket.readyState === WebSocket.CONNECTING
-  ) {
-    socket.close(1000)
+  private flushAudio(utterance: Utterance) {
+    // Flush buffered audio so the server processes the tail and emits a final
+    // transcription.done for this utterance. We deliberately do NOT send
+    // input_audio.end: that terminates the session (the server drops the
+    // connection), whereas a flush finalizes the current utterance and keeps the
+    // session ready for the next one.
+    if (!this.socket.send(JSON.stringify({ type: 'input_audio.flush' }))) {
+      return
+    }
+    this.log('Flushed audio input')
+
+    // Timeout transcription if no transcript is received, with the deltas
+    // received so far
+    clearTimeout(utterance.timeout)
+    utterance.timeout = setTimeout(() => {
+      this.log('Transcription timeout')
+      // Its flush is still answered later on this session, and that answer
+      // belongs to no other utterance
+      this.staleFlushes.push(Date.now() + this.transcriptionTimeout)
+      this.complete(utterance, utterance.text)
+    }, this.transcriptionTimeout)
+  }
+
+  private get transcriptionTimeout(): number {
+    return this.options.transcriptionTimeout || DEFAULT_TRANSCRIPTION_TIMEOUT
+  }
+
+  /** Whether an answer to a timed out flush may still be on its way */
+  private hasStaleFlush(): boolean {
+    const now = Date.now()
+    while (this.staleFlushes.length > 0 && this.staleFlushes[0] <= now) {
+      this.log('Forgetting a flush that was never answered')
+      this.staleFlushes.shift()
+    }
+    return this.staleFlushes.length > 0
+  }
+
+  private complete(utterance: Utterance, transcript: string) {
+    if (utterance.status === 'done') return
+    this.removeUtterance(utterance)
+    this.emit('Transcript', transcript.trim())
+  }
+
+  private removeUtterance(utterance: Utterance) {
+    this.dropUtterance(utterance)
+    this.utterances = this.utterances.filter((u) => u !== utterance)
+  }
+
+  private dropUtterance(utterance: Utterance) {
+    utterance.status = 'done'
+    clearTimeout(utterance.timeout)
+    utterance.timeout = undefined
+  }
+
+  private sendAudioChunk(chunk: Buffer): boolean {
+    return this.socket.send(
+      JSON.stringify({
+        type: 'input_audio.append',
+        audio: chunk.toString('base64'),
+      })
+    )
   }
 }

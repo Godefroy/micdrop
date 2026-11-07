@@ -82,8 +82,14 @@ export abstract class Agent<
   public conversation: MicdropConversation
   public tools: Tool[]
 
+  // Aborted when the answer is cancelled, or replaced by the next one
+  private answerController?: AbortController
+
+  /**
+   * @deprecated Read the signal given to `generateAnswer` instead. Still
+   * bumped by every answer and every cancel, for agents written before it.
+   */
   protected answerCount = 0
-  protected answering = false
 
   constructor(protected options: Options) {
     super()
@@ -91,14 +97,54 @@ export abstract class Agent<
     this.tools = this.getDefaultTools()
   }
 
-  protected abstract generateAnswer(stream: PassThrough): Promise<void>
-  abstract cancel(): void
+  /**
+   * Writes the answer to the stream, and records it in the conversation.
+   *
+   * The signal is aborted when the answer is cancelled or replaced by the next
+   * one. From then on nothing may be written nor recorded: hand it to the
+   * request, and check it before a retry and before adding a message.
+   */
+  protected abstract generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void>
+
+  /** Whether an answer is being generated */
+  get isAnswering(): boolean {
+    return !!this.answerController
+  }
+
+  /** @deprecated Read `isAnswering` instead */
+  protected get answering(): boolean {
+    return this.isAnswering
+  }
+
+  /** @deprecated The answer is over once its stream ends or it is cancelled */
+  protected set answering(_value: boolean) {}
+
+  /**
+   * Stops the answer being generated, by aborting its signal.
+   *
+   * An agent overriding it to stop more than the signal does calls
+   * `super.cancel()`.
+   */
+  cancel() {
+    this.answerCount++
+    if (!this.answerController) return
+    this.log('Cancel')
+    this.answerController.abort()
+    this.answerController = undefined
+  }
 
   answer(): Readable {
     this.log('Start answering')
-    const answerCount = ++this.answerCount
+    this.answerCount++
+    // One answer at a time: the previous one is no longer wanted
+    this.answerController?.abort()
+    const controller = new AbortController()
+    this.answerController = controller
+    const { signal } = controller
     const stream = new PassThrough()
-    this.answering = true
 
     Promise.resolve()
       // Call hook onBeforeAnswer
@@ -107,21 +153,25 @@ export abstract class Agent<
       )
       // Generate answer (if not skipped or given)
       .then((result) => {
+        if (signal.aborted) return
         if (typeof result === 'string') {
           stream.write(result)
           this.addAssistantMessage(result)
           return
         }
         if (result) return
-        return this.generateAnswer(stream)
+        return this.generateAnswer(stream, signal)
+      })
+      .catch((error) => {
+        if (!signal.aborted) this.log('Error answering:', error)
       })
       // End stream
       .finally(() => {
         if (stream.writable) {
           stream.end()
         }
-        if (answerCount === this.answerCount) {
-          this.answering = false
+        if (this.answerController === controller) {
+          this.answerController = undefined
         }
       })
 

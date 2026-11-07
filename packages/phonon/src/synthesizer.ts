@@ -41,6 +41,12 @@ interface Generation {
 }
 
 /**
+ * Ready while its worker runs. Dead once the worker crashed or exited: every
+ * pending sentence was rejected with that error, and so is every later one.
+ */
+type SynthesizerState = { status: 'ready' } | { status: 'dead'; error: Error }
+
+/**
  * The model, loaded on a worker thread of its own.
  *
  * Sentences are generated one after the other, in the order they were asked
@@ -50,6 +56,7 @@ interface Generation {
 export class Synthesizer {
   private counter = 0
   private generations = new Map<number, Generation>()
+  private state: SynthesizerState = { status: 'ready' }
 
   private constructor(
     private readonly worker: Worker,
@@ -57,16 +64,27 @@ export class Synthesizer {
     readonly files: ModelFiles,
     readonly sampleRate: number,
     /** Languages the model was trained for, as its config lists them. */
-    readonly languages: string[]
+    readonly languages: string[],
+    // Called once when the worker dies, so the cache forgets this instance
+    private readonly onDeath: () => void
   ) {
     worker.on('message', (message: WorkerReply) => this.handleReply(message))
+    // A worker that crashes (out of memory, a panic in the module) or exits
+    // would otherwise leave every pending sentence waiting forever
+    worker.on('error', (error) => this.die(error))
+    worker.on('exit', (code) =>
+      this.die(new Error(`Phonon worker exited with code ${code}`))
+    )
     // The shared instance lives as long as the process, it must not keep it
     // up. Done once the listeners are on, since adding one refs the worker
     // again.
     worker.unref()
   }
 
-  static async load(options: SynthesizerOptions): Promise<Synthesizer> {
+  static async load(
+    options: SynthesizerOptions,
+    onDeath: () => void = () => {}
+  ): Promise<Synthesizer> {
     const quant = options.quant ?? DEFAULT_QUANT
     const modelDir = parseHubModel(options.model)
       ? await downloadHubModel(options.model, quant, options.hub)
@@ -85,29 +103,50 @@ export class Synthesizer {
     const worker = new Worker(WORKER_PATH, { workerData })
 
     return new Promise((resolve, reject) => {
+      // The loading listeners go away once settled, the synthesizer puts its
+      // own on, so a later error is not swallowed by this promise
+      const settle = () => {
+        worker.off('message', handleReady)
+        worker.off('error', handleError)
+        worker.off('exit', handleExit)
+      }
       const handleReady = (message: WorkerReply) => {
         if (message.type === 'ready') {
-          worker.off('message', handleReady)
+          settle()
           resolve(
             new Synthesizer(
               worker,
               files,
               message.sampleRate,
-              message.languages
+              message.languages,
+              onDeath
             )
           )
         } else if (message.type === 'loadFailed') {
+          settle()
           worker.terminate()
           reject(new Error(`Phonon failed to load: ${message.message}`))
         }
       }
+      const handleError = (error: Error) => {
+        settle()
+        reject(error)
+      }
+      const handleExit = (code: number) => {
+        settle()
+        reject(
+          new Error(`Phonon worker exited with code ${code} while loading`)
+        )
+      }
       worker.on('message', handleReady)
-      worker.once('error', reject)
+      worker.on('error', handleError)
+      worker.on('exit', handleExit)
     })
   }
 
   /** Generates one sentence, handing its frames over as they come. */
   generate(options: GenerateOptions): Promise<void> {
+    if (this.state.status === 'dead') return Promise.reject(this.state.error)
     const id = ++this.counter
     const { signal } = options
     if (signal?.aborted) return Promise.resolve()
@@ -151,7 +190,24 @@ export class Synthesizer {
   }
 
   private send(message: WorkerRequest) {
+    if (this.state.status === 'dead') return
     this.worker.postMessage(message)
+  }
+
+  /**
+   * Rejects every pending sentence and makes the cache load a new worker.
+   *
+   * An error event is followed by an exit event, only the first one counts.
+   */
+  private die(error: Error) {
+    if (this.state.status === 'dead') return
+    this.state = { status: 'dead', error }
+    console.error('[PhononTTS] Worker died:', error)
+    const generations = [...this.generations.values()]
+    this.generations.clear()
+    for (const generation of generations) generation.reject(error)
+    this.worker.terminate().catch(() => {})
+    this.onDeath()
   }
 
   private handleReply(message: WorkerReply) {
@@ -186,15 +242,20 @@ const synthesizers = new SharedInstances<Synthesizer>()
 export function loadSynthesizer(
   options: SynthesizerOptions
 ): Promise<Synthesizer> {
-  return synthesizers.load(
-    [
-      options.model,
-      options.language,
-      options.quant ?? null,
-      options.rewrites ?? null,
-      options.conditions ?? null,
-      options.hub.cacheDir ?? null,
-    ],
-    () => Synthesizer.load(options)
+  const key = [
+    options.model,
+    options.language,
+    options.quant ?? null,
+    options.rewrites ?? null,
+    options.conditions ?? null,
+    options.hub.cacheDir ?? null,
+  ]
+  const loading: Promise<Synthesizer> = synthesizers.load(key, () =>
+    Synthesizer.load(options, () => {
+      // The call after a crash loads a new worker instead of getting the dead
+      // one back. A newer worker under the same key is left alone.
+      if (synthesizers.get(key) === loading) synthesizers.delete(key)
+    })
   )
+  return loading
 }

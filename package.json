@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "examples/*",
-    "website"
+    "website",
+    "e2e"
   ],
   "scripts": {
     "build": "pnpm build:server && pnpm build:client && pnpm build:web && concurrently -n \"ai-sdk,cartesia,elevenlabs,gemini,gladia,gradium,kokoro,mistral,openai,phonon,piper,pocket-tts,qwen-tts,react,react-native,smart-turn,typesafe,whisper\" -c \"blue,green,yellow,red,magenta,white,cyan,red,green,blue,cyan,magenta,yellow,green,red,blue,magenta\" \"pnpm --filter ai-sdk build\" \"pnpm --filter cartesia build\" \"pnpm --filter elevenlabs build\" \"pnpm --filter gemini build\" \"pnpm --filter gladia build\" \"pnpm --filter gradium build\" \"pnpm --filter kokoro build\" \"pnpm --filter mistral build\" \"pnpm --filter openai build\" \"pnpm --filter phonon build\" \"pnpm --filter piper build\" \"pnpm --filter pocket-tts build\" \"pnpm --filter qwen-tts build\" \"pnpm --filter react build\" \"pnpm --filter @micdrop/react-native build\" \"pnpm --filter smart-turn build\" \"pnpm --filter typesafe build\" \"pnpm --filter whisper build\"",
@@ -27,7 +28,9 @@
     "dev:robot": "pnpm --filter @micdrop/demo-robot dev",
     "dev:twenty-questions": "pnpm --filter @micdrop/demo-twenty-questions dev",
     "dev:storyteller": "pnpm --filter @micdrop/demo-storyteller dev",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "pnpm --filter @micdrop/client --filter @micdrop/server --filter @micdrop/smart-turn test",
+    "test:e2e": "pnpm --filter @micdrop/e2e test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

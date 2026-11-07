@@ -122,6 +122,13 @@ Micdrop.on('StateChange', (state) => {
 
 ```typescript
 interface MicdropState {
+  // Where the call stands: 'stopped', 'starting', 'started' or 'reconnecting'
+  status: MicdropStatus
+
+  // Who has the floor: 'idle', 'listening', 'userSpeaking', 'processing' or
+  // 'assistantSpeaking'. See the call state page.
+  activity: MicdropActivity
+
   // True if either WebSocket or microphone are in starting state
   isStarting: boolean
 
@@ -191,6 +198,14 @@ Stop the call (stops the microphone and WebSocket connection):
 
 ```typescript
 async stop(): Promise<void>
+```
+
+Stop the call once the assistant finished its answer, the one it is still
+preparing included, or right away when no answer is under way. A `start()` or a
+`stop()` meanwhile cancels the wait:
+
+```typescript
+async stopAfterAnswer(): Promise<void>
 ```
 
 Pause the call (pauses the microphone and speaker):

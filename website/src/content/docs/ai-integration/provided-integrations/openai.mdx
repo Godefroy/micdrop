@@ -95,6 +95,8 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined` | Hook called before answer generation, returns `true` to skip it or a text to answer instead |
 | `settings`            | `object`                                                                                                                          | `{}`        | Additional OpenAI Responses API parameters                                                  |
 
+A request that fails before writing anything is retried, up to `maxRetry` times. Once text reached the stream or a tool ran, the answer keeps what it got: the text already said goes in the conversation as the answer, so a retry never says it twice. Cancelling the answer also stops the retries.
+
 The OpenAI Agent supports adding and removing custom tools to extend its capabilities. For detailed information about tool management, see the [Tools documentation](../../server/tools).
 
 ### Advanced Features
@@ -194,10 +196,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                    |
-| ------------ | ---------- | ------------------------------------------------------------------------------ |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
+| Event        | Payload    | Description                                                                                                        |
+| ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance, emitted once per utterance. The text is empty when nothing was recognized in time. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.                                       |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 
@@ -213,6 +215,8 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 | `transcriptionTimeout` | `number` | `4000`                                          | Timeout in milliseconds to wait for transcription result                                                                                               |
 | `retryDelay`           | `number` | `1000`                                          | Delay in milliseconds between reconnection attempts                                                                                                    |
 | `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing                                                                                                 |
+
+The connection opens again whenever it closes, a graceful close included. Each utterance keeps its audio until its transcript arrives, and a new connection receives the audio of every utterance still waiting, so none is lost in between. Once `maxRetry` attempts in a row failed, `Failed` hands that audio back, and the next utterance starts the connection over.
 
 ## OpenAI TTS (Text-to-Speech)
 
@@ -287,6 +291,8 @@ See the [TTS interface](../custom-integrations/custom-tts) for the full contract
 | `reasoningEffort`   | `string` | `'minimal'`           | Reasoning before speaking, `gpt-realtime-*` only: `minimal`, `low`, `medium`, `high`, `xhigh`                                     |
 | `connectionTimeout` | `number` | `5000`                | Timeout in milliseconds to open the Realtime connection, `gpt-realtime-*` only                                                    |
 
+With `gpt-realtime-*`, the connection opens again on its own when it closes. A sentence asked for meanwhile is sent once it is back, and so is a sentence the API had not started yet. A sentence that had started reading reports `Failed`.
+
 :::note
 
 **Voices**: the Realtime API offers `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin` and `cedar`. `fable`, `nova` and `onyx` only exist on the speech endpoint.
@@ -360,7 +366,7 @@ When the user interrupts, the answer is cancelled and the conversation of the mo
 | `retryDelay`          | `number`            | `1000`                | Delay before reconnecting, in milliseconds                                                                                              |
 | `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                                                                                  |
 
-A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session.
+A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session. The answer in progress ends with the old session, and a tool still running records its result in the conversation without answering on the new one. What the call sends while the connection opens, a greeting or a turn of the user, waits for it and goes out once it is back. After `maxRetry` failed attempts, `Failed` is emitted and every later answer ends right away.
 
 ## OpenAI Classifier
 

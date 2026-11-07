@@ -54,10 +54,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                                               |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
+| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
 

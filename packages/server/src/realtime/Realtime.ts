@@ -121,6 +121,7 @@ export abstract class Realtime<
   }
 
   cancel() {
+    super.cancel()
     this.queue = []
     const answer = this.currentAnswer
     if (!answer) return

@@ -114,7 +114,7 @@ function Call() {
 
   // The assistant can hang up on its own when the conversation is over
   // https://micdrop.dev/docs/server/auto-end-call
-  useMicdropEndCall(useCallback(() => Micdrop.stop(), []))
+  useMicdropEndCall(useCallback(() => Micdrop.stopAfterAnswer(), []))
 
   // Microphone refused, server unreachable, and so on
   // https://micdrop.dev/docs/client/error-handling

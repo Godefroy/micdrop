@@ -73,14 +73,15 @@ tts.on('Failed', (textChunks: string[]) => {
 
 ## Abstract Methods
 
-### `speak(textStream: Readable): Readable`
+### `speak(textStream: Readable): void`
 
-Converts a streaming text input into a streaming audio output.
+Converts a streaming text input into audio, emitted as `Audio` events.
 
 **Implementation Requirements:**
 
 - Accept a `Readable` stream containing text chunks
-- Return a `Readable` stream that outputs audio chunks
+- Emit each audio chunk with `this.emit('Audio', chunk)`, in PCM 16 bits at 16 kHz
+- A new `speak()` replaces the utterance still being spoken
 - Handle real-time streaming for optimal latency
 - Support cancellation via the `cancel()` method
 - Process text incrementally as it arrives
@@ -118,12 +119,13 @@ tts.logger = new Logger('CustomTTS')
 
 ### Creating a WebSocket-based Streaming TTS
 
-For real-time streaming text-to-speech services:
+For real-time streaming text-to-speech services. `ReconnectingSocket`, described
+on the [STT page](./custom-stt#connecting-over-a-websocket), holds the
+connection, so the class only deals with the protocol.
 
 ```typescript
-import { TTS } from '@micdrop/server'
-import { PassThrough, Readable } from 'stream'
-import WebSocket from 'ws'
+import { ReconnectingSocket, TTS } from '@micdrop/server'
+import { Readable } from 'stream'
 
 interface CustomStreamingTTSOptions {
   apiKey: string
@@ -132,190 +134,90 @@ interface CustomStreamingTTSOptions {
 }
 
 export class CustomStreamingTTS extends TTS {
-  private socket?: WebSocket
-  private initPromise: Promise<void>
-  private audioStream?: PassThrough
-  private reconnectTimeout?: NodeJS.Timeout
+  private socket: ReconnectingSocket
+  // Numbers the utterances, so the audio of a cancelled one is dropped
   private sessionId = 0
+  // Text of the utterance being spoken, sent again on a new connection
+  private textSent = ''
 
   constructor(private readonly options: CustomStreamingTTSOptions) {
     super()
-
-    // Initialize WebSocket connection
-    this.initPromise = this.initConnection()
-  }
-
-  speak(textStream: Readable): Readable {
-    this.sessionId++
-    const currentSession = this.sessionId
-
-    // Reset streams for new speech
-    this.stopCurrentStreams()
-    this.audioStream = new PassThrough()
-
-    // Process incoming text chunks
-    textStream.on('data', async (chunk) => {
-      if (currentSession !== this.sessionId) return // Session changed
-
-      await this.initPromise
-      const text = chunk.toString('utf-8').trim()
-
-      if (text) {
-        this.sendTextChunk(text, currentSession)
-      }
-    })
-
-    textStream.on('error', (error) => {
-      this.log('Text stream error:', error)
-      this.audioStream?.destroy(error)
-    })
-
-    textStream.on('end', async () => {
-      if (currentSession !== this.sessionId) return
-
-      await this.initPromise
-      this.finalizeSession(currentSession)
-    })
-
-    // Return PCM audio stream
-    return this.audioStream
-  }
-
-  private async initConnection(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.socket = new WebSocket(
-        `wss://api.example.com/v1/tts/stream?api_key=${this.options.apiKey}`
-      )
-
-      this.socket.addEventListener('open', () => {
-        this.log('TTS WebSocket connected')
-        this.sendConfiguration()
-        resolve()
-      })
-
-      this.socket.addEventListener('message', (event) => {
-        this.handleWebSocketMessage(event.data)
-      })
-
-      this.socket.addEventListener('error', (error) => {
-        this.log('WebSocket error:', error)
-        reject(error)
-      })
-
-      this.socket.addEventListener('close', ({ code, reason }) => {
-        this.log(`WebSocket closed: ${code} ${reason}`)
-        if (code !== 1000) {
-          this.reconnect()
-        }
-      })
-    })
-  }
-
-  private sendConfiguration() {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
-
-    const config = {
-      type: 'config',
-      voice_id: this.options.voiceId,
-      language: this.options.language || 'en',
-      output_format: {
-        encoding: 'pcm_s16le',
-        sample_rate: 16000,
-        channels: 1,
+    this.socket = new ReconnectingSocket({
+      url: `wss://api.example.com/v1/tts/stream?api_key=${options.apiKey}`,
+      handshake: {
+        start: (socket) =>
+          socket.send(
+            JSON.stringify({
+              type: 'config',
+              voice_id: options.voiceId,
+              language: options.language || 'en',
+              output_format: { encoding: 'pcm_s16le', sample_rate: 16000 },
+            })
+          ),
       },
-    }
-
-    this.socket.send(JSON.stringify(config))
-    this.log('Sent TTS configuration')
+      log: (...message) => this.log(...message),
+    })
+    this.socket.on('Open', this.onOpen)
+    this.socket.on('Message', (data) =>
+      this.handleMessage(JSON.parse(data.toString()))
+    )
+    this.socket.on('Failed', () => {
+      const text = this.textSent
+      this.cancel()
+      // A FallbackTTS speaks the rest instead
+      this.emit('Failed', text ? [text] : [])
+    })
+    this.socket.connect()
   }
 
-  private sendTextChunk(text: string, sessionId: number) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
+  speak(textStream: Readable) {
+    const sessionId = ++this.sessionId
+    this.textSent = ''
 
-    const message = {
-      type: 'text',
-      text,
-      session_id: sessionId,
-      stream: true,
-    }
+    textStream.on('data', (chunk: Buffer) => {
+      if (sessionId !== this.sessionId) return
+      const text = chunk.toString('utf-8')
+      this.textSent += text
+      // Without a connection, the text goes out on `Open`
+      this.send({ type: 'text', text, session_id: sessionId })
+    })
 
-    this.socket.send(JSON.stringify(message))
-    this.log(`Sent text chunk: "${text}"`)
+    textStream.on('end', () => {
+      if (sessionId !== this.sessionId) return
+      this.send({ type: 'finalize', session_id: sessionId })
+    })
   }
 
-  private finalizeSession(sessionId: number) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
-
-    const message = {
-      type: 'finalize',
-      session_id: sessionId,
-    }
-
-    this.socket.send(JSON.stringify(message))
-    this.log('Finalized TTS session')
+  cancel() {
+    // The audio still on its way belongs to no utterance any more
+    this.sessionId++
+    this.textSent = ''
   }
 
-  private handleWebSocketMessage(data: any) {
-    try {
-      const message = JSON.parse(data.toString())
-
-      switch (message.type) {
-        case 'audio':
-          if (message.session_id === this.sessionId) {
-            const audioChunk = Buffer.from(message.data, 'base64')
-            this.log(`Received audio chunk: ${audioChunk.length} bytes`)
-            this.audioStream?.write(audioChunk)
-          }
-          break
-
-        case 'audio_end':
-          if (message.session_id === this.sessionId) {
-            this.log('Audio generation completed')
-            this.audioStream?.end()
-          }
-          break
-
-        case 'error':
-          this.log('TTS error:', message.error)
-          this.audioStream?.destroy(new Error(message.error))
-          break
-
-        default:
-          this.log('Unknown message type:', message.type)
-      }
-    } catch (error) {
-      this.log('Error parsing WebSocket message:', error)
-    }
-  }
-
-  private stopCurrentStreams() {
-    this.audioStream?.end()
-    this.audioStream = undefined
-  }
-
-  private reconnect() {
-    this.log('Attempting to reconnect...')
-    this.reconnectTimeout = setTimeout(() => {
-      this.initPromise = this.initConnection().catch(() => this.reconnect())
-    }, 1000)
-  }
-
-  cancel(): void {
-    this.log('Cancelling TTS operation')
-    this.sessionId++ // Invalidate current session
-    this.stopCurrentStreams()
-  }
-
-  destroy(): void {
+  destroy() {
     super.destroy()
+    this.socket.destroy()
+  }
 
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-    }
+  // A new connection lost the utterance in progress, which starts over
+  private onOpen = ({ reconnected }: { reconnected: boolean }) => {
+    if (!reconnected || !this.textSent) return
+    this.send({ type: 'text', text: this.textSent, session_id: this.sessionId })
+  }
 
-    if (this.socket) {
-      this.socket.close(1000, 'Client disconnect')
+  private handleMessage(message: any) {
+    if (message.session_id !== this.sessionId) return
+    if (message.type === 'audio') {
+      this.emit('Audio', Buffer.from(message.data, 'base64'))
+    } else if (message.type === 'audio_end') {
+      this.textSent = ''
+    } else if (message.type === 'error') {
+      this.log('TTS error:', message.error)
     }
+  }
+
+  private send(message: object) {
+    this.socket.send(JSON.stringify(message))
   }
 }
 ```
@@ -346,7 +248,7 @@ For services that process complete text before generating audio:
 
 ```typescript
 import { TTS } from '@micdrop/server'
-import { PassThrough, Readable } from 'stream'
+import { Readable } from 'stream'
 import { text } from 'stream/consumers'
 
 interface CustomFetchTTSOptions {
@@ -363,29 +265,22 @@ export class CustomFetchTTS extends TTS {
     super()
   }
 
-  speak(textStream: Readable): Readable {
-    const audioStream = new PassThrough()
-
-    this.generateSpeech(textStream, audioStream)
-
-    return audioStream
+  speak(textStream: Readable) {
+    // A new utterance replaces the one being spoken
+    this.cancel()
+    const request = new AbortController()
+    this.currentRequest = request
+    this.generateSpeech(textStream, request)
   }
 
-  private async generateSpeech(textStream: Readable, audioStream: PassThrough) {
+  private async generateSpeech(textStream: Readable, request: AbortController) {
     try {
       // Collect all text first
       this.log('Collecting text content...')
       const textContent = await text(textStream)
-
-      if (!textContent.trim()) {
-        audioStream.end()
-        return
-      }
+      if (!textContent.trim() || request.signal.aborted) return
 
       this.log(`Generating speech for: "${textContent}"`)
-
-      // Create abort controller for cancellation
-      this.currentRequest = new AbortController()
 
       // Make API request
       const response = await fetch('https://api.example.com/v1/tts/generate', {
@@ -401,7 +296,7 @@ export class CustomFetchTTS extends TTS {
           language: this.options.language || 'en',
           output_format: 'pcm_s16le', // 16-bit signed little-endian PCM at 16kHz
         }),
-        signal: this.currentRequest.signal,
+        signal: request.signal,
       })
 
       if (!response.ok) {
@@ -410,58 +305,26 @@ export class CustomFetchTTS extends TTS {
         )
       }
 
-      // Check if we have streaming response
-      if (response.body) {
-        this.log('Streaming audio response...')
-        await this.streamAudioResponse(response.body, audioStream)
-      } else {
-        throw new Error('No audio data in response')
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          this.log('TTS request was cancelled')
-        } else {
-          this.log('TTS generation failed:', error.message)
-          audioStream.destroy(error)
-        }
-      }
-    } finally {
-      this.currentRequest = undefined
-    }
-  }
-
-  private async streamAudioResponse(
-    responseBody: ReadableStream<Uint8Array>,
-    audioStream: PassThrough
-  ) {
-    const reader = responseBody.getReader()
-
-    try {
+      if (!response.body) throw new Error('No audio data in response')
+      const reader = response.body.getReader()
       while (true) {
         const { done, value } = await reader.read()
-
-        if (done) {
-          this.log('Audio stream completed')
-          break
-        }
-
-        if (value) {
-          // Convert to Buffer and write to stream
-          const audioChunk = Buffer.from(value)
-          this.log(`Received audio chunk: ${audioChunk.length} bytes`)
-          audioStream.write(audioChunk)
-        }
+        if (done || request.signal.aborted) break
+        this.emit('Audio', Buffer.from(value))
+      }
+    } catch (error) {
+      // A cancelled request throws, which is no failure
+      if (!request.signal.aborted) {
+        this.log('TTS generation failed:', error)
       }
     } finally {
-      reader.releaseLock()
-      audioStream.end()
+      if (this.currentRequest === request) this.currentRequest = undefined
     }
   }
 
   cancel(): void {
-    this.log('Cancelling TTS request')
     this.currentRequest?.abort()
+    this.currentRequest = undefined
   }
 }
 ```
@@ -492,74 +355,72 @@ For testing and development:
 
 ```typescript
 import { TTS } from '@micdrop/server'
-import { PassThrough, Readable } from 'stream'
-import { text } from 'stream/consumers'
+import { readFileSync } from 'fs'
+import { Readable } from 'stream'
 
 export class EchoTTS extends TTS {
   private sampleAudio: Buffer
 
   constructor(sampleAudioPath: string) {
     super()
-    // Load a sample audio file to use as "speech"
-    this.sampleAudio = require('fs').readFileSync(sampleAudioPath)
+    // Raw PCM 16 bits at 16 kHz, played as the "speech" of any text
+    this.sampleAudio = readFileSync(sampleAudioPath)
   }
 
-  speak(textStream: Readable): Readable {
-    const audioStream = new PassThrough()
-    this.processText(textStream, audioStream)
-    return audioStream
-  }
-
-  private async processText(textStream: Readable, audioStream: PassThrough) {
-    try {
-      // Wait for first text chunk
-      textStream.once('data', () => {
-        this.log('Echoing sample audio for any text input')
-        audioStream.write(this.sampleAudio)
-      })
-
-      textStream.on('end', () => {
-        audioStream.end()
-      })
-
-      textStream.on('error', (error) => {
-        audioStream.destroy(error)
-      })
-    } catch (error) {
-      audioStream.destroy(error as Error)
-    }
+  speak(textStream: Readable) {
+    textStream.once('data', () => {
+      this.log('Echoing sample audio for any text input')
+      this.emit('Audio', this.sampleAudio)
+    })
   }
 
   cancel(): void {
     // Nothing to cancel for this simple implementation
-    this.log('Echo TTS cancelled')
   }
 }
 ```
 
-### Using EchoTTS with MicdropServer
+### Using EchoTTS
 
 ```typescript
-// Create and configure custom TTS
-const echoTTS = new EchoTTS('/path/to/sample-audio.wav')
+const echoTTS = new EchoTTS('/path/to/sample-audio.pcm')
 echoTTS.logger = new Logger('EchoTTS')
 
-// Test the TTS
-const textStream = new PassThrough()
-const audioStream = echoTTS.speak(textStream)
-
-textStream.write('Hello, world!')
-textStream.end()
-
-audioStream.on('data', (chunk) => {
+echoTTS.on('Audio', (chunk) => {
   console.log(`Audio chunk received: ${chunk.length} bytes`)
 })
 
-audioStream.on('end', () => {
-  console.log('Audio generation completed')
-  echoTTS.destroy()
-})
+const textStream = new PassThrough()
+echoTTS.speak(textStream)
+textStream.end('Hello, world!')
 ```
+
+### Sharing a Local Model Between Calls
+
+Each call creates its own TTS, while a local model takes from a second to a
+minute to load and holds its weights in memory. `SharedInstances` keeps one
+instance per configuration for the whole process, so every call after the
+first reuses it.
+
+```typescript
+import { SharedInstances } from '@micdrop/server'
+
+const synthesizers = new SharedInstances<Synthesizer>()
+
+function loadSynthesizer(model: string, device: string) {
+  // Calls asking while it loads share the same load
+  return synthesizers.load([model, device], () =>
+    Synthesizer.load(model, { device })
+  )
+}
+```
+
+The key is any JSON value, usually the options the instance is built from. A
+failed load is forgotten, so the next call tries again. `get(key)` returns the
+instance loaded or loading without starting a load, `has(key)` tells whether
+there is one, `delete(key)` forgets one that broke, a crashed worker for
+instance, so the next call loads a new one, and `clear()` forgets them all.
+Releasing what a forgotten instance holds is left to the caller.
 
 ## Audio Format Considerations
 
@@ -597,10 +458,9 @@ For optimal real-time performance:
 Robust TTS implementations should handle:
 
 ```typescript
-// Network errors
+// A broken text stream ends the utterance with what was received
 textStream.on('error', (error) => {
   this.log('Text stream error:', error)
-  audioStream.end()
 })
 
 // API errors
@@ -608,8 +468,10 @@ if (!response.ok) {
   throw new Error(`TTS API error: ${response.status}`)
 }
 
-// Cancellation
-if (this.abortController.signal.aborted) {
-  throw new Error('Request was cancelled')
-}
+// A cancelled request throws too, which is no failure
+if (request.signal.aborted) return
+
+// The service is out of reach for good: hand the unspoken text over, so a
+// FallbackTTS speaks it instead
+this.emit('Failed', [unspokenText])
 ```

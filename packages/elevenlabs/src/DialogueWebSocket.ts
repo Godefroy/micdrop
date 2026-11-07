@@ -1,7 +1,6 @@
 import { Readable } from 'stream'
-import WebSocket from 'ws'
 import {
-  closeSocket,
+  ElevenLabsConnection,
   ElevenLabsWebSocket,
   ElevenLabsWebSocketHost,
 } from './ElevenLabsWebSocket'
@@ -17,13 +16,19 @@ import {
 
 // The server closes a connection that hears nothing for 20 seconds
 const KEEP_ALIVE_INTERVAL = 15000
-const DEFAULT_CONNECTION_TIMEOUT = 5000
-const DEFAULT_RETRY_DELAY = 1000
-const DEFAULT_MAX_RETRY = 3
 
 // Punctuation closing a sentence, with the space that follows it. An ellipsis
 // is a pause within the sentence, which v4 performs, so it does not close one.
 const SENTENCE_END = /(?:[!?]+|(?<!\.)\.(?!\.))\s+/g
+
+/**
+ * Where the utterance stands.
+ *
+ * - `idle`: nothing is being spoken
+ * - `streaming`: the text stream is still coming
+ * - `draining`: the text stream ended, the audio of its flushes is coming
+ */
+type UtteranceState = 'idle' | 'streaming' | 'draining'
 
 /**
  * The Text to Dialogue WebSocket, the only one serving Eleven v3 and v4.
@@ -37,23 +42,16 @@ const SENTENCE_END = /(?:[!?]+|(?<!\.)\.(?!\.))\s+/g
  * the user is still speaking.
  */
 export class DialogueWebSocket implements ElevenLabsWebSocket {
-  private socket?: WebSocket
-  private initPromise!: Promise<void>
-  private connectionTimeout?: NodeJS.Timeout
-  private keepAliveInterval?: NodeJS.Timeout
-  private reconnectTimeout?: NodeJS.Timeout
-  private retryCount = 0
-  private destroyed = false
+  private readonly connection: ElevenLabsConnection
+  private state: UtteranceState = 'idle'
   // Bumped by every speak() and every cancel(), so a stream that starts late
   // can tell whether it is still the one that should be heard.
   private generation = 0
   // Generation of the stream being spoken. A speak() that never carries a
   // word leaves it in place, so the sentence it sends goes on to its end.
   private speaking = 0
-  private isProcessing = false
-  private textEnded = false // Whether the text stream has ended
   private textSent = '' // Text of the utterance sent to ElevenLabs
-  private textBuffer = '' // End of the last chunk, held until its word is complete
+  private textBuffer = '' // Text not sent yet, held until its word is complete
   private unflushed = false // Whether text was sent since the last flush
   private pendingFlushes = 0 // Flushes whose audio is not complete yet
   private newTurn = false // Whether the next input starts a new utterance
@@ -63,7 +61,37 @@ export class DialogueWebSocket implements ElevenLabsWebSocket {
     private readonly options: ElevenLabsTTSOptions,
     private readonly host: ElevenLabsWebSocketHost
   ) {
-    this.connect()
+    const params = new URLSearchParams()
+    params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
+    params.append(
+      'output_format',
+      this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
+    )
+    if (this.options.language) {
+      params.append('language_code', this.options.language)
+    }
+
+    // Register the voice. Dialogue models only read the stability.
+    const stability = this.options.voiceSettings?.stability
+    const init: ElevenLabsDialogueClientMessage = {
+      voices: [this.options.voiceId],
+      voice_settings: stability === undefined ? undefined : { stability },
+    }
+
+    this.connection = new ElevenLabsConnection({
+      url: `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input?${params.toString()}`,
+      tts: options,
+      init,
+      keepAlive: {
+        interval: KEEP_ALIVE_INTERVAL,
+        message: { keep_alive: true },
+      },
+      host,
+      onOpen: () => this.onOpen(),
+      onMessage: (message) => this.onMessage(message),
+      onFailed: () => this.onFailed(),
+    })
+    this.connection.connect()
   }
 
   speak(textStream: Readable) {
@@ -79,203 +107,118 @@ export class DialogueWebSocket implements ElevenLabsWebSocket {
       if (this.generation !== generation) return false
       started = true
       // The utterance still being synthesized is superseded: drop it with
-      // its connection.
-      if (this.isProcessing) this.restart()
+      // its connection. Otherwise connect again if the last one gave up.
+      if (this.state !== 'idle') this.connection.restart()
+      else this.connection.connect()
+      this.resetUtterance()
       this.speaking = generation
-      this.isProcessing = true
-      this.textEnded = false
-      this.textSent = ''
-      this.textBuffer = ''
-      this.unflushed = false
-      this.pendingFlushes = 0
+      this.state = 'streaming'
       this.newTurn = true
       return true
     }
 
     textStream.on('data', async (chunk: Buffer) => {
       if (!start()) return
-      const text = chunk.toString('utf-8').replace(/[\r\n ]+/g, ' ')
-
-      await this.initPromise
+      this.textBuffer += chunk.toString('utf-8').replace(/[\r\n ]+/g, ' ')
+      if (!(await this.connection.ready())) return
       if (this.speaking !== generation) return
 
       // Only send complete words
-      const spaceIndex = text.lastIndexOf(' ')
-      if (spaceIndex === -1) {
-        this.textBuffer += text
-      } else {
-        this.sendText(this.textBuffer + text.slice(0, spaceIndex + 1))
-        this.textBuffer = text.slice(spaceIndex + 1)
-      }
+      const spaceIndex = this.textBuffer.lastIndexOf(' ')
+      if (spaceIndex === -1) return
+      this.sendText(this.textBuffer.slice(0, spaceIndex + 1))
+      this.textBuffer = this.textBuffer.slice(spaceIndex + 1)
     })
 
     textStream.on('error', (error) => {
       if (!started || this.speaking !== generation) return
       this.log('Error in text stream, ending audio stream', error)
-      this.isProcessing = false
+      // The text sent so far is still spoken, the rest is dropped
+      this.speaking = 0
+      this.textBuffer = ''
+      this.endText()
     })
 
     textStream.on('end', async () => {
       // Nothing was ever said, so there is nothing to flush.
       if (!started) return
-      await this.initPromise
+      if (!(await this.connection.ready())) return
       if (this.speaking !== generation) return
       if (this.textBuffer.trim()) {
         this.sendText(this.textBuffer + ' ')
-        this.textBuffer = ''
       }
-      this.textEnded = true
-      this.flush()
-      this.checkEnded()
+      this.textBuffer = ''
+      this.endText()
     })
   }
 
   cancel() {
     this.generation++
     this.speaking = 0
-    if (!this.isProcessing) return
+    if (this.state === 'idle') return
     this.log('Cancel')
-    this.isProcessing = false
-    this.textSent = ''
-    this.textBuffer = ''
-    this.restart()
+    this.resetUtterance()
+    this.connection.restart()
   }
 
   destroy() {
-    this.destroyed = true
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    this.dropSocket()
-    this.isProcessing = false
+    this.generation++
+    this.speaking = 0
+    this.resetUtterance()
+    this.connection.destroy()
   }
 
-  private connect() {
-    this.initPromise = this.initWS().catch((error) => {
-      console.error('[ElevenLabsTTS] Connection error:', error)
-      this.reconnect()
-    })
+  private onOpen() {
+    this.hasSpoken = false
+    if (this.state === 'idle') return
+    // The flushes in flight were lost with the previous connection, so the
+    // utterance is spoken again from its start
+    const text = this.textSent
+    this.textSent = ''
+    this.unflushed = false
+    this.pendingFlushes = 0
+    if (text.trim()) {
+      this.log('Sending text again')
+      this.sendText(text)
+    }
+    if (this.state === 'draining') this.flush()
+    this.checkEnded()
   }
 
-  /** Drops the connection, with the synthesis running on it, for a new one */
-  private restart() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    this.dropSocket()
-    this.connect()
+  /** Every retry failed: hands the unspoken text over and drops the utterance */
+  private onFailed() {
+    const unspoken =
+      this.state === 'idle' ? '' : this.textSent + this.textBuffer
+    this.speaking = 0
+    this.resetUtterance()
+    this.host.failed(unspoken.trim() ? [unspoken] : [])
   }
 
-  /** Closes the connection without reconnecting */
-  private dropSocket() {
-    // A connection dropped while opening never settles, rather than failing
-    // and reconnecting
-    if (this.connectionTimeout) {
-      clearTimeout(this.connectionTimeout)
-      this.connectionTimeout = undefined
-    }
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval)
-      this.keepAliveInterval = undefined
-    }
-    if (this.socket) closeSocket(this.socket)
-    this.socket = undefined
+  private resetUtterance() {
+    this.state = 'idle'
+    this.textSent = ''
+    this.textBuffer = ''
+    this.unflushed = false
+    this.pendingFlushes = 0
   }
 
-  private initWS(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const params = new URLSearchParams()
-      params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
-      params.append(
-        'output_format',
-        this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
-      )
-      if (this.options.language) {
-        params.append('language_code', this.options.language)
-      }
-
-      const socket = new WebSocket(
-        `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input?${params.toString()}`,
-        {
-          headers: {
-            'xi-api-key': this.options.apiKey,
-          },
-        }
-      )
-      this.socket = socket
-      let opened = false
-
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        closeSocket(socket)
-        this.socket = undefined
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-      this.connectionTimeout = timeout
-
-      socket.addEventListener('open', () => {
-        clearTimeout(timeout)
-        opened = true
-        this.log('Connection opened')
-
-        // Register the voice. Dialogue models only read the stability.
-        const stability = this.options.voiceSettings?.stability
-        this.send({
-          voices: [this.options.voiceId],
-          voice_settings: stability === undefined ? undefined : { stability },
-        })
-        this.hasSpoken = false
-
-        this.keepAliveInterval = setInterval(() => {
-          this.send({ keep_alive: true })
-          // Still open: the server accepted the key and the voice
-          this.retryCount = 0
-        }, KEEP_ALIVE_INTERVAL)
-
-        resolve()
-      })
-
-      socket.addEventListener('error', (error) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.addEventListener('message', (event) => {
-        try {
-          this.onMessage(JSON.parse(event.data.toString()))
-        } catch (error: any) {
-          this.log('message' in error ? error.message : error)
-          this.log('Event data during error:', event.data)
-        }
-      })
-
-      socket.addEventListener('close', ({ code, reason }) => {
-        clearTimeout(timeout)
-        if (this.keepAliveInterval) {
-          clearInterval(this.keepAliveInterval)
-          this.keepAliveInterval = undefined
-        }
-        this.socket?.removeAllListeners()
-        this.socket = undefined
-
-        // dropSocket() detaches the socket before closing it, so any close
-        // reaching this handler comes from the server. A connection that never
-        // opened was rejected, and the rejection reconnects.
-        this.log('Connection closed', { code, reason })
-        if (opened) this.reconnect()
-      })
-    })
+  /** The text stream is over: flushes what the server holds */
+  private endText() {
+    this.state = 'draining'
+    this.flush()
+    this.checkEnded()
   }
 
   private onMessage(message: ElevenLabsDialogueMessage) {
     if ('audio' in message && message.audio) {
       const chunk = Buffer.from(message.audio, 'base64')
-      this.log(`Received audio chunk (${chunk.length} bytes)`)
-      this.retryCount = 0
-      this.host.audio(chunk)
+      this.connection.prove()
+      if (this.state === 'idle') {
+        this.log('Ignore audio chunk, nothing is being spoken')
+      } else {
+        this.log(`Received audio chunk (${chunk.length} bytes)`)
+        this.host.audio(chunk)
+      }
     }
     if (
       'is_final_audio_for_turn' in message &&
@@ -340,54 +283,16 @@ export class DialogueWebSocket implements ElevenLabsWebSocket {
 
   /** Ends the utterance once its text is over and all its audio came */
   private checkEnded() {
-    if (!this.isProcessing || !this.textEnded) return
+    if (this.state !== 'draining') return
     if (this.unflushed || this.pendingFlushes > 0) return
     this.log('Audio ended')
-    this.isProcessing = false
-    this.textSent = ''
+    this.resetUtterance()
   }
 
+  // Lost when the connection just dropped, which is fine: the reconnection
+  // sends the utterance again from textSent
   private send(message: ElevenLabsDialogueClientMessage) {
-    if (this.socket?.readyState !== WebSocket.OPEN) return
-    this.socket.send(JSON.stringify(message))
-  }
-
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      const unspoken = this.isProcessing ? this.textSent + this.textBuffer : ''
-      this.host.failed(unspoken.trim() ? [unspoken] : [])
-      return
-    }
-
-    this.initPromise = new Promise((resolve) => {
-      this.log('Reconnecting...')
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectTimeout = undefined
-        // The count starts over once the connection proves usable, since the
-        // server opens it before checking the key and the voice
-        this.initWS()
-          .then(() => {
-            // Speak the utterance in flight again on the new connection
-            if (this.isProcessing && this.textSent.trim()) {
-              this.log('Sending text again')
-              const text = this.textSent
-              this.textSent = ''
-              this.unflushed = false
-              this.pendingFlushes = 0
-              this.sendText(text)
-              if (this.textEnded) this.flush()
-            }
-          })
-          .then(resolve)
-          .catch((error) => {
-            this.log('Reconnection error:', error)
-            this.reconnect()
-          })
-      }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-    })
+    this.connection.send(message)
   }
 
   private log(...message: any[]) {

@@ -1,0 +1,36 @@
+{
+  "name": "@micdrop/e2e",
+  "private": true,
+  "description": "End-to-end tests of the Micdrop integrations, against the real APIs",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.108",
+    "@micdrop/ai-sdk": "workspace:*",
+    "@micdrop/cartesia": "workspace:*",
+    "@micdrop/elevenlabs": "workspace:*",
+    "@micdrop/gemini": "workspace:*",
+    "@micdrop/gladia": "workspace:*",
+    "@micdrop/gradium": "workspace:*",
+    "@micdrop/kokoro": "workspace:*",
+    "@micdrop/mistral": "workspace:*",
+    "@micdrop/openai": "workspace:*",
+    "@micdrop/phonon": "workspace:*",
+    "@micdrop/piper": "workspace:*",
+    "@micdrop/pocket-tts": "workspace:*",
+    "@micdrop/qwen-tts": "workspace:*",
+    "@micdrop/server": "workspace:*",
+    "@micdrop/whisper": "workspace:*",
+    "dotenv": "^17.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

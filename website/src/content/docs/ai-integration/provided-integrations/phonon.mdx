@@ -183,7 +183,8 @@ two frames.
 The runtime generates on a worker thread, so a sentence being written never
 holds the event loop of your server. Micdrop loads one instance per model,
 language and precision and shares it across every call. The calls take turns
-on that thread, one sentence after the other.
+on that thread, one sentence after the other. Should the worker crash, the
+sentences it was given emit `Failed` and the next sentence starts a new worker.
 
 ## Memory
 

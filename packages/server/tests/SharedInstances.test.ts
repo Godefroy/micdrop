@@ -89,4 +89,19 @@ describe('SharedInstances', () => {
 
     assert.equal(calls, 2)
   })
+
+  it('forgets one instance on delete, and leaves the others', async () => {
+    const instances = new SharedInstances<string>()
+    let calls = 0
+    const create = async () => `instance ${++calls}`
+
+    const first = instances.load(['a'], create)
+    await instances.load(['b'], create)
+    assert.equal(instances.get(['a']), first)
+    instances.delete(['a'])
+
+    assert.equal(instances.get(['a']), undefined)
+    assert.equal(await instances.load(['a'], create), 'instance 3')
+    assert.equal(await instances.load(['b'], create), 'instance 2')
+  })
 })

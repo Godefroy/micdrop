@@ -152,7 +152,7 @@ Memory, on top of the 38 MB an ONNX runtime already holds for Silero: 18 MB for 
 - `push(samples, sampleRate)` feeds the audio of the current turn, resampling when needed
 - `predict()` answers `{ probability, complete, duration }`
 - `predictOnce(samples, sampleRate)` answers about a turn already in memory
-- `reset()` starts the next turn, `release()` frees the runtime
+- `reset()` starts the next turn, `release()` frees the runtime it loaded. A `model` passed to the constructor stays with its owner, who releases it, so one model can serve several conversations
 - `setSmartTurnOptions({ model, executionProvider, wasmPath })` says where the checkpoint comes from
 
 ## License

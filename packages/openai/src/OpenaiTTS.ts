@@ -142,17 +142,22 @@ export class OpenaiTTS extends TTS {
       }
     })
 
-    textStream.on('error', (error) => {
-      this.log('Error in text stream', error)
-    })
-
-    textStream.on('end', () => {
+    const flush = () => {
       // Nothing was ever said, so there is nothing left to flush.
       if (!counter || counter !== this.counter) return
       for (const sentence of this.splitter.flush()) {
         this.enqueue(counter, sentence)
       }
+    }
+
+    // A stream that fails never ends, and the text it carried up to there is
+    // still said, the last words included
+    textStream.on('error', (error) => {
+      this.log('Error in text stream', error)
+      flush()
     })
+
+    textStream.on('end', flush)
   }
 
   cancel() {

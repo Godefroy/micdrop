@@ -187,26 +187,17 @@ When stopped:
 
 ### Graceful Stop
 
-Wait for current operations to complete before stopping:
+`stopAfterAnswer()` lets the assistant finish its answer before the call stops,
+the one it is still preparing included. With no answer under way, it stops
+right away.
 
 ```typescript
-async function gracefulStop() {
-  if (!Micdrop.isAssistantSpeaking) {
-    Micdrop.stop()
-    console.log('Call stopped immediately')
-  } else {
-    // Wait for assistant to finish, then stop
-    const handler = (state: MicdropState) => {
-      if (!state.isAssistantSpeaking) {
-        Micdrop.stop()
-        Micdrop.off('StateChange', handler)
-        console.log('Call stopped gracefully')
-      }
-    }
-    Micdrop.on('StateChange', handler)
-  }
-}
+await Micdrop.stopAfterAnswer()
+console.log('Call stopped once the assistant was done')
 ```
+
+A `start()` or a `stop()` while it waits cancels it, so a call started again
+right after is never stopped by the previous one.
 
 ### Stop State Monitoring
 
@@ -233,11 +224,10 @@ The [agent](../ai-integration/custom-integrations/custom-agent.mdx) can send an 
 ```typescript
 Micdrop.on('EndCall', () => {
   console.log('🔚 Call ended by assistant')
-  Micdrop.stop()
+  // The goodbye that follows is heard before the line goes quiet
+  Micdrop.stopAfterAnswer()
 })
 ```
-
-You can gracefully stop the call by waiting for the assistant to finish speaking (see above).
 
 ## UI Integration
 

@@ -71,6 +71,11 @@ export abstract class SentenceTTS extends TTS {
       this.counter++
       counter = this.counter
       this.splitter.reset()
+      // The utterance it takes over from is not heard any further: neither
+      // the sentences it left in the queue, nor the one being synthesized
+      this.queue = []
+      this.controller?.abort()
+      this.controller = undefined
       return true
     }
 

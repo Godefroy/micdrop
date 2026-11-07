@@ -28,26 +28,73 @@ See [MicdropClient](./utility-classes/micdrop-client#state) for more details.
 
 The `MicdropState` object contains these properties:
 
-| Property              | Type                  | Description                          |
-| --------------------- | --------------------- | ------------------------------------ |
-| `isStarting`          | `boolean`             | Call is connecting and starting      |
-| `isStarted`           | `boolean`             | Call is active and ready             |
-| `isReconnecting`      | `boolean`             | Call is attempting to reconnect      |
-| `isMuted`             | `boolean`             | Call is muted, and still running     |
-| `isPaused`            | `boolean`             | Call is paused (no audio processing) |
-| `isListening`         | `boolean`             | Ready to detect user speech          |
-| `isProcessing`        | `boolean`             | Processing user input on server      |
-| `isUserSpeaking`      | `boolean`             | User voice detected                  |
-| `isAssistantSpeaking` | `boolean`             | Assistant audio playing              |
-| `isMicStarted`        | `boolean`             | Microphone is active                 |
-| `isMicMuted`          | `boolean`             | Microphone is muted                  |
-| `micDeviceId`         | `string`              | Active microphone device ID          |
-| `speakerDeviceId`     | `string`              | Active speaker device ID             |
-| `micDevices`          | `MicdropDevice[]`     | Available microphones                |
-| `speakerDevices`      | `MicdropDevice[]`     | Available speakers                   |
-| `conversation`        | `MicdropConversation` | Message history                      |
-| `partialAssistantMessage` | `string`          | Answer being written, if streamed    |
-| `error`               | `MicdropClientError`  | Current error if any                 |
+| Property                  | Type                  | Description                          |
+| ------------------------- | --------------------- | ------------------------------------ |
+| `status`                  | `MicdropStatus`       | Where the call stands, see below     |
+| `activity`                | `MicdropActivity`     | Who has the floor, see below         |
+| `isStarting`              | `boolean`             | Call is connecting and starting      |
+| `isStarted`               | `boolean`             | Call is active and ready             |
+| `isReconnecting`          | `boolean`             | Call is attempting to reconnect      |
+| `isMuted`                 | `boolean`             | Call is muted, and still running     |
+| `isPaused`                | `boolean`             | Call is paused (no audio processing) |
+| `isListening`             | `boolean`             | Ready to detect user speech          |
+| `isProcessing`            | `boolean`             | Processing user input on server      |
+| `isUserSpeaking`          | `boolean`             | User voice detected                  |
+| `isAssistantSpeaking`     | `boolean`             | Assistant audio playing              |
+| `isMicStarted`            | `boolean`             | Microphone is active                 |
+| `isMicMuted`              | `boolean`             | Microphone is muted                  |
+| `micDeviceId`             | `string`              | Active microphone device ID          |
+| `speakerDeviceId`         | `string`              | Active speaker device ID             |
+| `micDevices`              | `MicdropDevice[]`     | Available microphones                |
+| `speakerDevices`          | `MicdropDevice[]`     | Available speakers                   |
+| `conversation`            | `MicdropConversation` | Message history                      |
+| `partialAssistantMessage` | `string`              | Answer being written, if streamed    |
+| `error`                   | `MicdropClientError`  | Current error if any                 |
+
+## Status and Activity
+
+Two properties hold the whole state of a call, each with one value at a time.
+The booleans above spell them out, and stay handy for a quick check.
+
+`status` follows the call itself:
+
+| Value          | Meaning                                                  | Booleans                      |
+| -------------- | -------------------------------------------------------- | ----------------------------- |
+| `stopped`      | No call. The microphone may still be on, for a test      |                               |
+| `starting`     | Opening the microphone and the connection                | `isStarting`                  |
+| `started`      | The call is on                                           | `isStarted`                   |
+| `reconnecting` | The connection dropped, and the call waits for a new one | `isStarted`, `isReconnecting` |
+
+`activity` says who has the floor:
+
+| Value               | Meaning                                                   | Boolean               |
+| ------------------- | --------------------------------------------------------- | --------------------- |
+| `idle`              | Nothing to hear nor to wait for: stopped, paused or muted |                       |
+| `listening`         | Waiting for the user to speak                             | `isListening`         |
+| `userSpeaking`      | The user speaks                                           | `isUserSpeaking`      |
+| `processing`        | The server prepares the answer                            | `isProcessing`        |
+| `assistantSpeaking` | The answer is playing                                     | `isAssistantSpeaking` |
+
+A switch on them covers every case once:
+
+```typescript
+Micdrop.on('StateChange', (state) => {
+  if (state.status === 'reconnecting') return showBanner('Reconnecting…')
+
+  switch (state.activity) {
+    case 'listening':
+      return showIndicator('🎤 Listening')
+    case 'userSpeaking':
+      return showIndicator('🗣️ You are speaking')
+    case 'processing':
+      return showIndicator('⚡ Thinking')
+    case 'assistantSpeaking':
+      return showIndicator('🤖 Speaking')
+    case 'idle':
+      return hideIndicator()
+  }
+})
+```
 
 ## State Diagram
 
@@ -84,15 +131,13 @@ stateDiagram-v2
 
 ```typescript
 Micdrop.on('StateChange', (state, prevState) => {
-  if (state.isStarting && !prevState.isStarting) {
+  if (state.status === prevState.status) return
+
+  if (state.status === 'starting') {
     console.log('🔄 Connecting...')
-  }
-
-  if (state.isStarted && !prevState.isStarted) {
+  } else if (state.status === 'started') {
     console.log('✅ Connected and ready!')
-  }
-
-  if (state.isReconnecting && !prevState.isReconnecting) {
+  } else if (state.status === 'reconnecting') {
     console.log('🔄 Connection lost, reconnecting...')
   }
 })

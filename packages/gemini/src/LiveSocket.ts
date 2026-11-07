@@ -1,14 +1,21 @@
+import {
+  ReconnectingSocket,
+  ReconnectingSocketHandshake,
+  ReconnectingSocketStatus,
+} from '@micdrop/server'
 import { EventEmitter } from 'eventemitter3'
-import WebSocket from 'ws'
+import type { RawData } from 'ws'
 
 /**
  * A connection to the Gemini Live API, shared by GeminiLive and GeminiSTT
  *
  * @see https://ai.google.dev/gemini-api/docs/live-api
  *
- * It opens the session with the setup its owner builds, holds the messages
- * sent before the session is ready, and reconnects when the connection drops.
- * What a new connection has to know is left to the owner, told by the events.
+ * The connection itself, its attempts, retries and timeouts, is a
+ * ReconnectingSocket. This class adds what belongs to Gemini: the setup that
+ * opens each session, the messages held until the session is ready, and the
+ * pacing of the end of a turn. What a new session has to know is left to the
+ * owner, told by the events.
  */
 
 export interface LiveSocketOptions {
@@ -19,12 +26,16 @@ export interface LiveSocketOptions {
 }
 
 export interface LiveSocketEvents {
-  /** The session is set up, right before the messages waiting for it go out */
-  Ready: []
+  /**
+   * The session is set up, right before the messages waiting for it go out.
+   * Carries the setup that opened it, which tells whether it resumed a
+   * previous session.
+   */
+  Ready: [setup: any]
   Message: [any]
-  /** The connection dropped, a new one is attempted after a delay */
+  /** The connection dropped, attempt number of the new one to come */
   Reconnecting: [number]
-  /** No connection could be restored */
+  /** No connection could be restored, and the messages waiting are dropped */
   Failed: []
 }
 
@@ -32,52 +43,64 @@ const URL =
   'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent'
 const SAMPLE_RATE = 16000 // Rate of the audio sent, the one of the Micdrop client
 const BYTES_PER_MS = (SAMPLE_RATE * 2) / 1000
-const DEFAULT_CONNECTION_TIMEOUT = 5000
-const DEFAULT_RETRY_DELAY = 1000
-const DEFAULT_MAX_RETRY = 3
 
 export class LiveSocket extends EventEmitter<LiveSocketEvents> {
-  private socket?: WebSocket
-  private connected = false
-  private destroyed = false
+  private socket: ReconnectingSocket
   // Messages waiting for the session, or for the end of a turn to be due
   private pending: any[] = []
   private pendingTimeout?: NodeJS.Timeout
   // Audio of the turn as it went out, see flush()
   private turnAudioStartedAt = 0
   private turnAudioMs = 0
-  private reconnectTimeout?: NodeJS.Timeout
-  private retryCount = 0
+  // Attempts since the last session was ready, for the owner to tell a drop
+  // from a resumption that keeps failing
+  private reconnectAttempts = 0
+  // Setup sent by the handshake of the connection being opened
+  private setup?: object
 
   constructor(
-    private readonly options: LiveSocketOptions,
+    options: LiveSocketOptions,
     private readonly buildSetup: () => object,
     private readonly log: (...message: any[]) => void
   ) {
     super()
+    this.socket = new ReconnectingSocket({
+      url: `${URL}?key=${encodeURIComponent(options.apiKey)}`,
+      connectionTimeout: options.connectionTimeout,
+      retryDelay: options.retryDelay,
+      maxRetry: options.maxRetry,
+      handshake: this.handshake,
+      log,
+    })
+    this.socket.on('Open', this.onOpen)
+    this.socket.on('Message', this.onMessage)
+    this.socket.on('StatusChange', this.onStatusChange)
+    this.socket.on('Failed', this.onFailed)
   }
 
   /** The session is set up and takes messages right away */
   get isConnected(): boolean {
-    return this.connected
+    return this.socket.isOpen
   }
 
   connect() {
-    this.initWS().catch((error) => {
-      this.log('Connection error:', error)
-      this.reconnect()
-    })
+    this.socket.connect()
   }
 
-  /** Sends a message once the session is ready, after the ones before it */
+  /**
+   * Sends a message once the session is ready, after the ones before it.
+   * Dropped once the connection failed for good, as nothing would send it.
+   */
   send(message: any) {
+    const status = this.socket.status
+    if (status === 'failed' || status === 'destroyed') return
     this.pending.push(message)
     this.flush()
   }
 
   /** Sends a message ahead of the waiting ones, from a Ready listener */
   sendFirst(message: any) {
-    this.socket?.send(JSON.stringify(message))
+    this.socket.send(JSON.stringify(message))
   }
 
   /** Drops the messages that have not gone out */
@@ -86,22 +109,56 @@ export class LiveSocket extends EventEmitter<LiveSocketEvents> {
     this.clearPendingTimeout()
   }
 
-  /** Moves to a new connection, keeping the messages that have not gone out */
+  /**
+   * Moves to a new connection, keeping the messages that have not gone out.
+   * A reconnection waiting for its delay is replaced by this one.
+   */
   renew() {
     this.log('Renewing the connection')
-    this.closeSocket()
-    this.connect()
+    this.clearPendingTimeout()
+    this.reconnectAttempts = 0
+    this.socket.restart()
   }
 
   destroy() {
-    this.destroyed = true
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    this.closeSocket()
-    this.pending = []
+    this.clearPending()
+    this.socket.destroy()
     this.removeAllListeners()
+  }
+
+  /** Sends the setup, and holds the connection back until Gemini accepts it */
+  private handshake: ReconnectingSocketHandshake = {
+    start: (socket) => {
+      const setup = this.buildSetup()
+      this.setup = setup
+      socket.send(JSON.stringify(setup))
+    },
+    read: (data) => !!parseMessage(data.toString())?.setupComplete,
+  }
+
+  private onOpen = () => {
+    this.log('Session ready')
+    this.reconnectAttempts = 0
+    this.emit('Ready', this.setup)
+    this.flush()
+  }
+
+  private onMessage = (data: RawData) => {
+    const message = parseMessage(data.toString())
+    if (message) this.emit('Message', message)
+  }
+
+  private onStatusChange = (status: ReconnectingSocketStatus) => {
+    // An end of turn waiting for its audio waits for the next session instead
+    if (status !== 'open') this.clearPendingTimeout()
+    if (status === 'reconnecting') {
+      this.emit('Reconnecting', ++this.reconnectAttempts)
+    }
+  }
+
+  private onFailed = () => {
+    this.clearPending()
+    this.emit('Failed')
   }
 
   /**
@@ -114,8 +171,7 @@ export class LiveSocket extends EventEmitter<LiveSocketEvents> {
    */
   private flush() {
     while (this.pending.length > 0 && !this.pendingTimeout) {
-      const socket = this.socket
-      if (!this.connected || socket?.readyState !== WebSocket.OPEN) return
+      if (!this.socket.isOpen) return
       const message = this.pending[0]
       const input = message.realtimeInput
 
@@ -138,7 +194,7 @@ export class LiveSocket extends EventEmitter<LiveSocketEvents> {
       }
 
       this.pending.shift()
-      socket.send(JSON.stringify(message))
+      this.socket.send(JSON.stringify(message))
     }
   }
 
@@ -147,90 +203,12 @@ export class LiveSocket extends EventEmitter<LiveSocketEvents> {
     clearTimeout(this.pendingTimeout)
     this.pendingTimeout = undefined
   }
+}
 
-  private initWS(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(
-        `${URL}?key=${encodeURIComponent(this.options.apiKey)}`
-      )
-      this.socket = socket
-
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        this.closeSocket()
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-
-      socket.on('open', () => {
-        this.log('Connection opened')
-        socket.send(JSON.stringify(this.buildSetup()))
-      })
-
-      socket.on('error', (error) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.on('close', (code, reason) => {
-        clearTimeout(timeout)
-        const wasConnected = this.connected
-        this.closeSocket()
-        if (this.destroyed) return
-        this.log('Connection closed', { code, reason: reason.toString() })
-        if (wasConnected) {
-          this.reconnect()
-        } else {
-          reject(new Error(`Connection closed: ${reason.toString()}`))
-        }
-      })
-
-      socket.on('message', (data) => {
-        const message = JSON.parse(data.toString())
-        if (message.setupComplete) {
-          clearTimeout(timeout)
-          this.log('Session ready')
-          this.connected = true
-          this.retryCount = 0
-          this.emit('Ready')
-          this.flush()
-          resolve()
-          return
-        }
-        this.emit('Message', message)
-      })
-    })
-  }
-
-  private closeSocket() {
-    const socket = this.socket
-    this.socket = undefined
-    this.connected = false
-    this.clearPendingTimeout()
-    if (!socket) return
-    socket.removeAllListeners()
-    socket.on('error', () => {})
-    if (
-      socket.readyState === WebSocket.OPEN ||
-      socket.readyState === WebSocket.CONNECTING
-    ) {
-      socket.close(1000)
-    }
-  }
-
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      this.emit('Failed')
-      return
-    }
-    this.emit('Reconnecting', this.retryCount)
-    this.log('Reconnecting...')
-    this.reconnectTimeout = setTimeout(() => {
-      this.reconnectTimeout = undefined
-      this.connect()
-    }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
+function parseMessage(text: string): any {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
   }
 }

@@ -47,7 +47,6 @@ interface StreamedStep {
 
 export class GeminiAgent extends Agent<GeminiAgentOptions> {
   private genai: GoogleGenAI
-  private abortController?: AbortController
   // Gemini asks for the signature of the thought behind a tool call when the
   // call is sent back, and the conversation has no room for it
   private signatures = new Map<string, string>()
@@ -60,159 +59,179 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
         : new GoogleGenAI({ apiKey: options.apiKey })
   }
 
-  protected async generateAnswer(
+  protected generateAnswer(
     stream: PassThrough,
-    stepCount = 0,
-    tryCount = 0
+    signal: AbortSignal
+  ): Promise<void> {
+    return this.generateStep(stream, signal, 0)
+  }
+
+  /**
+   * Generates one step of the answer, retried on error.
+   *
+   * A retry starts the step over, so it only happens while nothing of the
+   * step reached the stream: what was said cannot be taken back, and saying
+   * it twice is worse than stopping there.
+   */
+  private async generateStep(
+    stream: PassThrough,
+    signal: AbortSignal,
+    stepCount: number
   ): Promise<void> {
     if (stepCount >= (this.options.maxSteps || DEFAULT_MAX_STEPS)) {
       console.error('[GeminiAgent] Max steps reached')
       return
     }
 
-    const abortController = new AbortController()
-    this.abortController = abortController
-    const signal = abortController.signal
+    const maxRetry = this.options.maxRetry ?? DEFAULT_MAX_RETRIES
+    for (let tryCount = 0; ; tryCount++) {
+      // Text of the answer written to the stream by this attempt
+      const progress = { answer: '' }
+      try {
+        const step = await this.streamStep(stream, signal, progress)
+        if (signal.aborted) return
+        this.recordAnswer(progress.answer)
 
-    // Prepare extracting
-    let extracting = false
-    const extractOptions = this.getExtractOptions()
-
-    try {
-      // Typed loosely: the conversation is built as plain JSON steps
-      const response = (await this.genai.interactions.create(
-        {
-          model: this.options.model || DEFAULT_MODEL,
-          store: false,
-          stream: true,
-          system_instruction: this.buildSystemInstruction(),
-          input: this.buildInput(),
-          tools: this.buildTools(),
-          ...(this.options.thinkingLevel || this.options.settings
-            ? {
-                generation_config: {
-                  ...this.options.settings,
-                  ...(this.options.thinkingLevel
-                    ? { thinking_level: this.options.thinkingLevel }
-                    : {}),
-                },
-              }
-            : {}),
-        } as any,
-        { fetchOptions: { signal } }
-      )) as unknown as AsyncIterable<any>
-
-      const steps: StreamedStep[] = []
-      let answer = ''
-      let skipAnswer = false
-      let calledTool = false
-      // The last thought, whose signature goes with the tool call after it
-      let signature = ''
-
-      for await (const event of response) {
-        if (abortController !== this.abortController) return
-
-        switch (event.event_type) {
-          case 'step.start':
-            steps[event.index] = {
-              type: event.step.type,
-              id: (event.step as any).id,
-              name: (event.step as any).name,
-              text: '',
-              arguments: '',
-              signature: '',
-            }
-            break
-
-          case 'step.delta': {
-            const step = steps[event.index]
-            if (!step) break
-            const delta = event.delta as any
-
-            if (delta.type === 'thought_signature') {
-              step.signature += delta.signature ?? ''
-            } else if (delta.type === 'arguments_delta') {
-              step.arguments += delta.arguments ?? ''
-            } else if (delta.type === 'text' && step.type === 'model_output') {
-              this.log(`Answer chunk: "${delta.text}"`)
-              answer += delta.text
-
-              // Extracting value?
-              if (extractOptions) {
-                if (extracting) break
-                const startTagIndex = delta.text.indexOf(
-                  extractOptions.startTag
-                )
-                if (startTagIndex !== -1) {
-                  extracting = true
-                  stream.write(delta.text.slice(0, startTagIndex).trimEnd())
-                  break
-                }
-              }
-              stream.write(delta.text)
-            }
-            break
-          }
-
-          case 'step.stop': {
-            const step = steps[event.index]
-            if (step?.type === 'thought') signature = step.signature
-            if (step?.type !== 'function_call' || !step.id || !step.name) break
-
-            calledTool = true
-            if (signature) this.signatures.set(step.id, signature)
-            const result = await this.executeTool({
-              role: 'tool_call',
-              toolCallId: step.id,
-              toolName: step.name,
-              parameters: step.arguments || '{}',
-            })
-            if (result.skipAnswer) skipAnswer = true
-            break
-          }
-
-          case 'error':
-            throw new Error(event.error?.message || 'Generation failed')
-
-          default:
-            break
+        // Query again when the model called a tool without answering, so the
+        // turn still produces something to say
+        if (step.calledTool && !step.skipAnswer && !progress.answer) {
+          await this.generateStep(stream, signal, stepCount + 1)
         }
-      }
+        return
+      } catch (error) {
+        if (signal.aborted) return
+        console.error('[GeminiAgent] Error answering:', error)
 
-      if (abortController !== this.abortController) return
-      this.abortController = undefined
-
-      if (answer) {
-        const { message, metadata } = this.extract(answer)
-        this.addAssistantMessage(message, metadata)
-      }
-
-      // Query again when the model called a tool without answering, so the
-      // turn still produces something to say
-      if (calledTool && !skipAnswer && !answer) {
-        await this.generateAnswer(stream, stepCount + 1)
-      }
-    } catch (error) {
-      if (signal.aborted) return
-      console.error('[GeminiAgent] Error answering:', error)
-
-      if (tryCount < (this.options.maxRetry ?? DEFAULT_MAX_RETRIES)) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-        )
-        await this.generateAnswer(stream, stepCount, tryCount + 1)
-      } else {
-        this.log('Max retries reached, giving up')
-        this.emit('Failed')
+        if (progress.answer) {
+          this.log('Error after part of the answer was said, keeping it')
+          this.recordAnswer(progress.answer)
+          return
+        }
+        if (tryCount >= maxRetry) {
+          this.log('Max retries reached, giving up')
+          this.emit('Failed')
+          return
+        }
+        await sleep(this.options.retryDelay ?? DEFAULT_RETRY_DELAY, signal)
+        if (signal.aborted) return
       }
     }
   }
 
-  cancel() {
-    if (!this.abortController) return
-    this.log('Cancel')
-    this.abortController.abort()
-    this.abortController = undefined
+  /** Streams one request, writing the text of the answer as it comes */
+  private async streamStep(
+    stream: PassThrough,
+    signal: AbortSignal,
+    progress: { answer: string }
+  ) {
+    // Prepare extracting
+    let extracting = false
+    const extractOptions = this.getExtractOptions()
+
+    // Typed loosely: the conversation is built as plain JSON steps
+    const response = (await this.genai.interactions.create(
+      {
+        model: this.options.model || DEFAULT_MODEL,
+        store: false,
+        stream: true,
+        system_instruction: this.buildSystemInstruction(),
+        input: this.buildInput(),
+        tools: this.buildTools(),
+        ...(this.options.thinkingLevel || this.options.settings
+          ? {
+              generation_config: {
+                ...this.options.settings,
+                ...(this.options.thinkingLevel
+                  ? { thinking_level: this.options.thinkingLevel }
+                  : {}),
+              },
+            }
+          : {}),
+      } as any,
+      { signal }
+    )) as unknown as AsyncIterable<any>
+
+    const steps: StreamedStep[] = []
+    let skipAnswer = false
+    let calledTool = false
+    // The last thought, whose signature goes with the tool call after it
+    let signature = ''
+
+    for await (const event of response) {
+      if (signal.aborted) break
+
+      switch (event.event_type) {
+        case 'step.start':
+          steps[event.index] = {
+            type: event.step.type,
+            id: (event.step as any).id,
+            name: (event.step as any).name,
+            text: '',
+            arguments: '',
+            signature: '',
+          }
+          break
+
+        case 'step.delta': {
+          const step = steps[event.index]
+          if (!step) break
+          const delta = event.delta as any
+
+          if (delta.type === 'thought_signature') {
+            step.signature += delta.signature ?? ''
+          } else if (delta.type === 'arguments_delta') {
+            step.arguments += delta.arguments ?? ''
+          } else if (delta.type === 'text' && step.type === 'model_output') {
+            this.log(`Answer chunk: "${delta.text}"`)
+            progress.answer += delta.text
+
+            // Extracting value?
+            if (extractOptions) {
+              if (extracting) break
+              const startTagIndex = delta.text.indexOf(extractOptions.startTag)
+              if (startTagIndex !== -1) {
+                extracting = true
+                stream.write(delta.text.slice(0, startTagIndex).trimEnd())
+                break
+              }
+            }
+            stream.write(delta.text)
+          }
+          break
+        }
+
+        case 'step.stop': {
+          const step = steps[event.index]
+          if (step?.type === 'thought') signature = step.signature
+          if (step?.type !== 'function_call' || !step.id || !step.name) break
+
+          calledTool = true
+          if (signature) this.signatures.set(step.id, signature)
+          const result = await this.executeTool({
+            role: 'tool_call',
+            toolCallId: step.id,
+            toolName: step.name,
+            parameters: step.arguments || '{}',
+          })
+          if (result.skipAnswer) skipAnswer = true
+          break
+        }
+
+        case 'error':
+          throw new Error(event.error?.message || 'Generation failed')
+
+        default:
+          break
+      }
+    }
+
+    return { calledTool, skipAnswer }
+  }
+
+  private recordAnswer(answer: string) {
+    if (!answer) return
+    const { message, metadata } = this.extract(answer)
+    this.addAssistantMessage(message, metadata)
   }
 
   private buildSystemInstruction(): string {
@@ -291,6 +310,19 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
       }
     })
   }
+}
+
+/** Waits, or less if the signal is aborted meanwhile */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', done)
+      resolve()
+    }
+    const timer = setTimeout(done, ms)
+    signal.addEventListener('abort', done)
+  })
 }
 
 function parseArguments(parameters: string): unknown {

@@ -52,8 +52,9 @@ import { useCallback } from 'react'
 
 function CallScreen() {
   useMicdropEndCall(
-    useCallback(() => {
-      Micdrop.stop()
+    useCallback(async () => {
+      // The goodbye is heard before the screen closes
+      await Micdrop.stopAfterAnswer()
       navigation.goBack()
     }, [navigation])
   )

@@ -88,6 +88,10 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 | `onBeforeAnswer`      | `function`                                                                                                                        | `undefined`              | Hook called before answer generation, returns `true` to skip it or a text to answer instead |
 | `settings`            | `object`                                                                                                                          | `{}`                     | Additional Mistral AI API parameters                                     |
 
+### Cancellation and Retries
+
+When the user interrupts, the request to Mistral is aborted and the unfinished answer stays out of the conversation. A request that fails before writing anything is retried up to `maxRetry` times, `retryDelay` apart, unless the answer was cancelled meanwhile. A request cut off after part of the answer reached the stream ends there, and the part already spoken is the answer recorded, so no sentence is ever spoken twice.
+
 ### Available Models
 
 Mistral AI offers several models you can choose from:
@@ -186,6 +190,10 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 | `transcriptionTimeout`   | `number`               | `4000`                                    | Timeout in milliseconds to wait for transcription      |
 | `retryDelay`             | `number`               | `1000`                                    | Delay in milliseconds between reconnection attempts    |
 | `maxRetry`               | `number`               | `3`                                       | Maximum number of reconnection attempts before failing |
+
+Each stream given to `transcribe()` is one utterance and gets exactly one `Transcript` event, sent when Mistral finalizes the utterance after its flush. With no answer within `transcriptionTimeout`, the utterance is emitted with the text received so far, and the late answer is discarded so it never lands on the next utterance.
+
+A connection that drops, even a clean close by Mistral, is opened again within a budget of `maxRetry` attempts in a row, `retryDelay` apart, and the audio of every utterance still waiting for its transcript is sent again. Once the budget runs out, `Failed` hands that audio back, and the next utterance tries to connect again.
 
 The Micdrop client streams 16kHz PCM16 mono audio, which matches Voxtral's default input format, so no resampling is required.
 

@@ -78,152 +78,158 @@ stt.logger = new Logger('CustomSTT')
 
 ### Creating a Real-time STT Implementation
 
-For services that support real-time streaming transcription:
+For services that support real-time streaming transcription. The server gives
+each utterance its own stream and expects exactly one `Transcript` per stream,
+in the order they were spoken, even when a new utterance starts before the
+transcript of the previous one came back.
 
 ```typescript
-import { STT } from '@micdrop/server'
+import { ReconnectingSocket, STT } from '@micdrop/server'
 import { Readable } from 'stream'
-import WebSocket from 'ws'
+
+interface Utterance {
+  chunks: Buffer[]
+  ended: boolean
+  text: string
+  timeout?: NodeJS.Timeout
+}
 
 export class CustomRealtimeSTT extends STT {
-  private socket?: WebSocket
-  private reconnectTimeout?: NodeJS.Timeout
-  private keepAliveInterval?: NodeJS.Timeout
+  private socket: ReconnectingSocket
+  // Waiting for their transcript, in the order they were spoken
+  private utterances: Utterance[] = []
 
-  constructor(
-    private options: {
-      apiKey: string
-      language?: string
-    }
-  ) {
+  constructor(private options: { apiKey: string; language?: string }) {
     super()
+    this.socket = new ReconnectingSocket({
+      url: `wss://api.example.com/v1/stream?key=${options.apiKey}`,
+      // The session is ready once the service accepts its configuration
+      handshake: {
+        start: (socket) =>
+          socket.send(
+            JSON.stringify({ type: 'config', language: options.language })
+          ),
+        read: (data) => JSON.parse(data.toString()).type === 'ready',
+      },
+      keepAlive: { interval: 30000, message: '{"type":"ping"}' },
+      log: (...message) => this.log(...message),
+    })
+    this.socket.on('Open', this.onOpen)
+    this.socket.on('Message', (data) =>
+      this.handleMessage(JSON.parse(data.toString()))
+    )
+    this.socket.on('Failed', this.onFailed)
+    this.socket.connect()
   }
 
-  async transcribe(audioStream: Readable) {
-    // Initialize WebSocket connection
-    await this.initConnection()
+  transcribe(audioStream: Readable) {
+    const utterance: Utterance = { chunks: [], ended: false, text: '' }
+    this.utterances.push(utterance)
 
-    // Process incoming audio chunks
     audioStream.on('data', (chunk: Buffer) => {
-      this.processAudioChunk(chunk)
+      utterance.chunks.push(chunk)
+      // Without a connection, the chunk goes out with the others on `Open`
+      this.socket.send(chunk)
     })
 
     audioStream.on('end', () => {
-      this.finalizeStream()
-    })
-
-    audioStream.on('error', (error) => {
-      this.log('Audio stream error:', error)
-      this.emit('error', error)
-    })
-  }
-
-  private async initConnection() {
-    if (this.socket) return
-    const wsUrl = `wss://api.example.com/v1/stream?key=${this.options.apiKey}`
-
-    this.socket = new WebSocket(wsUrl)
-
-    this.socket.addEventListener('open', () => {
-      this.log('Connected to STT service')
-      this.sendConfiguration()
-      this.startKeepAlive()
-    })
-
-    this.socket.addEventListener('message', (event) => {
-      this.handleMessage(JSON.parse(event.data))
-    })
-
-    this.socket.addEventListener('error', (error) => {
-      this.log('WebSocket error:', error)
-      this.emit('error', error)
-    })
-
-    this.socket.addEventListener('close', ({ code, reason }) => {
-      this.log(`Connection closed: ${code} ${reason}`)
-      if (code !== 1000) {
-        this.reconnect()
-      }
-    })
-  }
-
-  private sendConfiguration() {
-    if (!this.socket) return
-
-    const config = {
-      type: 'config',
-      language: this.options.language || 'en',
-      encoding: 'pcm',
-      interim_results: true,
-    }
-
-    this.socket.send(JSON.stringify(config))
-  }
-
-  private processAudioChunk(chunk: Buffer) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(chunk)
-    }
-  }
-
-  private handleMessage(message: any) {
-    switch (message.type) {
-      case 'transcript':
-        if (message.is_final && message.text) {
-          this.log(`Final transcript: "${message.text}"`)
-          this.emit('Transcript', message.text)
-        }
-        break
-
-      case 'error':
-        this.log('Service error:', message.error)
-        this.emit('error', new Error(message.error))
-        break
-
-      case 'ping':
-        this.socket?.send(JSON.stringify({ type: 'pong' }))
-        break
-    }
-  }
-
-  private finalizeStream() {
-    if (this.socket?.readyState === WebSocket.OPEN) {
+      utterance.ended = true
       this.socket.send(JSON.stringify({ type: 'end_stream' }))
-    }
-  }
-
-  private startKeepAlive() {
-    this.keepAliveInterval = setInterval(() => {
-      if (this.socket?.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: 'ping' }))
-      }
-    }, 30000)
-  }
-
-  private reconnect() {
-    this.log('Attempting reconnection...')
-    this.reconnectTimeout = setTimeout(() => {
-      this.initConnection().catch(() => this.reconnect())
-    }, 1000)
+      // A transcript that never comes still settles the utterance
+      utterance.timeout = setTimeout(() => this.finish(utterance), 4000)
+    })
   }
 
   destroy() {
     super.destroy()
+    this.utterances.forEach((utterance) => clearTimeout(utterance.timeout))
+    this.utterances = []
+    this.socket.destroy()
+  }
 
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
+  // A new session knows nothing of the previous one: the audio waiting for a
+  // transcript goes again
+  private onOpen = ({ reconnected }: { reconnected: boolean }) => {
+    if (!reconnected) return
+    for (const utterance of this.utterances) {
+      utterance.text = ''
+      utterance.chunks.forEach((chunk) => this.socket.send(chunk))
+      if (utterance.ended) {
+        this.socket.send(JSON.stringify({ type: 'end_stream' }))
+      }
     }
+  }
 
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval)
+  private handleMessage(message: any) {
+    // The service answers in order, so its words belong to the oldest one
+    const utterance = this.utterances[0]
+    if (!utterance) return
+    if (message.type === 'transcript' && message.is_final) {
+      utterance.text += message.text
+    } else if (message.type === 'stream_ended') {
+      this.finish(utterance)
     }
+  }
 
-    if (this.socket) {
-      this.socket.close(1000, 'Client disconnect')
+  private finish(utterance: Utterance) {
+    if (!this.utterances.includes(utterance)) return
+    // Those spoken before go first, with what they have
+    while (this.utterances.length > 0) {
+      const first = this.utterances.shift()!
+      clearTimeout(first.timeout)
+      this.emit('Transcript', first.text.trim())
+      if (first === utterance) break
     }
+  }
+
+  // Every retry failed: the audio goes back to the caller, a FallbackSTT
+  // for instance
+  private onFailed = () => {
+    const chunks = this.utterances.flatMap((utterance) => utterance.chunks)
+    this.utterances.forEach((utterance) => clearTimeout(utterance.timeout))
+    this.utterances = []
+    this.emit('Failed', chunks)
   }
 }
 ```
+
+### Connecting over a WebSocket
+
+`ReconnectingSocket` holds the connection of a provider and reconnects on its
+own, so an integration only deals with its protocol. It tries one connection at
+a time, gives up after `maxRetry` failed attempts in a row, reconnects after a
+close from the server whatever its code, and silences a socket it left behind
+so it never acts on the next one. A connection that closes before it proved
+usable, with a handshake, a first message or by staying open, counts as a
+failed attempt.
+
+| Option              | Type                                        | Default | Description                                              |
+| ------------------- | ------------------------------------------- | ------- | -------------------------------------------------------- |
+| `url`               | `string \| () => string \| Promise<string>` |         | Address, or a function giving it for each attempt        |
+| `clientOptions`     | `ClientOptions`                             |         | Options of the `ws` client, headers included             |
+| `connectionTimeout` | `number`                                    | `5000`  | How long an attempt may take, handshake included, in ms  |
+| `retryDelay`        | `number`                                    | `1000`  | Delay before a new attempt, in ms                        |
+| `maxRetry`          | `number`                                    | `3`     | Failed attempts in a row before giving up                |
+| `handshake`         | `{ start?, read? }`                         |         | Sets the session up before the connection counts as open |
+| `keepAlive`         | `{ interval, message }`                     |         | Message sent on a regular basis while open               |
+| `log`               | `(...message) => void`                      |         | Receives the log lines                                   |
+
+`status` reads `idle`, `connecting`, `open`, `reconnecting`, `failed` or
+`destroyed`, and `isOpen` tells whether a message sent now goes out. `send()`
+returns false when the message did not go out, and
+`ready()` resolves to true once open, or to false if the connection failed or
+was destroyed meanwhile. `restart()` drops the connection for a new one right
+away, for a provider that can only stop a synthesis by closing. After `failed`,
+`connect()` starts over with a full budget. `destroy()` closes the connection
+for good, a retry still waiting included, and settles `ready()` with false.
+
+| Event          | Payload                    | Description                                             |
+| -------------- | -------------------------- | ------------------------------------------------------- |
+| `Open`         | `{ reconnected: boolean }` | The moment to send again what a dropped connection lost |
+| `Message`      | `RawData, boolean`         | A message, once the handshake is done                   |
+| `Close`        | `number, string`           | The connection dropped, a new attempt follows           |
+| `Failed`       | `Error`                    | Every retry failed                                      |
+| `StatusChange` | `ReconnectingSocketStatus` | The status changed                                      |
 
 ### Using CustomRealtimeSTT with MicdropServer
 

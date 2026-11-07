@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Never read `.env`. You can read `.env.example`.
 - Don't co-author git commits with Claude.
+- Never run a test or a script that calls a paid API (the e2e suite included) without the user's approval for that run.
 - Never commit or push without explicit user approval, even for small follow-up fixes. One approval covers one commit, not the whole session.
 - Before committing changes to a package in `packages/`, propose a version bump for each modified package. A pushed version bump publishes it to npm (`.github/workflows/publish.yml`).
 - A new package in `packages/` can't be published by the workflow until it has a trusted publisher. Give the user these commands to run before pushing its first version:
@@ -34,7 +35,7 @@ Follow this Prettierformatting for all Typescript code.
 
 ## Monorepo Structure
 
-This is a pnpm monorepo with packages in `packages/`, examples in `examples/`, and the public site in `website/`. Each package can be developed independently by running `pnpm dev` in the package directory.
+This is a pnpm monorepo with packages in `packages/`, examples in `examples/`, the public site in `website/`, and the end-to-end tests of the integrations in `e2e/` (`pnpm test:e2e`, real paid APIs). Each package can be developed independently by running `pnpm dev` in the package directory.
 
 ### Core Architecture
 

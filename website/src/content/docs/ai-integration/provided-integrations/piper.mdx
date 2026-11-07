@@ -94,10 +94,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ## Events
 
-| Event    | Payload    | Description                                                      |
-| -------- | ---------- | ---------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played. |
-| `Failed` | `string[]` | The Piper process exited with an error. The payload stays empty. |
+| Event    | Payload    | Description                                                                                                   |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                              |
+| `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
@@ -146,12 +146,12 @@ speakers. Micdrop reads that file at startup and resamples the audio to the
 Piper costs nothing per minute, since it runs on your own machine. It uses time
 and memory instead, measured here on the CPU of a MacBook Pro M2:
 
-| Measure                                | Piper                                 |
-| -------------------------------------- | ------------------------------------- |
-| First sound, voice loaded              | ~390 ms                               |
-| Loading the voice                      | ~1 s                                  |
-| Three sentences in one process         | About the same time as one sentence   |
-| Memory                                 | About the size of the voice file      |
+| Measure                        | Piper                               |
+| ------------------------------ | ----------------------------------- |
+| First sound, voice loaded      | ~390 ms                             |
+| Loading the voice              | ~1 s                                |
+| Three sentences in one process | About the same time as one sentence |
+| Memory                         | About the size of the voice file    |
 
 Three sentences take about as long as one because loading the voice takes up
 almost all of that time. The Piper process holds about as much memory as its
@@ -166,9 +166,14 @@ Loading a voice takes about a second, while synthesizing a sentence adds almost
 nothing on top of it. `PiperTTS` starts the process as soon as you construct it
 and keeps it alive across sentences, so the voice loads once per call.
 
-When the user interrupts, `PiperTTS` kills the process to cut the audio at once,
-then starts a new one right away. The new process loads its voice while the
-user is still speaking and is ready by the time the next answer begins.
+When the user interrupts while Piper is still writing audio, `PiperTTS` kills
+the process to cut that audio at once, then starts a new one right away. The new
+process loads its voice while the user is still speaking and is ready by the
+time the next answer begins. A process that has finished writing, quiet for a
+second, holds nothing back and stays as it is.
+
+When the binary cannot be found or run, `PiperTTS` emits `Failed` once and
+leaves the process stopped for the rest of the call.
 
 <Callout type="tip">
   The whole answer is usually ready before the user has finished hearing its

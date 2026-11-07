@@ -168,6 +168,12 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   private startTime = Date.now()
   private lastMessageSpeeched?: MicdropConversationItem
+  // Bumped by every cancel, so an answer cancelled before its first word can
+  // tell, and leave its message to the answer that replaces it
+  private cancelRound = 0
+  // Counts the assistant messages sent, so the partial answer of one already
+  // settled is not sent after it
+  private assistantMessages = 0
 
   // Holds the conversation when no agent does, and keeps it readable once the
   // call is over and the config is gone
@@ -184,6 +190,9 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   // and not the next one
   private turnComplete?: Promise<boolean>
   private heldTurnTimer?: ReturnType<typeof setTimeout>
+  // Bumped whenever the user speaks again or mutes, so a decision taken on an
+  // earlier stretch of speech is dropped rather than answering over them
+  private turnRound = 0
 
   constructor(socket: WebSocket, config: MicdropConfig) {
     super()
@@ -291,6 +300,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   }
 
   public cancel() {
+    this.cancelRound++
     // The user speaks again: the turn goes on, and is classified again whole
     this.config?.classifier?.cancel()
     this.config?.tts?.cancel()
@@ -299,10 +309,14 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.operationQueue = []
   }
 
-  private onClose = () => {
+  private onClose = (code?: number, reason?: Buffer) => {
     this.releaseHeldTurn()
     if (!this.config) return
-    this.log('Connection closed')
+    // 1005 when the client stopped the call, 1001 when its page went away
+    this.log('Connection closed', {
+      code,
+      reason: reason?.toString() || undefined,
+    })
     const duration = Math.round((Date.now() - this.startTime) / 1000)
     const conversation = this.conversation
 
@@ -363,6 +377,8 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   }
 
   private onMute() {
+    this.turnRound++
+    this.releaseHeldTurn()
     this.userSpeechChunks = 0
     this.currentUserStream?.end()
     this.currentUserStream = undefined
@@ -372,6 +388,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   private onStartSpeaking() {
     if (!this.config) return
+    this.turnRound++
     this.userSpeechChunks = 0
     this.currentUserStream?.end()
     this.currentUserStream = new PassThrough()
@@ -438,7 +455,10 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   /** Answers, unless the sentence sounds like it has more coming */
   private async answerUserTurn() {
+    const round = this.turnRound
     const complete = await (this.turnComplete ?? Promise.resolve(true))
+    // The user spoke again while the detector was thinking: the turn goes on
+    if (round !== this.turnRound || !this.config) return
     if (!complete) {
       this.log('Waiting for the rest of the sentence')
       this.socket?.send(MicdropServerCommands.SkipAnswer)
@@ -556,6 +576,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       `${MicdropServerCommands.Message} ${JSON.stringify(message)}`
     )
     this.emit('Message', message)
+    if (message.role === 'assistant') this.assistantMessages++
 
     // A transcript landed, or the application added a user message
     // A realtime model answers on its own, so its turn ends with its
@@ -623,9 +644,11 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       return
     }
     this.lastMessageSpeeched = lastMessage
+    const round = this.cancelRound
 
     try {
       // LLM: Generate answer
+      const sentBefore = this.assistantMessages
       const stream = this.config.agent.answer()
 
       // TTS: Generate answer audio, unless there is nothing to say.
@@ -639,9 +662,15 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
       if (await hasContent(stream)) {
         await this._speak(
           this.config.partialMessages
-            ? this.forwardPartialAnswer(stream)
+            ? this.forwardPartialAnswer(stream, sentBefore)
             : stream
         )
+      } else if (round !== this.cancelRound) {
+        // Cancelled before a word, so the message is still unanswered: the
+        // answer that cancelled this one is free to answer it
+        if (this.lastMessageSpeeched === lastMessage) {
+          this.lastMessageSpeeched = undefined
+        }
       } else {
         this.socket?.send(MicdropServerCommands.SkipAnswer)
       }
@@ -651,10 +680,19 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     }
   }
 
-  /** Sends the answer to the client as it is written, ahead of the voice */
-  private forwardPartialAnswer(stream: Readable): Readable {
+  /**
+   * Sends the answer to the client as it is written, ahead of the voice.
+   *
+   * The stream reaches here a moment after the agent wrote it, so the agent
+   * can record the complete message first, which the client then shows. A
+   * partial answer arriving after it would show the answer twice, so the
+   * forwarding stops once the message is sent.
+   */
+  private forwardPartialAnswer(stream: Readable, sentBefore: number): Readable {
     let content = ''
-    const send = (text: string) => this.sendPartialAnswer(text)
+    const send = (text: string) => {
+      if (this.assistantMessages === sentBefore) this.sendPartialAnswer(text)
+    }
     const forward = new Transform({
       transform(chunk, _encoding, callback) {
         content += chunk.toString()

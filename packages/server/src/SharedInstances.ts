@@ -53,9 +53,23 @@ export class SharedInstances<T> {
     return loading
   }
 
+  /** The instance for this key, loaded or being loaded, without loading it. */
+  get(key: unknown): Promise<T> | undefined {
+    return this.entries.get(typeof key === 'string' ? key : JSON.stringify(key))
+  }
+
   /** Whether an instance is loaded, or being loaded, for this key. */
   has(key: unknown): boolean {
     return this.entries.has(typeof key === 'string' ? key : JSON.stringify(key))
+  }
+
+  /**
+   * Forgets the instance for this key, so the next call loads a new one. For
+   * an instance that broke, a crashed worker for instance. Releasing what it
+   * holds is left to the caller.
+   */
+  delete(key: unknown): void {
+    this.entries.delete(typeof key === 'string' ? key : JSON.stringify(key))
   }
 
   /** Drops every instance, so the next call loads again. */

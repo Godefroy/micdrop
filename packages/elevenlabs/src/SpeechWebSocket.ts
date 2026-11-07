@@ -1,8 +1,7 @@
 import type { VoiceSettings } from '@elevenlabs/elevenlabs-js/api'
 import { Readable } from 'stream'
-import WebSocket from 'ws'
 import {
-  closeSocket,
+  ElevenLabsConnection,
   ElevenLabsWebSocket,
   ElevenLabsWebSocketHost,
 } from './ElevenLabsWebSocket'
@@ -17,40 +16,72 @@ import {
 // API Reference: https://elevenlabs.io/docs/api-reference/text-to-speech/v-1-text-to-speech-voice-id-stream-input
 
 const WS_INACTIVITY_TIMEOUT = 180
-const DEFAULT_CONNECTION_TIMEOUT = 5000
-const DEFAULT_RETRY_DELAY = 1000
-const DEFAULT_MAX_RETRY = 3
+
+/**
+ * Where the utterance stands.
+ *
+ * - `idle`: nothing is being spoken
+ * - `speaking`: the text stream is still coming
+ * - `flushed`: the text stream ended and was flushed, its audio is coming
+ */
+type UtteranceState = 'idle' | 'speaking' | 'flushed'
 
 /**
  * The Text to Speech WebSocket, for Flash, Multilingual v2 and Turbo v2.5.
+ *
+ * Its messages carry no utterance ID, and nothing in the protocol stops a
+ * synthesis once it is sent. So cancelling drops the connection and opens a
+ * fresh one, while the user is still speaking, and the audio of the cancelled
+ * utterance is never heard of again.
  */
 export class SpeechWebSocket implements ElevenLabsWebSocket {
-  private socket?: WebSocket
-  private initPromise: Promise<void>
-  private isProcessing = false
-  private textEnded = false // Whether the text stream has ended
-  private textSent = '' // Text sent to ElevenLabs
-  private textBuffer = '' // Buffer of text to send to ElevenLabs
-  private receivedAudioText = '' // Text of chunks received from ElevenLabs
-  private keepAliveInterval?: NodeJS.Timeout
-  private reconnectTimeout?: NodeJS.Timeout
-  private connectionTimeout?: NodeJS.Timeout
-  private retryCount = 0
-  private destroyed = false
-  private canceled = false
+  private readonly connection: ElevenLabsConnection
+  private state: UtteranceState = 'idle'
   // Bumped by every speak() and every cancel(), so a stream that starts late
   // can tell whether it is still the one that should be heard.
   private generation = 0
+  // Generation of the stream being spoken. A speak() that never carries a
+  // word leaves it in place, so the sentence it sends goes on to its end.
+  private speaking = 0
+  private textSent = '' // Text of the utterance sent to ElevenLabs
+  private textBuffer = '' // Text not sent yet, held until its word is complete
+  private heardUntil = 0 // Index in textSent where the audio received ends
 
   constructor(
     private readonly options: ElevenLabsTTSOptions,
     private readonly host: ElevenLabsWebSocketHost
   ) {
-    // Setup WebSocket connection
-    this.initPromise = this.initWS().catch((error) => {
-      console.error('[ElevenLabsTTS] Connection error:', error)
-      this.reconnect()
+    // Build query params
+    const params = new URLSearchParams()
+    params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
+    params.append(
+      'output_format',
+      this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
+    )
+    params.append('inactivity_timeout', WS_INACTIVITY_TIMEOUT.toString())
+    const voiceSettings = toWireVoiceSettings(this.options.voiceSettings)
+    if (voiceSettings) {
+      params.append('voice_settings', JSON.stringify(voiceSettings))
+    }
+    if (this.options.language) {
+      params.append('language_code', this.options.language)
+    }
+
+    this.connection = new ElevenLabsConnection({
+      url: `wss://api.elevenlabs.io/v1/text-to-speech/${this.options.voiceId}/stream-input?${params.toString()}`,
+      tts: options,
+      // Initialization message with voice settings
+      init: { text: ' ', voice_settings: voiceSettings },
+      keepAlive: {
+        interval: (WS_INACTIVITY_TIMEOUT - 1) * 1000,
+        message: { text: ' ' },
+      },
+      host,
+      onOpen: () => this.resume(),
+      onMessage: (message) => this.onMessage(message),
+      onFailed: () => this.onFailed(),
     })
+    this.connection.connect()
   }
 
   speak(textStream: Readable) {
@@ -66,198 +97,125 @@ export class SpeechWebSocket implements ElevenLabsWebSocket {
     // over, loses the state of a sentence still being spoken and flushes it
     // for nothing.
     const start = () => {
-      if (started) return true
+      if (started) return this.speaking === generation
       // Cancelled, or superseded by another speak(), before the first word.
       if (this.generation !== generation) return false
       started = true
-      this.canceled = false
-      this.isProcessing = true
-      this.textEnded = false
-      this.textBuffer = ''
-      this.textSent = ''
-      this.receivedAudioText = ''
+      // The utterance still being synthesized is superseded: drop it with
+      // its connection. Otherwise connect again if the last one gave up.
+      if (this.state !== 'idle') this.connection.restart()
+      else this.connection.connect()
+      this.resetUtterance()
+      this.speaking = generation
+      this.state = 'speaking'
       return true
     }
 
     // Forward text chunks coming from the caller to ElevenLabs
     textStream.on('data', async (chunk: Buffer) => {
       if (!start()) return
-      if (this.canceled) return
-      const text = chunk.toString('utf-8').replace(/[\r\n ]+/g, ' ')
-      this.textSent += text
+      this.textBuffer += chunk.toString('utf-8').replace(/[\r\n ]+/g, ' ')
+      if (!(await this.connection.ready())) return
+      if (this.speaking !== generation) return
 
-      await this.initPromise
-
-      const spaceIndex = text.lastIndexOf(' ')
-      if (spaceIndex === -1) {
-        this.textBuffer += text
-      } else {
-        this.sendTranscript(this.textBuffer + text.slice(0, spaceIndex + 1))
-        this.textBuffer = text.slice(spaceIndex + 1)
-      }
+      // Only send complete words
+      const spaceIndex = this.textBuffer.lastIndexOf(' ')
+      if (spaceIndex === -1) return
+      this.sendTranscript(this.textBuffer.slice(0, spaceIndex + 1))
+      this.textBuffer = this.textBuffer.slice(spaceIndex + 1)
     })
 
     textStream.on('error', (error) => {
-      if (!started) return
+      if (!started || this.speaking !== generation) return
       this.log('Error in text stream, ending audio stream', error)
-      this.isProcessing = false
+      // The text sent so far is still spoken, the rest is dropped
+      this.speaking = 0
+      this.textBuffer = ''
+      this.flush()
     })
 
     textStream.on('end', async () => {
       // Nothing was ever said, so there is nothing to flush.
-      if (!started || this.canceled) return
-      await this.initPromise
+      if (!started) return
+      if (!(await this.connection.ready())) return
+      if (this.speaking !== generation) return
       // Send last buffered text
       if (this.textBuffer.trim()) {
         this.sendTranscript(this.textBuffer + ' ')
-        this.textBuffer = ''
       }
-      this.textEnded = true
-      // Flush buffered text and mark end of utterance.
-      this.socket?.send(JSON.stringify({ text: ' ', flush: true }))
-      this.log('Flushed text')
+      this.textBuffer = ''
+      this.flush()
     })
   }
 
   cancel() {
     this.generation++
-    if (!this.isProcessing) return
+    this.speaking = 0
+    if (this.state === 'idle') return
     this.log('Cancel')
-
-    this.canceled = true
-    this.textSent = ''
-    this.receivedAudioText = ''
-    this.isProcessing = false
-
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ text: ' ', flush: true }))
-    }
+    this.resetUtterance()
+    this.connection.restart()
   }
 
   destroy() {
-    this.destroyed = true
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    if (this.connectionTimeout) {
-      clearTimeout(this.connectionTimeout)
-      this.connectionTimeout = undefined
-    }
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval)
-      this.keepAliveInterval = undefined
-    }
-    if (this.socket) closeSocket(this.socket)
-    this.socket = undefined
-    this.isProcessing = false
+    this.generation++
+    this.speaking = 0
+    this.resetUtterance()
+    this.connection.destroy()
   }
 
-  private initWS(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Build query params
-      const params = new URLSearchParams()
-      params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
-      params.append(
-        'output_format',
-        this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
-      )
-      params.append('inactivity_timeout', WS_INACTIVITY_TIMEOUT.toString())
-      const voiceSettings = toWireVoiceSettings(this.options.voiceSettings)
-      if (voiceSettings) {
-        params.append('voice_settings', JSON.stringify(voiceSettings))
-      }
-      if (this.options.language) {
-        params.append('language_code', this.options.language)
-      }
+  /** Flushes buffered text and marks the end of the utterance */
+  private flush() {
+    this.state = 'flushed'
+    this.connection.send({ text: ' ', flush: true })
+    this.log('Flushed text')
+    this.checkEnded()
+  }
 
-      const uri = `wss://api.elevenlabs.io/v1/text-to-speech/${this.options.voiceId}/stream-input?${params.toString()}`
+  /**
+   * Sends the text of the utterance in flight again on a new connection. The
+   * server lost what it was generating, so it goes on from the audio received.
+   */
+  private resume() {
+    if (this.state === 'idle') return
+    // Audio can stop inside a word, which goes again whole rather than from
+    // its middle
+    const wordStart = this.textSent.lastIndexOf(' ', this.heardUntil - 1) + 1
+    const unheard = this.textSent.slice(wordStart)
+    this.textSent = ''
+    this.heardUntil = 0
+    if (unheard.trim()) {
+      this.log('Sending text chunks again')
+      this.sendTranscript(unheard)
+    }
+    if (this.state === 'flushed') this.flush()
+  }
 
-      // Connect to ElevenLabs
-      const socket = new WebSocket(uri, {
-        headers: {
-          'xi-api-key': this.options.apiKey,
-        },
-      })
-      this.socket = socket
+  /** Every retry failed: hands the unspoken text over and drops the utterance */
+  private onFailed() {
+    const unspoken =
+      this.state === 'idle'
+        ? ''
+        : this.textSent.slice(this.heardUntil) + this.textBuffer
+    this.speaking = 0
+    this.resetUtterance()
+    this.host.failed(unspoken.trim() ? [unspoken] : [])
+  }
 
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        closeSocket(socket)
-        this.socket = undefined
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-      this.connectionTimeout = timeout
-
-      socket.addEventListener('open', () => {
-        clearTimeout(timeout)
-        this.log('Connection opened')
-
-        // Send initialization / keep-alive message with voice settings
-        this.socket?.send(
-          JSON.stringify({
-            text: ' ',
-            voice_settings: voiceSettings,
-          })
-        )
-
-        // Start keep-alive interval
-        this.keepAliveInterval = setInterval(
-          () => {
-            if (this.socket?.readyState === WebSocket.OPEN) {
-              this.log('Sending keep-alive message')
-              this.socket.send(JSON.stringify({ text: ' ' }))
-              // Still open: the server accepted the key and the voice
-              this.retryCount = 0
-            }
-          },
-          (WS_INACTIVITY_TIMEOUT - 1) * 1000
-        )
-
-        resolve()
-      })
-
-      socket.addEventListener('error', (error) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.addEventListener('message', (event) => {
-        if (this.canceled) return
-        try {
-          this.onMessage(JSON.parse(event.data.toString()))
-        } catch (error: any) {
-          this.log('message' in error ? error.message : error)
-          this.log('Event data during error:', event.data)
-        }
-      })
-
-      socket.addEventListener('close', ({ code, reason }) => {
-        clearTimeout(timeout)
-        this.socket?.removeAllListeners()
-        this.socket = undefined
-        this.isProcessing = false
-
-        if (this.keepAliveInterval) {
-          clearInterval(this.keepAliveInterval)
-          this.keepAliveInterval = undefined
-        }
-
-        this.log('Connection closed', { code, reason })
-        this.reconnect()
-      })
-    })
+  private resetUtterance() {
+    this.state = 'idle'
+    this.textSent = ''
+    this.textBuffer = ''
+    this.heardUntil = 0
   }
 
   private onMessage(message: ElevenLabsWebSocketMessage) {
     if ('audio' in message && message.audio) {
       this.processAudioMessage(message)
     }
-    if ('isFinal' in message && message.isFinal) {
+    if ('isFinal' in message && message.isFinal && this.state !== 'idle') {
       this.log('Audio ended')
-      this.isProcessing = false
-      this.textSent = ''
+      this.resetUtterance()
     }
     // Sent before the server closes the connection, for a wrong key or an
     // unknown voice
@@ -268,77 +226,87 @@ export class SpeechWebSocket implements ElevenLabsWebSocket {
 
   private processAudioMessage(message: ElevenLabsWebSocketAudioOutputMessage) {
     const chunk = Buffer.from(message.audio, 'base64')
-    this.retryCount = 0
+    this.connection.prove()
+    if (this.state === 'idle') {
+      this.log('Ignore audio chunk, nothing is being spoken')
+      return
+    }
 
     // Check text of received audio chunk
     if (message.alignment) {
       const chunkText = message.alignment.chars.join('')
-      const receivedAudioText = this.receivedAudioText + chunkText
 
-      // Ignore chunk if it is from previous session
-      if (this.textSent.trim().indexOf(receivedAudioText.trim()) === -1) {
-        this.log(`Ignore audio chunk ("${chunkText}")`)
-        return
+      // A connection carries one utterance at a time, since a cancel or a
+      // new utterance opens another, so its audio is always wanted. The
+      // alignment only tells how far the voice got, for a reconnection. It
+      // follows the text sent, a few characters aside when the voice skips
+      // or rewrites some, and is placed where it fits next.
+      const end = findHeardEnd(this.textSent, this.heardUntil, chunkText)
+      if (end === -1) {
+        this.log(`Audio chunk off the text sent ("${chunkText}")`)
+      } else {
+        this.log(`Received audio chunk ("${chunkText}")`)
+        this.heardUntil = end
       }
-
-      this.log(`Received audio chunk ("${chunkText}")`)
-      this.receivedAudioText = receivedAudioText
-
-      // Fix isFinal (apparently ElevenLabs doesn't send it like it should)
-      this.fixIsFinal(message)
     }
 
     // Send to audio stream
     this.host.audio(chunk)
+
+    // ElevenLabs doesn't send isFinal after a flush, so the end of the
+    // utterance is when its audio covers all its text
+    this.checkEnded()
   }
 
-  private fixIsFinal(message: ElevenLabsWebSocketAudioOutputMessage) {
-    if (message.isFinal || !this.textEnded) return
-    if (this.receivedAudioText.trim() === this.textSent.trim()) {
-      message.isFinal = true
-    }
+  private checkEnded() {
+    if (this.state !== 'flushed') return
+    if (this.textSent.slice(this.heardUntil).trim()) return
+    this.log('Audio ended')
+    this.resetUtterance()
   }
 
   private sendTranscript(text: string) {
-    this.socket?.send(JSON.stringify({ text, try_trigger_generation: true }))
+    // Counted as sent even when the connection just dropped, so the
+    // reconnection sends it again
+    this.textSent += text
+    if (!this.connection.send({ text, try_trigger_generation: true })) return
     this.log(`Sent transcript: "${text}"`)
-  }
-
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      this.host.failed(this.textSent.trim() ? [this.textSent] : [])
-      return
-    }
-
-    this.initPromise = new Promise((resolve) => {
-      this.log('Reconnecting...')
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectTimeout = undefined
-        // The count starts over once the connection proves usable, since the
-        // server opens it before checking the voice
-        this.initWS()
-          .then(() => {
-            // Send text chunks again if reconnecting
-            if (this.textSent.length > 0) {
-              this.log('Sending text chunks again')
-              this.sendTranscript(this.textSent)
-            }
-          })
-          .then(resolve)
-          .catch((error) => {
-            this.log('Reconnection error:', error)
-            this.reconnect()
-          })
-      }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
-    })
   }
 
   private log(...message: any[]) {
     this.host.log(...message)
   }
+}
+
+/**
+ * Where `heard` ends in `text`, at the first place from `from` where the text
+ * goes on with it, or -1 when it does nowhere
+ */
+function findHeardEnd(text: string, from: number, heard: string): number {
+  for (let start = from; start < text.length; start++) {
+    const end = endOfPrefix(text, start, heard)
+    if (end !== -1) return end
+  }
+  return -1
+}
+
+/**
+ * Where `heard` ends in `text`, read from `from` and compared without
+ * whitespace, or -1 when the text does not go on with it there.
+ */
+function endOfPrefix(text: string, from: number, heard: string): number {
+  let index = from
+  for (let i = 0; i < heard.length; i++) {
+    if (isSpace(heard[i])) continue
+    while (index < text.length && isSpace(text[index])) index++
+    if (text[index] !== heard[i]) return -1
+    index++
+  }
+  return index
+}
+
+function isSpace(char: string) {
+  return char === ' ' || char === '\t' || char === '\n' || char === '\r'
 }
 
 /**

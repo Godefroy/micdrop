@@ -6,9 +6,21 @@ export interface FallbackSTTOptions {
   factories: Array<() => STT>
 }
 
+/**
+ * An utterance waiting for its transcript, with what is needed to hand it to
+ * the next STT: its audio so far, and the stream its next chunks go to.
+ */
+interface PendingUtterance {
+  chunks: Buffer[]
+  ended: boolean
+  stream: PassThrough
+}
+
 export class FallbackSTT extends STT {
   private stt: STT | null = null
   private sttIndex = -1 // Start at -1 because we need to increment it before using it
+  // In the order spoken, each STT giving one transcript per utterance in turn
+  private pending: PendingUtterance[] = []
 
   constructor(private readonly options: FallbackSTTOptions) {
     super()
@@ -19,7 +31,21 @@ export class FallbackSTT extends STT {
   }
 
   transcribe(audioStream: Readable) {
-    this.stt?.transcribe(audioStream)
+    const utterance: PendingUtterance = {
+      chunks: [],
+      ended: false,
+      stream: new PassThrough(),
+    }
+    this.pending.push(utterance)
+    audioStream.on('data', (chunk: Buffer) => {
+      utterance.chunks.push(chunk)
+      utterance.stream.write(chunk)
+    })
+    audioStream.on('end', () => {
+      utterance.ended = true
+      utterance.stream.end()
+    })
+    this.stt?.transcribe(utterance.stream)
   }
 
   destroy() {
@@ -27,6 +53,7 @@ export class FallbackSTT extends STT {
     this.stt?.destroy()
     this.stt = null
     this.sttIndex = -1
+    this.pending = []
   }
 
   private startNextSTT() {
@@ -48,19 +75,24 @@ export class FallbackSTT extends STT {
   }
 
   private onTranscript = (transcript: string) => {
+    this.pending.shift()
     this.emit('Transcript', transcript)
   }
 
-  private onFailed = (chunks: Buffer[]) => {
+  /**
+   * Hands every utterance still waiting to the next STT, one stream each so
+   * each gets its own transcript. One still being spoken keeps going there.
+   */
+  private onFailed = () => {
     this.log('STT failed, trying next STT')
     this.startNextSTT()
 
-    if (chunks.length > 0) {
-      this.log('Sending audio chunks again')
-      const stream = new PassThrough()
-      this.stt?.transcribe(stream)
-      chunks.forEach((chunk) => stream.write(chunk))
-      stream.end()
+    if (this.pending.length > 0) this.log('Sending audio chunks again')
+    for (const utterance of this.pending) {
+      utterance.stream = new PassThrough()
+      this.stt?.transcribe(utterance.stream)
+      utterance.chunks.forEach((chunk) => utterance.stream.write(chunk))
+      if (utterance.ended) utterance.stream.end()
     }
   }
 }

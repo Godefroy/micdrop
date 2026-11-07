@@ -6,9 +6,16 @@ export interface FallbackTTSOptions {
   factories: Array<() => TTS>
 }
 
+/** The utterance being spoken, and the stream its next text goes to */
+interface CurrentUtterance {
+  ended: boolean
+  stream: PassThrough
+}
+
 export class FallbackTTS extends TTS {
   private tts: TTS | null = null
   private ttsIndex = -1 // Start at -1 because we need to increment it before using it
+  private current?: CurrentUtterance
 
   constructor(private readonly options: FallbackTTSOptions) {
     super()
@@ -19,10 +26,21 @@ export class FallbackTTS extends TTS {
   }
 
   speak(textStream: Readable) {
-    this.tts?.speak(textStream)
+    const utterance: CurrentUtterance = {
+      ended: false,
+      stream: new PassThrough(),
+    }
+    this.current = utterance
+    textStream.on('data', (chunk) => utterance.stream.write(chunk))
+    textStream.on('end', () => {
+      utterance.ended = true
+      utterance.stream.end()
+    })
+    this.tts?.speak(utterance.stream)
   }
 
   cancel() {
+    this.current = undefined
     this.tts?.cancel()
   }
 
@@ -55,16 +73,22 @@ export class FallbackTTS extends TTS {
     this.emit('Audio', audio)
   }
 
+  /**
+   * Hands the unspoken text to the next TTS. An utterance whose text is still
+   * being written goes on there, so its end is spoken too.
+   */
   private onFailed = (chunks: string[]) => {
     this.log('TTS failed, trying next TTS')
     this.startNextTTS()
 
-    if (chunks.length > 0) {
-      this.log('Sending text chunks again')
-      const stream = new PassThrough()
-      this.tts?.speak(stream)
-      chunks.forEach((chunk) => stream.write(chunk))
-      stream.end()
-    }
+    const utterance = this.current
+    const continues = !!utterance && !utterance.ended
+    if (chunks.length === 0 && !continues) return
+    this.log('Sending text chunks again')
+    const stream = new PassThrough()
+    this.tts?.speak(stream)
+    chunks.forEach((chunk) => stream.write(chunk))
+    if (continues) utterance.stream = stream
+    else stream.end()
   }
 }

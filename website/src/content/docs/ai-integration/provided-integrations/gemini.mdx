@@ -93,6 +93,11 @@ See the [Agent interface](../custom-integrations/custom-agent) for the full cont
 | `retryDelay`    | `number`                  | `1000`               | Delay between two attempts, in milliseconds                   |
 | `maxSteps`      | `number`                  | `5`                  | Requests in a row when the model keeps calling tools          |
 
+A failed request is sent again while none of its answer has been spoken. Once
+part of it has been streamed, the agent keeps what was said in the conversation
+and stops there, so the user never hears the same words twice. Cancelling the
+answer also stops the attempts waiting for their delay.
+
 For a voice call, the delay before the first word matters most.
 `gemini-3.5-flash-lite` answers in about a second, while `gemini-3.8-flash`,
 more capable, takes several seconds even with `thinkingLevel: 'low'`.
@@ -136,12 +141,18 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                 |
-| ------------ | ---------- | --------------------------------------------------------------------------- |
-| `Transcript` | `string`   | The transcript of an utterance, empty when nothing was understood.          |
-| `Failed`     | `Buffer[]` | The connection could not be restored, with the audio of the utterance left. |
+| Event        | Payload    | Description                                                               |
+| ------------ | ---------- | ------------------------------------------------------------------------- |
+| `Transcript` | `string`   | The transcript of an utterance, empty when nothing was understood.        |
+| `Failed`     | `Buffer[]` | The connection could not be restored, with the audio still untranscribed. |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
+
+Each stream given to `transcribe()` is one utterance with a transcript of its
+own, and the transcripts come in the order of the streams. A stream can start
+while the previous one still waits for its transcript: Gemini names no
+utterance in what it sends, so it hears them one after the other, and the audio
+of the next one waits for the transcript of the previous.
 
 ### Options
 
@@ -343,6 +354,12 @@ realtime.addTool({
 Gemini ends its turn when it calls a tool, then speaks about the result once it
 has it. The client keeps waiting for the answer in between. A tool declared
 with `skipAnswer` gives its result to the model silently.
+
+When the user interrupts the answer while a tool runs, its result still goes in
+the conversation and reaches the model silently, so the model knows it without
+speaking about it. A tool that finishes after a dropped connection, when the new
+session starts over, only goes in the conversation, since that session never
+heard of the call.
 
 Gemini reads the tools when the session opens, so add them right after creating
 the model, before the connection is established.

@@ -24,7 +24,10 @@ export class FallbackAgent extends Agent {
     return this.agent ? this.agent.extract(message) : super.extract(message)
   }
 
-  protected async generateAnswer(stream: PassThrough): Promise<void> {
+  protected async generateAnswer(
+    stream: PassThrough,
+    signal: AbortSignal
+  ): Promise<void> {
     // Try each agent once (one full rotation) until one answers successfully.
     // The conversation is shared between agents, so the next agent picks up
     // exactly where the failed one stopped.
@@ -34,7 +37,7 @@ export class FallbackAgent extends Agent {
       attempt++
     ) {
       const agent = this.agent
-      if (!agent) return
+      if (!agent || signal.aborted) return
 
       let failed = false
       const onFailed = () => {
@@ -48,7 +51,8 @@ export class FallbackAgent extends Agent {
         agent.off('Failed', onFailed)
       }
 
-      if (!failed) return
+      // A cancelled answer stops there, it did not fail
+      if (!failed || signal.aborted) return
 
       this.log('Agent failed, trying next agent')
       this.startNextAgent()
@@ -61,6 +65,7 @@ export class FallbackAgent extends Agent {
   }
 
   cancel() {
+    super.cancel()
     this.agent?.cancel()
   }
 

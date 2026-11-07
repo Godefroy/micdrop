@@ -21,6 +21,13 @@ class FakeModel implements SmartTurnModel {
   }
 }
 
+/** A promise settled from the outside, to hold a load in flight */
+const deferred = <T>() => {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => (resolve = res))
+  return { promise, resolve }
+}
+
 const tone = (seconds: number, rate = SAMPLE_RATE) => {
   const samples = new Float32Array(Math.round(seconds * rate))
   for (let i = 0; i < samples.length; i++) {
@@ -83,7 +90,11 @@ describe('SmartTurn', () => {
     })
 
     const smartTurn = new SmartTurn()
-    await Promise.all([smartTurn.predict(), smartTurn.predict(), smartTurn.predict()])
+    await Promise.all([
+      smartTurn.predict(),
+      smartTurn.predict(),
+      smartTurn.predict(),
+    ])
     assert.equal(loads, 1)
 
     await smartTurn.release()
@@ -103,6 +114,56 @@ describe('SmartTurn', () => {
     const scope = globalThis as { micdropSmartTurnLoader?: unknown }
     assert.ok(scope.micdropSmartTurnLoader, 'the loader is reachable globally')
     await new SmartTurn().predict()
+    assert.equal(model.calls.length, 1)
+  })
+
+  it('releases a model that lands after release, instead of reviving it', async () => {
+    const first = new FakeModel()
+    const second = new FakeModel()
+    const pending = deferred<FakeModel>()
+    let loads = 0
+    setSmartTurnModelLoader(() =>
+      ++loads === 1 ? pending.promise : Promise.resolve(second)
+    )
+
+    const smartTurn = new SmartTurn()
+    const loading = smartTurn.load()
+    await smartTurn.release()
+    pending.resolve(first)
+
+    await assert.rejects(() => loading, /released/)
+    assert.equal(first.released, 1)
+
+    // The next turn loads a fresh model rather than the released one
+    await smartTurn.predict()
+    assert.equal(loads, 2)
+    assert.equal(first.calls.length, 0)
+    assert.equal(second.calls.length, 1)
+  })
+
+  it('tries the load again after a failure', async () => {
+    const model = new FakeModel()
+    let loads = 0
+    setSmartTurnModelLoader(async () => {
+      if (++loads === 1) throw new Error('offline')
+      return model
+    })
+
+    const smartTurn = new SmartTurn()
+    await assert.rejects(() => smartTurn.predict(), /offline/)
+    await smartTurn.predict()
+    assert.equal(loads, 2)
+    assert.equal(model.calls.length, 1)
+  })
+
+  it('leaves a model it was given to the caller', async () => {
+    const model = new FakeModel()
+    const smartTurn = new SmartTurn({ model })
+    await smartTurn.release()
+    assert.equal(model.released, 0)
+
+    // And keeps using it
+    await smartTurn.predict()
     assert.equal(model.calls.length, 1)
   })
 })

@@ -1,4 +1,9 @@
-import { SileroModel, SILERO_SAMPLE_RATE } from '@micdrop/client'
+import {
+  createDownloadCache,
+  LazySession,
+  SileroModel,
+  SILERO_SAMPLE_RATE,
+} from '@micdrop/client'
 import * as ort from 'onnxruntime-web'
 import { queueOnnxRun } from './onnxQueue'
 
@@ -22,16 +27,26 @@ export interface OnnxSileroOptions {
   wasmPath?: string | false
 }
 
-let loading: Promise<ArrayBuffer> | undefined
+// A couple of megabytes for each address, fetched once per page
+const fetchModel = createDownloadCache(async (url): Promise<ArrayBuffer> => {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(
+      `Could not load the Silero model from ${url} (${response.status})`
+    )
+  }
+  return response.arrayBuffer()
+})
 
 /**
  * Runs the Silero model in the browser, on the ONNX WebAssembly runtime.
  *
  * The state machine that turns its answers into turns lives in
- * `@micdrop/client`, this only scores windows of audio.
+ * `@micdrop/client`, this only scores windows of audio. Once released, the
+ * model is done with: create a new one to load it again.
  */
 export class OnnxSileroModel implements SileroModel {
-  private session: ort.InferenceSession | undefined
+  private session = new LazySession('Silero', () => this.createSession())
   private state: ort.Tensor
   private sampleRate: ort.Tensor
 
@@ -41,40 +56,33 @@ export class OnnxSileroModel implements SileroModel {
   }
 
   async load() {
-    if (this.session) return
+    await this.session.get()
+  }
 
+  private async createSession(): Promise<ort.InferenceSession> {
     const wasmPath = this.options.wasmPath ?? DEFAULT_WASM_PATH
     if (wasmPath !== false) {
       ort.env.wasm.wasmPaths = wasmPath
     }
 
     const source = this.options.model ?? DEFAULT_SILERO_MODEL_URL
-    let bytes: ArrayBuffer
-    if (typeof source === 'string') {
-      // Fetched once per page, the model is a couple of megabytes
-      loading =
-        loading ?? fetch(source).then((response) => response.arrayBuffer())
-      bytes = await loading
-    } else {
-      bytes = source
-    }
-
-    this.session = await ort.InferenceSession.create(bytes)
+    const bytes = typeof source === 'string' ? await fetchModel(source) : source
+    return ort.InferenceSession.create(bytes)
   }
 
   async process(frame: Float32Array): Promise<number> {
-    if (!this.session) await this.load()
-
-    const output = await queueOnnxRun(() =>
-      this.session!.run({
-        input: new ort.Tensor('float32', frame, [1, frame.length]),
-        state: this.state,
-        sr: this.sampleRate,
+    return this.session.use((session) =>
+      queueOnnxRun(async () => {
+        const output = await session.run({
+          input: new ort.Tensor('float32', frame, [1, frame.length]),
+          state: this.state,
+          sr: this.sampleRate,
+        })
+        // Carried over before the next window takes its turn, which reads it
+        this.state = output.stateN as ort.Tensor
+        return (output.output.data as Float32Array)[0]
       })
     )
-
-    this.state = output.stateN as ort.Tensor
-    return (output.output.data as Float32Array)[0]
   }
 
   reset() {
@@ -82,8 +90,7 @@ export class OnnxSileroModel implements SileroModel {
   }
 
   async release() {
-    await this.session?.release()
-    this.session = undefined
+    await this.session.release()
   }
 }
 

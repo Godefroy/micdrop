@@ -154,6 +154,11 @@ export class MicRecorder extends EventEmitter<MicRecorderEvents> {
       isStarted: false,
       isSpeaking: false,
     })
+    // A turn cut by a device or VAD change ends here, so the server is not
+    // left holding it open
+    if (this.turnOpen) {
+      this.endTurn()
+    }
     this.cancelPendingClose()
 
     try {

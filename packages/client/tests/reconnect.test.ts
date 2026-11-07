@@ -76,6 +76,66 @@ describe('when the connection goes wrong', () => {
     await client.stop()
   })
 
+  it('walks through each status of the call', async () => {
+    sockets = []
+    onConnection = () => {}
+    const client = new MicdropClient()
+    const statuses: string[] = []
+    client.on('StateChange', (state) => {
+      if (statuses.at(-1) !== state.status) statuses.push(state.status)
+    })
+
+    assert.equal(client.status, 'stopped')
+    await client.start({ url, reconnect: { delayMs: 20 } })
+    await waitFor(() => client.status === 'started', 'the call to start')
+    sockets[0].close(1011, 'Something broke')
+    await waitFor(() => sockets.length === 2, 'the client to come back')
+    await waitFor(() => client.status === 'started', 'the call to resume')
+    await client.stop()
+
+    assert.deepEqual(statuses, [
+      'starting',
+      'started',
+      'reconnecting',
+      'started',
+      'stopped',
+    ])
+  })
+
+  it('stays on a call started again right after a stop', async () => {
+    sockets = []
+    onConnection = () => {}
+    const client = new MicdropClient()
+    await client.start({ url })
+    await waitFor(() => client.isStarted, 'the first call to start')
+
+    // The first socket reports its close once the second call is under way
+    await client.stop()
+    await client.start({ url })
+    await waitFor(() => client.isStarted, 'the second call to start')
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    assert.equal(client.status, 'started')
+    assert.equal(sockets.length, 2)
+    await client.stop()
+  })
+
+  it('never reconnects once stopped', async () => {
+    sockets = []
+    onConnection = () => {}
+    const client = new MicdropClient()
+    await client.start({ url, reconnect: { delayMs: 50 } })
+    await waitFor(() => client.isStarted, 'the call to start')
+
+    sockets[0].close(1011, 'Something broke')
+    await waitFor(() => client.isReconnecting, 'the client to notice')
+    await client.stop()
+    await new Promise((resolve) => setTimeout(resolve, 150))
+
+    assert.equal(sockets.length, 1)
+    assert.equal(client.status, 'stopped')
+  })
+
   it('refuses to start without a server address', async () => {
     const client = new MicdropClient()
     await assert.rejects(() => client.start({}))

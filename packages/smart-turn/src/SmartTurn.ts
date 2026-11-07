@@ -13,9 +13,18 @@ export interface SmartTurnOptions {
    */
   threshold?: number
 
-  /** A model that is already loaded, instead of the one this platform registers */
+  /**
+   * A model that is already loaded, instead of the one this platform
+   * registers. It stays yours: `release()` leaves it alone, so one model can
+   * serve several `SmartTurn` at once.
+   */
   model?: SmartTurnModel
 }
+
+type ModelState =
+  | { status: 'unloaded' }
+  | { status: 'loading'; promise: Promise<SmartTurnModel> }
+  | { status: 'loaded'; model: SmartTurnModel; owned: boolean }
 
 export interface SmartTurnResult {
   /** Probability that the speaker has finished, between 0 and 1 */
@@ -57,13 +66,14 @@ export class SmartTurn {
   public options: Required<Omit<SmartTurnOptions, 'model'>>
 
   private features = new TurnFeatures()
-  private model: SmartTurnModel | undefined
-  private loading: Promise<SmartTurnModel> | undefined
+  private state: ModelState
 
   constructor(options: SmartTurnOptions = {}) {
     const { model, ...rest } = options
     this.options = { ...DEFAULT_SMART_TURN_OPTIONS, ...rest }
-    this.model = model
+    this.state = model
+      ? { status: 'loaded', model, owned: false }
+      : { status: 'unloaded' }
   }
 
   /**
@@ -128,12 +138,17 @@ export class SmartTurn {
     return this.run(extractFeatures(audio))
   }
 
-  /** Releases the runtime, and with it the memory the model holds */
+  /**
+   * Releases the runtime, and with it the memory the model holds. The next
+   * turn loads it again. A model passed to the constructor belongs to the
+   * caller, which releases it itself.
+   */
   async release(): Promise<void> {
-    const model = this.model
-    this.model = undefined
-    this.loading = undefined
-    await model?.release()
+    const state = this.state
+    if (state.status === 'loaded' && !state.owned) return
+    this.state = { status: 'unloaded' }
+    // A load in flight releases its own model when it lands
+    if (state.status === 'loaded') await state.model.release()
   }
 
   private async run(features: Float32Array): Promise<SmartTurnResult> {
@@ -147,12 +162,34 @@ export class SmartTurn {
     }
   }
 
-  private async getModel(): Promise<SmartTurnModel> {
-    if (this.model) return this.model
+  private getModel(): Promise<SmartTurnModel> {
+    const state = this.state
+    if (state.status === 'loaded') return Promise.resolve(state.model)
     // Several turns may ask at once while the model is still downloading
-    this.loading = this.loading ?? loadSmartTurnModel()
-    this.model = await this.loading
-    return this.model
+    if (state.status === 'loading') return state.promise
+
+    const promise: Promise<SmartTurnModel> = loadSmartTurnModel().then(
+      async (model) => {
+        if (this.isLoading(promise)) {
+          this.state = { status: 'loaded', model, owned: true }
+          return model
+        }
+        // Released while it loaded, so nobody would ever release this one
+        await model.release()
+        throw new Error('The Smart Turn model was released while it loaded')
+      },
+      (error) => {
+        // Forgotten, so the next turn tries again rather than failing for good
+        if (this.isLoading(promise)) this.state = { status: 'unloaded' }
+        throw error
+      }
+    )
+    this.state = { status: 'loading', promise }
+    return promise
+  }
+
+  private isLoading(promise: Promise<SmartTurnModel>): boolean {
+    return this.state.status === 'loading' && this.state.promise === promise
   }
 }
 

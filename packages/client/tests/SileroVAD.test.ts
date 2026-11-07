@@ -199,4 +199,31 @@ describe('SileroVAD', () => {
       assert.equal(length, SILERO_FRAME_SAMPLES)
     }
   })
+
+  it('lets go of the model of a start overtaken by a stop and a start', async () => {
+    const models: ScriptedModel[] = []
+    const releases: Array<() => void> = []
+    setSileroModelLoader(
+      () =>
+        new Promise((resolve) => {
+          const loaded = new ScriptedModel()
+          models.push(loaded)
+          releases.push(() => resolve(loaded))
+        })
+    )
+    const ownMic = new FakeMicSource()
+    const fresh = new SileroVAD()
+    const first = fresh.start(ownMic)
+    fresh.stop()
+    const second = fresh.start(ownMic)
+    releases.forEach((release) => release())
+    await Promise.all([first, second])
+
+    assert.equal(models.length, 2)
+    assert.equal(models[0].released, true)
+    assert.equal(models[1].released, false)
+    // One listener, so every frame is heard once
+    assert.equal(ownMic.listenerCount('Frames'), 1)
+    await fresh.stop()
+  })
 })

@@ -60,10 +60,10 @@ stt.transcribe(createReadStream('speech.pcm'))
 
 ### Events
 
-| Event        | Payload    | Description                                                                    |
-| ------------ | ---------- | ------------------------------------------------------------------------------ |
-| `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
-| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
+| Event        | Payload    | Description                                                                                                                                                |
+| ------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Transcript` | `string`   | Transcription of one utterance, emitted once per utterance even when the next one starts before it returns. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Every reconnection attempt failed, with the audio of the utterances still waiting for their transcript. The next utterance connects again.                 |
 
 See the [STT interface](../custom-integrations/custom-stt) for the full contract.
 
@@ -78,9 +78,13 @@ See the [STT interface](../custom-integrations/custom-stt) for the full contract
 | `region`               | `'eu' \| 'us'`         | `'eu'`        | API region (EU or US endpoint)                                                                                            |
 | `jsonConfig`           | `GradiumASRJsonConfig` | Optional      | Advanced transcription configuration                                                                                      |
 | `connectionTimeout`    | `number`               | `5000`        | Timeout in milliseconds for WebSocket connection                                                                          |
-| `transcriptionTimeout` | `number`               | `4000`        | Timeout in milliseconds to wait for transcription                                                                         |
+| `transcriptionTimeout` | `number`               | `4000`        | Timeout in milliseconds to wait for the transcript of each utterance                                                      |
 | `retryDelay`           | `number`               | `1000`        | Delay in milliseconds between reconnection attempts                                                                       |
-| `maxRetry`             | `number`               | `3`           | Maximum number of reconnection attempts before failing                                                                    |
+| `maxRetry`             | `number`               | `3`           | Number of failed connection attempts in a row before emitting `Failed`                                                    |
+
+### Utterances and reconnection
+
+Each utterance keeps its own transcript and its own `transcriptionTimeout`, so a turn that ends before the previous one comes back from Gradium keeps its words apart. The connection counts as open once Gradium accepts the setup. When it drops, a graceful close included, `GradiumSTT` opens it again and sends the audio of the utterances still waiting for their transcript.
 
 ### Advanced Transcription Configuration
 
@@ -142,26 +146,30 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                                                                               |
+| -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                                                          |
+| `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option              | Type                  | Default       | Description                                            |
-| ------------------- | --------------------- | ------------- | ------------------------------------------------------ |
-| `apiKey`            | `string`              | Required      | Your Gradium API key                                   |
-| `voiceId`           | `string`              | Required      | Gradium voice ID                                       |
-| `modelName`         | `string`              | `'default'`   | Model name to use for speech synthesis                 |
-| `outputFormat`      | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                    |
-| `region`            | `'eu' \| 'us'`        | `'eu'`        | API region (EU or US endpoint)                         |
-| `jsonConfig`        | `GradiumJsonConfig`   | Optional      | Advanced voice configuration                           |
-| `connectionTimeout` | `number`              | `5000`        | Timeout in milliseconds for WebSocket connection       |
-| `retryDelay`        | `number`              | `1000`        | Delay in milliseconds between reconnection attempts    |
-| `maxRetry`          | `number`              | `3`           | Maximum number of reconnection attempts before failing |
+| Option              | Type                  | Default       | Description                                                            |
+| ------------------- | --------------------- | ------------- | ---------------------------------------------------------------------- |
+| `apiKey`            | `string`              | Required      | Your Gradium API key                                                   |
+| `voiceId`           | `string`              | Required      | Gradium voice ID                                                       |
+| `modelName`         | `string`              | `'default'`   | Model name to use for speech synthesis                                 |
+| `outputFormat`      | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                                    |
+| `region`            | `'eu' \| 'us'`        | `'eu'`        | API region (EU or US endpoint)                                         |
+| `jsonConfig`        | `GradiumJsonConfig`   | Optional      | Advanced voice configuration                                           |
+| `connectionTimeout` | `number`              | `5000`        | Timeout in milliseconds for WebSocket connection                       |
+| `retryDelay`        | `number`              | `1000`        | Delay in milliseconds between reconnection attempts                    |
+| `maxRetry`          | `number`              | `3`           | Number of failed connection attempts in a row before emitting `Failed` |
+
+### Interruptions and reconnection
+
+Gradium stops a synthesis when its connection closes, so an interruption closes the connection and opens a new one right away, without counting as a failed attempt. A connection that drops on its own, a graceful close included, opens again and receives the sentence under way.
 
 ### Output Formats
 

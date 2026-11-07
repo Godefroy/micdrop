@@ -1,4 +1,5 @@
 import * as ort from 'onnxruntime-web'
+import { LazySession } from './lazySession'
 import { FEATURE_SHAPE, setSmartTurnModelLoader, SmartTurnModel } from './model'
 import { queueOnnxRun } from './queue'
 
@@ -38,9 +39,11 @@ export interface OnnxSmartTurnOptions {
  * The graphics card answers in about thirty milliseconds whatever the device,
  * where WebAssembly takes two hundred on a laptop and more than a second on a
  * slow phone, so WebGPU is used whenever the browser offers it.
+ *
+ * Once released, the model is done with: create a new one to load it again.
  */
 export class OnnxSmartTurnModel implements SmartTurnModel {
-  private session: ort.InferenceSession | undefined
+  private session = new LazySession('Smart Turn', () => this.createSession())
 
   constructor(private options: OnnxSmartTurnOptions = {}) {}
 
@@ -55,8 +58,10 @@ export class OnnxSmartTurnModel implements SmartTurnModel {
   }
 
   async load() {
-    if (this.session) return
+    await this.session.get()
+  }
 
+  private async createSession(): Promise<ort.InferenceSession> {
     const provider = this.executionProvider
     const wasmPath = this.options.wasmPath ?? DEFAULT_WASM_PATH
     if (wasmPath !== false) {
@@ -69,25 +74,27 @@ export class OnnxSmartTurnModel implements SmartTurnModel {
       (provider === 'webgpu' ? WEBGPU_MODEL_URL : WASM_MODEL_URL)
     const bytes = typeof source === 'string' ? await fetchModel(source) : source
 
-    this.session = await ort.InferenceSession.create(bytes, {
+    return ort.InferenceSession.create(bytes, {
       executionProviders: [provider],
       graphOptimizationLevel: 'all',
     })
   }
 
   async predict(features: Float32Array): Promise<number> {
-    if (!this.session) await this.load()
-    const outputs = await queueOnnxRun(() =>
-      this.session!.run({
-        input_features: new ort.Tensor('float32', features, [...FEATURE_SHAPE]),
-      })
+    const outputs = await this.session.use((session) =>
+      queueOnnxRun(() =>
+        session.run({
+          input_features: new ort.Tensor('float32', features, [
+            ...FEATURE_SHAPE,
+          ]),
+        })
+      )
     )
     return Number(Object.values(outputs)[0].data[0])
   }
 
   async release() {
-    await this.session?.release()
-    this.session = undefined
+    await this.session.release()
   }
 }
 

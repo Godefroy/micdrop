@@ -59,26 +59,30 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                                               |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
+| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](../custom-integrations/custom-tts) for the full contract.
 
 ### Options
 
-| Option              | Type                           | Default  | Description                                              |
-| ------------------- | ------------------------------ | -------- | -------------------------------------------------------- |
-| `apiKey`            | `string`                       | Required | Your Cartesia API key                                    |
-| `modelId`           | `string`                       | Required | Cartesia model ID to use, such as `sonic-3.6`            |
-| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                            |
-| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                                 |
-| `generationConfig`  | `CartesiaGenerationConfig`     | Optional | Speed, volume and emotion of the voice, see below        |
-| `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Deprecated, Sonic 3 models read `generationConfig.speed` |
-| `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection         |
-| `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts      |
-| `maxRetry`          | `number`                       | `3`      | Maximum number of reconnection attempts before failing   |
+| Option              | Type                           | Default  | Description                                                            |
+| ------------------- | ------------------------------ | -------- | ---------------------------------------------------------------------- |
+| `apiKey`            | `string`                       | Required | Your Cartesia API key                                                  |
+| `modelId`           | `string`                       | Required | Cartesia model ID to use, such as `sonic-3.6`                          |
+| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                                          |
+| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                                               |
+| `generationConfig`  | `CartesiaGenerationConfig`     | Optional | Speed, volume and emotion of the voice, see below                      |
+| `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Deprecated, Sonic 3 models read `generationConfig.speed`               |
+| `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection                       |
+| `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts                    |
+| `maxRetry`          | `number`                       | `3`      | Number of failed connection attempts in a row before emitting `Failed` |
+
+### Connection
+
+`CartesiaTTS` keeps one WebSocket open to Cartesia and opens it again whenever it drops, a graceful close included. The sentence under way goes out again on the new connection, unless the user interrupted it in the meantime. After `maxRetry` failed attempts in a row, it emits `Failed`, and the next utterance starts a new round of attempts.
 
 ### Models
 

@@ -109,15 +109,17 @@ Handle call end events:
 
 ```tsx
 import { useMicdropEndCall } from '@micdrop/react'
+import { Micdrop } from '@micdrop/web'
 import { useRouter } from 'next/router'
 
 function CallContainer() {
   const router = useRouter()
 
-  useMicdropEndCall(() => {
+  useMicdropEndCall(async () => {
     console.log('Call ended by assistant')
 
-    // Navigate to end screen
+    // Navigate to end screen once the goodbye was heard
+    await Micdrop.stopAfterAnswer()
     router.push('/call-ended')
   })
 

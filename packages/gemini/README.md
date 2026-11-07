@@ -66,7 +66,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The Micdrop client detects when the user speaks, so the automatic activity detection of Gemini is turned off. Tools are added with `addTool()` right after creating the model, since Gemini reads them when the session opens.
+The Micdrop client detects when the user speaks, so the automatic activity detection of Gemini is turned off. Tools are added with `addTool()` right after creating the model, since Gemini reads them when the session opens. When the user interrupts the answer while a tool runs, its result goes in the conversation and reaches the model silently, so it keeps quiet about it.
 
 ### Events
 

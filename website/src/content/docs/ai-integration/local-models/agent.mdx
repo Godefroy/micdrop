@@ -132,7 +132,7 @@ agent.addUserMessage('What time is it?')
 agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 ```
 
-`examples/advanced/server/src/tests/ollama-agent.ts` sends four turns this way
+`examples/advanced/server/src/benchmarks/ollama-agent.ts` sends four turns this way
 and prints the delay before the first token of each. The measurements on this
 page come from it. Set `OLLAMA_MODEL` and `OLLAMA_LANG` to the model and the
 language to test.

@@ -20,11 +20,11 @@ A browser can report echo cancellation on while the microphone still hears the a
 
 Very few people speak over a voice that has only just started, so speech confirmed during the first 2 seconds of the first answer of a call is treated as echo. The assistant keeps talking, the server hears nothing of it, and the call moves to the next stage. `Micdrop.echoStage` tells which stage it is on.
 
-| `echoStage` | What the call does |
-| --- | --- |
-| `'normal'` | Plays as usual. Every call starts here. |
+| `echoStage`  | What the call does                                                                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `'normal'`   | Plays as usual. Every call starts here.                                                                                                                                                                                              |
 | `'fallback'` | Plays by the other route of the platform, an audio element in a browser. The same watch runs for the next 2 seconds of sound, and if the answer ends first, it carries over to the next one. When the call passes it, it stays here. |
-| `'disabled'` | Disables interruptions until the call ends, as `disableInterruption` does. Reached on a second detection, or on the first one when the platform has no other route or the browser refuses it. |
+| `'disabled'` | Disables interruptions until the call ends, as `disableInterruption` does. Reached on a second detection, or on the first one when the platform has no other route or the browser refuses it.                                        |
 
 When the first watch ends without hearing anything, the call stays on `'normal'` and interruptions work as usual from then on. Nothing is remembered from one call to the next.
 
@@ -144,10 +144,11 @@ import '@micdrop/web/silero'
 ```
 
 <Callout type="warning">
-  In an app built with Vite, add the [Micdrop Vite plugin](/docs/client/installation#vite-plugin).
-  It ships the model and the ONNX runtime with your app. Without it, they are
-  fetched from jsDelivr and unpkg when a call starts, and voice detection fails
-  wherever those CDNs are unreachable or blocked.
+  In an app built with Vite, add the [Micdrop Vite
+  plugin](/docs/client/installation#vite-plugin). It ships the model and the
+  ONNX runtime with your app. Without it, they are fetched from jsDelivr and
+  unpkg when a call starts, and voice detection fails wherever those CDNs are
+  unreachable or blocked.
 </Callout>
 
 With another bundler, serve the model and the files of the ONNX runtime
@@ -268,6 +269,57 @@ Micdrop.vad.on('CancelSpeaking', () => {
 Micdrop.vad.on('ChangeStatus', (status) => {
   console.log('VAD status:', status) // 'Silence', 'MaybeSpeaking', 'Speaking'
 })
+```
+
+## Silero on Another Runtime
+
+`@micdrop/web` and `@micdrop/react-native` load the Silero model on their
+ONNX runtime when `@micdrop/web/silero` or `@micdrop/react-native/silero` is
+imported. Another runtime plugs in with `setSileroModelLoader()`, given a
+function that loads a `SileroModel`: it scores windows of 512 samples at
+16 kHz, forgets the previous call on `reset()`, and frees its runtime on
+`release()`.
+
+`LazySession` holds the inference session of such a model. Callers asking while
+it loads share the same load, a release during the load disposes of the session
+as soon as it lands, `use()` runs inference that a release waits for, and a
+failed load is tried again on the next call. `createDownloadCache` fetches each
+model address once for as long as the app runs, and forgets a failed download.
+
+```typescript
+import {
+  createDownloadCache,
+  LazySession,
+  SileroModel,
+  setSileroModelLoader,
+} from '@micdrop/client'
+
+const download = createDownloadCache(async (url) => {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+  return response.arrayBuffer()
+})
+
+class MySileroModel implements SileroModel {
+  private session = new LazySession('Silero', async () =>
+    createMySession(await download(MODEL_URL))
+  )
+
+  process(frame: Float32Array) {
+    return this.session.use((session) => session.score(frame))
+  }
+
+  reset() {
+    // Clears the state the model carries from one window to the next
+  }
+
+  release() {
+    return this.session.release()
+  }
+}
+
+// A new model for each call, released when the call stops
+setSileroModelLoader(async () => new MySileroModel())
 ```
 
 ## Custom VAD

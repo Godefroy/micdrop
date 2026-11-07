@@ -8,6 +8,7 @@ import {
   Classifier,
   getTurnClassification,
   MicdropCallSummary,
+  MicdropClientCommands,
   MicdropConfig,
   MicdropServer,
   MicdropServerCommands,
@@ -113,6 +114,7 @@ class TestAgent extends Agent {
 
   cancel() {
     this.cancelled++
+    super.cancel()
   }
 
   destroy() {
@@ -194,6 +196,8 @@ describe('MicdropServer with an agent and a voice', () => {
     ])
 
     await speakTo(socket, stt, 'How are you?')
+    // Written word by word then synthesized, which a busy machine slows down
+    await waitFor(() => tts.spoken.length === 2, 'the answer')
 
     assert.equal(agent.answers, 1)
     assert.deepEqual(tts.spoken, ['Good morning', 'Hello there'])
@@ -397,6 +401,26 @@ describe('MicdropServer partial messages', () => {
     )
     assert.equal(socket.audioChunks.length, 0)
   })
+
+  it('sends no partial answer after its message', async () => {
+    const stt = new TestSTT()
+    // Gives the answer at once: written, then recorded in the same tick
+    const agent = new TestAgent([], { onBeforeAnswer: () => 'Hello there' })
+    const { socket } = startCall({ stt, agent, partialMessages: true })
+
+    await speakTo(socket, stt, 'How are you?')
+
+    const commands = socket.commands.filter(
+      (command) =>
+        command.startsWith(MicdropServerCommands.Message) ||
+        command.startsWith(MicdropServerCommands.PartialAssistantMessage)
+    )
+    const last = commands[commands.length - 1]
+    assert.ok(
+      last.startsWith(`${MicdropServerCommands.Message} `),
+      'the settled message comes last, so the client shows it once'
+    )
+  })
 })
 
 describe('MicdropServer turn handling', () => {
@@ -437,6 +461,55 @@ describe('MicdropServer turn handling', () => {
     socket.startSpeaking()
     assert.equal(agent.cancelled, 1)
     assert.equal(stt.streams, 1)
+  })
+
+  it('drops the answer when the user speaks again while the detector thinks', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    let release: (complete: boolean) => void = () => {}
+    const turnDetector = {
+      push() {},
+      reset() {},
+      predict: () =>
+        new Promise<{ complete: boolean; probability: number }>((resolve) => {
+          release = (complete) => resolve({ complete, probability: 1 })
+        }),
+    }
+    const { socket } = startCall({ stt, agent, turnDetector })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    socket.startSpeaking()
+    socket.sendAudio()
+    stt.hear('I would like')
+    socket.stopSpeaking()
+    // The rest of the sentence comes before the verdict on the first part
+    socket.startSpeaking()
+    release(true)
+    await new Promise((resolve) => setTimeout(resolve, 30))
+
+    assert.equal(agent.answers, 0)
+  })
+
+  it('never answers a held turn once the user muted', async () => {
+    const stt = new TestSTT()
+    const agent = new TestAgent()
+    const turnDetector = {
+      push() {},
+      reset() {},
+      predict: async () => ({ complete: false, probability: 0 }),
+    }
+    const { socket } = startCall({ stt, agent, turnDetector, turnMaxWait: 30 })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    socket.startSpeaking()
+    socket.sendAudio()
+    stt.hear('I would like')
+    socket.stopSpeaking()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    socket.emit('message', Buffer.from(MicdropClientCommands.Mute))
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    assert.equal(agent.answers, 0)
   })
 
   it('destroys what it was given when the call ends', async () => {

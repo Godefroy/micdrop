@@ -115,14 +115,17 @@ export class GeminiTTS extends SentenceTTS {
 }
 
 /**
- * Whether Gemini refused the sentence on its content.
+ * Whether Gemini may have refused the sentence on its content.
  *
  * The filter blocks an ordinary sentence now and then, and lets the very same
  * one through on the next request. The SDK does not retry a 400, so without a
- * second attempt the sentence is lost from the answer.
+ * second attempt the sentence is lost from the answer. The SDK can also lose
+ * the body that names the reason, so any 400 counts: a request that is wrong
+ * for good fails again on every attempt, which costs a few round trips.
  */
 function isBlocked(error: any): boolean {
   return (
+    error?.status === 400 ||
     error?.code === 'content_blocked' ||
     error?.error?.error?.code === 'content_blocked' ||
     String(error?.body ?? '').includes('content_blocked')

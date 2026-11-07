@@ -69,5 +69,7 @@ const server = new MicdropServer(socket, {
 3. **On failure**: When a provider emits the `Failed` event:
    - Destroys the current provider
    - Moves to the next provider (wraps around to first if at end)
-   - Replays buffered text chunks to the new provider
+   - Hands the unspoken text over to the new provider
+   - An answer still being written goes on with the new provider, so its end is spoken too
+   - A cancelled answer is not handed over
 4. **Logging**: Inherits logger configuration and applies it to child providers

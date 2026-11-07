@@ -36,6 +36,29 @@ const GEMINI_OUTPUT_SAMPLE_RATE = 24000
 // How long the model gets to speak about the result of a tool
 const TOOL_FOLLOW_UP_TIMEOUT = 10000 // ms
 
+/**
+ * The tools of the answer being given.
+ *
+ * Gemini ends its turn when it calls a tool, and speaks again once it has the
+ * result. The answer stays open in between, so the client keeps waiting for it
+ * rather than listening again. An interruption or a session started over
+ * replaces this record, and a tool finishing later sees it is no longer the
+ * current one: its result is not sent, so the model never speaks about it.
+ */
+interface ToolRound {
+  // Tools called and not finished yet
+  running: number
+  // The model has the result of a tool, and gets some time to speak about it
+  followUp?: NodeJS.Timeout
+  // The model ended its turn while the round was not over, the answer ends
+  // with the round
+  answerEndDeferred: boolean
+}
+
+function newToolRound(): ToolRound {
+  return { running: 0, answerEndDeferred: false }
+}
+
 // Opens a call when the model speaks first
 const FIRST_MESSAGE_PROMPT =
   'The call starts now. Speak first, as your instructions say.'
@@ -47,8 +70,6 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
   // Resumes the session on a new connection, which Gemini asks for every
   // few minutes
   private resumptionHandle?: string
-  // Whether the setup being sent resumes the session
-  private resuming = false
   private goingAway = false
 
   private outputResampler = new Pcm16Resampler(
@@ -58,14 +79,12 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
   private hasTranscribedTurn = false
   // Transcript of a dropped turn, which the conversation should not show
   private ignoreUserTranscript = false
+  // Calls of the session Gemini told not to answer
   private cancelledToolCalls = new Set<string>()
-
-  // Gemini ends its turn when it calls a tool, and speaks again once it has
-  // the result. The answer stays open in between, so the client keeps waiting
-  // for it rather than listening again.
-  private runningTools = 0
-  private toolFollowUp?: NodeJS.Timeout
-  private answerEndDeferred = false
+  // Bumped by every session that does not resume the previous one, whose tool
+  // calls it cannot answer
+  private session = 0
+  private toolRound = newToolRound()
 
   constructor(options: GeminiLiveOptions) {
     super(options)
@@ -81,9 +100,18 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     this.socket.connect()
   }
 
+  /**
+   * Stops the answer. The tools it is waiting for still send their results,
+   * silently, since a blocking call left unanswered would stall the model.
+   */
+  cancel() {
+    super.cancel()
+    this.resetToolRound()
+  }
+
   destroy() {
+    // Cancels the answer too, which resets the tool round
     super.destroy()
-    this.clearToolFollowUp()
     this.socket.destroy()
   }
 
@@ -129,12 +157,10 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     // The activityStart of the next turn is what stops Gemini, and the output
     // still on its way is dropped until the model acknowledges it
     this.outputResampler.reset()
-    this.clearToolFollowUp()
-    this.answerEndDeferred = false
   }
 
   protected get isIdle() {
-    return super.isIdle && this.runningTools === 0
+    return super.isIdle && this.toolRound.running === 0
   }
 
   protected updateTools() {
@@ -181,7 +207,6 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
   }
 
   private buildSetup() {
-    this.resuming = !!this.resumptionHandle
     const functionDeclarations = this.tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
@@ -227,9 +252,12 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     }
   }
 
-  private onReady = () => {
-    // A session started over has lost the conversation
-    if (this.everConnected && !this.resuming) {
+  private onReady = (setup: any) => {
+    const resumed = !!setup?.setup?.sessionResumption?.handle
+    // A session started over has lost the conversation, and knows nothing of
+    // the tools the previous one called
+    if (this.everConnected && !resumed) {
+      this.startFreshSession()
       const turns = this.conversation.flatMap((message) =>
         message.role === 'user' || message.role === 'assistant'
           ? [
@@ -253,9 +281,33 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     if (attempt > 1) this.resumptionHandle = undefined
     // What waits for a resumed session is still valid, a new session gets the
     // conversation instead
-    if (!this.resumptionHandle) this.socket.clearPending()
-    // The answer in progress is lost with the connection
+    if (!this.resumptionHandle) {
+      this.socket.clearPending()
+      this.startFreshSession()
+    }
+    // The answer in progress is lost with the connection, after what was
+    // heard of the turn it answered
+    this.toolRound.answerEndDeferred = false
+    this.commitTurnTranscript()
     this.endAnswer()
+  }
+
+  /** Forgets what belonged to the previous session */
+  private startFreshSession() {
+    this.session++
+    this.resetToolRound()
+    this.cancelledToolCalls.clear()
+    this.ignoreUserTranscript = false
+  }
+
+  /**
+   * Starts a new round of tools. The tools still running belong to the old
+   * one: their results go out silently, and nothing waits for the model to
+   * talk about them.
+   */
+  private resetToolRound() {
+    if (this.toolRound.followUp) clearTimeout(this.toolRound.followUp)
+    this.toolRound = newToolRound()
   }
 
   /** Moves to a new connection before Gemini closes this one */
@@ -324,8 +376,8 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     if (content.turnComplete) {
       this.commitTurnTranscript()
       this.outputResampler.reset()
-      if (this.runningTools > 0 || this.toolFollowUp) {
-        this.answerEndDeferred = true
+      if (this.toolRound.running > 0 || this.toolRound.followUp) {
+        this.toolRound.answerEndDeferred = true
       } else {
         this.endAnswer()
         this.renewIfGoingAway()
@@ -336,25 +388,22 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
   private onModelOutput() {
     this.commitTurnTranscript()
     // The model speaks about the result, its next turn ends the answer
-    if (this.toolFollowUp) {
-      this.clearToolFollowUp()
-      this.answerEndDeferred = false
+    const round = this.toolRound
+    if (round.followUp) {
+      clearTimeout(round.followUp)
+      round.followUp = undefined
+      round.answerEndDeferred = false
     }
   }
 
   /** Ends the answer the model stopped giving to wait for a tool */
   private endDeferredAnswer() {
-    if (!this.answerEndDeferred) return
-    if (this.runningTools > 0 || this.toolFollowUp) return
-    this.answerEndDeferred = false
+    const round = this.toolRound
+    if (!round.answerEndDeferred) return
+    if (round.running > 0 || round.followUp) return
+    round.answerEndDeferred = false
     this.endAnswer()
     this.renewIfGoingAway()
-  }
-
-  private clearToolFollowUp() {
-    if (!this.toolFollowUp) return
-    clearTimeout(this.toolFollowUp)
-    this.toolFollowUp = undefined
   }
 
   /**
@@ -376,17 +425,26 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
       toolName: call.name,
       parameters: JSON.stringify(call.args ?? {}),
     }
-    this.runningTools++
+    const round = this.toolRound
+    const session = this.session
+    round.running++
     let result: Awaited<ReturnType<GeminiLive['runTool']>>
     try {
       result = await this.runTool(toolCall)
     } finally {
-      this.runningTools--
+      round.running--
     }
+    // Called by a session that is gone, which knows nothing of this call: the
+    // result stays in the conversation only
+    if (session !== this.session) return
     if (this.cancelledToolCalls.delete(call.id)) {
       this.endDeferredAnswer()
       return
     }
+    // Interrupted while it ran: the model hears the result without speaking
+    // about it, over the user who has moved on
+    const interrupted = round !== this.toolRound
+    const silent = result.skipAnswer || interrupted
     this.send({
       toolResponse: {
         functionResponses: [
@@ -396,17 +454,18 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
             response: {
               output: result.output ?? null,
               // A tool without an answer lets the model know silently
-              scheduling: result.skipAnswer ? 'SILENT' : 'WHEN_IDLE',
+              scheduling: silent ? 'SILENT' : 'WHEN_IDLE',
             },
           },
         ],
       },
     })
 
+    if (interrupted) return
     if (!result.skipAnswer) {
-      this.clearToolFollowUp()
-      this.toolFollowUp = setTimeout(() => {
-        this.toolFollowUp = undefined
+      if (round.followUp) clearTimeout(round.followUp)
+      round.followUp = setTimeout(() => {
+        round.followUp = undefined
         this.log('Nothing said about the tool result')
         this.endDeferredAnswer()
       }, TOOL_FOLLOW_UP_TIMEOUT)

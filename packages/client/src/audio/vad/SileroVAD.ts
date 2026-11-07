@@ -95,6 +95,9 @@ export class SileroVAD extends VAD {
   // Bumped whenever the state is reset, so a window scored before that is
   // dropped rather than reopening a turn
   private round = 0
+  // Bumped by every start and stop, so a start overtaken while its model
+  // loaded lets go of it
+  private startId = 0
 
   constructor(options?: Partial<SileroVADOptions>) {
     super()
@@ -127,21 +130,39 @@ export class SileroVAD extends VAD {
       )
     }
 
-    this.model = await loadModel()
+    // Claimed before the model loads, so a second start returns rather than
+    // loading a model of its own
+    this.mic = mic
+    const startId = ++this.startId
+    let model: SileroModel
+    try {
+      model = await loadModel()
+    } catch (error) {
+      if (startId === this.startId) this.mic = undefined
+      throw error
+    }
+    // Stopped, and maybe started again, while the model loaded
+    if (startId !== this.startId) {
+      await model.release()
+      return
+    }
+
+    this.model = model
     this.resetState()
     // A call starts in silence, whatever the previous one ended on
     this.setStatus(VADStatus.Silence)
-    this.mic = mic
     mic.on('Frames', this.onFrames)
   }
 
   async stop(): Promise<void> {
+    this.startId++
     this.mic?.off('Frames', this.onFrames)
     this.mic = undefined
     this.closeOpenTurn()
     this.resetState()
-    await this.model?.release()
+    const model = this.model
     this.model = undefined
+    await model?.release()
   }
 
   async pause(): Promise<void> {

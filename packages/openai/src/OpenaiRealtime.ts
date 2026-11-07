@@ -3,9 +3,10 @@ import {
   Pcm16Resampler,
   Realtime,
   RealtimeOptions,
+  ReconnectingSocket,
 } from '@micdrop/server'
-import WebSocket from 'ws'
 import z, { toJSONSchema } from 'zod'
+import { parseMessage, sessionHandshake } from './session'
 import { transcriptionLanguage } from './transcription'
 
 /**
@@ -38,9 +39,22 @@ const DEFAULT_TRANSCRIPTION_MODEL = 'gpt-4o-transcribe'
 const SAMPLE_RATE = 16000 // Rate of the Micdrop client, both ways
 const OPENAI_SAMPLE_RATE = 24000 // The only rate of the Realtime API
 const OPENAI_BYTES_PER_MS = (OPENAI_SAMPLE_RATE * 2) / 1000
-const DEFAULT_CONNECTION_TIMEOUT = 5000
-const DEFAULT_RETRY_DELAY = 1000
-const DEFAULT_MAX_RETRY = 3
+// Events held while the connection opens. The retry budget bounds how long
+// that lasts, this bounds what it holds.
+const MAX_PENDING_EVENTS = 5000
+// Metadata key naming the request a response answers
+const REQUEST_METADATA_KEY = 'micdrop_request'
+
+/**
+ * Where the connection stands, as the conversation sees it.
+ *
+ * - `connecting`: never open yet, what is sent waits for the first connection
+ * - `connected`: what is sent goes out
+ * - `reconnecting`: dropped, the conversation is sent again on the next
+ *   connection, followed by what was sent meanwhile
+ * - `closed`: every retry failed, or destroyed, nothing goes out anymore
+ */
+type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'closed'
 
 /** A response asked for, until the API gives it an id */
 interface RequestedResponse {
@@ -50,21 +64,20 @@ interface RequestedResponse {
 }
 
 export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
-  private socket?: WebSocket
-  private connected = false
-  private everConnected = false
-  private destroyed = false
+  private socket: ReconnectingSocket
+  private connection: ConnectionState = 'connecting'
   // Events sent while the connection opens
   private pending: object[] = []
-  private reconnectTimeout?: NodeJS.Timeout
-  private retryCount = 0
+  private requestCount = 0
 
   private inputResampler = new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE)
   private outputResampler = new Pcm16Resampler(OPENAI_SAMPLE_RATE, SAMPLE_RATE)
 
   // Bumped by every interruption, so late responses can tell they are stale
   private generation = 0
-  private requested: RequestedResponse[] = []
+  // Responses asked for and not created yet, by the id sent as their metadata
+  // and as the event id of their request, which an error names
+  private requested = new Map<string, RequestedResponse>()
   private response?: { id: string } & RequestedResponse
   private ignoredResponses = new Set<string>()
   // Audio of the response being played, to cut what the user did not hear
@@ -74,17 +87,38 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
 
   constructor(options: OpenaiRealtimeOptions) {
     super(options)
-    this.connect()
+    const model = options.model || DEFAULT_MODEL
+    this.socket = new ReconnectingSocket({
+      url: `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
+      clientOptions: {
+        headers: { Authorization: `Bearer ${options.apiKey}` },
+      },
+      connectionTimeout: options.connectionTimeout,
+      retryDelay: options.retryDelay,
+      maxRetry: options.maxRetry,
+      handshake: sessionHandshake,
+      log: (...message) => this.log(...message),
+    })
+    this.socket.on('Open', ({ reconnected }) => this.onOpen(reconnected))
+    this.socket.on('Close', () => {
+      this.connection = 'reconnecting'
+      this.resetSession()
+    })
+    this.socket.on('Failed', () => {
+      this.connection = 'closed'
+      this.pending = []
+      this.resetSession()
+      this.emit('Failed')
+    })
+    this.socket.on('Message', (data) => this.handleMessage(parseMessage(data)))
+    this.socket.connect()
   }
 
   destroy() {
-    this.destroyed = true
     super.destroy()
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = undefined
-    }
-    this.closeSocket()
+    this.connection = 'closed'
+    this.pending = []
+    this.socket.destroy()
   }
 
   protected openTurn() {
@@ -149,29 +183,56 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
   }
 
   protected updateTools() {
-    if (this.connected) this.sendSessionUpdate()
+    // Sent with the session on the next connection otherwise
+    if (this.connection === 'connected') this.sendSessionUpdate()
   }
 
   protected injectMessage(role: 'user' | 'assistant' | 'system', text: string) {
     // The whole conversation is sent again once reconnected
-    if (!this.connected && this.everConnected) return
+    if (this.connection === 'reconnecting') return
     this.send(this.messageItem(role, text))
   }
 
+  /**
+   * Asks for a response, tagged so its `response.created` tells which request
+   * it answers. Matching them by order alone would shift every later response
+   * onto the wrong request as soon as one is refused.
+   */
   private createResponse(response?: object) {
-    this.requested.push({
-      generation: this.generation,
-      outOfBand: !!response,
+    const id = `micdrop-response-${++this.requestCount}`
+    const generation = this.generation
+    const accepted = this.send({
+      type: 'response.create',
+      // Errors caused by this event carry its id
+      event_id: id,
+      response: { ...response, metadata: { [REQUEST_METADATA_KEY]: id } },
     })
-    this.send({ type: 'response.create', ...(response ? { response } : {}) })
+    if (!accepted) {
+      // Nothing will answer it, so the answer ends now, once its caller is
+      // ready to hear that it did
+      queueMicrotask(() => {
+        if (generation === this.generation) this.endAnswer()
+      })
+      return
+    }
+    this.requested.set(id, { generation, outOfBand: !!response })
   }
 
-  private send(event: object) {
-    if (this.connected && this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(event))
-    } else {
-      this.pending.push(event)
+  /**
+   * Sends an event, or holds it until the connection opens.
+   * @returns False when it was dropped, the connection being given up on
+   */
+  private send(event: object): boolean {
+    if (this.connection === 'connected') {
+      return this.socket.send(JSON.stringify(event))
     }
+    if (this.connection === 'closed') return false
+    if (this.pending.length >= MAX_PENDING_EVENTS) {
+      this.log('Too many events waiting for the connection, dropped')
+      return false
+    }
+    this.pending.push(event)
+    return true
   }
 
   private messageItem(role: 'user' | 'assistant' | 'system', text: string) {
@@ -193,7 +254,7 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
   private sendSessionUpdate() {
     const transcriptionModel =
       this.options.transcriptionModel || DEFAULT_TRANSCRIPTION_MODEL
-    this.socket?.send(
+    this.socket.send(
       JSON.stringify({
         type: 'session.update',
         session: {
@@ -231,110 +292,39 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
     )
   }
 
-  private connect() {
-    this.initWS().catch((error) => {
-      this.log('Connection error:', error)
-      this.reconnect()
-    })
-  }
-
-  private initWS(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const model = this.options.model || DEFAULT_MODEL
-      const socket = new WebSocket(
-        `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
-        { headers: { Authorization: `Bearer ${this.options.apiKey}` } }
-      )
-      this.socket = socket
-
-      const timeout = setTimeout(() => {
-        this.log('Connection timeout')
-        this.closeSocket()
-        reject(new Error('WebSocket connection timeout'))
-      }, this.options.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT)
-
-      socket.on('open', () => {
-        clearTimeout(timeout)
-        this.log('Connection opened')
-        this.sendSessionUpdate()
-
-        // A new connection starts from an empty conversation
-        if (this.everConnected) {
-          for (const message of this.conversation) {
-            if (message.role !== 'user' && message.role !== 'assistant') {
-              continue
-            }
-            socket.send(
-              JSON.stringify(this.messageItem(message.role, message.content))
-            )
-          }
-        }
-
-        this.connected = true
-        this.everConnected = true
-        this.retryCount = 0
-        const pending = this.pending
-        this.pending = []
-        pending.forEach((event) => this.send(event))
-        resolve()
-      })
-
-      socket.on('error', (error) => {
-        clearTimeout(timeout)
-        this.log('WebSocket error:', error)
-        reject(new Error('WebSocket connection error'))
-      })
-
-      socket.on('close', (code, reason) => {
-        clearTimeout(timeout)
-        const wasConnected = this.connected
-        this.closeSocket()
-        if (this.destroyed) return
-        this.log('Connection closed', { code, reason: reason.toString() })
-        if (wasConnected) this.reconnect()
-      })
-
-      socket.on('message', (data) => {
-        this.handleMessage(JSON.parse(data.toString()))
-      })
-    })
-  }
-
-  private closeSocket() {
-    const socket = this.socket
-    this.socket = undefined
-    this.connected = false
-    // What was waiting for this connection is sent again with the
-    // conversation, or belonged to an answer that is lost
+  /**
+   * Sets the session up, then sends what waited for it. A new connection
+   * starts from an empty conversation, so a reconnection sends it again first.
+   */
+  private onOpen(reconnected: boolean) {
+    this.connection = 'connected'
+    this.sendSessionUpdate()
+    if (reconnected) {
+      for (const message of this.conversation) {
+        if (message.role !== 'user' && message.role !== 'assistant') continue
+        this.send(this.messageItem(message.role, message.content))
+      }
+    }
+    const pending = this.pending
     this.pending = []
-    this.requested = []
-    this.response = undefined
-    if (!socket) return
-    socket.removeAllListeners()
-    socket.on('error', () => {})
-    if (
-      socket.readyState === WebSocket.OPEN ||
-      socket.readyState === WebSocket.CONNECTING
-    ) {
-      socket.close(1000)
-    }
-    // The answer in progress is lost with the connection
-    this.endAnswer()
+    pending.forEach((event) => this.send(event))
   }
 
-  private reconnect() {
-    if (this.destroyed) return
-    this.retryCount++
-    if (this.retryCount > (this.options.maxRetry ?? DEFAULT_MAX_RETRY)) {
-      this.log('Max retries reached, giving up')
-      this.emit('Failed')
-      return
-    }
-    this.log('Reconnecting...')
-    this.reconnectTimeout = setTimeout(() => {
-      this.reconnectTimeout = undefined
-      this.connect()
-    }, this.options.retryDelay ?? DEFAULT_RETRY_DELAY)
+  /**
+   * Forgets what belonged to the session that is gone: its responses, and the
+   * answer in progress, which is lost with it.
+   */
+  private resetSession() {
+    this.requested.clear()
+    this.response = undefined
+    this.ignoredResponses.clear()
+    this.audioItemId = undefined
+    this.audioBytes = 0
+    this.outputResampler.reset()
+    // Tools still running answer a call the next session does not know, the
+    // conversation sent again holding only messages
+    this.generation++
+    this.endAnswer()
   }
 
   private isIgnored(responseId?: string) {
@@ -346,19 +336,19 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
   }
 
   private handleMessage(message: any) {
-    switch (message.type) {
+    switch (message?.type) {
       case 'response.created': {
-        const requested = this.requested.shift() ?? {
-          generation: this.generation,
-          outOfBand: false,
-        }
         const id = message.response.id
+        const requestId = message.response.metadata?.[REQUEST_METADATA_KEY]
+        // A response the model started on its own belongs to the answer
+        const requested: RequestedResponse | undefined = requestId
+          ? this.requested.get(requestId)
+          : { generation: this.generation, outOfBand: false }
+        if (requestId) this.requested.delete(requestId)
         // Interrupted before it even started
-        if (requested.generation !== this.generation) {
+        if (!requested || requested.generation !== this.generation) {
           this.ignoredResponses.add(id)
-          this.socket?.send(
-            JSON.stringify({ type: 'response.cancel', response_id: id })
-          )
+          this.send({ type: 'response.cancel', response_id: id })
           break
         }
         this.response = { id, ...requested }
@@ -402,11 +392,21 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
         this.onResponseDone(message.response)
         break
 
-      case 'error':
+      case 'error': {
         // Cancelling a response that just ended is expected
         if (message.error?.code === 'response_cancel_not_active') break
         this.log('Error:', message.error)
+        // A refused request never gets a response, so the answer it was for
+        // ends here, unless another response of that answer is under way
+        const requestId = message.error?.event_id
+        const requested = this.requested.get(requestId)
+        if (!requested) break
+        this.requested.delete(requestId)
+        if (requested.generation === this.generation && !this.response) {
+          this.endAnswer()
+        }
         break
+      }
 
       default:
         break
