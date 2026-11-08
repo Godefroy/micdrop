@@ -3,6 +3,7 @@ title: 'Smart Turn and End of Turn Detection for Voice Agents'
 h1: 'How Voice Agents Know You Stopped Talking'
 summary: 'A voice agent ends your turn on silence, on the sound of your sentence or on its words. Compare the three, then run Smart Turn in TypeScript.'
 date: 2026-10-03
+update: 2026-11-08
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -25,9 +26,30 @@ takeaways:
   - 'Smart Turn is an open model of 8 million parameters that listens to the end of a turn and says whether the sentence sounds finished, in about 25 ms on a graphics card.'
   - 'Run turn detection where the microphone is. The client can close a turn sooner, while a server can only decide to wait longer.'
   - 'A held turn needs a deadline, because a model that hears an unfinished sentence where there is none would leave the call hanging.'
+  - 'Voice activity detection needs only a few frames to hear a user talking over the agent, so the agent can stop at once. The end of turn model only decides when to answer.'
 ---
 
 Most voice agents decide that you stopped talking when they hear a set length of silence after your last word. A timer cannot tell the end of a question from a speaker who pauses mid sentence to find a word. End of turn detection checks each pause before the agent answers. A model listens to the sound of the sentence, like Smart Turn or the detector in LiveKit's agent framework, or a language model reads the transcript and judges whether the thought is complete. Listening to the sound is the faster of the two. Smart Turn, an open model that listens this way, now also runs in TypeScript, in a browser, on a phone or in Node.
+
+## How a voice agent detects the end of a turn and handles interruptions
+
+A real-time voice agent listens to the microphone to decide two things, when to answer and when to stop talking. Three parts share the work:
+
+- Voice activity detection (VAD) hears whether someone is speaking right now, frame by frame, and reports each pause.
+- An end of turn model runs at each pause and decides whether the user has finished, from the sound of the sentence or from its words. It can run [in the browser](/docs/client/turn-detection) or [on the server](/docs/server/semantic-turn-detection).
+- Barge-in handling covers the user talking over the agent. As soon as the VAD hears them, the agent stops its audio, cancels the answer it was generating and listens to the new turn.
+
+```mermaid
+graph TD
+  A[Microphone audio] --> B[VAD]
+  B -->|Pause in the speech| C[End of turn model]
+  C -->|Sentence finished| D[The agent answers]
+  C -->|Sentence unfinished| B
+  B -->|User speaks while the agent talks| E[The agent stops playback and cancels the answer]
+  E --> B
+```
+
+The agent has to stop talking the moment the user speaks. The end of turn decision can wait until the sentence sounds complete. Most of this post is about that decision.
 
 ## A silence timer cuts people off or slows every answer
 
@@ -175,6 +197,19 @@ A lone "hmm" is speech that sounds finished, so turn detection closes the turn a
 
 Background noise is the VAD's job rather than the turn model's. In a noisy room, run the volume detector and Silero together, so a turn only opens when both hear a voice.
 
+## Handling interruptions while the agent speaks
+
+Barge-in is the user talking over the agent. The VAD hears that speech within a few frames, long before a turn model could judge a sentence. The agent then has four things to do, in this order:
+
+1. Stop the player and drop the audio already queued.
+2. Cancel the language model and the text to speech stream, or ignore their late chunks.
+3. Trim the answer in the conversation history to the part the user heard.
+4. Treat the new speech as the next turn, which the end of turn model closes as usual.
+
+In Micdrop, the client stops the speaker as soon as the VAD confirms speech during playback. The server then cancels the agent and the text to speech, and opens a new user stream for the audio that follows. The microphone also hears the agent's own voice, which echo cancellation removes. On a device that reports no echo cancellation, Micdrop turns interruptions off so the agent never interrupts itself.
+
+A cough or a "mm-hm" can still stop the agent by mistake. To filter those and trim the history to what actually played, follow the [complete barge-in sequence for voice agents](/blog/voice-agent-interruption-barge-in).
+
 ## Frequently asked questions
 
 <FaqList>
@@ -189,6 +224,9 @@ Background noise is the VAD's job rather than the turn model's. In a noisy room,
   </FaqItem>
   <FaqItem question="What is the difference between VAD and turn detection?">
     Voice activity detection answers "is someone speaking right now", frame by frame. Turn detection answers "has this person finished", once per pause. A voice agent with turn detection runs both: the VAD finds the pauses, and the turn detector decides which of them end the turn.
+  </FaqItem>
+  <FaqItem question="How does a voice agent handle interruptions?">
+    The VAD keeps listening while the agent speaks. When it confirms speech, the agent stops playback, clears the queued audio, cancels the answer in progress and listens to the user. The end of turn model then decides when that new turn is over, as for any other turn.
   </FaqItem>
   <FaqItem question="What is semantic VAD?">
     Semantic VAD is the name OpenAI gives to turn detection in its Realtime API. The API turns a model's score of whether the user has finished into a wait of up to 2, 4 or 8 seconds, depending on the `eagerness` setting. It only works inside that API, while Smart Turn runs next to any speech to text and any language model.
