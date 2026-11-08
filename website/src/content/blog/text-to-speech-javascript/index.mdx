@@ -1,8 +1,9 @@
 ---
 title: 'Text to Speech in JavaScript: speechSynthesis and Beyond'
 h1: 'Text to speech in JavaScript: speechSynthesis and what replaces it'
-summary: 'speechSynthesis speaks with the voices the operating system installs, free and offline but different on every machine. Two other routes replace it.'
+summary: 'The speechSynthesis API is free and works offline, but each device speaks with its own voices. A server voice or a model in the tab sounds the same everywhere.'
 date: 2026-10-29
+update: 2026-11-08
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -36,22 +37,37 @@ Making a page speak takes twenty lines of JavaScript, no library and no API key.
 
 The recognition half of the same browser interface has its own page, on [speech to text in JavaScript with the Web Speech API](/blog/web-speech-api).
 
-## speechSynthesis in twenty lines
+## How the speechSynthesis API works
 
-The whole interface is one global object and one utterance:
+The synthesis half of the Web Speech API comes down to two objects. `speechSynthesis` is the page's single controller, an instance of `SpeechSynthesis` exposed on `window`: it holds the queue of what is left to say, lists the voices, and starts or stops speech. A `SpeechSynthesisUtterance` is one piece of text to speak, with its language, its voice and its settings:
 
 ```js
 const utterance = new SpeechSynthesisUtterance('Your order has shipped.')
 utterance.lang = 'en-US'
 utterance.rate = 1
 utterance.pitch = 1
+utterance.volume = 1
 
+utterance.onend = () => console.log('Done speaking')
 speechSynthesis.speak(utterance)
 ```
 
-The device speaks with its default voice for the language. `rate` goes from 0.1 to 10, `pitch` from 0 to 2, `volume` from 0 to 1. The `start`, `end` and `error` events tell you what happened, and `boundary` fires at word boundaries, which is what subtitle highlighting is built on.
+With no voice set, the device speaks with its default voice for `lang`. `rate` goes from 0.1 to 10, `pitch` from 0 to 2 and `volume` from 0 to 1, all three at 1 by default, though some voices accept a narrower range. The utterance fires `start`, `end`, `pause`, `resume` and `error` events, plus `boundary` at word boundaries, which is what subtitle highlighting is built on.
 
-To pick a voice instead of taking the default, list them:
+`speak()` adds the utterance to a queue, where it waits until the utterances before it have finished. Three booleans on `speechSynthesis` report the state of that queue:
+
+- `speaking` is `true` while an utterance is being spoken, paused or not.
+- `pending` is `true` while utterances are waiting their turn.
+- `paused` is `true` from a `pause()` call until `resume()`.
+
+Three methods control the queue:
+
+- `pause()` holds the current utterance until `resume()` picks it up where it stopped.
+- `cancel()` stops the current utterance mid-word and empties the queue, so speaking again takes a new `speak()` call.
+
+### Pick a voice with getVoices()
+
+`speechSynthesis.getVoices()` returns the available voices as `SpeechSynthesisVoice` objects. Each one carries a `name`, a `lang` such as `en-GB`, a `localService` flag set to `true` when the voice runs on the device, and a `default` flag set to `true` on the default voice. To pick a voice instead of taking the default, filter the list by language:
 
 ```js
 let voices = []
@@ -66,15 +82,13 @@ loadVoices()
 speechSynthesis.onvoiceschanged = loadVoices
 ```
 
-In Chrome, `getVoices()` returns an empty array on the first call, because the browser collects the voices from the system after the page has loaded. The `voiceschanged` event fires once the list is ready, which is why `loadVoices()` runs twice. Then pass one of them to the utterance:
+In Chrome, `getVoices()` returns an empty array on the first call, because the browser collects the voices from the system after the page has loaded. `speechSynthesis` fires the `voiceschanged` event once the list is ready, which is why `loadVoices()` runs twice. Then pass one of the voices to the utterance:
 
 ```js
 const utterance = new SpeechSynthesisUtterance('Your order has shipped.')
 utterance.voice = voices[0]
 speechSynthesis.speak(utterance)
 ```
-
-`speechSynthesis` also exposes `pause()`, `resume()` and `cancel()`. `cancel()` stops everything on the spot, mid-word, with no way to resume where it stopped.
 
 ## Which browsers support it, and which voices you actually get
 
@@ -245,7 +259,10 @@ A model in the tab and a provider voice each have a weakness: the download for t
     No. The engine plays straight to the output device and the page receives events only, never samples. To get audio you can record, you have to synthesise it yourself, either with a model in the tab or with a text to speech API on your server. The audio is then yours to save.
   </FaqItem>
   <FaqItem question="How do I change the voice in speechSynthesis?">
-    Call `speechSynthesis.getVoices()` after the `voiceschanged` event has fired, since Chrome returns an empty list on the first call, then assign one of the voices to the `voice` property of the utterance. Choose by `lang` at runtime rather than by name, because a name that exists on your machine is missing on the next one.
+    Call `speechSynthesis.getVoices()` at startup and again when the `voiceschanged` event fires, since Chrome returns an empty list on the first call, then assign one of the voices to the `voice` property of the utterance. Choose by `lang` at runtime rather than by name, because a name that exists on your machine is missing on the next one.
+  </FaqItem>
+  <FaqItem question="Why does getVoices() return an empty array?">
+    Chrome collects the voices from the system after the page has loaded, so a `getVoices()` call made right at startup returns `[]`. Call it again when `speechSynthesis` fires `voiceschanged`. Keep the call at startup too, because when the list is ready before your script runs, the event has already fired and only that first call sees the voices. A list that stays empty usually means the system has no voice installed, which is common on Linux without espeak-ng. Safari fires the event from version 16 only, so on older versions poll `getVoices()` on a short timer.
   </FaqItem>
   <FaqItem question="Why does Chrome cut off speechSynthesis?">
     A Chromium bug, open for more than a decade, makes desktop Chrome stop an utterance after about 15 seconds with some voices, without an error or an `end` event. Split the text into one utterance per sentence, or call `pause()` followed by `resume()` on a timer while speech is running.
