@@ -259,7 +259,7 @@ When you measure them side by side from Node, the [local TTS engines differ most
     On a MacBook Pro M2, Phonon 31M started speaking after 30 to 100 ms, Pocket TTS after 250 to 430 ms, Piper after about 390 ms and Kokoro after 900 to 1300 ms. Gradium measured Phonon at 6.9 ms on four threads of a MacBook Air M5, and 38 ms on a Raspberry Pi 5.
   </FaqItem>
   <FaqItem question="Which open source TTS models can clone a voice?">
-    Pocket TTS clones a voice locally on a CPU from a short recording, under CC BY 4.0. On a GPU, Qwen3-TTS clones from three seconds of audio, Chatterbox from five to ten seconds, MOSS-TTS from three to ten seconds, and CosyVoice 3 and Ming-3.0-tts from a short clip. Phonon's custom voices are made through Gradium's API and then run locally.
+    Pocket TTS clones a voice locally on a CPU, while Qwen3-TTS, Chatterbox, MOSS-TTS, CosyVoice 3 and Ming-3.0-tts clone one on a GPU from a few seconds of audio. Our guide details [which open source model can clone a voice, under which license](/blog/open-source-voice-cloning), and from how much audio.
   </FaqItem>
   <FaqItem question="Can I use XTTS-v2 commercially?">
     No. XTTS-v2 is licensed under the Coqui Public Model License, which allows non-commercial use only, and Coqui closed in January 2024, so nobody sells the commercial license anymore. Qwen3-TTS and Chatterbox clone voices under Apache 2.0 and MIT.

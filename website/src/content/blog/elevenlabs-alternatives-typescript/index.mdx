@@ -129,7 +129,7 @@ Voxtral Speech 3 costs [$13 per million characters](https://mistral.ai/news/voxt
 
 ## Kokoro, Piper, Pocket TTS and Qwen3-TTS, when the voice runs on your own machine
 
-These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 53 languages, more than the other three put together. Pocket TTS clones a voice from a few seconds of audio and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
+These four engines need no API key. The audio stays on your machine. Kokoro installs with one npm command and speaks English. Piper runs a small binary as a subprocess and covers 53 languages, more than the other three put together. Pocket TTS [clones a voice from a few seconds of audio](/blog/open-source-voice-cloning) and speaks English. Qwen3-TTS goes through an mlx-audio server, which needs a Mac, and handles ten languages plus style instructions.
 
 Run the voice yourself and you drop both the per-character bill and the residency question. In exchange, the first word comes later and you have one more service to keep running. Kokoro, Piper and Pocket TTS differ a lot on [local text to speech latency and memory](/blog/local-tts-node-kokoro-vs-piper), measured on the same laptop.
 
