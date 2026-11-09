@@ -3,6 +3,7 @@ title: 'Retell AI Alternative: Run the Voice Loop in Your App'
 h1: 'Micdrop, an open source Retell AI alternative for TypeScript web apps'
 summary: 'Micdrop runs the voice loop in your Node server, so you pay your AI providers directly. Retell AI bills it per minute and extra concurrent calls monthly.'
 date: 2026-08-24
+update: 2026-11-09
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -47,7 +48,7 @@ A library does not attempt that. Decide which of those pieces your product needs
 
 ### The meter runs on minutes, including the model
 
-Retell's pay-as-you-go pricing lands between $0.07 and $0.31 a minute, assembled from separate lines. The voice infrastructure is $0.055 a minute. Platform voices add $0.015, premium voices up to $0.040. The model is charged per minute too, from $0.003 for a small model to around $0.16 for a frontier one. US telephony adds $0.015, and bringing your own SIP trunk costs nothing extra. Then come the per-minute add-ons: a knowledge base at $0.005, advanced denoising at $0.005, safety guardrails at $0.005, PII removal at $0.01, and AI quality assurance at $0.10 after the first hundred minutes.
+Retell's pay-as-you-go pricing lands between $0.07 and $0.31 a minute, assembled from separate lines. The voice infrastructure is $0.055 a minute. Platform voices add $0.015, ElevenLabs voices $0.040 to $0.10 depending on the model. The model is charged per minute too, from $0.0016 for GPT-5 nano to $0.32 for GPT-6 Astra, and most OpenAI models have a fast tier at twice the price, up to $0.64. US telephony adds $0.015, and bringing your own SIP trunk costs nothing extra. Then come the per-minute add-ons: a knowledge base at $0.005, advanced denoising at $0.005, safety guardrails at $0.005, PII removal at $0.01, and AI quality assurance at $0.10 after the first hundred minutes.
 
 The per-minute model charge is what surprises people. A conversation where the user thinks for eight seconds before answering burns the same model minute as one where they talk over the assistant. Token pricing follows what the model actually processed, and minute pricing follows the clock, so the two diverge exactly on the calls where a human is doing the slow part.
 
@@ -166,7 +167,7 @@ Products already run on Micdrop. [Raconte.ai](https://raconte.ai) conducts voice
 
 ## Head to head
 
-Retell published these prices in August 2026. Voice AI pricing moves fast, so check Retell's pricing page before you commit a budget.
+These prices come from Retell's pricing page as read on November 9, 2026. Voice AI pricing moves fast, so check Retell's pricing page before you commit a budget.
 
 | | Retell AI | Micdrop |
 |---|---|---|
@@ -175,7 +176,7 @@ Retell published these prices in August 2026. Voice AI pricing moves fast, so ch
 | **Server language** | Any, through the REST API and a WebSocket | TypeScript / Node.js |
 | **Agent authoring** | Dashboard, single prompt or node-based flow | Code, in your repository |
 | **Custom logic** | A public WebSocket Retell connects to | Functions and Zod schemas in your process |
-| **How the model is billed** | Per minute of call, by tier | Per token, by your provider |
+| **How the model is billed** | Per minute of call, from $0.0016 to $0.32, up to $0.64 on the fast tier | Per token, by your provider |
 | **Platform fee** | $0.055 / min of voice infrastructure | None |
 | **Concurrency** | 20 included, then $8 / line / month | Your server capacity |
 | **Browser SDK** | `retell-client-js-sdk`, transcript and raw audio events | `@micdrop/client`, plus React hooks |
@@ -192,7 +193,7 @@ The community gap deserves as much weight as the price gap. Retell has a support
 
 ## What each option costs
 
-Retell starts at $0 with $10 of free credits and 20 concurrent calls included. On top of the per-minute lines, phone numbers are $2 a month, verified ones $10, SMS $20, extra concurrency $8 a line, and knowledge bases $8 each past the first ten. Enterprise is a custom contract with uncapped concurrency, a dedicated server, SSO and 24/7 support.
+Retell starts at $0 with $10 of free credits and 20 concurrent calls included. A web agent on GPT-5.6 Terra and ElevenLabs Flash, with a knowledge base and denoising, comes to [$0.169 a minute on Retell AI](/blog/retell-ai-pricing), or $16,972 a month for 100,000 minutes once extra concurrency is counted. On top of the per-minute lines, phone numbers are $2 a month, verified ones $10, SMS $20, extra concurrency $8 a line, and knowledge bases $8 each past the first ten. Enterprise is a custom contract with uncapped concurrency, a dedicated server, SSO and 24/7 support.
 
 Micdrop costs nothing to install. You pay speech-to-text, the model and text-to-speech at list price, directly to each provider, plus whatever your server already costs to run. A free tier and an enterprise tier both need a company behind them, and Micdrop is a package.
 
@@ -241,7 +242,7 @@ Anything answering a phone number stays where it is. Micdrop covers the web leg,
     Yes, every self-hosted framework is free to install: Pipecat, LiveKit Agents, Dograh, Vocode and Micdrop all carry permissive licences and no per-minute platform fee. Free applies to the software rather than to the calls. You still pay speech-to-text, the model and text-to-speech at each provider's list price, and you pay for the server that runs the pipeline. The saving against a hosted platform is the orchestration fee, the concurrency subscription and the vendor margin, which is real money at 30,000 minutes a month and irrelevant at ten minutes a day.
   </FaqItem>
   <FaqItem question="How expensive is Retell AI?">
-    Retell's pay-as-you-go pricing runs from $0.07 to $0.31 a minute in August 2026, assembled from separate lines: $0.055 a minute of voice infrastructure, $0.015 to $0.040 for the voice, the model billed per minute by tier from $0.003 to about $0.16, and $0.015 a minute for US telephony. Add-ons stack on top, from $0.005 a minute for a knowledge base or denoising up to $0.10 a minute for AI quality assurance. Twenty concurrent calls are included and each extra line is $8 a month, phone numbers are $2 a month, and Enterprise is a custom contract. The account starts at $0 with $10 of free credits.
+    Retell's pay-as-you-go pricing runs from $0.07 to $0.31 a minute in November 2026, assembled from separate lines: $0.055 a minute of voice infrastructure, $0.015 to $0.10 for the voice, the model billed per minute from $0.0016 to $0.32, or up to $0.64 on the fast tier, and $0.015 a minute for US telephony. Add-ons stack on top, from $0.005 a minute for a knowledge base or denoising up to $0.10 a minute for AI quality assurance. Twenty concurrent calls are included and each extra line is $8 a month, phone numbers are $2 a month, and Enterprise is a custom contract. The account starts at $0 with $10 of free credits.
   </FaqItem>
   <FaqItem question="What is the difference between ElevenLabs and Retell AI?">
     They sit at different layers. ElevenLabs is primarily a voice provider, selling text-to-speech and speech-to-text that any pipeline can call, and it also ships an agents product on top. Retell is an orchestration platform: it runs the whole conversation, connects to telephony, and buys voices from providers like ElevenLabs on your behalf, which is why its premium voice tiers cost more per minute. Micdrop sits at the orchestration layer too, as code you run rather than a service you rent, and it calls ElevenLabs directly with your own key.
