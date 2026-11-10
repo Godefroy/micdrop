@@ -9,8 +9,6 @@ image: ./thumbnail.jpg
 keywords:
   - 'whisper alternative'
   - 'local speech to text'
-  - 'open source speech to text'
-  - 'best open source speech to text'
   - 'offline speech to text'
   - 'run whisper locally'
   - 'whisper cpp'
@@ -124,6 +122,8 @@ WhisperX downloads model weights on the first run and needs a separate alignment
 [NVIDIA Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) is the most accurate open model of the four in English. `parakeet-tdt-0.6b-v2` covers English and `v3` covers 25 European languages with automatic detection. Both have 600M parameters and are published under CC-BY 4.0. `v2` averages 4.70% word errors on the Hugging Face Open ASR leaderboard, against 5.78% for Whisper large-v3, and processes audio more than ten times faster on the leaderboard's GPU.
 
 [Kyutai STT](https://github.com/kyutai-labs/delayed-streams-modeling), from the Kyutai lab, was designed for streaming from the start. `stt-1b-en_fr` handles English and French with half a second of delay. The larger `stt-2.6b-en` handles English alone, with 2.5 seconds of delay. Kyutai publishes the weights of both under CC-BY 4.0.
+
+A [ranking of open source speech to text models](/blog/top-open-source-speech-to-text-models) compares them with newer open models such as Qwen3-ASR, Cohere Transcribe and NVIDIA's Nemotron family on streaming, word error rate and license.
 
 All four take more work to set up in Node than Whisper, which installs with one npm command:
 
