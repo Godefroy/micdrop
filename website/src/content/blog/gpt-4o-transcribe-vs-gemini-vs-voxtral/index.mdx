@@ -3,7 +3,7 @@ title: 'gpt-4o-transcribe vs Gemini Transcribe vs Voxtral'
 h1: 'gpt-4o-transcribe, Gemini Transcribe or Voxtral: streaming speech to text for a voice agent'
 summary: 'OpenAI, Gemini, Voxtral and Gladia compared for live transcription in a voice agent: price per minute, languages, streaming accuracy and time to transcript.'
 date: 2026-09-28
-update: 2026-10-22
+update: 2026-11-10
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -19,19 +19,21 @@ keywords:
   - 'voxtral realtime'
   - 'voxtral 3'
   - 'gpt 4o transcribe vs whisper'
+  - 'gpt-4o-transcribe-diarize'
+  - 'can gemini transcribe audio'
   - 'streaming speech to text api'
 similarPosts:
   - 'local-speech-to-text-node'
   - 'web-speech-api'
 takeaways:
   - 'A voice agent answers only once the final transcript of the sentence arrives, so the delay after the user stops talking matters more than the words shown while they speak.'
-  - 'gpt-4o-mini-transcribe is the cheapest streaming model at $0.003 a minute. gpt-4o-transcribe costs $0.006, Voxtral Realtime 3 $0.008 and Gemini 3.5 Transcribe about $0.009.'
+  - 'gpt-4o-mini-transcribe is the cheapest streaming model at $0.003 a minute until OpenAI shuts it down on 26 February 2027. gpt-transcribe, its replacement, costs $0.0045, Voxtral Realtime 3 $0.008 and Gemini 3.5 Transcribe about $0.009.'
   - 'Streaming costs accuracy. A model that transcribes while the user speaks usually makes more errors than the same model reading the whole recording.'
   - 'Mistral publishes the weights of its first Voxtral Realtime model under Apache 2.0, so a team can start on the API and later run that model on its own GPU.'
   - 'Gladia recognises the most languages, more than 100, switches between them within a call and stores the data in Europe or in the United States.'
 ---
 
-To transcribe a live call for a voice agent in 2026, start with Gemini 3.5 Transcribe: it has the lowest published error rate of the streaming models, understands more than 85 languages, takes up to 1,000 custom words and costs about $0.009 a minute. Pick gpt-4o-mini-transcribe when price comes first, at $0.003 a minute. Voxtral Realtime suits a team that wants a European provider, or open weights to run on its own GPU later. Gladia suits calls that switch languages, and calls in a language Voxtral lacks when the data must stay in Europe. This article compares the four providers, with the prices published in September and October 2026 and the delays we measured on Gemini, Voxtral and Gladia, and shows how to switch from one to another in a TypeScript server.
+To transcribe a live call for a voice agent in 2026, start with Gemini 3.5 Transcribe: it has the lowest published error rate of the streaming models, understands more than 85 languages, takes up to 1,000 custom words and costs about $0.009 a minute. Pick gpt-4o-mini-transcribe when price comes first, at $0.003 a minute, then move to gpt-transcribe at $0.0045 once OpenAI shuts the mini model down in February 2027. Voxtral Realtime suits a team that wants a European provider, or open weights to run on its own GPU later. Gladia suits calls that switch languages, and calls in a language Voxtral lacks when the data must stay in Europe. This article compares the four providers, with the prices published in November 2026 and the delays we measured on Gemini, Voxtral and Gladia, and shows how to switch from one to another in a TypeScript server.
 
 ## What a voice agent needs from speech to text
 
@@ -52,20 +54,24 @@ Every provider below can decide on its own when the sentence is over. [Micdrop](
     Infographic only: regenerate if the Gemini measurement is redone. Last data sync: 2026-09-28. */}
 ![Timeline from the end of speech to the agent's answer, with 190 to 510 ms spent waiting for the final transcript](./final-transcript-timeline.jpg)
 
-## gpt-4o-transcribe, gpt-4o-mini-transcribe and gpt-live-transcribe
+## gpt-4o-transcribe, gpt-transcribe and gpt-live-transcribe
 
-OpenAI offers three models that stream over its Realtime API.
+OpenAI offers four models that stream over its Realtime API, two of which shut down in February 2027.
 
-`gpt-4o-transcribe` costs $0.006 a minute. It is the default of the [OpenAI speech to text integration](/docs/ai-integration/provided-integrations/openai) in Micdrop and a safe first choice in English. `gpt-4o-mini-transcribe` costs half as much, $0.003 a minute, for a slightly higher error rate. gpt-4o-transcribe gets 4.0% of the words wrong on the Artificial Analysis benchmark of recorded files, and the mini version 4.5%.
+`gpt-4o-transcribe` costs $0.006 a minute. It is the default of the [OpenAI speech to text integration](/docs/ai-integration/provided-integrations/openai) in Micdrop. `gpt-4o-mini-transcribe` costs half as much, $0.003 a minute, for a slightly higher error rate. gpt-4o-transcribe gets 4.0% of the words wrong on the Artificial Analysis benchmark of recorded files, and the mini version 4.5%. OpenAI deprecated both models and whisper-1 in August 2026 and shuts all three down on 26 February 2027.
+
+`gpt-transcribe`, released in July 2026, replaces them at $0.0045 a minute and is the OpenAI model to start a new agent on in English. It waits for the server to close a turn before transcribing it. Micdrop already works that way, since the browser decides when the user has finished speaking.
 
 `gpt-live-transcribe`, released in July 2026, is the one OpenAI built for streaming. It sends words as the user speaks, takes a `delay` setting that trades speed for accuracy, and accepts a list of keywords. It costs $0.017 a minute, nearly three times gpt-4o-transcribe. The extra cost buys partial transcripts, which a voice agent that only reads the final text barely uses.
+
+`gpt-4o-transcribe-diarize` adds speaker labels. It returns each segment of the transcript with its speaker, its start and its end, and can recognise up to four known voices from reference clips of 2 to 10 seconds. It costs the same $0.006 a minute as gpt-4o-transcribe, reads only recorded files through the transcription endpoint, and shuts down on 26 February 2027 as well. A voice agent rarely needs it, because the browser streams the microphone of one person, so every sentence comes from the same speaker. Speaker labels help with a finished recording, such as a meeting or a phone call stored on a single channel. Voxtral Mini Transcribe 3 and the file version of Gemini 3.5 Transcribe also tell speakers apart.
 
 ```typescript
 import { OpenaiSTT } from '@micdrop/openai'
 
 const stt = new OpenaiSTT({
   apiKey: process.env.OPENAI_API_KEY || '',
-  model: 'gpt-4o-transcribe', // or 'gpt-4o-mini-transcribe', 'gpt-live-transcribe'
+  model: 'gpt-transcribe', // or 'gpt-live-transcribe', and 'gpt-4o-transcribe' until February 2027
   language: 'fr', // English when left out
   prompt: 'A customer calls to move an appointment at the Lyon clinic.',
 })
@@ -73,11 +79,9 @@ const stt = new OpenaiSTT({
 
 `OpenaiSTT` transcribes in English unless you pass `language`, so set it on every call in another language. The `prompt` gives the model context, which helps with names and jargon. The OpenAI API also expects 24 kHz audio, so the integration resamples the 16 kHz stream of the browser before sending it.
 
-{/* TODO VERIFY: gpt-live-transcribe documents a `languages` array and a `delay` setting that OpenaiSTT does not pass yet. Check that `model: 'gpt-live-transcribe'` accepts the `language` option OpenaiSTT sends, as the advanced example assumes. */}
-
 ## Gemini 3.5 Transcribe
 
-Google released Gemini 3.5 Transcribe in August 2026 in two versions, `gemini-3.5-transcribe` for files and `gemini-3.5-transcribe-live` for streaming. The live version runs over the Gemini Live API and recognises more than 85 languages, even when a call switches between them. It costs $3.50 per million audio tokens in and $21 per million tokens out, which comes to about $0.009 a minute.
+Google released Gemini 3.5 Transcribe in August 2026 in two versions, `gemini-3.5-transcribe` for files and `gemini-3.5-transcribe-live` for streaming. The live version runs over the Gemini Live API and recognises more than 85 languages, even when a call switches between them. It costs $3.50 per million audio tokens in and $21 per million tokens out, which comes to about $0.009 a minute. The file version costs $2 per million audio tokens in and $12 out, about $0.005 a minute, and reads up to an hour of audio per request.
 
 Google reports a 4.0% error rate in streaming on the Artificial Analysis benchmark, and 2.6% on recorded files. Google also reports 5.5% in streaming on FLEURS, the benchmark Mistral publishes for Voxtral. Gemini 3.5 Transcribe accepts the longest list of custom words, up to 1,000, although Google recommends about a hundred for the best results.
 
@@ -96,7 +100,7 @@ const stt = new GeminiSTT({
 
 ## Voxtral Realtime through Mistral's API
 
-Mistral released Voxtral Mini Transcribe Realtime 3 in October 2026, as `voxtral-mini-transcribe-realtime-3-0`. It costs $0.008 a minute, a third more than gpt-4o-transcribe, and recognises more than 40 languages, against 13 for the first version, released in February 2026. Mistral announces a final transcript in under 500 ms. For recorded files, Mistral sells Voxtral Mini Transcribe 3 at $0.0035 a minute and Voxtral Small Transcribe 3 at $0.004, both able to tell speakers apart and to take custom words.
+Mistral released Voxtral Mini Transcribe Realtime 3 in October 2026, as `voxtral-mini-transcribe-realtime-3-0`. It costs $0.008 a minute, a third more than gpt-4o-transcribe, and recognises more than 35 languages, against 13 for the first version, released in February 2026. Mistral announces a final transcript in under 500 ms. For recorded files, Mistral sells Voxtral Mini Transcribe 3 at $0.0035 a minute and Voxtral Small Transcribe 3 at $0.004, both able to tell speakers apart and to take custom words.
 
 Mistral publishes the weights of its first realtime model, the 4 billion parameter `voxtral-mini-transcribe-realtime-2602`, under the Apache 2.0 license. A team can start on the API and move that model onto its own GPU later. It is the only model in this comparison with open weights. Version 3 runs on Mistral's API, or on your servers through a deal with Mistral.
 
@@ -121,7 +125,7 @@ Gladia is a French company whose real-time API recognises more than 100 language
 
 When a call can move between languages, the transcript, agent response and spoken voice need to stay aligned. [Building a multilingual voice agent](/blog/multilingual-voice-agent) covers that whole path.
 
-Gladia charges $0.75 an hour on the Starter plan, about $0.0125 a minute, down to $0.25 an hour with volume. Only gpt-live-transcribe costs more per minute in this comparison. A new account gets €50 of credit.
+Gladia's real-time transcription starts at €0.68 an hour on its self-serve plan, about €0.011 a minute. Its published volume discounts cover only recorded files. Only gpt-live-transcribe costs more per minute in this comparison. A new account gets €50 of credit, valid for a year.
 
 The [Gladia integration](/docs/ai-integration/provided-integrations/gladia) passes any session setting through `settings`. In a conversation, code switching and `endpointing` matter most.
 
@@ -145,7 +149,7 @@ Gladia closes a sentence after `endpointing` seconds of silence, 50 ms by defaul
 
 ## Whisper as the baseline
 
-OpenAI's `whisper-1` costs $0.006 a minute, the same as gpt-4o-transcribe, but it only reads recorded files. gpt-4o-transcribe makes fewer errors for the same price, according to OpenAI, so it replaces Whisper in a hosted pipeline.
+OpenAI's `whisper-1` costs $0.006 a minute, the same as gpt-4o-transcribe, but it only reads recorded files. gpt-4o-transcribe makes fewer errors for the same price, according to OpenAI. Both shut down on 26 February 2027, so move a hosted pipeline to gpt-transcribe.
 
 Whisper keeps its place on your own server, where it costs nothing per minute and no audio leaves the machine. We compared it with Parakeet, Moonshine and Vosk when [running speech to text locally in Node](/blog/local-speech-to-text-node), and the docs say [which Whisper checkpoint to run locally](/docs/ai-integration/local-models/speech-to-text) for the language of your calls.
 
@@ -166,14 +170,15 @@ You can plug any of them into Micdrop by writing a [custom speech to text class]
 
 | Model | Price per minute | Languages | Custom words | Open weights | Streaming error rate |
 |---|---|---|---|---|---|
-| gpt-4o-mini-transcribe | $0.003 | Many, set per call | Prompt | No | Not published |
-| gpt-4o-transcribe | $0.006 | Many, set per call | Prompt | No | Not published |
+| gpt-4o-mini-transcribe, until February 2027 | $0.003 | Many, set per call | Prompt | No | Not published |
+| gpt-4o-transcribe, until February 2027 | $0.006 | Many, set per call | Prompt | No | Not published |
+| gpt-transcribe | $0.0045 | Many, set per call | Prompt | No | Not published |
 | gpt-live-transcribe | $0.017 | Many | Prompt and keywords | No | 19.7% Common Voice, reported by OpenAI |
 | Gemini 3.5 Transcribe live | About $0.009 | 85+, code switching | Up to 1,000 | No | 4.0% Artificial Analysis, 5.5% FLEURS, reported by Google |
-| Voxtral Realtime 3 | $0.008 | 40+ | Yes, not exposed in Micdrop | February version, Apache 2.0 | FLEURS, charted by delay, reported by Mistral |
-| Gladia real time | $0.0125, less with volume | 100+, code switching | Yes | No | Not published |
+| Voxtral Realtime 3 | $0.008 | 35+ | Yes, not exposed in Micdrop | February version, Apache 2.0 | FLEURS, charted by delay, reported by Mistral |
+| Gladia real time | About €0.011 | 100+, code switching | Yes | No | Not published |
 
-Prices come from each provider's pricing page, read in September 2026 for OpenAI, Google and Gladia and in October 2026 for Mistral. The error rates come from different benchmarks, so compare two rows only when they share a benchmark.
+Prices come from each provider's pricing page, read in November 2026. The error rates come from different benchmarks, so compare two rows only when they share a benchmark.
 
 ## Time to the final transcript, measured
 
@@ -191,9 +196,9 @@ All three models wrote the times and order numbers of our sentences in digits, r
 
 {/* TODO ANECDOTE: run the same four sentences through gpt-4o-transcribe, gpt-4o-mini-transcribe and gpt-live-transcribe (OPENAI_API_KEY was missing from examples/advanced/.env), and add their rows to this table. Method: macOS `say` (Samantha, Thomas) converted to 16 kHz PCM, streamed in 20 ms chunks at real pace, timed from stream end to the Transcript event. */}
 
-{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Four vertical cards side by side on a dark surface, one per model, each with a thin emerald top border and a single simple abstract audio waveform glyph at the top of the card, with no text inside the glyph. Under the glyph, each card shows its title then exactly three lines of text, each written once and only once, with nothing else on the card. Card 1 titled 'gpt-4o-transcribe', lines '$0.006 / min', 'Many languages', 'Mini version: $0.003 / min'. Card 2 titled 'Gemini 3.5 Transcribe', lines 'About $0.009 / min', '85+ languages', 'Up to 1,000 custom words', plus a small emerald badge at the bottom of the card reading 'Lowest error rate'. Card 3 titled 'Voxtral Realtime 3', lines '$0.008 / min', '40+ languages', 'European provider'. Card 4 titled 'Gladia', lines '$0.0125 / min', '100+ languages', 'EU or US hosting'. Title at the top in a modern clean bold sans-serif: 'Streaming speech to text for a voice agent'. Small footer text: 'Prices published in October 2026'."
-    Infographic only: regenerate if a provider changes its price, its language count or its models. Last data sync: 2026-10-22. */}
-![Comparison of gpt-4o-transcribe, Gemini 3.5 Transcribe, Voxtral Realtime 3 and Gladia on price per minute, languages and one distinctive feature](./streaming-stt-comparison.jpg)
+{/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Four vertical cards side by side on a dark surface, one per model, each with a thin emerald top border and a single simple abstract audio waveform glyph at the top of the card, with no text inside the glyph. Under the glyph, each card shows its title then exactly three lines of text, each written once and only once, with nothing else on the card. Card 1 titled 'gpt-transcribe', lines '$0.0045 / min', 'Many languages', 'Replaces gpt-4o-transcribe'. Card 2 titled 'Gemini 3.5 Transcribe', lines 'About $0.009 / min', '85+ languages', 'Up to 1,000 custom words', plus a small emerald badge at the bottom of the card reading 'Lowest error rate'. Card 3 titled 'Voxtral Realtime 3', lines '$0.008 / min', '35+ languages', 'European provider'. Card 4 titled 'Gladia', lines 'From €0.68 / hour', '100+ languages', 'EU or US hosting'. Title at the top in a modern clean bold sans-serif: 'Streaming speech to text for a voice agent'. Small footer text: 'Prices published in November 2026'."
+    Infographic only: regenerate if a provider changes its price, its language count or its models. Last data sync: 2026-11-10. */}
+![Comparison of gpt-transcribe, Gemini 3.5 Transcribe, Voxtral Realtime 3 and Gladia on price per minute, languages and one distinctive feature](./streaming-stt-comparison.jpg)
 
 ## Swapping one for another, and FallbackSTT
 
@@ -230,8 +235,8 @@ Two providers from different companies rarely go down on the same day. Pair Mist
 ## Which one to pick
 
 - Start with Gemini 3.5 Transcribe for a new voice agent. It has the best published accuracy, many languages and the longest vocabulary list, for about $0.009 a minute.
-- Take gpt-4o-mini-transcribe when the volume is high and the calls are in English. At $0.003 a minute, a thousand hours of calls costs $180.
-- Keep gpt-4o-transcribe if the rest of your stack already runs on OpenAI and you want a single bill.
+- Take gpt-4o-mini-transcribe when the volume is high and the calls are in English. At $0.003 a minute, a thousand hours of calls costs $180, and $270 on gpt-transcribe once the mini model shuts down in February 2027.
+- Choose gpt-transcribe if the rest of your stack already runs on OpenAI and you want a single bill.
 - Pick Voxtral Realtime if you want a European provider at $0.008 a minute, or plan to host its open weights version yourself.
 - Pick Gladia for calls that switch languages, or when the data has to stay in Europe and Voxtral lacks the language.
 - Reserve gpt-live-transcribe for an interface that shows the words as the user speaks, such as [a dictation tool](/docs/server/dictation).
@@ -244,14 +249,30 @@ You can [compare every transcription, agent and voice integration](/docs/ai-inte
   <FaqItem question="Which is better, Whisper-1 or GPT-4o-Transcribe?">
     gpt-4o-transcribe is better, for the same price of $0.006 a minute. OpenAI reports fewer
     errors than Whisper across languages. gpt-4o-transcribe also streams over the Realtime API,
-    while whisper-1 only reads recorded files. Whisper stays useful when you run it on your own
-    server.
+    while whisper-1 only reads recorded files. OpenAI shuts both down on 26 February 2027 and
+    points to gpt-transcribe instead. Whisper stays useful when you run it on your own server.
   </FaqItem>
   <FaqItem question="How much does GPT-4o Transcribe cost?">
     gpt-4o-transcribe costs $0.006 a minute of audio, or $0.36 an hour, billed as $2.50 per
     million audio tokens in and $10 per million text tokens out. gpt-4o-mini-transcribe costs
     $0.003 a minute and gpt-live-transcribe $0.017, according to OpenAI's pricing in
-    September 2026.
+    November 2026. gpt-4o-transcribe shuts down on 26 February 2027. Its replacement,
+    gpt-transcribe, costs $0.0045 a minute.
+  </FaqItem>
+  <FaqItem question="Can Gemini transcribe audio?">
+    Yes. Through the Gemini API, gemini-3.5-transcribe reads a recorded file of up to an hour for
+    about $0.005 a minute, and gemini-3.5-transcribe-live transcribes a live call for about $0.009
+    a minute, in more than 85 languages, according to Google's pricing in November 2026. The
+    general Gemini models also transcribe a file of up to 9.5 hours when the prompt asks for a
+    transcript. In the Gemini app, you can upload a recording and ask for its transcript, up to 10
+    minutes of audio on the free plan and 3 hours with Google AI Pro or Ultra.
+  </FaqItem>
+  <FaqItem question="Is ChatGPT able to transcribe audio?">
+    Yes. The dictation button in the ChatGPT app turns what you say into text. To transcribe audio
+    inside your own application, use OpenAI's API instead: gpt-transcribe reads recorded audio and
+    closed turns for $0.0045 a minute, and gpt-live-transcribe streams words as the user speaks
+    for $0.017 a minute. Micdrop can [run both models in a voice
+    agent](/docs/ai-integration/provided-integrations/openai).
   </FaqItem>
   <FaqItem question="Can Gemini perform real-time transcription?">
     Yes. gemini-3.5-transcribe-live streams audio over the Gemini Live API and returns the text
