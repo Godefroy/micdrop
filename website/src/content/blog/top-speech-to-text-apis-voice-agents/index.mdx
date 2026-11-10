@@ -37,7 +37,7 @@ Prices come from each vendor's pricing page. Accuracy and speed figures come fro
 
 A voice agent answers a sentence only once it has its final transcript. The user waits for that transcript, then for [the language model](/blog/top-llms-voice-agents) and the voice. The ranking weighs these criteria:
 
-- the word error rate (WER) and the time from the end of speech to the final transcript
+- the [word error rate (WER)](/blog/what-is-automatic-speech-recognition#word-error-rate-and-what-it-hides) and the time from the end of speech to the final transcript
 - whether the API detects the end of the user's turn itself, or leaves that to your code
 - the languages it transcribes in streaming, and whether one call can switch between them
 - the price per minute of streamed audio

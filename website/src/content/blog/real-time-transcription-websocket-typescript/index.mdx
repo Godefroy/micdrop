@@ -32,7 +32,7 @@ Real-time transcription in TypeScript works by streaming small chunks of microph
 
 ## Real-time transcription works on audio with no end yet
 
-A transcription API you call with a file receives a beginning, a middle and an end. It can read the whole recording, look ahead, correct itself, and return the text when it is done.
+A transcription API you call with a file receives a beginning, a middle and an end. It can read the whole recording, look ahead, correct itself, and return the text when it is done. This mode is called batch recognition, one of the two ways [automatic speech recognition](/blog/what-is-automatic-speech-recognition) runs.
 
 A live call has no file. The audio is still being spoken when the first chunk leaves the browser, and nobody knows yet how long the sentence will last. So the system has to answer three questions that a file answers by itself: when a sentence starts, what to send while it lasts, and when it is over.
 
