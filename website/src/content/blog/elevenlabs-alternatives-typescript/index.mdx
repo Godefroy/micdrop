@@ -54,6 +54,8 @@ Data residency comes up with European buyers. Teams in health, education and the
 
 OpenAI's speech API takes no language parameter and speaks whatever text you send it. The `gpt-4o-mini-tts` model adds prosody instructions written in plain English, so you can ask it for a slower delivery or a French accent. Listen to OpenAI, ElevenLabs and Gradium back to back and OpenAI sounds the least polished. You stay with one vendor, though, since the same key covers the agent and the speech.
 
+The provider endpoints differ in whether they accept text incrementally or only stream audio for complete input. [See how text to speech streaming works in an LLM voice agent](/blog/streaming-text-to-speech-llm).
+
 ## Cartesia, when latency is the constraint
 
 [Cartesia](https://cartesia.ai) built Sonic around time to first audio. A caller hears the gap between the end of their own sentence and the first syllable of the answer. Once the answer starts, nobody counts how fast the words come.

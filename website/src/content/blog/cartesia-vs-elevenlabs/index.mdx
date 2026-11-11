@@ -106,6 +106,8 @@ Both vendors stream over a WebSocket, with protocols that share almost nothing:
 - ElevenLabs Flash v2.5 streams over the Text to Speech WebSocket, with the voice in the URL, a keep-alive while the user speaks, and a flush at the end of the answer.
 - Eleven v4 Turbo streams over the Text to Dialogue WebSocket, which takes the voice in its first message and answers in snake case. It needs a flush at the end of every sentence and a new connection at every interruption.
 
+The difference between streaming the audio out and sending the text in while the LLM writes it determines how much synthesis can overlap with generation. [Compare the streaming modes for text to speech in a voice agent](/blog/streaming-text-to-speech-llm).
+
 [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, wraps both vendors behind the same `TTS` interface. `CartesiaTTS` manages the contexts, sends the cancel message and reconnects with the unspoken text. `ElevenLabsTTS` picks the WebSocket from the model ID, so `modelId: 'eleven_v4_turbo'` is enough to move from Flash to v4 Turbo. Both emit 16 kHz PCM audio, which the browser client plays. Read the engine from an environment variable to compare them on real calls:
 
 ```typescript
