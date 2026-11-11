@@ -88,7 +88,7 @@ Five engines run next to a Node server without an API key: Phonon, Piper, Kokoro
 
 ### Phonon 40M French, measured
 
-Phonon is Gradium's on-device text to speech model, built on Kyutai's Pocket TTS. Gradium publishes it on Hugging Face in seven variants, one of them trained on French alone, `gradium/phonon-40m-fr`. Its runtime is compiled to WebAssembly, so it runs on a worker thread of the Node process, with no native addon and no Python.
+[Phonon](/docs/ai-integration/provided-integrations/phonon) is Gradium's on-device text to speech model, built on Kyutai's Pocket TTS. Gradium publishes it on Hugging Face in seven variants, one of them trained on French alone, `gradium/phonon-40m-fr`. Its runtime is compiled to WebAssembly, so it runs on a worker thread of the Node process, with no native addon and no Python.
 
 On a MacBook Pro M2, on one CPU core, we measured:
 
@@ -168,7 +168,7 @@ The script takes about eighty lines of TypeScript and runs against any engine in
 
 [Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. It handles the microphone, speech detection, interruptions and audio streaming between the browser and your Node server. Micdrop's integrations for the six hosted APIs and the five local engines share one TTS interface.
 
-Phonon 40M French takes two options, the model and a French voice:
+[Phonon 40M French takes two options](/docs/ai-integration/provided-integrations/phonon), the model and a French voice:
 
 ```typescript
 import { PHONON_MODELS, PhononTTS } from '@micdrop/phonon'
