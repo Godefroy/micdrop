@@ -3,6 +3,12 @@ import * as dotenv from 'dotenv'
 dotenv.config({ quiet: true })
 
 import {
+  choice as geminiChoice,
+  GeminiClassifier,
+  GeminiQuestions,
+  noul as geminiNoul,
+} from '@micdrop/gemini'
+import {
   choice,
   OpenaiClassifier,
   OpenaiQuestions,
@@ -23,9 +29,9 @@ import { ClaudeClassifier } from './ClaudeClassifier'
 import { LABELLED } from './sentences'
 
 /**
- * Times three classifiers on the same sentences, sent to the three at the
- * same moment: Jev, the Decisions API of OpenAI, and Claude with structured
- * outputs. Next to the time of each request, it keeps the command each one
+ * Times four classifiers on the same sentences, sent to all of them at the
+ * same moment: Jev, the Decisions APIs of OpenAI and Gemini, and Claude with
+ * structured outputs. Next to the time of each request, it keeps the command each one
  * read, compared with the commands accepted in `sentences.ts`, the requests
  * that failed, the questions refused, the tokens and what they cost.
  *
@@ -36,22 +42,28 @@ import { LABELLED } from './sentences'
 const ROUNDS = Number(process.env.ROUNDS || 3)
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-haiku-4-5'
 const OPENAI_MODEL = 'gpt-6-luna'
+const GEMINI_MODEL = 'gemini-decision-1'
 
-/** Public prices in USD per million tokens, read on 2026-10-13 */
+/**
+ * Public prices in USD per million tokens, read on 2026-10-13, and on
+ * 2026-11-12 for Gemini
+ */
 const PRICES: Record<string, { input: number; output: number }> = {
   jev: { input: 0.042, output: 0 },
   [OPENAI_MODEL]: { input: 0.1, output: 0 },
+  [GEMINI_MODEL]: { input: 0.1, output: 0 },
   'claude-haiku-4-5': { input: 1, output: 5 },
 }
 
 /** Under this confidence in the number of steps, a command counts as unsure */
 const UNSURE = 0.6
 
-type Name = 'jev' | 'openai' | 'claude'
-const NAMES: Name[] = ['jev', 'openai', 'claude']
+type Name = 'jev' | 'openai' | 'gemini' | 'claude'
+const NAMES: Name[] = ['jev', 'openai', 'gemini', 'claude']
 const MODELS: Record<Name, string> = {
   jev: 'jev',
   openai: OPENAI_MODEL,
+  gemini: GEMINI_MODEL,
   claude: CLAUDE_MODEL,
 }
 
@@ -91,6 +103,29 @@ function openaiQuestions(): OpenaiQuestions {
   return questions
 }
 
+/**
+ * The questions of Jev, written for the Gemini Decisions API, which wants a
+ * description for every option: an option without one is described by its key
+ */
+function geminiQuestions(): GeminiQuestions {
+  const questions: GeminiQuestions = {}
+  for (const [key, question] of Object.entries(QUESTIONS)) {
+    const instructions = String(question.instructions)
+    if (question.type === 'noul') {
+      questions[key] = geminiNoul(instructions)
+    } else if (question.type === 'choice') {
+      const criteria = question.criteria as Record<string, string | null>
+      questions[key] = geminiChoice(
+        instructions,
+        Object.fromEntries(
+          Object.entries(criteria).map(([value, d]) => [value, d ?? value])
+        )
+      )
+    }
+  }
+  return questions
+}
+
 /** The answers of the Decisions API, in the shape `toCommand()` reads */
 function fromOpenai(answers: Record<string, any>) {
   const result: Record<string, any> = {}
@@ -107,6 +142,7 @@ async function measure() {
   for (const key of [
     'TYPESAFE_API_KEY',
     'OPENAI_API_KEY',
+    'GEMINI_API_KEY',
     'ANTHROPIC_API_KEY',
   ]) {
     if (!process.env[key]) throw new Error(`${key} is missing from .env`)
@@ -121,6 +157,11 @@ async function measure() {
       model: OPENAI_MODEL,
       questions: openaiQuestions(),
     }),
+    gemini: new GeminiClassifier({
+      apiKey: process.env.GEMINI_API_KEY || '',
+      model: GEMINI_MODEL,
+      questions: geminiQuestions(),
+    }),
     claude: new ClaudeClassifier({
       apiKey: process.env.ANTHROPIC_API_KEY,
       model: CLAUDE_MODEL,
@@ -129,7 +170,12 @@ async function measure() {
   }
 
   // A failed request resolves with nothing: its error is read from the logs
-  const errors: Record<Name, string[]> = { jev: [], openai: [], claude: [] }
+  const errors: Record<Name, string[]> = {
+    jev: [],
+    openai: [],
+    gemini: [],
+    claude: [],
+  }
   for (const name of NAMES) {
     classifiers[name].logger = {
       log: (...message: any[]) => {
@@ -153,10 +199,16 @@ async function measure() {
           command: toCommand(
             name === 'openai' ? fromOpenai(result.answers) : result
           ),
-          usage: {
-            input_tokens: result.usage.input_tokens,
-            output_tokens: result.usage.output_tokens,
-          },
+          usage:
+            name === 'gemini'
+              ? {
+                  input_tokens: result.usage?.total_input_tokens ?? 0,
+                  output_tokens: result.usage?.total_output_tokens ?? 0,
+                }
+              : {
+                  input_tokens: result.usage.input_tokens,
+                  output_tokens: result.usage.output_tokens,
+                },
           refusals: result.refusals ?? [],
           countConfidence: result.answers.steps?.confidence,
         }
@@ -242,19 +294,15 @@ async function measure() {
         : undefined,
     }
   }
-  const results = {
-    jev: stats('jev'),
-    openai: stats('openai'),
-    claude: stats('claude'),
-  }
+  const results = Object.fromEntries(
+    NAMES.map((name) => [name, stats(name)])
+  ) as Record<Name, ReturnType<typeof stats>>
 
   // Two classifiers agree when they read the same steps and the same flags
   const agreement: Record<string, { same: number; of: number }> = {}
-  const pairs: Array<[Name, Name]> = [
-    ['jev', 'openai'],
-    ['jev', 'claude'],
-    ['openai', 'claude'],
-  ]
+  const pairs = NAMES.flatMap((a, i) =>
+    NAMES.slice(i + 1).map((b) => [a, b] as [Name, Name])
+  )
   for (const [a, b] of pairs) {
     const both = samples.filter((s) => s.readings[a] && s.readings[b])
     agreement[`${a}-${b}`] = {
@@ -287,7 +335,7 @@ async function measure() {
       `| ${label} | ${NAMES.map((n) => pick(results[n])).join(' | ')} |`
     )
   console.log(`| | ${NAMES.map((n) => MODELS[n]).join(' | ')} |`)
-  console.log('|---|---|---|---|')
+  console.log(`|---|${NAMES.map(() => '---|').join('')}`)
   row('median', (r) => `${r.median} ms`)
   row('p95', (r) => `${r.p95} ms`)
   row('min', (r) => `${r.min} ms`)
@@ -317,7 +365,7 @@ async function measure() {
   }
 
   mkdirSync('measurements', { recursive: true })
-  const file = `measurements/${new Date().toISOString().slice(0, 10)}-jev-${OPENAI_MODEL}-${CLAUDE_MODEL}.json`
+  const file = `measurements/${new Date().toISOString().slice(0, 10)}-jev-${OPENAI_MODEL}-${GEMINI_MODEL}-${CLAUDE_MODEL}.json`
   writeFileSync(
     file,
     JSON.stringify(

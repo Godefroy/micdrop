@@ -68,6 +68,34 @@ Check
 [which questions Jev answers and which ones to leave to an LLM](/blog/what-is-jev)
 before you rely on Jev for a decision.
 
+## Measured latency and accuracy
+
+The robot demo of the Micdrop repository times the three provided classifiers
+and an LLM on the same 30 voice commands, three times each, with 21 questions
+per request sent to the four at the same moment. Each command read is checked
+against the commands accepted for its sentence.
+
+|                     | Jev    | OpenAI Decisions | Gemini Decisions | Claude Haiku 4.5 |
+| ------------------- | ------ | ---------------- | ---------------- | ---------------- |
+| Median latency      | 164 ms | 244 ms           | 337 ms           | 1,876 ms         |
+| p95 latency         | 207 ms | 686 ms           | 485 ms           | 1,977 ms         |
+| First request       | 263 ms | 1,733 ms         | 320 ms           | 2,554 ms         |
+| Right commands      | 78/90  | 60/90            | 81/90            | 89/90            |
+| Refused questions   | 0      | 3                | 0                | 0                |
+| USD per 1,000 turns | $0.16  | $0.43            | $0.29            | $4.40            |
+
+Jev answers twice as fast as Gemini at the lowest price. Gemini reads the most
+commands right among the three decision models, and its unsure answers were all
+right. The LLM reads almost every command right, at five times the latency and
+fifteen times the price of Gemini.
+
+These figures come from one run, on 2026-11-12, with the questions of this demo,
+and the sentences each model missed are discussed in
+[the benchmark of the Decisions API against Jev](/blog/openai-decisions-vs-jev).
+Your own turns decide the pick. Run `pnpm measure:classifiers` in
+`examples/demo-robot` with your questions, and each run lands in its
+`measurements` folder.
+
 The agent, the voice and even the answer are optional. A server with only a
 speech to text and a classifier turns each thing the user says into a typed
 command for the page.

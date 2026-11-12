@@ -275,6 +275,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.3.4
         version: 11.3.7
+      '@micdrop/gemini':
+        specifier: '*'
+        version: link:../../packages/gemini
       '@micdrop/openai':
         specifier: '*'
         version: link:../../packages/openai
