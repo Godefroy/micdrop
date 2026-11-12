@@ -61,7 +61,7 @@ graph TD
 
 The decoder is where model families differ:
 
-- CTC models predict a letter or a piece of a word for each frame of audio, then merge the repeats. They are fast, simple and good at streaming, but they rely less on context than the other families.
+- CTC models predict a letter or a piece of a word for each frame of audio, then merge the repeats. They are fast, simple and good at streaming, but they rely less on context than the other families. Mozilla's DeepSpeech, archived in 2025, was a CTC model too. Each of its uses now has a [replacement among current open models](/blog/deepspeech-alternatives).
 - Transducers add a small language model that predicts the next token from the tokens already written. NVIDIA's Parakeet TDT uses this design. Many streaming models do too, since a transducer works frame by frame and still uses context.
 - Encoder-decoder models such as Whisper write the transcript one token at a time while looking at the whole encoded clip. They are accurate on a finished recording and awkward to stream, because they expect the clip to be complete.
 - Some recent models put an audio encoder in front of a large language model. Mistral's Voxtral and IBM's Granite Speech work this way. Voxtral can also answer questions about the audio.
