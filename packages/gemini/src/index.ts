@@ -1,4 +1,5 @@
 export * from './GeminiAgent'
+export * from './GeminiClassifier'
 export * from './GeminiLive'
 export * from './GeminiSTT'
 export * from './GeminiTTS'

@@ -13,6 +13,8 @@ This package provides an agent, a speech-to-text and a text-to-speech running
 on the Gemini API. Each one can be combined with any other provider.
 `GeminiLive` goes further: it is a [realtime model](../../server/realtime) that
 hears the user and answers with its own voice, in place of the three.
+`GeminiClassifier` reads each turn of the user and answers typed questions
+about it, next to any of them.
 
 ## Installation
 
@@ -407,6 +409,157 @@ once Gemini announces the end of the current one. `GeminiLive` also turns on
 context window compression, which lifts the fifteen minute limit of an audio
 session.
 
+## Gemini Classifier
+
+`GeminiClassifier` is a [classifier](../../server/classifier) running the
+[Decisions API](https://aistudio.google.com/docs/decisions-api) of Gemini. It
+answers a set of typed questions in a single forward pass, without writing a
+token: the probability that a condition is true, a choice out of several
+values, or a score on ordered levels. Adding questions barely changes the
+latency, up to 1,000 per request.
+
+Gemini Decision 1 is its only model, on the `v1beta` Gemini Developer API. It
+asks the same three kinds of questions as
+[Jev](./typesafe), with the same helpers and the same shape of answers, so code
+reading `answers.wantsHuman.noul` works with both.
+
+### Usage with MicdropServer
+
+```typescript
+import { choice, GeminiClassifier, noul, score } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const classifier = new GeminiClassifier({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  questions: {
+    intent: choice(
+      'What does the user in `turn` want? Read `history` for context.',
+      {
+        billing: 'A charge, an invoice, a refund',
+        outage: 'The service is down or slow',
+        cancel: 'Cancel the subscription or switch provider',
+        other: 'Anything else',
+      }
+    ),
+    frustration: score('How frustrated is the user in `turn`?', [
+      'Calm',
+      'Annoyed',
+      'Angry',
+    ]),
+    wantsHuman: noul('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { sendToClient: true, waitBeforeAnswer: true },
+})
+```
+
+The server classifies each turn of the user when it ends, and sends it the
+`MicdropTurnInput` as JSON, with the `turn` and its `history`. The model never
+sees the keys of the questions, so each instruction holds the whole question
+and points at these fields by name, between backticks. See
+[Classifier](../../server/classifier) for the server options and routing the
+answer in `onBeforeAnswer`.
+
+### Usage without MicdropServer
+
+```typescript
+import { GeminiClassifier, noul } from '@micdrop/gemini'
+
+const classifier = new GeminiClassifier({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  questions: { urgent: noul('Does this message sound urgent?') },
+})
+
+const classification = await classifier.classify('My internet is down!')
+console.log(classification?.result.answers.urgent.noul)
+```
+
+### Questions
+
+Three helpers build the questions. The key of each question names its answer.
+
+| Helper                           | Answers                                       | Example                             |
+| -------------------------------- | --------------------------------------------- | ----------------------------------- |
+| `noul(instructions, criteria?)`  | The probability that the condition is true    | Asks for a human, wants to cancel   |
+| `choice(instructions, criteria)` | One value out of several, without order       | The intent, the topic, the language |
+| `score(instructions, levels)`    | A position on ordered levels, from the lowest | Frustration, urgency, severity      |
+
+`noul()` can take `{ true, false }`, a description of each outcome.
+`choice()` takes an object of 2 to 255 values, each with a short description of
+when it applies. Its probabilities always add up to 1, even when no value fits,
+so add a fallback such as `other`. `score()` takes the description of each
+level from the lowest up. Keep the levels evenly spaced, since the score
+averages their indices.
+
+Every question goes in the same request. To pick them per input, pass a function
+of the input as `questions`.
+
+### Reading the answers
+
+The answers are typed from your questions:
+
+```typescript
+const { answers, usage } = getTurnClassification(this.conversation)!.result
+
+answers.intent.choice // 'billing', typed as one of your values
+answers.intent.confidence // 0.93
+answers.intent.probabilities // { billing: 0.93, outage: 0.02, cancel: 0.03, other: 0.02 }
+
+answers.frustration.score // 1.1, the weighted average of the level indices
+answers.frustration.probabilities // { 0: 0.1, 1: 0.7, 2: 0.2 }
+
+answers.wantsHuman.noul // 0.07
+answers.wantsHuman.confidence // 0.93
+
+usage?.total_input_tokens // 412
+```
+
+A `noul` probability stays between 0.01 and 0.99, so a threshold such as
+`> 0.99` never matches. Set your thresholds on labeled turns of your own
+application, and send the turns with a low `confidence` to a fallback.
+
+When the safety filters of Gemini block an input, the request fails and the
+classification resolves to `undefined`, as on a timeout.
+
+### Images, audio and video
+
+The model reads text, images, audio, video and PDF. The `input` option builds
+what it reads from the input of the classifier, to add a picture the user sent
+for instance:
+
+```typescript
+const classifier = new GeminiClassifier({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  questions: { damaged: noul('Does the photo show a damaged item?') },
+  input: (input) => [
+    { type: 'text', text: JSON.stringify(input) },
+    { type: 'image', uri: lastPhotoUrl, mime_type: 'image/jpeg' },
+  ],
+})
+```
+
+### Options
+
+| Option      | Type                                | Default               | Description                                                                     |
+| ----------- | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| `apiKey`    | `string`                            | Required              | Your Gemini API key, or pass a `genai` client instead                           |
+| `model`     | `string`                            | `'gemini-decision-1'` | Model answering the questions                                                   |
+| `questions` | `Questions \| (input) => Questions` | Required              | Questions built with `noul()`, `choice()` and `score()`, or a function of them  |
+| `input`     | `(input) => string \| Content[]`    | The input as JSON     | Builds what the model reads, a text or blocks of text, image, audio, video, PDF |
+| `timeout`   | `number`                            | `3000`                | Timeout of each request in ms                                                   |
+
+### Price
+
+Input costs $0.10 per million tokens, and output is free. A request of a
+thousand tokens costs about $0.0001, so classifying every turn of a call stays
+well under a cent.
+
 ## FAQ
 
 <FaqList>
@@ -418,10 +571,10 @@ session.
     agent writes them.
   </FaqItem>
   <FaqItem question="Can I generate native speech using Gemini?">
-    Yes, Gemini generates speech in two ways. The Gemini TTS models read a
-    text in the tone a plain instruction such as `Say cheerfully` asks for.
-    Gemini Live goes from the voice of the user straight to its own spoken
-    answer. Micdrop runs Gemini Live as a
-    [realtime model](../../server/realtime), through `GeminiLive`.
+    Yes, Gemini generates speech in two ways. The Gemini TTS models read a text
+    in the tone a plain instruction such as `Say cheerfully` asks for. Gemini
+    Live goes from the voice of the user straight to its own spoken answer.
+    Micdrop runs Gemini Live as a [realtime model](../../server/realtime),
+    through `GeminiLive`.
   </FaqItem>
 </FaqList>

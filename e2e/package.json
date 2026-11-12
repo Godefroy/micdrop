@@ -24,6 +24,7 @@
     "@micdrop/pocket-tts": "workspace:*",
     "@micdrop/qwen-tts": "workspace:*",
     "@micdrop/server": "workspace:*",
+    "@micdrop/typesafe": "workspace:*",
     "@micdrop/whisper": "workspace:*",
     "dotenv": "^17.0.0",
     "zod": "^4.6.7"

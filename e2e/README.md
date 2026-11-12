@@ -13,7 +13,7 @@ and download their model on their first run.
 ```bash
 pnpm test:e2e                 # Every provider whose keys are set
 pnpm test:e2e cartesia        # One provider
-pnpm test:e2e stt             # One kind: tts, stt, agent or realtime
+pnpm test:e2e stt             # One kind: tts, stt, agent, realtime or classifier
 pnpm test:e2e openai/agent    # One provider and kind
 ```
 

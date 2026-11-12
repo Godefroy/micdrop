@@ -4,7 +4,7 @@
 
 Google Gemini implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
-This package provides an agent (`GeminiAgent`), a speech-to-text (`GeminiSTT`) and a text-to-speech (`GeminiTTS`) running on the Gemini API. `GeminiLive` is a [realtime model](https://micdrop.dev/docs/server/realtime) running on the Gemini Live API: it hears the user and answers with its own voice, in place of the three.
+This package provides an agent (`GeminiAgent`), a speech-to-text (`GeminiSTT`) and a text-to-speech (`GeminiTTS`) running on the Gemini API. `GeminiLive` is a [realtime model](https://micdrop.dev/docs/server/realtime) running on the Gemini Live API: it hears the user and answers with its own voice, in place of the three. `GeminiClassifier` answers typed questions about each turn of the user with the [Decisions API](https://aistudio.google.com/docs/decisions-api).
 
 ## Installation
 
@@ -82,6 +82,35 @@ The Micdrop client detects when the user speaks, so the automatic activity detec
 | `Failed`                | none                      | The connection could not be restored after its retries.                |
 
 `gemini-3.8-live-extended-thinking` reasons before answering and needs a `thinkingLevel`, such as `'low'`.
+
+## Gemini Classifier
+
+Classifies each turn of the user with the [Decisions API](https://aistudio.google.com/docs/decisions-api): yes or no questions, choices and scores answered with calibrated probabilities by `gemini-decision-1`, on text, images, audio, video or PDF.
+
+```typescript
+import { choice, GeminiClassifier, noul } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const classifier = new GeminiClassifier({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  questions: {
+    intent: choice('What does the user in `turn` want?', {
+      billing: 'A charge, an invoice, a refund',
+      outage: 'The service is down or slow',
+      other: 'Anything else',
+    }),
+    wantsHuman: noul('Does the user in `turn` ask for a human?'),
+  },
+})
+
+new MicdropServer(socket, {
+  stt,
+  agent,
+  tts,
+  classifier,
+  classifierOptions: { waitBeforeAnswer: true },
+})
+```
 
 ## Documentation
 

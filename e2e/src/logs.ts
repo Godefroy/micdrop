@@ -25,15 +25,16 @@ function format(value: unknown): string {
  * Gives a provider a logger, whose lines show up only when the test fails,
  * with the events that tell what went wrong
  */
-export function captureLogs<
-  P extends {
-    logger?: Logger
-    on(event: 'Failed', listener: (...args: any[]) => void): unknown
-  },
->(provider: P, name: string): P {
+export function captureLogs<P extends { logger?: Logger }>(
+  provider: P,
+  name: string
+): P {
   const logger = new CapturingLogger(name)
   provider.logger = logger
-  provider.on('Failed', (...args) => logger.log('Failed', ...args))
+  // A classifier has no Failed event, and listening to it changes nothing
+  ;(provider as any).on('Failed', (...args: any[]) =>
+    logger.log('Failed', ...args)
+  )
   onTestFailed(() => {
     console.log(
       `\n--- Logs of ${name} ---\n${logger.lines.slice(-100).join('\n')}`
