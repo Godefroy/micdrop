@@ -200,6 +200,8 @@ The speaker paused to remember the city. Acoustically, this is a completed utter
 
 Turn detection runs on top of the VAD and checks each pause the VAD reports. In Micdrop, the open Smart Turn model [listens to the sound of the sentence right in the browser](/docs/client/turn-detection), and the server can also [read the transcript](/docs/server/semantic-turn-detection) to judge whether the thought is complete. The VAD keeps deciding when the microphone is worth recording, and the turn detector decides when the user is done talking.
 
+Both detectors are small enough to run on any visitor's device, which is rarely true of the transcription and voice models that follow them, so voice apps usually [split on-device AI between the browser and their own server](/blog/on-device-ai-voice-agent).
+
 ## Frequently asked questions
 
 <FaqList>

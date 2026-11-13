@@ -52,6 +52,8 @@ Qwen3-TTS generates audio with a language model, so it needs more computation th
 
 Two familiar options stay out of this comparison. The Web Speech API lives in the browser rather than in Node, and it is rarely local even there, since most platforms send the text to a server. The macOS `say` command ties you to one operating system and to the voices Apple ships with it.
 
+Phonon and Kokoro also run inside a browser tab, through phonon-tts and kokoro-js, once each visitor has downloaded a 65 to 92 MB model. [Running the voice on the user's device](/blog/on-device-ai-voice-agent) suits some voice apps more than others.
+
 ## Phonon, Kokoro and Pocket TTS run inside Node, Piper as a subprocess
 
 Kokoro and Pocket TTS sit on ONNX Runtime, through different bindings. Kokoro arrives through [Transformers.js](https://huggingface.co/docs/transformers.js), which fetches its weights from Hugging Face on first use, so `npm install @micdrop/kokoro` is the whole setup. Pocket TTS goes through the [sherpa-onnx](https://k2-fsa.github.io/sherpa/onnx/tts/pocket.html) native addon, which ships prebuilt binaries, and asks you to download and extract a 98 MB archive once.
