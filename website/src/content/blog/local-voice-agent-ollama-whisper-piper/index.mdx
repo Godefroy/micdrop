@@ -183,7 +183,7 @@ Pull the tag ending in `-instruct`, which answers directly. Keep `reasoningEffor
 
 ### The call never ends on goodbye
 
-Micdrop's `autoEndCall` option asks the model to call an end-of-call tool when the user wants to hang up. None of the small models without reasoning triggered it in our tests. When the user said "Merci, au revoir !", Qwen3 4B and MiniCPM5-2B both said goodbye and left the line open. Mistral 7B thanked the user for "the instructions". Only the reasoning variant of Qwen3 4B ended the call, at the cost of up to two minutes per turn.
+Micdrop's `autoEndCall` option asks the model to call an end-of-call tool when the user wants to hang up. None of the small models without reasoning triggered it in our tests. When the user said "Merci, au revoir !", Qwen3 4B and MiniCPM5-2B both said goodbye and left the line open. Mistral 7B thanked the user for "the instructions". Only the reasoning variant of Qwen3 4B ended the call, at the cost of up to two minutes per turn. A larger model does better: [MiniCPM-V 4.7 in its 35B-A3B size](/docs/ai-integration/local-models/explorations/minicpm-v) ended the call in 3 runs out of 4, but its weights take 15.5 GB of memory.
 
 So leave `autoEndCall` off and end the call from the browser. A hang-up button covers the user who wants to leave, and an idle timer covers the one who stops talking:
 

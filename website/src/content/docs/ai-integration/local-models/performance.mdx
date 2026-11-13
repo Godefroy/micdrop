@@ -105,7 +105,10 @@ that server uses 2.5 GB on top of the rest of the call. A 16 GB machine can run
 it next to a 4B agent, with little memory left.
 
 Since latency matters more than memory, use spare memory for a larger LLM, not
-for a larger transcription model.
+for a larger transcription model. The 35B-A3B size of
+[MiniCPM-V 4.7](./explorations/minicpm-v), for example, calls every automatic
+tool in French and English, but its 15.5 GB of weights need more than a 24 GB
+machine running other apps.
 
 ## Why transcription and the voice stay on the CPU
 
