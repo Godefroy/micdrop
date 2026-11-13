@@ -3,6 +3,7 @@ title: "What Is Jev? TypeSafe's System One Model, Explained"
 h1: "What is Jev? TypeSafe's System One model, explained for TypeScript developers"
 summary: 'Jev, the System One model of TypeSafe AI, answers typed questions about a text with calibrated probabilities in 70 to 500 ms. It writes no text.'
 date: 2026-09-26
+update: 2026-11-13
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -89,12 +90,20 @@ The other limits come from TypeSafe's documentation:
 | | Jev | LLM with structured output |
 | --- | --- | --- |
 | Output | A label, a score or a probability, typed from your questions | Text constrained to a JSON schema |
-| Latency | 70 to 500 ms announced, 233 ms median in the robot demo | 1,971 ms median for Claude Haiku 4.5 in the same demo |
+| Latency | 70 to 500 ms announced, 233 ms median against Claude in the robot demo on September 25 | 1,971 ms median for Claude Haiku 4.5 in the same run |
 | Price | $0.042 per million input tokens, output free | Input and output tokens, output priced higher |
 | Probabilities | Calibrated, one per option | A confidence number the model writes itself, if you ask for one |
 | Text generation, extraction, multi-step reasoning | Left to an LLM or to your code | Supported |
 
-Jev is one of three ways to handle [intent classification in a voice agent](/blog/intent-classification-voice-agent), next to keywords and an LLM with structured output. The OpenAI Decisions API answers the same kinds of questions with its model `gpt-6-luna`, and we measured [how Jev compares with it on latency, accuracy and price](/blog/openai-decisions-vs-jev).
+Jev is one of three ways to handle [intent classification in a voice agent](/blog/intent-classification-voice-agent), next to keywords and an LLM with structured output.
+
+## Jev answers faster and cheaper than Gemini Decisions and OpenAI Decisions
+
+Two other models now do the same job as Jev. Google's Gemini Decision 1, served by the [Gemini Decisions API](https://aistudio.google.com/docs/decisions-api), takes the same three question types (noul, choice and score) and returns the same answer fields, so code reading `answers.wantsHuman.noul` works with both. The OpenAI Decisions API answers the same kinds of questions with its model `gpt-6-luna`.
+
+We ran the three in the Micdrop robot demo on November 12, 2026, with 21 questions per request. Jev answered in 164 ms at the median, `gpt-6-luna` in 244 ms and Gemini Decision 1 in 337 ms. A thousand turns cost $0.16 with Jev, $0.29 with Gemini and $0.43 with `gpt-6-luna`. Gemini bills input at $0.10 per million tokens, about 2.4 times the price of Jev. Output is free on both. Gemini read the most commands right of the three, 81 of 90, against 78 for Jev and 60 for `gpt-6-luna`.
+
+Gemini also reads images, audio, video and PDF next to the text, while Jev reads text only. A photo the user sent can then go into the same request as the turn. Micdrop's docs give [the latency and accuracy of every classifier](/docs/server/classifier#measured-latency-and-accuracy) on this run. An earlier benchmark lists [the commands Jev and `gpt-6-luna` each misread](/blog/openai-decisions-vs-jev).
 
 ## Speculative fan-out sends every question in every request
 
@@ -194,7 +203,7 @@ You can also build a support line that [routes each turn of a call five ways wit
 
 A voice agent built on the [classifier of the Micdrop server](/docs/server/classifier) uses Jev in three ways:
 
-- Your agent routes each turn with Jev's answers. With `waitBeforeAnswer` on, the server waits for them, one second at most by default, before your agent decides who answers. A scripted line, a transfer to a human or an answer written by code reaches the caller at once and costs no LLM call. A median of 233 ms fits well within that second.
+- Your agent routes each turn with Jev's answers. With `waitBeforeAnswer` on, the server waits for them, one second at most by default, before your agent decides who answers. A scripted line, a transfer to a human or an answer written by code reaches the caller at once and costs no LLM call. Jev's medians in the robot demo, 233 ms in September and 164 ms in November, fit well within that second.
 - Your web interface can show Jev's answers. The server can forward each classification to the browser, so the interface displays the intent or the mood of the caller while they speak.
 - For voice commands, Jev can replace the LLM entirely. A server with a speech to text model and a classifier is enough: the [robot](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot) and [twenty questions](https://github.com/Godefroy/micdrop/tree/main/examples/demo-twenty-questions) demos run that way, without an agent or a synthetic voice.
 
@@ -217,6 +226,9 @@ You can try all three in the [Micdrop demos that run on Jev](/docs/examples#clas
   </FaqItem>
   <FaqItem question="How much does Jev cost?">
     Jev costs $0.042 per million input tokens, and output tokens are free. A request of a thousand tokens costs about $0.00004.
+  </FaqItem>
+  <FaqItem question="Is Jev the same as Gemini Decisions?">
+    No. Jev comes from TypeSafe AI and Gemini Decision 1 from Google, but both answer the same three question types with the same answer fields. Jev answered twice as fast in the Micdrop robot demo on November 12, 2026, and costs $0.042 per million input tokens against $0.10 for Gemini. Gemini reads images, audio, video and PDF as well as text. In Micdrop, [`GeminiClassifier`](/docs/ai-integration/provided-integrations/gemini#gemini-classifier) runs Gemini Decision 1 with the same `noul`, `choice` and `score` questions as Jev.
   </FaqItem>
 </FaqList>
 
