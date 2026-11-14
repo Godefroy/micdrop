@@ -6,6 +6,8 @@ order: 42
 
 # Semantic Turn Detection
 
+A voice agent has to tell four events apart: the user starts speaking, the user stops speaking, the user has finished the thought, and the user speaks over the assistant. In Micdrop, [voice activity detection in the client](/docs/client/vad) detects the first two and closes the turn after a stretch of silence. Semantic turn detection tells whether the thought is finished, in the [browser](/docs/client/turn-detection) or on the server with `turnDetector` and `autoSemanticTurn`. The client and the server handle the interruption together.
+
 A user who pauses in the middle of a sentence has not finished speaking. Voice activity detection cannot tell the difference, so the server answers a half question. Semantic turn detection waits for the thought to land.
 
 The server offers two ways of doing it, and Micdrop also offers a third that runs in the browser.
@@ -82,3 +84,17 @@ With detection on the server, the fragment reaches the agent and the answer is h
 ## Combining them
 
 The three can be layered. The client decides when to close its turn, the server decides whether the audio deserves an answer, and the agent has the last word on the transcript. Start with the client alone, and add the others when you meet a case it misses.
+
+Ending a turn on silence, on the sound of the voice or on the words [comes at a different cost in delay and mistakes](/blog/end-of-turn-detection-voice-agents).
+
+## When the user interrupts the assistant
+
+The user can speak over the assistant as soon as its voice plays. When the client VAD confirms speech, the client stops playing the answer, drops the unfinished assistant message, and tells the server the user started speaking. The server then cancels text to speech and the agent, and empties its queue of pending operations. Micdrop cancels a [realtime model](/docs/server/realtime) the same way and drops whatever audio the model still sends for the interrupted answer.
+
+An interruption relies on echo cancellation, which keeps the assistant's voice out of the microphone. The client disables interruptions when the browser reports echo cancellation off. `isInterruptionDisabled` is true whenever they are off. Pass `disableInterruption: true` to turn them off for the whole call. Micdrop also catches [echo the browser fails to cancel](/docs/client/vad#echo-and-interruptions), on iOS for instance.
+
+Detecting speech during playback is only the start of [handling barge-in in a voice agent](/blog/voice-agent-interruption-barge-in). Every output has to stop, the generation has to be cancelled, and the conversation should keep only the part of the answer the user heard.
+
+## With a realtime model
+
+The OpenAI Realtime API and Gemini Live can detect turns on their own, with `server_vad` and `semantic_vad` on OpenAI's side. Micdrop turns that detection off, sending `turn_detection: null` to OpenAI and disabling the automatic activity detection of Gemini, so the client VAD opens and closes every turn. `turnDetector` holds back the answer of a realtime model the same way it holds back the agent's.
