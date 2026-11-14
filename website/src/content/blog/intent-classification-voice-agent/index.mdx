@@ -3,7 +3,7 @@ title: 'Intent Classification in a Voice Agent, Before the LLM'
 h1: 'Intent detection in a voice agent, before the LLM answers'
 summary: 'Keywords, an LLM or a dedicated model can classify each turn of a voice call. Compare their latency and route the answer in TypeScript before the LLM speaks.'
 date: 2026-09-27
-update: 2026-10-07
+update: 2026-11-14
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -49,7 +49,7 @@ You can classify a turn of a voice call in three ways:
 
 1. Match the turn against keywords and rules. A regular expression or a list of phrases flags the turn. It runs in under a millisecond, costs nothing, and misses every sentence phrased another way.
 2. Ask an LLM for structured output. You describe the labels in a prompt and ask for JSON that fits a schema. It understands any phrasing and needs no training data, but a full completion often takes more than a second.
-3. Call a dedicated classification model, such as an embedding model with a router, a fine-tuned classifier, or a model that answers each question with a label, a score or a probability, like Jev or the model behind the OpenAI Decisions API. It answers in tens to a few hundred milliseconds, at a fraction of the cost of an LLM.
+3. Call a dedicated classification model, such as an embedding model with a router, a fine-tuned classifier, or a model that answers each question with a label, a score or a probability, like Jev, Gemini Decision 1 or the model behind the OpenAI Decisions API. It answers in tens to a few hundred milliseconds, at a fraction of the cost of an LLM.
 
 ### Keywords and rules
 
@@ -70,8 +70,9 @@ A dedicated model only classifies, which makes it faster and cheaper. There are 
 - A small classifier fine-tuned on your own transcripts, with a library like [SetFit](https://github.com/huggingface/setfit) that needs only a few examples per label. This is usually the most accurate option on your domain once you have the data, and the most work to maintain.
 - A System One model, like [Jev](/blog/what-is-jev) from TypeSafe AI. Jev reads a text or a JSON object and answers typed questions about it (a label, a score, the probability of a yes) with calibrated probabilities. In the same robot demo, Jev answered in 233 ms at the median against 1,971 ms for Claude Haiku 4.5. Jev costs $0.042 per million input tokens, with output free of charge.
 - The [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), in public beta in October 2026, runs `gpt-6-luna`, a model that only answers questions. You ask yes or no questions (it returns the probability of a yes), choices (one of your labels with the probability of each) and scores on a scale (the average level, weighted by probability). A team that already pays OpenAI for its LLM adds no new vendor. You can [route each turn of a voice call with the Decisions API](/blog/openai-decisions-api-voice-agent) in TypeScript, and let the LLM answer when a question is refused. We measured 200 to 530 ms per request on October 7, 2026, with one turn, its history and three questions, in a test separate from the robot demo. The first request a process sent took about 2.4 s. Check the probabilities of `gpt-6-luna` against turns you have labelled yourself before you pick thresholds. Input costs $0.10 per million tokens, output is free, and the API is available with data residency in the United States or Europe. We also ran [Jev and `gpt-6-luna` on the same 90 voice commands](/blog/openai-decisions-vs-jev), with Claude Haiku 4.5 as the LLM baseline.
+- Gemini Decision 1, the model of Google's [Gemini Decisions API](https://aistudio.google.com/docs/decisions-api), answers the same three kinds of questions as Jev. It also reads images, audio, video and PDF next to the text, so you can ask whether the photo a caller sent shows a damaged item in the same request as their turn. In a later run of the robot demo, on November 12, 2026, it answered in 337 ms at the median against 164 ms for Jev, and read 81 of 90 commands right against 78 for Jev. Input costs $0.10 per million tokens, and output is free.
 
-Jev is faster than Claude and less accurate on some commands. In the robot demo, the two models agreed on the command in 65 of 90 answers. Where they differed, Jev made more of the mistakes, mostly on commands that pack two steps into one verb, like "bring the ball to the dog". An embedding router has a different limit: it knows only the routes you wrote examples for.
+Jev is faster than Claude and less accurate on some commands. In the September run of the robot demo, the two models agreed on the command in 65 of 90 answers. Where they differed, Jev made more of the mistakes, mostly on commands that pack two steps into one verb, like "bring the ball to the dog". An embedding router has a different limit: it knows only the routes you wrote examples for.
 
 | | Keywords | LLM with structured output | Dedicated model |
 | --- | --- | --- | --- |
@@ -176,7 +177,7 @@ new MicdropServer(socket, {
 })
 ```
 
-`TypesafeClassifier` runs [Jev through its Micdrop integration](/docs/ai-integration/provided-integrations/typesafe). You can use any of the other methods with the same `classifierOptions` by [writing your own classifier](/docs/ai-integration/custom-integrations/custom-classifier): you implement a single `evaluate()` method, whether it calls an LLM with a zod schema, sends the turn to the OpenAI Decisions API or matches keywords. With `sendToClient`, each classification also reaches the browser, where the `useMicdropClassification` React hook reads it.
+`TypesafeClassifier` runs [Jev through its Micdrop integration](/docs/ai-integration/provided-integrations/typesafe). Micdrop also ships [`OpenaiClassifier` for the OpenAI Decisions API](/docs/ai-integration/provided-integrations/openai#openai-classifier) and [`GeminiClassifier` for Gemini Decision 1](/docs/ai-integration/provided-integrations/gemini#gemini-classifier). `GeminiClassifier` shares the `choice()`, `noul()` and `score()` helpers of Jev and returns answers of the same shape, so `onBeforeAnswer` reads `answers.wantsHuman.noul` unchanged. To run the code above on Gemini, import `choice`, `noul` and `GeminiClassifier` from `@micdrop/gemini`, pass a Gemini API key, and give the `other` label a description in place of `null`, since Gemini expects one for every label. `OpenaiClassifier` asks its yes or no questions with `predicate()` instead of `noul()`. You can use any other method with the same `classifierOptions` by [writing your own classifier](/docs/ai-integration/custom-integrations/custom-classifier): you implement a single `evaluate()` method, whether it calls an LLM with a zod schema or matches keywords. With `sendToClient`, each classification also reaches the browser, where the `useMicdropClassification` React hook reads it.
 
 You can also [set how long the server waits for the classification and how many earlier turns the classifier reads](/docs/server/classifier). To go further, you can [build a support agent that routes each turn five ways](/blog/jev-voice-agent-typescript): a block on manipulation attempts, a transfer to a human, an answer written by code, an LLM answer with a retention hint, and a plain LLM answer. That agent comes from the support demo, listed with the other [Micdrop demos that run on a classifier](/docs/examples#classifier-demos).
 
