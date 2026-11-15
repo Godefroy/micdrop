@@ -3,7 +3,7 @@ title: 'Vapi Alternative: Own the Voice Loop in TypeScript'
 h1: 'Micdrop, an open source Vapi alternative for TypeScript web apps'
 summary: 'Vapi runs your voice agent on its servers for $0.05 a minute. Micdrop runs the same loop inside the Node server you already ship, with no platform fee.'
 date: 2026-08-16
-update: 2026-09-30
+update: 2026-11-15
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -38,13 +38,13 @@ Whether the conversation runs on Vapi's servers or in yours drives everything el
 
 ## What Vapi does well
 
-Vapi is the most developer-friendly of the hosted voice platforms, and it earned that position. The API is clean, the model configuration reads the way you expect, and the platform genuinely supports bringing your own provider keys rather than forcing every token through its billing, from a catalogue of speech and model vendors wider than anything a single library ships. It raised a $50M Series B in May 2026, has handled over a billion calls, and publishes real customer logos including Amazon Ring. It carries SOC 2, GDPR and PCI DSS, publishes a 99.9% SLA on its Scale tier and runs a public status page. Fallback is a first-class feature: you can configure backup voices, backup transcribers and backup models, and a non-fatal error swaps providers instead of dropping the call. All of that matters, and a library leaves every bit of it to you.
+Vapi is the most developer-friendly of the hosted voice platforms, and it earned that position. The API is clean, the model configuration reads the way you expect, and the platform genuinely supports bringing your own provider keys rather than forcing every token through its billing, from a catalogue of speech and model vendors wider than anything a single library ships. It raised a $50M Series B in May 2026, has handled over a billion calls, and publishes real customer logos including Amazon Ring. It carries SOC 2, GDPR and PCI DSS, commits to 99% uptime on its Pro package and 99.9% on Premier, and runs a public status page. Fallback is a first-class feature: you can configure backup voices, backup transcribers and backup models, and a non-fatal error swaps providers instead of dropping the call. All of that matters, and a library leaves every bit of it to you.
 
 ## Why teams look for a Vapi alternative
 
 ### You pay $0.05 a minute even with your own API keys
 
-The Build tier charges $0.05 a minute for the orchestration layer, and that number holds whether your model tokens are billed through Vapi or through your own OpenAI account. Bringing your own key removes the vendor margin on the model, and it leaves the platform fee exactly where it was. The fee covers ten concurrent lines, then each additional line is $10 a month, chat is $0.005 a message, HIPAA $2,000 a month and Zero Data Retention $1,000 a month. Speech, model and telephony each bill separately again.
+Vapi charges a $0.05 hosting fee for every minute of call, and that number holds whether your model tokens are billed through Vapi or through your own OpenAI account. Bringing your own key removes the vendor margin on the model, and it leaves the platform fee exactly where it was. A new account gets 4 concurrent lines without a package and 10 with the $29 Core package, then each additional line is $10 a month and HIPAA $2,000 a month. Speech, model and telephony each bill separately again.
 
 The total is rarely what stings. What stings is that it arrives on five or six separate meters, and the one you can predict least well is the platform fee, which grows every time someone uses the feature.
 
@@ -60,7 +60,7 @@ For a phone agent that is a reasonable trade. For a voice feature inside a web a
 
 ### Your audio passes through Vapi's servers
 
-The audio has to reach the machines running the loop, so every call transits Vapi's infrastructure. Call data is retained 14 days on the Build tier, and turning retention off is a $1,000 monthly add-on. Most teams never think about it. For an EU team handling recorded voice, or anyone whose data map has to name every processor, adding a US orchestration layer between the browser and the model providers is a conversation with legal that running the loop on your own servers avoids entirely.
+The audio has to reach the machines running the loop, so every call transits Vapi's infrastructure. Raw call data is retained 14 days without a package, and zero data retention comes with every Success Package from $29 a month. Most teams never think about it. For an EU team handling recorded voice, or anyone whose data map has to name every processor, adding a US orchestration layer between the browser and the model providers is a conversation with legal that running the loop on your own servers avoids entirely.
 
 ### You cannot debug the conversation locally
 
@@ -171,7 +171,7 @@ The choice on mobile is the same as on the web: where the conversation runs, and
 
 ## Head to head
 
-Vapi published these prices in August 2026. Voice AI pricing moves fast, so check its pricing page before you commit a budget.
+These are Vapi's prices on November 15, 2026. Voice AI pricing moves fast, so check its pricing page before you commit a budget.
 
 | | Vapi | Micdrop |
 |---|---|---|
@@ -182,24 +182,24 @@ Vapi published these prices in August 2026. Voice AI pricing moves fast, so chec
 | **React Native** | `@vapi-ai/react-native`, WebRTC through Daily | `@micdrop/react-native`, WebSocket with VAD on the device |
 | **Custom logic** | An OpenAI-shaped endpoint Vapi calls back | Functions and Zod schemas in your process |
 | **Extending the built-ins** | Assistant configuration, then a webhook | Swap the VAD, subclass any class, fork the code |
-| **Platform fee** | $0.05 / min on Build, custom on Scale | None |
+| **Platform fee** | $0.05 / min hosting fee, plus a Success Package from $29 / mo for support and concurrency | None |
 | **Provider fallback** | Voice, transcriber and model fallback plans | `FallbackTTS`, `FallbackSTT`, agent fallback |
 | **Phone numbers, SIP / PSTN** | Yes, US and Canada mainly | Not covered |
 | **Dashboard, transcripts, logs** | Included | Events and hooks, you build the UI |
 | **Compliance** | SOC 2, GDPR, PCI DSS, HIPAA at $2,000 / mo | Determined by your hosting and providers |
-| **SLA and status page** | 99.9% on Scale | You operate it |
-| **Data retention** | 14 days on Build, no-retention at $1,000 / mo | Whatever your database does |
+| **SLA and status page** | 99% on Pro, 99.9% on Premier | You operate it |
+| **Data retention** | 14 days without a package, zero retention with every Success Package from $29 / mo | Whatever your database does |
 | **Community** | Large, funded, active Discord | Small, young, one maintainer |
 
 The community gap deserves as much weight as the price gap. Vapi has a Discord full of people who have hit your bug already, and Micdrop does not.
 
 ## What each option actually costs
 
-Vapi's Build tier is usage-based: $0.05 a minute of platform fee, 60+ free minutes to start, ten concurrent lines included and $10 per additional line per month, chat at $0.005 a message, and speech and model costs passed through at provider rates or billed to your own keys. Scale is an annual contract with volume-based per-minute pricing and a dedicated account team. HIPAA and Zero Data Retention are add-ons at $2,000 and $1,000 a month.
+Vapi charges a $0.05 hosting fee for every minute of call, and bills the transcriber, the model and the voice at each provider's list price, or leaves them to your own keys. New accounts get 4 concurrent calls without a package, and the Success Packages start at $29 a month with 10. A web agent on GPT-5.6 Terra, ElevenLabs Flash and gpt-4o-transcribe [comes to about $0.103 a minute on Vapi](/blog/vapi-pricing).
 
 Micdrop costs nothing to install. You pay speech-to-text, the model and text-to-speech at list price, directly to each provider, plus whatever your server already costs to run. A free tier and an enterprise tier both need a company behind them, and Micdrop is a package.
 
-Which one is cheaper depends on volume and on what you count. At low volume the platform fee is noise, and Vapi's free minutes cost less than the engineering time a self-hosted pipeline would take. At 30,000 minutes a month, a modest in-app voice feature, the platform fee alone reaches $1,500 before a single second of speech, for orchestration your own server could run. At high volume with phone numbers, compliance requirements and a support contract, the alternative to Vapi's Scale tier is hiring people to do that work, and the platform is usually the better fit.
+Which one is cheaper depends on volume and on what you count. At low volume the platform fee is noise, and Vapi's free credits cost less than the engineering time a self-hosted pipeline would take. At 30,000 minutes a month, a modest in-app voice feature, the platform fee alone reaches $1,500 before a single second of speech, for orchestration your own server could run. At high volume with phone numbers, compliance requirements and a support contract, the alternative to Vapi's Pro and Premier packages is hiring people to do that work, and the platform is usually the better fit.
 
 ## Who should choose which
 
@@ -207,7 +207,7 @@ Which one is cheaper depends on volume and on what you count. At low volume the 
 
 **Choose Micdrop** when voice is a feature of a web application you already deploy. The signals are clearest when your backend is TypeScript, when the agent needs your database and your session context on every turn, when per-minute fees scale badly against your unit economics, when your data map cannot easily absorb a US orchestration hop, or when you want to read the code that decides when the user stopped talking.
 
-If you have not built the feature yet, build the first version on Vapi. A weekend on its free minutes tells you more about your prompt, your voice choice and how people actually talk to your product than any architecture decision will. The choice between the two only starts to matter once enough people use the feature for the per-minute fee to show up in your budget. If you already suspect you will move at that point, keep your prompt and your tool logic in your own repository rather than in Vapi's dashboard, and the move costs you an afternoon instead of a rewrite.
+If you have not built the feature yet, build the first version on Vapi. A weekend on its free credits tells you more about your prompt, your voice choice and how people actually talk to your product than any architecture decision will. The choice between the two only starts to matter once enough people use the feature for the per-minute fee to show up in your budget. If you already suspect you will move at that point, keep your prompt and your tool logic in your own repository rather than in Vapi's dashboard, and the move costs you an afternoon instead of a rewrite.
 
 Plenty of teams should use neither. If you have committed to one model vendor and only need a voice loop, a realtime API from that vendor has fewer moving parts than Vapi. When you later want the microphone, turn-taking and transcripts handled for you, Micdrop can run that same API behind its own client. If your backend is Python and you need telephony, Pipecat and LiveKit Agents are the serious answers, and we ranked the whole field in [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks).
 
@@ -245,10 +245,10 @@ Rebuilding the pipeline itself takes hours. Rebuilding the dashboard and the cal
     Neither is better across the board. Vapi suits a team that wants to pick its own providers and see each bill, while Retell suits a team whose product is the phone call. Both run the conversation on their own infrastructure, the part a self-hosted library takes back, and the [Retell article](/blog/alternative-to-retell-ai) makes that case from Retell's side. Compare [Vapi and Retell AI on pricing and developer controls](/blog/vapi-vs-retell-ai).
   </FaqItem>
   <FaqItem question="Can I use Vapi without paying the per-minute fee?">
-    No. The $0.05 a minute on the Build tier pays for Vapi's orchestration layer and applies whether or not you bring your own provider keys. Your own keys buy the model tokens at provider price. The orchestration fee stays. Avoiding that fee entirely means running the orchestration yourself, which is what a self-hosted framework is for.
+    No. The $0.05 hosting fee on every minute of call pays for Vapi's orchestration layer and applies whether or not you bring your own provider keys. Your own keys buy the model tokens at provider price. The orchestration fee stays. Avoiding that fee entirely means running the orchestration yourself, which is what a self-hosted framework is for.
   </FaqItem>
   <FaqItem question="Should I start a new project on Vapi or on a self-hosted framework?">
-    It depends on which unknown is bigger. If you are still unsure the voice feature will hold up with real users, Vapi's free minutes answer that in a weekend, before you commit to any architecture. If the feature is a screen inside a web application and your backend already runs Node, starting on a library saves you a migration you can already see coming. Either way you can change your mind later. Rebuilding the pipeline takes hours, and what you throw away is the dashboard or the logging you built on top of it.
+    It depends on which unknown is bigger. If you are still unsure the voice feature will hold up with real users, Vapi's free credits answer that in a weekend, before you commit to any architecture. If the feature is a screen inside a web application and your backend already runs Node, starting on a library saves you a migration you can already see coming. Either way you can change your mind later. Rebuilding the pipeline takes hours, and what you throw away is the dashboard or the logging you built on top of it.
   </FaqItem>
   <FaqItem question="Does Micdrop support phone calls?">
     No. Micdrop connects a browser or a React Native app to your Node server over a WebSocket, and it has no SIP, PSTN or telephony layer. If your agent has to answer a phone number, a hosted platform like Vapi or a telephony-capable framework like Pipecat, LiveKit Agents or Jambonz is the right tool. Micdrop covers a user talking to your application, in a browser tab or in your mobile app.
