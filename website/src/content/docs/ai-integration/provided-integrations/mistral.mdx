@@ -13,6 +13,8 @@ This package provides an AI agent on Mistral AI's API, real-time speech to text 
 
 Mistral guarantees inference in the EU only on its European endpoint, `api.eu.mistral.ai`, billed 10% more. `MistralTTS` reaches it through its `baseUrl` option. `MistralAgent` and `MistralSTT` call the global endpoint, `api.mistral.ai`, where Mistral makes no commitment on where requests run. To keep the agent in Europe, use [`@micdrop/ai-sdk`](/docs/ai-integration/provided-integrations/ai-sdk) with a Mistral model set to `api.eu.mistral.ai`, as in this [sovereign voice AI setup](/docs/ai-integration/sovereign-voice-ai).
 
+For a comparison of the Mistral Voice Agents SDK, a custom WebSocket client and a Micdrop pipeline, see how to [build a Mistral voice agent with Voxtral 3](/blog/mistral-voice-agent-voxtral-3).
+
 ## Installation
 
 ```bash
