@@ -43,7 +43,7 @@ A voice call chains three models. Speech to text turns the user's sentence into 
 
 We picked Piper for this setup because it speaks 53 languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner.
 
-Micdrop drives the LLM through its [AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port.
+Micdrop drives the LLM through its [AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port. For the trade-offs between these [local LLM servers](/blog/ollama-vs-llama-cpp-vs-lm-studio-vs-vllm), compare API coverage, tool calls and concurrency.
 
 ```mermaid
 graph TD
