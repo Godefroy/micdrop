@@ -1,12 +1,15 @@
 ---
 title: 'Web Speech API: Speech to Text in JavaScript'
 h1: 'Speech to text in JavaScript: the Web Speech API and its limits'
-summary: 'The Web Speech API transcribes in Chrome and Safari and sends your audio to Google or Apple. Firefox reached it only in 2025, off by default.'
+summary: 'The Web Speech API transcribes in Chrome, Safari and desktop Firefox. Chrome and Safari send your audio to Google or Apple, while Firefox transcribes on the device.'
 date: 2026-09-09
+update: 2026-11-16
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
   - 'web speech api'
+  - 'speechrecognition api'
+  - 'speechrecognition example'
   - 'speech to text javascript'
   - 'javascript speech recognition'
   - 'speechrecognition javascript'
@@ -23,41 +26,91 @@ similarPosts:
   - 'speech-to-text-react-native'
   - 'voice-activity-detection-browser'
 takeaways:
-  - 'The Web Speech API sends the audio to a server by default. Chrome transcribes with Google, Safari with the recogniser Apple ships.'
+  - 'Chrome and Safari send the audio to a server by default. Chrome transcribes with Google, Safari with the recogniser Apple ships.'
   - 'Chrome 139 added an on-device mode through `processLocally`, which needs the user to download a language pack first.'
-  - 'Firefox web pages had no speech recognition until version 142, in August 2025, and it still sits behind an about:config preference that ships off.'
+  - 'Firefox 160, released in November 2026, turns speech recognition on by default on desktop and runs it on the device. Firefox for Android still has none.'
   - 'Stream the microphone to your own server and every browser gets the same transcript, because one model writes it.'
 ---
 
-Adding dictation to your app takes a few lines of code with `webkitSpeechRecognition`. That part is easy. The result is far from perfect: the audio goes to Google or to Apple, Firefox users get nothing by default, and the same spoken sentence comes back written one way in Chrome and another one in Safari.
+You can convert speech to text in JavaScript with the `SpeechRecognition` interface of the Web Speech API, in an HTML file of about fifty lines and with no API key. That part is easy. The result is far from perfect: Chrome and Safari send the audio to Google or to Apple, Firefox for Android has no recognition at all, and the same spoken sentence comes back written one way in Chrome and another one in Safari.
 
 ## What the Web Speech API is
 
 The Web Speech API is a browser interface with two halves. `SpeechSynthesis` [reads text out loud](/blog/text-to-speech-javascript), and `SpeechRecognition` turns the microphone into text. This post is about `SpeechRecognition`.
 
-```js
-const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition
+## A runnable SpeechRecognition example
 
-const recognition = new SpeechRecognition()
-recognition.lang = 'en-US'
-recognition.continuous = true
-recognition.interimResults = true
+Save this as an HTML file and open it from `localhost` or over HTTPS, since Chrome only runs recognition on a page a web server delivers. It shows the words while you speak, keeps the settled sentences in the text area and resets the button when recognition stops:
 
-recognition.onresult = (event) => {
-  const result = event.results[event.results.length - 1]
-  if (result.isFinal) {
-    textarea.value += result[0].transcript
+```html
+<button id="mic">Start dictation</button>
+<p id="interim"></p>
+<textarea id="text" rows="6" cols="60"></textarea>
+
+<script>
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition
+  const button = document.querySelector('#mic')
+  const interimLine = document.querySelector('#interim')
+  const textarea = document.querySelector('#text')
+
+  if (!SpeechRecognition) {
+    button.disabled = true
+    button.textContent = 'Speech recognition is unavailable in this browser'
+  } else {
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.continuous = true
+    recognition.interimResults = true
+    let listening = false
+
+    recognition.onresult = (event) => {
+      let interim = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          textarea.value += result[0].transcript + ' '
+        } else {
+          interim += result[0].transcript
+        }
+      }
+      interimLine.textContent = interim
+    }
+
+    recognition.onerror = (event) => {
+      interimLine.textContent = `Error: ${event.error}`
+    }
+
+    recognition.onend = () => {
+      listening = false
+      button.textContent = 'Start dictation'
+    }
+
+    button.onclick = () => {
+      if (listening) {
+        recognition.stop()
+      } else {
+        recognition.start()
+        listening = true
+        button.textContent = 'Stop'
+      }
+    }
   }
-}
-
-recognition.onerror = (event) => console.error(event.error)
-recognition.start()
+</script>
 ```
+
+The example handles `result`, `error` and `end`. The `start` event is worth adding for the interface:
+
+- `result` carries every recognised phrase in `event.results`, where the ones from `resultIndex` onward are new or changed. With `interimResults` on, it fires many times per sentence. `isFinal` marks the text the browser has settled.
+- `error` names the failure in `event.error`: `not-allowed` when the user refuses the microphone, `no-speech` after a silence, `network` when the recognition service is unreachable, `language-not-supported` for a language the browser lacks.
+- `end` fires whenever recognition stops, after `stop()`, after an error, or when the browser closes the session on its own after a long silence. Call `start()` again in that handler if dictation should keep going.
+- `start` fires once the microphone is open, the right moment to show a recording indicator.
 
 That is the whole integration. There is nothing to install and no API key to create.
 
-The browser gives you the interface, then usually sends the audio elsewhere to be transcribed. MDN puts it plainly: "your audio is sent to a web service for recognition processing, so it won't work offline". Chrome sends it to Google, Safari to the recogniser Apple ships. Google and Apple each choose the model that writes your text.
+## Where the transcription runs
+
+The browser gives you the interface, then usually sends the audio elsewhere to be transcribed. MDN puts it plainly for Chrome: "your audio is sent to a web service for recognition processing, so it won't work offline". Chrome sends it to Google, Safari to the recogniser Apple ships. Google and Apple each choose the model that writes your text. Firefox keeps the audio and transcribes it on the device.
 
 Chrome 139 added an on-device mode in August 2025. Set `processLocally` to `true` before `start()` and the audio stays on the device, as long as the browser has already downloaded a language pack for the language you ask for.
 
@@ -78,32 +131,35 @@ recognition.processLocally = true
 
 The specification is still a Draft Community Group Report rather than a W3C standard, which is part of why browser support has stayed uneven for more than a decade.
 
-## Which browsers support it
+## Can I use SpeechRecognition?
+
+Yes. Every major desktop browser has supported it since November 2026. The table gives the state of each browser that month.
 
 | Browser | Speech recognition |
 | --- | --- |
-| Chrome, desktop and Android | Since Chrome 25, under `webkitSpeechRecognition` |
-| Safari 14.1 on macOS, 14.5 on iOS | Under `webkitSpeechRecognition` |
+| Chrome, desktop and Android | Since Chrome 25 under `webkitSpeechRecognition`, and also unprefixed since Chrome 139 |
+| Safari 14.1 on macOS, 14.5 on iOS | Under `webkitSpeechRecognition` only |
 | Edge | Ships the Chromium interface, though recognition broke in Edge 134 |
-| Firefox | Since Firefox 142, off behind `media.webspeech.recognition.enable` in about:config |
+| Firefox on desktop | Since Firefox 160, on by default, on the device only, in 40 languages |
+| Firefox for Android | No support |
 
-Caniuse puts global coverage at about 88% and marks every browser as partial rather than full support.
+Caniuse puts global coverage at about 89% and marks every supporting browser as partial rather than full support.
 
-Firefox had no speech recognition for web pages at all until version 142, released in August 2025. Mozilla had carried the engine in Gecko since 2019 behind an about:config preference, wired to the browser's own interface rather than to the pages it displays. Version 142 opened it to pages, behind that same preference and still off, so a Firefox user reaches it only by editing a setting almost nobody knows is there. Recognition also failed with a network error in Edge 134 until a patch release fixed it.
+Firefox opened speech recognition to web pages in version 142, released in August 2025, behind an about:config preference that shipped off. Firefox 160, released on 10 November 2026, turned it on for every desktop user. It transcribes on the device, so the audio stays on the computer. Recognition failed with a network error in Edge 134 until a patch release fixed it.
 
 Safari runs recognition on iPhone and iPad. `continuous` keeps the microphone open on iPhone without ever returning the final text. WebKit's own documentation tracker still has an open question about what `interimResults` does on iOS. So you test on iOS what already works in Chrome, then test it again after each Safari release.
 
-You can set `lang`, `continuous`, `interimResults` and `maxAlternatives`. Everything else belongs to the browser: the model, the vocabulary, the punctuation and the way numbers and acronyms are written.
+You can set `lang`, `continuous`, `interimResults` and `maxAlternatives`. Chrome 142 added `phrases`, a list of words the recogniser should favour. Firefox accepts the property and ignores it. Everything else belongs to the browser: the model, the punctuation and the way numbers and acronyms are written.
 
 ## Four limits you will hit
 
 ### The browser picks the model
 
-You get whatever model Google and Apple are running that month. They swap it on their own schedule, so the same sentence can come back written differently next week. The API takes no vocabulary hints, so the model guesses how to write medical terms, part numbers and street names.
+You get whatever model Google and Apple are running that month. They swap it on their own schedule, so the same sentence can come back written differently next week. Only Chrome acts on vocabulary hints, through `phrases`, so in Safari and Firefox the model guesses how to write medical terms, part numbers and street names.
 
 ### The browser picks where the audio goes
 
-A team writing a data protection notice has to name Google and Apple as processors of every user's voice. Chrome's on-device mode keeps the audio on the device for anyone who downloaded the language pack. The audio still goes to a server for everyone else, including Chrome users without the pack.
+A team writing a data protection notice has to name Google and Apple as processors of its Chrome and Safari users' voices. Chrome's on-device mode keeps the audio on the device for anyone who downloaded the language pack, as Firefox does for every user. The audio still goes to a server for Safari users and for Chrome users without the pack.
 
 ### The transcript differs from one browser to the next
 
@@ -165,11 +221,11 @@ Each sentence goes out as its own stream, so the provider starts transcribing wh
 
 | | Web Speech API | Your own transcription server |
 | --- | --- | --- |
-| Browsers covered | Chrome, Edge and Safari, plus a Firefox with the preference on | Every browser |
-| Where the audio goes | Google or Apple, or the device on Chrome 139 | Your server, then the provider you picked |
+| Browsers covered | Chrome, Edge, Safari and desktop Firefox | Every browser |
+| Where the audio goes | Google or Apple, or the device in Firefox and in Chrome 139 with `processLocally` | Your server, then the provider you picked |
 | Who picks the model | The browser | You |
 | Same transcript everywhere | Only within the same browser | Yes |
-| Vocabulary and language control | `lang` and nothing else | Whatever the provider exposes |
+| Vocabulary and language control | `lang`, plus `phrases` in Chrome | Whatever the provider exposes |
 | Running cost | Free | Per minute, or the machine you run it on |
 | Setup | A few lines in the page | A Node server and a WebSocket |
 | Adding an agent that answers | Write the agent and the voice yourself | Two more options on the same server |
@@ -231,21 +287,21 @@ The weights download on first use and every call in the process then shares them
     Two different things go by that name. In a browser it usually means Chrome's implementation of the Web Speech API, reached through `webkitSpeechRecognition`, which sends the audio to Google's speech service. Google also sells Cloud Speech-to-Text, a paid API you call from your own server with a key.
   </FaqItem>
   <FaqItem question="How does the Web Speech API work?">
-    You create a `SpeechRecognition` object, set `lang`, `continuous` and `interimResults`, and call `start()`. The browser asks for microphone permission, captures the audio and sends it to its recognition service, or keeps it on the device when `processLocally` is `true` and the language pack is installed. Results come back through the `result` event, where `isFinal` marks the settled ones.
+    You create a `SpeechRecognition` object, set `lang`, `continuous` and `interimResults`, and call `start()`. The browser asks for microphone permission, captures the audio and sends it to its recognition service. Firefox keeps it on the device, as does Chrome when `processLocally` is `true` and the language pack is installed. Results come back through the `result` event, where `isFinal` marks the settled ones.
   </FaqItem>
   <FaqItem question="Which browsers support the Web Speech API?">
-    Chrome has shipped speech recognition since version 25 on desktop and Android, and Safari since 14.1 on macOS and 14.5 on iOS, both under the `webkitSpeechRecognition` prefix. Edge ships the same Chromium interface. Firefox opened recognition to web pages in version 142, though it stays off by default, so a Firefox user reaches it only by turning on `media.webspeech.recognition.enable` in about:config. Caniuse puts global coverage at about 88% and marks every browser as partial rather than full support.
+    Chrome has shipped speech recognition since version 25 on desktop and Android, and Safari since 14.1 on macOS and 14.5 on iOS, both under the `webkitSpeechRecognition` prefix. Chrome 139 added the unprefixed `SpeechRecognition`. Edge ships the same Chromium interface. Desktop Firefox has had it on by default since version 160, released in November 2026, and transcribes on the device. Firefox for Android has none. Caniuse puts global coverage at about 89% and marks every supporting browser as partial rather than full support.
   </FaqItem>
   <FaqItem question="Does the Web Speech API work in Safari?">
     Yes, it has worked since Safari 14.1 on macOS and 14.5 on iOS and iPadOS, under the `webkitSpeechRecognition` prefix. Expect behaviour differences from Chrome. `continuous` keeps the microphone open on iPhone without returning the final text. WebKit's documentation tracker still has an open question about `interimResults`.
   </FaqItem>
   <FaqItem question="Does the Web Speech API work offline?">
-    It works offline on Chrome 139 and later, with `processLocally` set to `true` and the matching language pack installed. Everywhere else the audio goes to a remote service, so dictation stops with the network.
+    It works offline in desktop Firefox 160 and later, which transcribes only on the device. It also works offline in Chrome 139 and later, with `processLocally` set to `true` and the matching language pack installed. Everywhere else the audio goes to a remote service, so dictation stops with the network.
   </FaqItem>
 </FaqList>
 
 ## The browser or your own server
 
-The Web Speech API is exactly right for a search field or a note-taking box that Chrome and Safari users dictate into, since a few lines of JavaScript are less work than running a server. Run the transcription through a server you own when you have to answer for what the transcript says, choose where the audio goes, or reach Firefox users.
+The Web Speech API is exactly right for a search field or a note-taking box that Chrome, Safari and desktop Firefox users dictate into, since a few lines of JavaScript are less work than running a server. Run the transcription through a server you own when you have to answer for what the transcript says, choose where the audio goes, or reach Firefox users on Android.
 
 Add an agent and a voice to that same `MicdropServer` to turn the call into a conversation. The page keeps the code it already has. [Getting started](/docs/getting-started) gets a first voice call running in five minutes, while [dictation and text-only calls](/docs/server/dictation) covers what changes when you leave the agent or the voice out. For a phone rather than a browser, read [speech to text in React Native](/blog/speech-to-text-react-native).
