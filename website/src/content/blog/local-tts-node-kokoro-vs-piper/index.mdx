@@ -253,7 +253,7 @@ Pick **Pocket TTS** for an English call that needs a specific voice. It [clones 
 
 Pick **Kokoro** for an English call when you want the shortest setup. One npm dependency is the whole setup, since the weights download on first use. It costs roughly one extra second before the first word, which a person on a call hears.
 
-Pick **Qwen3-TTS** when the voice has to sound like a hosted one and the machine has a GPU. It reads ten languages with one checkpoint, takes a style instruction, and can design or clone a voice. You pay for that with a Python server next to your app, 2.5 GB of memory, and a Mac with Apple Silicon, the only machine mlx-audio runs on. [Running Qwen3-TTS in Node](/docs/ai-integration/provided-integrations/qwen-tts) takes one npm package and one command to start the server.
+Pick **Qwen3-TTS** when the voice has to sound like a hosted one and the machine has a GPU. It reads ten languages with one checkpoint, takes a style instruction, and can design or clone a voice. You pay for that with a Python server next to your app, 2.5 GB of memory, and a Mac with Apple Silicon, the only machine mlx-audio runs on. [Running Qwen3-TTS in Node](/docs/ai-integration/provided-integrations/qwen-tts) takes one npm package and one command to start the server. Chatterbox, CosyVoice 3 and Ming-3.0-tts also publish open weights, and need a GPU like Qwen3-TTS. They appear in a [ranking of open source text to speech models](/blog/top-open-source-text-to-speech-models) on latency and license.
 
 Run more than one when the language changes from one call to the next. Micdrop takes a TTS instance per call, so an application serving English and French can hand each conversation the engine that suits its language.
 
