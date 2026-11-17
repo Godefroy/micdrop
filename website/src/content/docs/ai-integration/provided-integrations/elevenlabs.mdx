@@ -145,7 +145,7 @@ The `voiceSettings` option takes the `VoiceSettings` type of the ElevenLabs SDK,
 
 ```typescript
 const tts = new ElevenLabsTTS({
-  apiKey: 'your-api-key',
+  apiKey: process.env.ELEVENLABS_API_KEY || '',
   voiceId: 'your-voice-id',
   modelId: 'eleven_flash_v2_5',
   voiceSettings: {
@@ -175,7 +175,7 @@ The languages depend on the model: more than 90 for Eleven v4 and v4 Turbo, more
 
 ## Getting Started
 
-1. Sign up for an [ElevenLabs account](https://elevenlabs.io) and get your API key
+1. Sign up for an [ElevenLabs account](https://elevenlabs.io) and [create an API key](#creating-an-elevenlabs-api-key)
 2. Choose a voice from the ElevenLabs voice library or create a custom voice
 3. Install the package and configure with your credentials
 
@@ -183,7 +183,7 @@ The languages depend on the model: more than 90 for Eleven v4 and v4 Turbo, more
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 
 const tts = new ElevenLabsTTS({
-  apiKey: 'your-elevenlabs-api-key',
+  apiKey: process.env.ELEVENLABS_API_KEY || '',
   voiceId: 'your-voice-id', // Get this from ElevenLabs dashboard
   modelId: 'eleven_v4_turbo', // Choose based on your needs
   language: 'en',
@@ -196,6 +196,20 @@ new MicdropServer(socket, {
 })
 ```
 
+### Creating an ElevenLabs API key
+
+You create API keys on the [API keys page of your ElevenLabs settings](https://elevenlabs.io/app/settings/api-keys). Name each key after the server that uses it, so you can revoke one server's key and leave the other servers running.
+
+Restrict the key to Text to Speech access. `@micdrop/elevenlabs` only opens the Text to Speech and Text to Dialogue WebSockets, so that one permission covers everything the package does. A leaked key can then only generate speech. Add Voices read access if your own code lists the voices of your account. You can also give each key a monthly credit limit and an IP allowlist, so the key stops once it has spent its credits for the month and works only from your servers' addresses.
+
+Set the key in the `ELEVENLABS_API_KEY` environment variable of your server, then pass `process.env.ELEVENLABS_API_KEY` as `apiKey`, as the code samples on this page do:
+
+```bash
+ELEVENLABS_API_KEY=your-elevenlabs-api-key
+```
+
+The key stays on the server, since the browser talks to `@micdrop/server` and only the server connects to ElevenLabs. ElevenLabs checks the key only after it accepts the connection. With a wrong key or a missing permission, each connection closes before any audio, until `ElevenLabsTTS` runs out of retries and emits `Failed`.
+
 ### Finding Voice IDs
 
 You can find voice IDs in the ElevenLabs dashboard, by browsing the voices of your account, or through the public voice library API.
@@ -203,6 +217,23 @@ You can find voice IDs in the ElevenLabs dashboard, by browsing the voices of yo
 ## FAQ
 
 <FaqList>
+  <FaqItem question="Does ElevenLabs have an API?">
+    Yes. ElevenLabs has a REST API for text to speech, speech to text, voices
+    and its other products, plus WebSockets that stream speech while the text
+    is still arriving. Both take an API key in the `xi-api-key` header. A
+    voice agent needs the WebSockets, which `@micdrop/elevenlabs` wraps for
+    Node.js. The free plan includes API access, within its own
+    [character quota and concurrency limit](/blog/elevenlabs-api-pricing-voice-agent).
+  </FaqItem>
+  <FaqItem question="How do I get an API key for ElevenLabs?">
+    Sign in to ElevenLabs, open the API keys page of your settings and create
+    a key. Restrict it to Text to Speech access, which covers everything
+    `@micdrop/elevenlabs` does, then set it as `ELEVENLABS_API_KEY` on your
+    server. A free account gets a key too, with the
+    [monthly character quota of the free plan](/blog/elevenlabs-api-pricing-voice-agent).
+    You can also give the key a
+    [credit limit and an IP allowlist](#creating-an-elevenlabs-api-key).
+  </FaqItem>
   <FaqItem question="Which ElevenLabs WebSocket supports Eleven v4?">
     Eleven v4 and v4 Turbo stream only over the Text to Dialogue WebSocket,
     `wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input`, like Eleven v3.
