@@ -80,7 +80,7 @@ Micdrop’s Mistral integration supplies `MistralSTT`, `MistralAgent` and `Mistr
 npm install @micdrop/server @micdrop/web @micdrop/mistral ws
 ```
 
-The integration page documents [Mistral’s agent, transcription and speech options](/docs/ai-integration/provided-integrations/mistral). Here is a minimal server using one Mistral API key for all three components:
+The integration page documents [Mistral’s agent, transcription and speech options](/docs/providers). Here is a minimal server using one Mistral API key for all three components:
 
 ```typescript
 import { MistralAgent, MistralSTT, MistralTTS } from '@micdrop/mistral'
@@ -144,7 +144,7 @@ const tts = new MistralTTS({
 })
 ```
 
-For a pipeline that must keep transcription and reasoning in Europe, choose integrations that expose the required endpoint, or use a provider with a documented European region for those stages. See how to [combine Mistral with other European voice providers](/docs/ai-integration/sovereign-voice-ai). The French [TypeScript example of a European voice pipeline](/blog/agent-vocal-ia-souverain) also explains which Mistral stages currently use a European endpoint. Check each provider’s data terms and where your Node server stores transcripts and audio.
+For a pipeline that must keep transcription and reasoning in Europe, choose integrations that expose the required endpoint, or use a provider with a documented European region for those stages. See how to [combine Mistral with other European voice providers](/docs/providers/sovereign-voice-ai). The French [TypeScript example of a European voice pipeline](/blog/agent-vocal-ia-souverain) also explains which Mistral stages currently use a European endpoint. Check each provider’s data terms and where your Node server stores transcripts and audio.
 
 ## Does Voxtral Speech 3 stream its audio?
 
@@ -156,7 +156,7 @@ Micdrop’s `MistralTTS` currently uses the regular endpoint, one request for ea
 
 Choose Mistral’s Voice Agents SDK when you want the service to manage the full conversation and the published per-minute rate fits your budget. Choose your own WebSocket clients when you need direct control over transport and model stages and are ready to build the audio path. Choose Micdrop when you want its existing TypeScript browser and Node pipeline, with the option to replace Mistral components later.
 
-Before you ship, check the required language, latency, endpoint region, TTS mode and data retention for the exact models you call. See how to [configure Mistral’s agent, STT and TTS integrations in Micdrop](/docs/ai-integration/provided-integrations/mistral). To [set up your first voice call with the client and server](/docs/getting-started), start with the initial integration steps.
+Before you ship, check the required language, latency, endpoint region, TTS mode and data retention for the exact models you call. See how to [configure Mistral’s agent, STT and TTS integrations in Micdrop](/docs/providers). To [set up your first voice call with the client and server](/docs/getting-started), start with the initial integration steps.
 
 ## Frequently asked questions
 
@@ -181,4 +181,4 @@ Before you ship, check the required language, latency, endpoint region, TTS mode
   </FaqItem>
 </FaqList>
 
-For a Node.js voice agent with a browser client and replaceable integrations, [set up Micdrop with Mistral’s agent, transcription and speech packages](/docs/ai-integration/provided-integrations/mistral). Start with the client and server, then test the Voxtral models, voices and regions your application will use.
+For a Node.js voice agent with a browser client and replaceable integrations, [set up Micdrop with Mistral’s agent, transcription and speech packages](/docs/providers). Start with the client and server, then test the Voxtral models, voices and regions your application will use.

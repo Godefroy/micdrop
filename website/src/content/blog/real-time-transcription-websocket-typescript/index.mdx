@@ -125,7 +125,7 @@ The best known streaming projects are written in Python and work around the wind
 
 Both re-transcribe the same audio several times to show words while the user speaks. That suits captions, where a person reads along. A dictation box or a voice agent mostly needs the final sentence, and needs it fast.
 
-Cut the audio into sentences in the browser, and Whisper gets the kind of input it was built for, one short recording at a time. Each utterance arrives as one stream, the server waits for its end, and Whisper reads it once. [`@micdrop/whisper`](/docs/ai-integration/provided-integrations/whisper) runs Whisper in the Node process through Transformers.js and ONNX Runtime, with no Python and no API key:
+Cut the audio into sentences in the browser, and Whisper gets the kind of input it was built for, one short recording at a time. Each utterance arrives as one stream, the server waits for its end, and Whisper reads it once. [`@micdrop/whisper`](/docs/speech-to-text/whisper) runs Whisper in the Node process through Transformers.js and ONNX Runtime, with no Python and no API key:
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -151,7 +151,7 @@ Hosted streaming models transcribe while the audio arrives, so the final text is
 
 Mistral also accepts `input_audio.end`, which closes the whole session, so the next sentence would have to open a new connection. A flush ends the sentence and keeps the connection for the next one. Gladia has no end of sentence message, so the integration sends silence to make it close the sentence.
 
-These models also differ on [price per minute, languages and accuracy](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral). Ten hosted APIs, Deepgram and AssemblyAI among them, are ranked on [time to the final transcript and error rate](/blog/top-speech-to-text-apis-voice-agents). Any other provider fits behind the same interface: a [custom speech to text class](/docs/ai-integration/custom-integrations/custom-stt) has a single `transcribe()` method that receives one stream per sentence and emits a `Transcript` event.
+These models also differ on [price per minute, languages and accuracy](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral). Ten hosted APIs, Deepgram and AssemblyAI among them, are ranked on [time to the final transcript and error rate](/blog/top-speech-to-text-apis-voice-agents). Any other provider fits behind the same interface: a [custom speech to text class](/docs/speech-to-text/custom) has a single `transcribe()` method that receives one stream per sentence and emits a `Transcript` event.
 
 {/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Four horizontal rows stacked on a dark surface, one per provider, each row reading from left to right as a small pipeline: a simple abstract audio waveform glyph on the left, a thin emerald arrow, then a rounded pill holding the end of sentence signal in monospace text, a thin emerald arrow, then a short text block icon on the right. Row 1 labelled 'OpenAI' on its left edge, pill text 'input_audio_buffer.commit'. Row 2 labelled 'Gemini', pill text 'activityEnd'. Row 3 labelled 'Mistral', pill text 'input_audio.flush'. Row 4 labelled 'Gladia', pill text '2 s of silence'. Each label and each pill text is written once and only once. Title at the top in a modern clean bold sans-serif: 'How each streaming API learns the sentence is over'. Generous spacing, flat vector style."
     Infographic only: regenerate if a provider changes the message that ends an utterance. Last data sync: 2026-10-06. */}
@@ -165,7 +165,7 @@ A demo runs on one laptop with a good connection. Once real users connect from r
 
 A train enters a tunnel, the laptop changes networks, a proxy closes idle connections. The page has to reconnect on its own and pause recording while it is offline. Micdrop's client reconnects every second by default, with a five second timeout per attempt, and pauses the voice detector while it is offline. The transcript already on the page stays there. The server closes the provider connection along with the socket and starts a fresh call on the new one. For a call with an agent, [resume the conversation](/docs/server/resume-conversation) by replaying the saved messages into it.
 
-Provider connections drop too. Each integration reconnects to its provider. Gemini Live also caps a session at ten minutes, so the Gemini integration opens the next session between two sentences. When every retry to a provider fails, [`FallbackSTT`](/docs/ai-integration/fallback-strategies/stt-fallback) sends the audio of the sentence in progress to the next provider.
+Provider connections drop too. Each integration reconnects to its provider. Gemini Live also caps a session at ten minutes, so the Gemini integration opens the next session between two sentences. When every retry to a provider fails, [`FallbackSTT`](/docs/speech-to-text/fallback) sends the audio of the sentence in progress to the next provider.
 
 ### Two sentences overlap
 

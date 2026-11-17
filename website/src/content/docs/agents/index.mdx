@@ -1,0 +1,26 @@
+---
+title: 'LLM Providers for a Voice Agent'
+sidebarLabel: 'LLM (Agent)'
+description: 'The LLMs a Micdrop voice agent can answer with: OpenAI, Gemini and Mistral packages, and every model of the Vercel AI SDK, Claude, Groq and local Ollama models included.'
+order: 48
+---
+
+# LLM Providers for a Voice Agent
+
+The LLM writes the answers of the call. Micdrop wraps it in an
+[agent](./custom), which keeps the conversation, runs the tools and decides when
+the call ends. It is passed to the server as `agent`.
+
+- **[AI SDK](./ai-sdk)**, any model of the Vercel AI SDK, such as Claude, Gemini, Grok, Llama on Groq or a local model on Ollama
+- **[OpenAI](./openai)**, GPT models through the Responses API
+- **[Gemini](./gemini)**, Gemini Flash models through the Interactions API
+- **[Mistral](./mistral)**, Mistral models through Mistral AI's API
+
+Hosted and open weight language models differ in [tool call accuracy, delay before the first word and price](/blog/top-llms-voice-agents).
+The [local LLM guide](../local-models/agent) runs the agent on your own machine
+with Ollama.
+
+## Your own
+
+Any other model plugs in by extending the [`Agent` class](./custom), and
+[`FallbackAgent`](./fallback) switches to another provider when one fails.

@@ -316,7 +316,7 @@ graph TD
   D -->|llm, or no classification within maxWait| F[The LLM answers]
 ```
 
-Three of the four routes skip the LLM. On those turns the caller hears the answer as soon as the text to speech can speak it, and you pay for a Decisions request instead of a completion. The hook can also keep the LLM and give it a hint: `this.addMessage('system', hint)` adds context before the LLM answers, for a caller thinking of leaving for instance. With the `sendToClient` option, the server also [sends each classification to the browser](/docs/server/classifier), where your page can display it.
+Three of the four routes skip the LLM. On those turns the caller hears the answer as soon as the text to speech can speak it, and you pay for a Decisions request instead of a completion. The hook can also keep the LLM and give it a hint: `this.addMessage('system', hint)` adds context before the LLM answers, for a caller thinking of leaving for instance. With the `sendToClient` option, the server also [sends each classification to the browser](/docs/classifiers), where your page can display it.
 
 ## Latency and price: 200 to 530 ms per request, $0.10 per million tokens
 
@@ -389,4 +389,4 @@ The Decisions API has one direct equivalent, [Jev, the System One model of TypeS
 
 Routing a voice call with the Decisions API takes three pieces of code: the questions, a `route()` function with its thresholds, and an `onBeforeAnswer` hook that returns a string or lets the LLM answer. Start with the turns your agent handles badly today, such as the transfer to a human or the known outage, and write one question for each. Log the classifications for a few days before you set the thresholds.
 
-[The OpenAI classifier of Micdrop](/docs/ai-integration/provided-integrations/openai#openai-classifier) also runs without `MicdropServer` and can pick its questions for each input. If Micdrop is new to you, [start with a first voice call in five minutes](/docs/getting-started), then add the classifier on top.
+[The OpenAI classifier of Micdrop](/docs/classifiers/openai-decisions) also runs without `MicdropServer` and can pick its questions for each input. If Micdrop is new to you, [start with a first voice call in five minutes](/docs/getting-started), then add the classifier on top.

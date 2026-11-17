@@ -1,0 +1,80 @@
+---
+title: 'Gemini Transcribe Speech to Text in Node.js'
+sidebarLabel: 'Gemini Transcribe'
+description: 'Stream the voice of the user to Gemini Transcribe over the Live API from your Node server, and get the transcript of each utterance a fraction of a second after it ends.'
+order: 46.2
+---
+
+# Gemini Transcribe Speech to Text in Node.js
+
+`GeminiSTT` streams the voice of the user to Gemini Transcribe over the Live
+API, and emits the transcript of each utterance a fraction of a second after it ends.
+
+## Installation
+
+```bash
+npm install @micdrop/gemini
+```
+
+The same package also provides [an agent](../agents/gemini), [a text to speech](../text-to-speech/gemini), [Gemini Live](../realtime/gemini-live) and [a classifier](../classifiers/gemini-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { GeminiSTT } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const stt = new GeminiSTT({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  language: 'en-US', // Optional, detected when left out
+  vocabulary: ['Micdrop'], // Optional, words to recognize
+})
+
+new MicdropServer(socket, {
+  stt,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { GeminiSTT } from '@micdrop/gemini'
+import { createReadStream } from 'fs'
+
+const stt = new GeminiSTT({ apiKey: process.env.GEMINI_API_KEY || '' })
+
+stt.on('Transcript', (transcript) => console.log('Transcript:', transcript))
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+stt.transcribe(createReadStream('speech.pcm'))
+```
+
+## Events
+
+| Event        | Payload    | Description                                                               |
+| ------------ | ---------- | ------------------------------------------------------------------------- |
+| `Transcript` | `string`   | The transcript of an utterance, empty when nothing was understood.        |
+| `Failed`     | `Buffer[]` | The connection could not be restored, with the audio still untranscribed. |
+
+See the [STT interface](./custom) for the full contract.
+
+Each stream given to `transcribe()` is one utterance with a transcript of its
+own, and the transcripts come in the order of the streams. A stream can start
+while the previous one still waits for its transcript: Gemini names no
+utterance in what it sends, so it hears them one after the other, and the audio
+of the next one waits for the transcript of the previous.
+
+## Options
+
+| Option                 | Type                    | Default                        | Description                                         |
+| ---------------------- | ----------------------- | ------------------------------ | --------------------------------------------------- |
+| `apiKey`               | `string`                | Required                       | Your Gemini API key                                 |
+| `model`                | `string`                | `'gemini-3.5-transcribe-live'` | Transcription model                                 |
+| `language`             | `string`                | `undefined`                    | Language of the user, as a BCP-47 code like `fr-FR` |
+| `vocabulary`           | `string[]`              | `undefined`                    | Words to recognize, up to 1,000                     |
+| `mode`                 | `'SMART' \| 'VERBATIM'` | Model default                  | Cleans up hesitations, or keeps every word as said  |
+| `transcriptionTimeout` | `number`                | `4000`                         | How long to wait for a transcript, in milliseconds  |
+| `connectionTimeout`    | `number`                | `5000`                         | Time to open the connection, in milliseconds        |
+| `retryDelay`           | `number`                | `1000`                         | Delay before reconnecting, in milliseconds          |
+| `maxRetry`             | `number`                | `3`                            | Reconnection attempts before giving up              |

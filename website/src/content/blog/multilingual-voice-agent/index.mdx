@@ -87,7 +87,7 @@ Test names, addresses, dates, times, currency and confirmation codes. A value su
 
 One multilingual voice keeps the assistant’s identity consistent across languages. A different voice per language gives more control over the regional accent, but changes the speaker between calls.
 
-The model matters as much as the recorded voice. In Micdrop’s Phonon testing, Phonon 31M, an English model, read a French sentence with English phonemes even when paired with a French voice. The French Phonon 40M model read the same sentence correctly. The five-language Phonon 40M multilingual model covers English, French, German, Spanish and Portuguese, while its weights carry the CC BY-NC 4.0 license. That license rules out commercial use. The [Phonon integration notes](/docs/ai-integration/provided-integrations/phonon) include the model choices and the language-specific test.
+The model matters as much as the recorded voice. In Micdrop’s Phonon testing, Phonon 31M, an English model, read a French sentence with English phonemes even when paired with a French voice. The French Phonon 40M model read the same sentence correctly. The five-language Phonon 40M multilingual model covers English, French, German, Spanish and Portuguese, while its weights carry the CC BY-NC 4.0 license. That license rules out commercial use. The [Phonon integration notes](/docs/text-to-speech/phonon) include the model choices and the language-specific test.
 
 Hosted speech models vary in coverage. ElevenLabs Multilingual v2 supports 29 languages, according to its [model list](https://elevenlabs.io/docs/overview/models). Cartesia Sonic 3.6 supports 44. Its [multilingual voice guide](https://docs.cartesia.ai/build-with-cartesia/capability-guides/multilingual-voices) distinguishes broad language support from a native-sounding accent, while `locale` guides pronunciation and number normalization. Mistral’s Voxtral Speech 3 supports 35 languages, with the voice determining the language. Check the model and voice documentation for your language pair.
 
@@ -140,7 +140,7 @@ wss.on('connection', async (socket) => {
 
 `voiceForLanguage` maps validated language codes to voice IDs. Each connection gets the STT, agent and TTS configuration for its language. The language can come from a settings menu, an account profile or the first utterance.
 
-[Micdrop](/) is an open source TypeScript library for real-time voice conversations, with provider integrations that share the same STT, agent and TTS interfaces. You can use the [AI integration guide](/docs/ai-integration) to choose the components for each language instead of rewriting the browser and server pipeline for every vendor.
+[Micdrop](/) is an open source TypeScript library for real-time voice conversations, with provider integrations that share the same STT, agent and TTS interfaces. You can use the [AI integration guide](/docs/providers) to choose the components for each language instead of rewriting the browser and server pipeline for every vendor.
 
 ```mermaid
 graph TD
@@ -204,4 +204,4 @@ A Whisper round trip can catch a voice that mangles a date or name. It cannot ju
   </FaqItem>
 </FaqList>
 
-Choose the language strategy that matches the call, then test the complete path from the caller’s speech to the agent’s spoken answer. [Connect the speech, agent and voice components with Micdrop’s AI integrations](/docs/ai-integration) in your TypeScript server.
+Choose the language strategy that matches the call, then test the complete path from the caller’s speech to the agent’s spoken answer. [Connect the speech, agent and voice components with Micdrop’s AI integrations](/docs/providers) in your TypeScript server.

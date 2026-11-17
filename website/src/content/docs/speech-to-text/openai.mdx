@@ -1,0 +1,85 @@
+---
+title: 'OpenAI Speech to Text in Node.js'
+sidebarLabel: 'OpenAI'
+description: 'Transcribe the user in real time with OpenAI from your Node server, on gpt-live-transcribe, gpt-transcribe or gpt-4o-transcribe, over the WebSocket transcription API.'
+order: 46.4
+---
+
+# OpenAI Speech to Text in Node.js
+
+Real-time speech-to-text implementation using OpenAI's WebSocket-based real-time transcription API.
+
+Leave out the agent and the voice, and `OpenaiSTT` alone gives you [speech to text with nothing answering back](../server/dictation).
+
+OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) `gpt-4o-transcribe` (the default), `gpt-4o-mini-transcribe` and `whisper-1`, which shut down on **February 26, 2027**. Their replacements, `gpt-live-transcribe` and `gpt-transcribe`, work with the same options: `language` is sent as the list of expected languages these models take. `gpt-live-transcribe` is recommended for new integrations.
+
+## Installation
+
+```bash
+npm install @micdrop/openai
+```
+
+The same package also provides [an agent](../agents/openai), [a text to speech](../text-to-speech/openai), [the Realtime API](../realtime/openai-realtime) and [a classifier](../classifiers/openai-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { OpenaiSTT } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const stt = new OpenaiSTT({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-live-transcribe', // Default 'gpt-4o-transcribe', shut down on February 26, 2027
+  language: 'en', // Optional: specify language for better accuracy
+  prompt: 'Transcribe the incoming audio in real time.', // Optional: custom prompt
+  transcriptionTimeout: 4000, // Optional: timeout in ms for transcription
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  stt,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { OpenaiSTT } from '@micdrop/openai'
+import { createReadStream } from 'fs'
+
+const stt = new OpenaiSTT({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  language: 'en',
+})
+
+stt.on('Transcript', (text) => console.log('Transcript:', text))
+stt.on('Failed', (chunks) => console.error('Failed:', chunks.length, 'chunks'))
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+stt.transcribe(createReadStream('speech.pcm'))
+```
+
+## Events
+
+| Event        | Payload    | Description                                                                                                        |
+| ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Transcript` | `string`   | Transcription of one utterance, emitted once per utterance. The text is empty when nothing was recognized in time. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.                                       |
+
+See the [STT interface](./custom) for the full contract.
+
+## Options
+
+| Option                 | Type     | Default                                         | Description                                                                                                                                            |
+| ---------------------- | -------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKey`               | `string` | Required                                        | Your OpenAI API key                                                                                                                                    |
+| `model`                | `string` | `'gpt-4o-transcribe'`                           | Real-time transcription model: `gpt-live-transcribe` and `gpt-transcribe`, or until February 26, 2027 `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` |
+| `language`             | `string` | `'en'`                                          | Language code for transcription                                                                                                                        |
+| `prompt`               | `string` | `'Transcribe the incoming audio in real time.'` | Custom prompt to guide transcription behavior                                                                                                          |
+| `connectionTimeout`    | `number` | `5000`                                          | Timeout in milliseconds for WebSocket connection                                                                                                       |
+| `transcriptionTimeout` | `number` | `4000`                                          | Timeout in milliseconds to wait for transcription result                                                                                               |
+| `retryDelay`           | `number` | `1000`                                          | Delay in milliseconds between reconnection attempts                                                                                                    |
+| `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing                                                                                                 |
+
+The connection opens again whenever it closes, a graceful close included. Each utterance keeps its audio until its transcript arrives, and a new connection receives the audio of every utterance still waiting, so none is lost in between. Once `maxRetry` attempts in a row failed, `Failed` hands that audio back, and the next utterance starts the connection over.

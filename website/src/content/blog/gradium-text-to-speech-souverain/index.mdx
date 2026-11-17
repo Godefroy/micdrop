@@ -31,7 +31,7 @@ Gradium est une startup parisienne fondée par d'anciens chercheurs de Meta, Goo
 
 Gradium développe des **modèles de langage audio-natifs** pour le text-to-speech et le speech-to-text en temps réel.
 
-Gradium publie aussi Phonon, un TTS local construit sur Pocket TTS de Kyutai. Son modèle français, `phonon-40m-fr`, tourne dans votre serveur Node sans clé API avec [`@micdrop/phonon`](/docs/ai-integration/provided-integrations/phonon). Sur un MacBook Pro M2, nous avons mesuré le premier son entre 30 et 100 ms avec un seul cœur. Quand on transcrit l’audio avec Whisper, on retrouve le texte presque mot pour mot, date et heure comprises. Ce modèle propose 15 voix françaises. Il est pourtant sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Le seul modèle Phonon utilisable librement dans un produit, `phonon-31m-en`, parle uniquement anglais. Pour un produit commercial en français, l’API hébergée de Gradium reste donc le bon choix. Nous avons comparé Phonon aux autres [voix françaises pour un agent vocal, hébergées ou locales](/blog/french-text-to-speech-voice-agent).
+Gradium publie aussi Phonon, un TTS local construit sur Pocket TTS de Kyutai. Son modèle français, `phonon-40m-fr`, tourne dans votre serveur Node sans clé API avec [`@micdrop/phonon`](/docs/text-to-speech/phonon). Sur un MacBook Pro M2, nous avons mesuré le premier son entre 30 et 100 ms avec un seul cœur. Quand on transcrit l’audio avec Whisper, on retrouve le texte presque mot pour mot, date et heure comprises. Ce modèle propose 15 voix françaises. Il est pourtant sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Le seul modèle Phonon utilisable librement dans un produit, `phonon-31m-en`, parle uniquement anglais. Pour un produit commercial en français, l’API hébergée de Gradium reste donc le bon choix. Nous avons comparé Phonon aux autres [voix françaises pour un agent vocal, hébergées ou locales](/blog/french-text-to-speech-voice-agent).
 
 ### Les caractéristiques de Gradium
 
@@ -169,7 +169,7 @@ ElevenLabs reste devant sur le nombre de langues et Cartesia clone une voix à p
 
 ## Gradium ou Voxtral Speech 3 pour une voix française
 
-Mistral, autre entreprise française, vend aussi une synthèse vocale, Voxtral Speech 3. Micdrop la branche avec `MistralTTS`, dans le package [`@micdrop/mistral`](/docs/ai-integration/provided-integrations/mistral). Les deux fournisseurs génèrent l’audio en Europe, mais ils diffèrent sur le prix, les voix et la façon de recevoir le texte. Nous avons relevé les prix sur les pages tarifaires des deux fournisseurs le 21 octobre 2026.
+Mistral, autre entreprise française, vend aussi une synthèse vocale, Voxtral Speech 3. Micdrop la branche avec `MistralTTS`, dans le package [`@micdrop/mistral`](/docs/text-to-speech/mistral). Les deux fournisseurs génèrent l’audio en Europe, mais ils diffèrent sur le prix, les voix et la façon de recevoir le texte. Nous avons relevé les prix sur les pages tarifaires des deux fournisseurs le 21 octobre 2026.
 
 | Critère | Gradium | Voxtral Speech 3 |
 |---|---|---|
@@ -215,10 +215,10 @@ Un établissement scolaire traite les données d'élèves souvent mineurs, ce qu
 
 ## Pour aller plus loin
 
-- [Documentation Gradium dans Micdrop](/docs/ai-integration/provided-integrations/gradium)
-- [Guide IA Vocale Souveraine](/docs/ai-integration/sovereign-voice-ai)
-- [Voxtral Speech 3 dans Micdrop](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech)
-- [Stratégies de fallback TTS](/docs/ai-integration/fallback-strategies/tts-fallback)
+- [Documentation Gradium dans Micdrop](/docs/text-to-speech/gradium)
+- [Guide IA Vocale Souveraine](/docs/providers/sovereign-voice-ai)
+- [Voxtral Speech 3 dans Micdrop](/docs/text-to-speech/mistral)
+- [Stratégies de fallback TTS](/docs/text-to-speech/fallback)
 - [Site officiel Gradium](https://gradium.ai)
 
 ---

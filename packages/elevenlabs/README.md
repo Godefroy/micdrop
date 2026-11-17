@@ -1,6 +1,6 @@
 # @micdrop/elevenlabs
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/elevenlabs)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/elevenlabs)
 
 `@micdrop/elevenlabs` streams ElevenLabs text to speech for [@micdrop/server](https://micdrop.dev/docs/server). It works with Eleven v4 Turbo, Eleven v4, Eleven v3, Flash v2.5, Turbo v2.5 and Multilingual v2, and picks the WebSocket each model needs.
 
@@ -60,7 +60,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
 | `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.  |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ### Models
 
@@ -77,7 +77,7 @@ ElevenLabs counts each open connection to the Text to Dialogue WebSocket as one 
 
 ## Documentation
 
-Read full [documentation of the ElevenLabs integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/elevenlabs) on the [website](https://micdrop.dev).
+Read full [documentation of the ElevenLabs integration for Micdrop](https://micdrop.dev/docs/text-to-speech/elevenlabs) on the [website](https://micdrop.dev).
 
 ## License
 

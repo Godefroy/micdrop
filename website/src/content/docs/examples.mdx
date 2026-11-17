@@ -49,7 +49,7 @@ example to `.env` with your API keys, then run its command from the root.
 - The [storyteller demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-storyteller)
   (`pnpm dev:storyteller`) tells a story by voice around a campfire. The LLM
   writes audio tags such as `[whispers]` or `[laughs]` into its answers, for
-  [Eleven v4 Turbo](./ai-integration/provided-integrations/elevenlabs) to
+  [Eleven v4 Turbo](./text-to-speech/elevenlabs) to
   perform. The demo page shows each tag apart from the words. You can also
   switch the voice to Flash v2.5, where the same storyteller speaks without
   tags. The demo needs an OpenAI key and an ElevenLabs key.
@@ -58,8 +58,8 @@ example to `.env` with your API keys, then run its command from the root.
 
 ## Classifier demos
 
-These demos run on [Jev](./ai-integration/provided-integrations/typesafe),
-TypeSafe's System One model, through the [classifier](./server/classifier) of
+These demos run on [Jev](./classifiers/jev),
+TypeSafe's System One model, through the [classifier](./classifiers) of
 the server. Each one needs an OpenAI key and a TypeSafe key.
 
 - The [support demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-support)

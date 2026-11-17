@@ -1,6 +1,6 @@
 # @micdrop/whisper
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/whisper)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/speech-to-text/whisper)
 
 Local Whisper speech to text for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -57,7 +57,7 @@ stt.transcribe(createReadStream('speech.pcm'))
 | `Transcript` | `string`   | Transcription of one utterance, in the order the utterances were spoken. The text is empty when nothing was recognized. |
 | `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.                                            |
 
-See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
+See the [STT interface](https://micdrop.dev/docs/speech-to-text/custom) for the full contract.
 
 ## Picking a model
 
@@ -72,7 +72,7 @@ const stt = new WhisperSTT({ model: 'french', language: 'fr' })
 
 ## Documentation
 
-Read full [documentation of the Whisper integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/whisper) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/ai-integration/local-models).
+Read full [documentation of the Whisper integration for Micdrop](https://micdrop.dev/docs/speech-to-text/whisper) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/local-models).
 
 ## License
 

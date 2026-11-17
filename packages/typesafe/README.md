@@ -1,6 +1,6 @@
 # @micdrop/typesafe
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/typesafe)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/classifiers/jev)
 
 [Jev](https://docs.typesafe.ai) implementation for [@micdrop/server](https://micdrop.dev/docs/server). Jev is the System One model of TypeSafe, answering typed questions about what the user says (choice, score, yes or no) with calibrated probabilities, in a few hundred ms.
 
@@ -110,11 +110,11 @@ The server options (`sendToClient`, `waitBeforeAnswer`, `maxWait`, `history`) go
 | ---------------- | ---------------------------------------- | --------------------------------------------------- |
 | `Classification` | `MicdropClassification<SystemOneResult>` | Answers of Jev about an input, with their duration. |
 
-See the [Classifier interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-classifier) for the full contract.
+See the [Classifier interface](https://micdrop.dev/docs/classifiers/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Jev integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/typesafe) on the [website](https://micdrop.dev).
+Read full [documentation of the Jev integration for Micdrop](https://micdrop.dev/docs/classifiers/jev) on the [website](https://micdrop.dev).
 
 ## License
 

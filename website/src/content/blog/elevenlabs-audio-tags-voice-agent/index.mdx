@@ -185,7 +185,7 @@ export class TaglessTTS extends TTS {
 }
 ```
 
-Then list both engines in [a text to speech fallback](/docs/ai-integration/fallback-strategies/tts-fallback). `FallbackTTS` moves to the next engine when `ElevenLabsTTS` fails after its retries and replays the unspoken text to it. `TaglessTTS` strips the tags from that text too:
+Then list both engines in [a text to speech fallback](/docs/text-to-speech/fallback). `FallbackTTS` moves to the next engine when `ElevenLabsTTS` fails after its retries and replays the unspoken text to it. `TaglessTTS` strips the tags from that text too:
 
 ```typescript
 import { CartesiaTTS } from '@micdrop/cartesia'
@@ -226,7 +226,7 @@ Micdrop runs the whole call in TypeScript: `@micdrop/client` handles the microph
 
 A hosted platform handles the same work and charges by the minute. ElevenLabs Agents charged $0.08 a minute on every plan, with the LLM billed on top, when we read [its pricing](https://elevenlabs.io/pricing/agents) on September 24, 2026. Micdrop is MIT licensed and runs on your server with your own keys, so for the voice you pay ElevenLabs its price per character, with no Micdrop fee on top. In exchange, you host the server yourself and build the call history and the dashboard a platform would give you.
 
-You can copy a system prompt for tags, and compare the models and their options, when you [set up ElevenLabs in Micdrop](/docs/ai-integration/provided-integrations/elevenlabs).
+You can copy a system prompt for tags, and compare the models and their options, when you [set up ElevenLabs in Micdrop](/docs/text-to-speech/elevenlabs).
 
 ## Frequently asked questions
 

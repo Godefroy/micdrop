@@ -81,7 +81,7 @@ For a useful test, record the model, quantization, hardware, prompt and output l
 
 Warm-up and model retention matter more for the first turn than the server name. [Ollama keeps a model loaded for five minutes by default](https://docs.ollama.com/faq) and lets you change that with `keep_alive` or `OLLAMA_KEEP_ALIVE`. Decide whether keeping a model in memory is worth the memory it occupies.
 
-The project’s [local-model measurements](/docs/ai-integration/local-models/performance) use Ollama for the LLM on a MacBook Pro M2 with 24 GB of memory. They report results for that setup and already-loaded models. Use those figures to understand the documented Micdrop stack, then measure a different server on the hardware where it will run.
+The project’s [local-model measurements](/docs/local-models/performance) use Ollama for the LLM on a MacBook Pro M2 with 24 GB of memory. They report results for that setup and already-loaded models. Use those figures to understand the documented Micdrop stack, then measure a different server on the hardware where it will run.
 
 ## Tool calling depends on the server and the model
 
@@ -113,7 +113,7 @@ Setup ranges from Ollama’s `pull` and `run` commands, through LM Studio’s mo
 
 ## Plug a local server into a voice agent
 
-A local LLM server can sit behind a TypeScript voice application as long as it serves an API the AI SDK client can call. [Micdrop](https://micdrop.dev/), an open source TypeScript library for real-time voice conversations, connects its `AiSdkAgent` to the Vercel AI SDK. Micdrop can connect its local agent to [Ollama, LM Studio or `llama-server` through the OpenAI provider’s chat interface](/docs/ai-integration/local-models/agent).
+A local LLM server can sit behind a TypeScript voice application as long as it serves an API the AI SDK client can call. [Micdrop](https://micdrop.dev/), an open source TypeScript library for real-time voice conversations, connects its `AiSdkAgent` to the Vercel AI SDK. Micdrop can connect its local agent to [Ollama, LM Studio or `llama-server` through the OpenAI provider’s chat interface](/docs/local-models/agent).
 
 ```typescript
 import { createOpenAI } from '@ai-sdk/openai'
@@ -156,7 +156,7 @@ graph TD
     B --> E[Browser speaker]
 ```
 
-For a voice turn, verify that streamed content and tool calls arrive in the shape your agent handles. Begin with a model already tested in your stack. The [local voice-agent example](/blog/local-voice-agent-ollama-whisper-piper) combines Ollama with Whisper and Piper, and the [AI SDK integration documentation](/docs/ai-integration/provided-integrations/ai-sdk) explains the provider connection.
+For a voice turn, verify that streamed content and tool calls arrive in the shape your agent handles. Begin with a model already tested in your stack. The [local voice-agent example](/blog/local-voice-agent-ollama-whisper-piper) combines Ollama with Whisper and Piper, and the [AI SDK integration documentation](/docs/agents/ai-sdk) explains the provider connection.
 
 ## Which one should you choose?
 
@@ -168,7 +168,7 @@ Choose **LM Studio** when browsing and testing models interactively is part of t
 
 Choose **vLLM** when the target is a GPU-backed service and concurrent serving is part of the design from the start. Its scheduler and supported model ecosystem are aimed at serving workloads, while installation and operation require more infrastructure knowledge than a local desktop workflow.
 
-When you have narrowed the server down, choose a model that fits its format, hardware and tool-call behavior. The [local LLM guide for Micdrop](/docs/ai-integration/local-models/agent) compares model choices and shows how to connect one to a voice call. To try the full stack, [start a first Micdrop call](/docs/getting-started).
+When you have narrowed the server down, choose a model that fits its format, hardware and tool-call behavior. The [local LLM guide for Micdrop](/docs/local-models/agent) compares model choices and shows how to connect one to a voice call. To try the full stack, [start a first Micdrop call](/docs/getting-started).
 
 ## Frequently asked questions
 
@@ -197,7 +197,7 @@ When you have narrowed the server down, choose a model that fits its format, har
   </FaqItem>
   <FaqItem question="Which Ollama model is best for tool calling?">
     Tool-call quality depends on the model and task, not just the server. The
-    [local model tests in Micdrop’s documentation](/docs/ai-integration/local-models/agent#tool-calls)
+    [local model tests in Micdrop’s documentation](/docs/local-models/agent#tool-calls)
     compare models on specific voice-agent tools. Test your own tool
     descriptions and validate every call in your application.
   </FaqItem>

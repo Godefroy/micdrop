@@ -229,7 +229,7 @@ new MicdropServer(socket, {
 })
 ```
 
-Swapping takes a few lines, so you can run both on a day of real calls and compare their answers before you choose. Each class has its own options, listed for [the Jev classifier](/docs/ai-integration/provided-integrations/typesafe) and for [the OpenAI classifier](/docs/ai-integration/provided-integrations/openai#openai-classifier). Keywords and embeddings are two other [ways to detect the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
+Swapping takes a few lines, so you can run both on a day of real calls and compare their answers before you choose. Each class has its own options, listed for [the Jev classifier](/docs/classifiers/jev) and for [the OpenAI classifier](/docs/classifiers/openai-decisions). Keywords and embeddings are two other [ways to detect the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
 
 ## Frequently asked questions
 
@@ -256,4 +256,4 @@ Swapping takes a few lines, so you can run both on a day of real calls and compa
 
 ## Run both classifiers on your own turns
 
-This benchmark covers thirty robot commands, so test the models on your own calls before you pick one. Write the questions your routing needs, log the answers of Jev and of `gpt-6-luna` on the same calls for a few days, label a few dozen turns yourself, then compare. The setup takes one option of the server: [add a classifier to a Micdrop server](/docs/server/classifier), or [start with a first voice call in five minutes](/docs/getting-started) if Micdrop is new to you.
+This benchmark covers thirty robot commands, so test the models on your own calls before you pick one. Write the questions your routing needs, log the answers of Jev and of `gpt-6-luna` on the same calls for a few days, label a few dozen turns yourself, then compare. The setup takes one option of the server: [add a classifier to a Micdrop server](/docs/classifiers), or [start with a first voice call in five minutes](/docs/getting-started) if Micdrop is new to you.

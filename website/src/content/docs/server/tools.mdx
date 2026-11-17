@@ -105,7 +105,7 @@ If `emitOutput` is true, the tool call output is also sent to the client and ava
 
 ## The `agent` context
 
-The `execute` function receives the executing agent as a second argument. Use it instead of capturing a specific agent in a closure, so tools stay portable and can be shared between agents (this is what lets [FallbackAgent](../ai-integration/fallback-strategies/agent-fallback) hand the same tools to every provider it switches to):
+The `execute` function receives the executing agent as a second argument. Use it instead of capturing a specific agent in a closure, so tools stay portable and can be shared between agents (this is what lets [FallbackAgent](../agents/fallback) hand the same tools to every provider it switches to):
 
 ```typescript
 agent.addTool({

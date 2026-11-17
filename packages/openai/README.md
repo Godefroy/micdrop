@@ -1,6 +1,6 @@
 # @micdrop/openai
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/openai)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/providers)
 
 OpenAI implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -71,7 +71,7 @@ agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 | `EndCall`               | none                      | The agent decided that the call is over.                                |
 | `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
 
-See the [Agent interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-agent) for the full contract.
+See the [Agent interface](https://micdrop.dev/docs/agents/custom) for the full contract.
 
 ## OpenAI STT (Speech-to-Text)
 
@@ -121,7 +121,7 @@ stt.transcribe(createReadStream('speech.pcm'))
 | `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
 | `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
-See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
+See the [STT interface](https://micdrop.dev/docs/speech-to-text/custom) for the full contract.
 
 ## OpenAI TTS (Text-to-Speech)
 
@@ -185,7 +185,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
 | `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 > **Voices**: the Realtime API offers `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin` and `cedar`. `fable`, `nova` and `onyx` only exist on the speech endpoint.
 
@@ -193,7 +193,7 @@ See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrati
 
 ## OpenAI Realtime
 
-`OpenaiRealtime` is a [realtime model](https://micdrop.dev/docs/server/realtime) running on the OpenAI Realtime API. It hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
+`OpenaiRealtime` is a [realtime model](https://micdrop.dev/docs/realtime) running on the OpenAI Realtime API. It hears the user and answers with its own voice, in place of a speech to text, an agent and a text to speech.
 
 ```typescript
 import { OpenaiRealtime } from '@micdrop/openai'
@@ -246,7 +246,7 @@ new MicdropServer(socket, {
 
 ## Documentation
 
-Read full [documentation of the OpenAI integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/openai) on the [website](https://micdrop.dev).
+Read full [documentation of the OpenAI integration for Micdrop](https://micdrop.dev/docs/providers) on the [website](https://micdrop.dev).
 
 ## License
 

@@ -33,9 +33,9 @@ If you are wiring a cloned voice into a real-time agent in Node, this article co
 
 | Engine                                            | Voice comes from                              | Runs on     | Languages | A product can ship it                          |
 | ------------------------------------------------- | --------------------------------------------- | ----------- | --------- | ---------------------------------------------- |
-| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | A few seconds of audio, no transcript | CPU         | English   | Yes, with the recorded person's consent        |
-| [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts) | 3 seconds of audio plus its transcript | GPU         | 10        | Yes, Apache 2.0                                |
-| [Phonon](/docs/ai-integration/provided-integrations/phonon) | A voice file made once from 10 seconds | CPU         | 5         | English model yes, the other models no         |
+| [Pocket TTS](/docs/text-to-speech/pocket-tts) | A few seconds of audio, no transcript | CPU         | English   | Yes, with the recorded person's consent        |
+| [Qwen3-TTS](/docs/text-to-speech/qwen-tts) | 3 seconds of audio plus its transcript | GPU         | 10        | Yes, Apache 2.0                                |
+| [Phonon](/docs/text-to-speech/phonon) | A voice file made once from 10 seconds | CPU         | 5         | English model yes, the other models no         |
 | [Chatterbox](https://github.com/resemble-ai/chatterbox) | 5 to 10 seconds of audio                 | GPU         | 23+       | Yes, MIT                                       |
 | XTTS-v2                                           | 6 seconds of audio                            | GPU         | 17        | No, Coqui Public Model License                 |
 | [F5-TTS](https://github.com/SWivid/F5-TTS)        | About 10 seconds of audio                     | GPU         | English   | No, checkpoints CC BY-NC 4.0                   |
@@ -76,7 +76,7 @@ All of this guards against impersonation. A cloned voice reads whatever text it 
 
 **OpenVoice**, from MyShell and researchers at MIT, splits cloning in two: a base speaker that reads in the style you set, and a tone converter that paints the reference voice on top. Both versions have been MIT since April 2024, free for commercial use, and V2 reads six languages. The model is two years older than the others here, and the newer engines sound more natural.
 
-**Kokoro and Piper clone nothing.** They are the two engines people reach for first on a CPU. Neither accepts a recording. [Kokoro](/docs/ai-integration/provided-integrations/kokoro) takes no reference audio and ships 54 recorded voices. Its JavaScript port lists only the 28 English ones. [Piper](/docs/ai-integration/provided-integrations/piper) voices are small models trained one speaker at a time, so a new Piper voice means a dataset and a training run. The nearest clone on a CPU is Pocket TTS, and the nearest in another language is Qwen3-TTS on a GPU or a Phonon voice file.
+**Kokoro and Piper clone nothing.** They are the two engines people reach for first on a CPU. Neither accepts a recording. [Kokoro](/docs/text-to-speech/kokoro) takes no reference audio and ships 54 recorded voices. Its JavaScript port lists only the 28 English ones. [Piper](/docs/text-to-speech/piper) voices are small models trained one speaker at a time, so a new Piper voice means a dataset and a training run. The nearest clone on a CPU is Pocket TTS, and the nearest in another language is Qwen3-TTS on a GPU or a Phonon voice file.
 
 {/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "A horizontal bar chart infographic on a dark slate background, titled \"How much audio a cloning engine needs\" in a modern clean bold sans-serif in emerald. Six horizontal emerald bars, each with its label on the left and the value at the end of the bar, lengths proportional to the seconds: \"Qwen3-TTS: 3 s + transcript\", \"Pocket TTS: a few seconds\", \"XTTS-v2: 6 s\", \"Chatterbox: 5 to 10 s\", \"Phonon: 10 s, offline\", \"F5-TTS: 10 s\". Labels in a legible sans-serif in light slate grey. Below the chart, one small footer line in light slate grey: \"Kokoro and Piper clone no voice\". Generous spacing, flat vector style, no other text."
     Infographic only: regenerate if a model's reference length changes. Last data sync: 2026-10-28. */}
@@ -117,7 +117,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The archive ships three reference recordings to try before you record anything: `bria` reads calmly for forty seconds, `loona` is a one second clip, and `frenchAccent` shows that the sample gives the timbre while the words keep coming from the text. The engine reads English in this setup, holds about 600 MB of memory while it generates, and starts speaking 250 to 430 ms after it receives a sentence. Every constructor option, from `referenceLength` to `numThreads`, is documented alongside [the latency of Pocket TTS measured on the CPU](/docs/ai-integration/provided-integrations/pocket-tts).
+The archive ships three reference recordings to try before you record anything: `bria` reads calmly for forty seconds, `loona` is a one second clip, and `frenchAccent` shows that the sample gives the timbre while the words keep coming from the text. The engine reads English in this setup, holds about 600 MB of memory while it generates, and starts speaking 250 to 430 ms after it receives a sentence. Every constructor option, from `referenceLength` to `numThreads`, is documented alongside [the latency of Pocket TTS measured on the CPU](/docs/text-to-speech/pocket-tts).
 
 ## Clone with Qwen3-TTS, on a GPU
 
@@ -173,7 +173,7 @@ With the voice already built, Phonon is the fastest engine in this article. Its 
 | Qwen3-TTS  | Cloned on the fly       | ~400 ms, GPU   | 2.5 GB in the server    | ~0.75 s                          |
 | Phonon     | Voice file made offline | 30 to 100 ms   | ~450 MB                  | ~0.2 s                           |
 
-All three generate faster than real time, so the delay that matters is the one before the first word, which the person on the call hears. Phonon is the fastest because its cloning already happened, and the trade-off is a step through Gradium's service before the call ever starts. Pocket TTS and Qwen3-TTS clone when they load, and Qwen3-TTS adds the round trip to its server on top. Pocket TTS, Qwen3-TTS, Phonon, Kokoro and Piper are [compared by language, setup and first audio](/docs/ai-integration/local-models/text-to-speech) in the local TTS documentation.
+All three generate faster than real time, so the delay that matters is the one before the first word, which the person on the call hears. Phonon is the fastest because its cloning already happened, and the trade-off is a step through Gradium's service before the call ever starts. Pocket TTS and Qwen3-TTS clone when they load, and Qwen3-TTS adds the round trip to its server on top. Pocket TTS, Qwen3-TTS, Phonon, Kokoro and Piper are [compared by language, setup and first audio](/docs/local-models/text-to-speech) in the local TTS documentation.
 
 ## Hosted cloning, for comparison
 

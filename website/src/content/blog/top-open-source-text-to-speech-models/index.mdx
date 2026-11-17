@@ -40,7 +40,7 @@ Every model passed one gate first. Its published weights must let a company of a
 
 The models that passed then split into a CPU group and a GPU group. A model joins the CPU group when it streams in real time on a laptop CPU, and the GPU group when its publisher targets GPUs, as NVIDIA does for Magpie. The CPU group comes first in the ranking, since a model that runs next to your app saves you a GPU server.
 
-- **CPU models** are ranked by the delay before the first sound, measured by Micdrop on one MacBook Pro M2 with 24 GB of memory, with the model already loaded. A range counts by its middle, so Pocket TTS at 250 to 430 ms comes before Piper at about 390 ms. The [measurement setup and every figure](/docs/ai-integration/local-models/performance) are published. CPU models that Micdrop did not measure on that laptop are listed among the [other small models that run on a CPU](#other-small-models-that-run-on-a-cpu), with the figures their publisher or a third party gives.
+- **CPU models** are ranked by the delay before the first sound, measured by Micdrop on one MacBook Pro M2 with 24 GB of memory, with the model already loaded. A range counts by its middle, so Pocket TTS at 250 to 430 ms comes before Piper at about 390 ms. The [measurement setup and every figure](/docs/local-models/performance) are published. CPU models that Micdrop did not measure on that laptop are listed among the [other small models that run on a CPU](#other-small-models-that-run-on-a-cpu), with the figures their publisher or a third party gives.
 - **GPU models** are ranked by the first audio delay their publisher states for a single stream. A model whose publisher states none comes after, ordered by its Artificial Analysis score.
 
 The latency that ranks each GPU model is its vendor's own figure for one request at a time, often measured on a datacenter GPU the vendor does not always name. Independent tests often find slower numbers. On an NVIDIA L4, users of the vLLM-Omni server reported 164 ms for Qwen3-TTS once tuned, and two to three seconds before tuning.
@@ -82,7 +82,7 @@ On a MacBook Pro M2, Phonon 31M started speaking 30 to 100 ms after it received 
 
 In Gradium's own tests, Phonon scores above the other small models. In a blind English listening test of 17,270 votes, Phonon 31M scored 2098 against 2056 for Pocket TTS, 2043 for Kokoro, 2034 for NeuTTS and 1939 for Magpie. On 500 hard English sentences full of phone numbers and email addresses, it got 1.70% of words wrong against 3.50% for Kokoro. These are vendor figures, on Gradium's [own test set](https://gradium.ai/blog/release-phonon-open-weight).
 
-Gradium's runtime ships for Rust, Python, Swift, Android and WebAssembly. Its npm package `phonon-tts` targets browsers. Micdrop runs that same WebAssembly build in Node instead, on a worker thread, in [@micdrop/phonon](/docs/ai-integration/provided-integrations/phonon). A custom voice goes through Gradium's API: you send about ten seconds of a recording and get back a voice file that then runs locally.
+Gradium's runtime ships for Rust, Python, Swift, Android and WebAssembly. Its npm package `phonon-tts` targets browsers. Micdrop runs that same WebAssembly build in Node instead, on a worker thread, in [@micdrop/phonon](/docs/text-to-speech/phonon). A custom voice goes through Gradium's API: you send about ten seconds of a recording and get back a voice file that then runs locally.
 
 ### 2. Pocket TTS by Kyutai
 
@@ -92,7 +92,7 @@ Gradium's runtime ships for Rust, Python, Swift, Android and WebAssembly. Its np
 
 Kyutai states about 200 ms before the first audio and about six times real time on two cores of a MacBook Air M4. On a MacBook Pro M2, Micdrop measured 250 to 430 ms before the first sound and about 600 MB of memory while the model generates. Picovoice's CPU test, run on an AMD Ryzen 7 5700X while simulating an LLM writing its answer, put Pocket TTS at 1,713 ms before the first audio, against 1,720 ms for Piper and 3,658 ms for Kokoro.
 
-Pocket TTS reads English, French, German, Portuguese, Italian, Spanish and Dutch. On 20 October 2026 it released three smaller English models of 18.2M, 6.9M and 1.9M parameters, and says the largest of them matches the quality of the original. The ONNX export Micdrop uses through the sherpa-onnx addon exists for English only, so [Pocket TTS in Node](/docs/ai-integration/provided-integrations/pocket-tts) speaks English today.
+Pocket TTS reads English, French, German, Portuguese, Italian, Spanish and Dutch. On 20 October 2026 it released three smaller English models of 18.2M, 6.9M and 1.9M parameters, and says the largest of them matches the quality of the original. The ONNX export Micdrop uses through the sherpa-onnx addon exists for English only, so [Pocket TTS in Node](/docs/text-to-speech/pocket-tts) speaks English today.
 
 ### 3. Piper by the Open Home Foundation
 
@@ -102,7 +102,7 @@ Pocket TTS reads English, French, German, Portuguese, Italian, Spanish and Dutch
 
 The original `rhasspy/piper` repository was archived in 2025 under MIT. The maintained engine is GPL-3.0, because it now embeds espeak-ng to turn text into phonemes. Each voice carries the terms of the dataset it was trained on, so read the model card of the voice you pick.
 
-On a MacBook Pro M2, Piper started speaking about 390 ms after receiving a sentence. It generates much faster than real time, so the rest of an answer costs little once the first sentence plays. Piper clones no voice and sounds flatter than the newer models. Its maintainers plan streaming inside the engine for the next release, with first audio after about 0.2 seconds on a long sentence. Micdrop drives the Piper binary as a subprocess in [@micdrop/piper](/docs/ai-integration/provided-integrations/piper).
+On a MacBook Pro M2, Piper started speaking about 390 ms after receiving a sentence. It generates much faster than real time, so the rest of an answer costs little once the first sentence plays. Piper clones no voice and sounds flatter than the newer models. Its maintainers plan streaming inside the engine for the next release, with first audio after about 0.2 seconds on a long sentence. Micdrop drives the Piper binary as a subprocess in [@micdrop/piper](/docs/text-to-speech/piper).
 
 ### 4. Kokoro 82M by hexgrad
 
@@ -112,7 +112,7 @@ On a MacBook Pro M2, Piper started speaking about 390 ms after receiving a sente
 
 Kokoro ships 54 voices in nine languages. `kokoro-js`, its JavaScript port on Transformers.js, runs in Node and in the browser, and lists only the 28 American and British English voices. Kokoro clones no voice.
 
-Kokoro synthesizes a whole sentence before playing any of it. On a MacBook Pro M2, the first sentence took 900 to 1300 ms, against under half a second for Phonon, Pocket TTS and Piper. Gradium, which makes Phonon, measured 517 ms on a MacBook Air M5 with four threads, and about seven seconds before the first sound on a Raspberry Pi 5. The model has had no new version since January 2025. [Kokoro in Node](/docs/ai-integration/provided-integrations/kokoro) installs with one npm command and downloads its weights on first use.
+Kokoro synthesizes a whole sentence before playing any of it. On a MacBook Pro M2, the first sentence took 900 to 1300 ms, against under half a second for Phonon, Pocket TTS and Piper. Gradium, which makes Phonon, measured 517 ms on a MacBook Air M5 with four threads, and about seven seconds before the first sound on a Raspberry Pi 5. The model has had no new version since January 2025. [Kokoro in Node](/docs/text-to-speech/kokoro) installs with one npm command and downloads its weights on first use.
 
 ### 5. Qwen3-TTS by Alibaba
 
@@ -122,7 +122,7 @@ Kokoro synthesizes a whole sentence before playing any of it. On a MacBook Pro M
 
 Alibaba's technical report gives 97 ms before the first audio for the 0.6B model and 101 ms for the 1.7B model, at one request, on a GPU it does not name. With three requests at once, the 1.7B model took 195 ms. On an NVIDIA L4, [users of the vLLM-Omni server](https://github.com/vllm-project/vllm-omni/issues/938) reported 164 ms for the 0.6B model once tuned, and two to three seconds before tuning.
 
-The 1.7B Base checkpoint had 3.2 million downloads on Hugging Face in the last 30 days. It runs behind an OpenAI-compatible endpoint with vLLM-Omni, and on Apple Silicon with mlx-audio. On a MacBook Pro M2, Micdrop measured about 400 ms before the first audio through [@micdrop/qwen-tts](/docs/ai-integration/provided-integrations/qwen-tts), with 2.5 GB held by the mlx-audio server.
+The 1.7B Base checkpoint had 3.2 million downloads on Hugging Face in the last 30 days. It runs behind an OpenAI-compatible endpoint with vLLM-Omni, and on Apple Silicon with mlx-audio. On a MacBook Pro M2, Micdrop measured about 400 ms before the first audio through [@micdrop/qwen-tts](/docs/text-to-speech/qwen-tts), with 2.5 GB held by the mlx-audio server.
 
 ### 6. Chatterbox by Resemble AI
 
@@ -222,7 +222,7 @@ const tts = new PhononTTS({ voice: 'Easton' })
 // const tts = new PiperTTS({ modelPath: './voices/fr_FR-siwis-medium.onnx' })
 ```
 
-A local voice can also fail, when the machine runs out of memory or the Piper process crashes. [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback) moves to the next engine when one fails and replays the text it had not spoken yet. With this setup, your server speaks with Phonon and falls back to Gradium's hosted voices:
+A local voice can also fail, when the machine runs out of memory or the Piper process crashes. [`FallbackTTS`](/docs/text-to-speech/fallback) moves to the next engine when one fails and replays the text it had not spoken yet. With this setup, your server speaks with Phonon and falls back to Gradium's hosted voices:
 
 ```typescript
 import { FallbackTTS } from '@micdrop/server'
@@ -276,7 +276,7 @@ When you measure them side by side from Node, the [local TTS engines differ most
 
 Pick Phonon 31M for an English voice that answers fast on a CPU, Pocket TTS when you need a cloned voice without a GPU, and Piper for a commercial voice in another language on any machine. Pick Qwen3-TTS when you have a GPU and want ten languages with cloning, and keep Ming-3.0-tts in mind for quality once someone measures its latency.
 
-Whichever model you choose, play your agent's own sentences through it, phone numbers and dates included, and time the first sound on the machine you will deploy to. Micdrop runs five of these models from Node, next to a local language model and local transcription. Transcription models have their own [ranking of open source speech to text models](/blog/top-open-source-speech-to-text-models). You can [run the whole voice pipeline on your own machine](/docs/ai-integration/local-models), then [start a first voice call in about five minutes](/docs/getting-started).
+Whichever model you choose, play your agent's own sentences through it, phone numbers and dates included, and time the first sound on the machine you will deploy to. Micdrop runs five of these models from Node, next to a local language model and local transcription. Transcription models have their own [ranking of open source speech to text models](/blog/top-open-source-speech-to-text-models). You can [run the whole voice pipeline on your own machine](/docs/local-models), then [start a first voice call in about five minutes](/docs/getting-started).
 
 <RankingJsonLd
   name="Best open source text to speech models in 2026"

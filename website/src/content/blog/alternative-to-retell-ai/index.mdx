@@ -127,7 +127,7 @@ That WebSocket server sits in the same application as your authentication, your 
 
 ### Any provider you want, including a fully European stack
 
-[Provider integrations](/docs/ai-integration) ship for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor. A call can also run on one [speech-to-speech model](/docs/server/realtime), OpenAI Realtime or Gemini Live, in place of separate speech-to-text, model and text-to-speech providers. The browser code stays the same either way. Running Mistral for the model, Gladia for the transcription and Gradium for the voice keeps the conversation inside the EU, with no change to the orchestration code, and the [sovereign stack guide](/docs/ai-integration/sovereign-voice-ai) walks through it. Micdrop makes a European architecture possible, and the compliance of your deployment stays yours and your providers'.
+[Provider integrations](/docs/providers) ship for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor. A call can also run on one [speech-to-speech model](/docs/realtime), OpenAI Realtime or Gemini Live, in place of separate speech-to-text, model and text-to-speech providers. The browser code stays the same either way. Running Mistral for the model, Gladia for the transcription and Gradium for the voice keeps the conversation inside the EU, with no change to the orchestration code, and the [sovereign stack guide](/docs/providers/sovereign-voice-ai) walks through it. Micdrop makes a European architecture possible, and the compliance of your deployment stays yours and your providers'.
 
 `@micdrop/server` handles outages too. `FallbackTTS` takes a list of factories and walks down it when a provider stops answering:
 
@@ -155,7 +155,7 @@ const tts = new FallbackTTS({
 })
 ```
 
-The pending text is buffered and replayed on the second provider, so the user hears a short pause instead of a dropped call. The same pattern covers [speech-to-text](/docs/ai-integration/fallback-strategies/stt-fallback) and the agent itself. A provider Micdrop lacks is one you add yourself. `Agent`, `STT` and `TTS` are abstract classes on an event emitter: implement the interface, or subclass a provided one to override the method you disagree with and keep the others.
+The pending text is buffered and replayed on the second provider, so the user hears a short pause instead of a dropped call. The same pattern covers [speech-to-text](/docs/speech-to-text/fallback) and the agent itself. A provider Micdrop lacks is one you add yourself. `Agent`, `STT` and `TTS` are abstract classes on an event emitter: implement the interface, or subclass a provided one to override the method you disagree with and keep the others.
 
 ### The real-time plumbing is already written
 

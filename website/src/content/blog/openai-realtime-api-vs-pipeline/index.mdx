@@ -106,9 +106,9 @@ Speech billed as audio costs several times the same content billed as text, and 
 
 Both architectures re-send the conversation history on every turn, and they pay for it differently. The pipeline pays in text tokens, which the reasoning figure already includes. A realtime session pays in audio tokens, cached at a discount but still added on top, which is what makes long calls diverge. The mini realtime tier, at $10 and $20 per million, comes to about $0.015 a minute, below the small-model pipeline. Its answers are weaker, though, with a score of 54.4 at minimal reasoning on the [Artificial Analysis speech to speech index](https://artificialanalysis.ai/speech-to-speech), against 75.2 for the full-size model at high reasoning.
 
-Regulation leads to a pipeline too. A European deployment can run [Mistral for the model, Gladia for transcription and Gradium for the voice](/docs/ai-integration/sovereign-voice-ai), where the data stays in the EU and every company in the chain is European. Regional processing on a US endpoint moves the servers, and the chain stays American.
+Regulation leads to a pipeline too. A European deployment can run [Mistral for the model, Gladia for transcription and Gradium for the voice](/docs/providers/sovereign-voice-ai), where the data stays in the EU and every company in the chain is European. Regional processing on a US endpoint moves the servers, and the chain stays American.
 
-Resilience is the argument teams discover last and care about most. When the three services are separate, one of them failing takes down one stage instead of the conversation. Micdrop's [FallbackAgent](/docs/ai-integration/fallback-strategies/agent-fallback) switches to a second model mid-conversation, from the same history, and `FallbackSTT` and `FallbackTTS` do the same for transcription and voice. A single session has nowhere to fall back to.
+Resilience is the argument teams discover last and care about most. When the three services are separate, one of them failing takes down one stage instead of the conversation. Micdrop's [FallbackAgent](/docs/agents/fallback) switches to a second model mid-conversation, from the same history, and `FallbackSTT` and `FallbackTTS` do the same for transcription and voice. A single session has nowhere to fall back to.
 
 A pipeline also lets you remove stages. Keep transcription alone and the server [turns speech into text without answering](/docs/server/dictation), whereas a speech to speech session is built to answer.
 
@@ -173,15 +173,15 @@ new MicdropServer(socket, {
 })
 ```
 
-`OpenaiSTT` streams the browser's audio to the Realtime endpoint in transcription mode, so the pipeline keeps OpenAI's realtime transcription and lets you change the agent or the voice one at a time. Here `OpenaiTTS` reads each sentence with `gpt-realtime-2.1-mini`, the model OpenAI recommends in place of its text-to-speech endpoint, which shuts down on 6 January 2027. Each of the four OpenAI classes takes [its own options, from the model to the voice](/docs/ai-integration/provided-integrations/openai).
+`OpenaiSTT` streams the browser's audio to the Realtime endpoint in transcription mode, so the pipeline keeps OpenAI's realtime transcription and lets you change the agent or the voice one at a time. Here `OpenaiTTS` reads each sentence with `gpt-realtime-2.1-mini`, the model OpenAI recommends in place of its text-to-speech endpoint, which shuts down on 6 January 2027. Each of the four OpenAI classes takes [its own options, from the model to the voice](/docs/providers).
 
 Most of the call works the same way in both modes. The client decides when the user starts and stops speaking, since Micdrop turns off the provider's own voice detection. When the user speaks over the answer, the model stops, and `OpenaiRealtime` also truncates the answer in the session history at the point the user most likely stopped hearing it. [Tools](/docs/server/tools) added with `addTool()` run on your server. Your code receives the conversation as the same messages in both modes, ready to save.
 
-Three things change in realtime mode. The voice is one of OpenAI's, and the system prompt is the only place to shape its tone and pace. The transcript of the answer comes from OpenAI alongside the audio and can differ slightly from the words the user heard. A Realtime session lasts sixty minutes at most, after which `OpenaiRealtime` opens a new one and sends it the conversation so far. You can follow [each step of a turn on a realtime model](/docs/server/realtime), from the first chunk of audio to the transcripts.
+Three things change in realtime mode. The voice is one of OpenAI's, and the system prompt is the only place to shape its tone and pace. The transcript of the answer comes from OpenAI alongside the audio and can differ slightly from the words the user heard. A Realtime session lasts sixty minutes at most, after which `OpenaiRealtime` opens a new one and sends it the conversation so far. You can follow [each step of a turn on a realtime model](/docs/realtime), from the first chunk of audio to the transcripts.
 
 ### The same trade-off on Gemini Live
 
-Google's Gemini Live takes the same place in the server. Replace `OpenaiRealtime` with [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) from `@micdrop/gemini`, which runs `gemini-3.8-live` by default, or `gemini-3.8-live-extended-thinking` for tools that take several seconds to answer. `GeminiLive` resumes the session on a new connection whenever Gemini closes one, so long calls go on. The trade-off with a pipeline stays the same, since one provider still hears, reasons and speaks.
+Google's Gemini Live takes the same place in the server. Replace `OpenaiRealtime` with [`GeminiLive`](/docs/realtime/gemini-live) from `@micdrop/gemini`, which runs `gemini-3.8-live` by default, or `gemini-3.8-live-extended-thinking` for tools that take several seconds to answer. `GeminiLive` resumes the session on a new connection whenever Gemini closes one, so long calls go on. The trade-off with a pipeline stays the same, since one provider still hears, reasons and speaks.
 
 ## Switching providers without rewriting the orchestration
 
@@ -201,7 +201,7 @@ new MicdropServer(socket, {
 })
 ```
 
-Your voice activity detection, your interruption handling, your tools and your UI keep working. Micdrop ships [ready-made provider integrations](/docs/ai-integration). When your provider is missing, the abstract classes behind them let you write your own.
+Your voice activity detection, your interruption handling, your tools and your UI keep working. Micdrop ships [ready-made provider integrations](/docs/providers). When your provider is missing, the abstract classes behind them let you write your own.
 
 Moving between the two architectures is the same kind of edit. Replace `stt`, `agent` and `tts` with `realtime`, or the reverse, and the browser keeps the same code.
 
@@ -222,7 +222,7 @@ graph TD
 
 If you are still unsure, build the first version on whichever architecture you can get running this week, and keep your prompt and your tool logic in your own repository rather than in a session configuration. Both architectures read the same prompt and call the same functions. On Micdrop, changing your mind later means changing the arguments you pass to `MicdropServer`.
 
-You can [get a browser talking to a Node server in about five minutes](/docs/getting-started). From there, [OpenAI's classes in Micdrop](/docs/ai-integration/provided-integrations/openai) run either architecture: `OpenaiRealtime` for speech to speech, or the agent, transcription and voice classes for a pipeline where each stage can move to another provider later.
+You can [get a browser talking to a Node server in about five minutes](/docs/getting-started). From there, [OpenAI's classes in Micdrop](/docs/providers) run either architecture: `OpenaiRealtime` for speech to speech, or the agent, transcription and voice classes for a pipeline where each stage can move to another provider later.
 
 ## Frequently asked questions
 
@@ -234,7 +234,7 @@ You can [get a browser talking to a Node server in about five minutes](/docs/get
     Billing is per token, with audio priced separately from text. OpenAI's pricing page lists the full-size realtime models at $32 per million audio input tokens and $64 per million audio output tokens, with a mini tier at $10 and $20, and cached audio input far cheaper. Since audio tokens track duration, a talkative agent costs more than a listening one. Those figures move with each model generation, so check the page before you budget.
   </FaqItem>
   <FaqItem question="What are the alternatives to the OpenAI Realtime API?">
-    You can move to another speech to speech API or to a pipeline. Gemini Live costs about a quarter of GPT-Realtime-2.1 per minute, and Grok Voice accepts the Realtime API's events. A pipeline chains speech-to-text, a language model and text-to-speech from providers you pick, run by a framework on your servers (LiveKit Agents, Pipecat, Micdrop) or by a hosted platform such as Vapi or Retell. Micdrop runs both behind the same browser client, with [a realtime model taking the place of the three pipeline stages](/docs/server/realtime).
+    You can move to another speech to speech API or to a pipeline. Gemini Live costs about a quarter of GPT-Realtime-2.1 per minute, and Grok Voice accepts the Realtime API's events. A pipeline chains speech-to-text, a language model and text-to-speech from providers you pick, run by a framework on your servers (LiveKit Agents, Pipecat, Micdrop) or by a hosted platform such as Vapi or Retell. Micdrop runs both behind the same browser client, with [a realtime model taking the place of the three pipeline stages](/docs/realtime).
   </FaqItem>
   <FaqItem question="What is the difference between GPT-Realtime and GPT-Realtime-2?">
     GPT-Realtime-2, released in May 2026, added reasoning with five effort levels from `minimal` to `xhigh`, parallel tool calls, and a context window of 128K tokens instead of 32K. GPT-Realtime-2.1 followed in July with better recognition of letters and numbers and better handling of silence, noise and interruptions. The full-size models have the same audio prices, $32 and $64 per million tokens, and reasoning tokens are billed on top as output.
@@ -246,13 +246,13 @@ You can [get a browser talking to a Node server in about five minutes](/docs/get
     Yes. A transcription session streams text back without generating a spoken answer, which is what a speech-to-text stage needs. Micdrop's `OpenaiSTT` works this way: it opens a WebSocket to the realtime endpoint, streams the browser's audio into it, and passes the transcripts to whichever agent you configured.
   </FaqItem>
   <FaqItem question="Is there an OpenAI SDK for TypeScript?">
-    Yes. OpenAI publishes an official Node and TypeScript package on npm, with generated types for the API. `@micdrop/openai` builds `OpenaiAgent` and `OpenaiTTS` on that package. The SDK stops at the model. The microphone, the playback, the interruptions and the turn-taking are still yours to write, or [Micdrop's OpenAI integration can handle them](/docs/ai-integration/provided-integrations/openai).
+    Yes. OpenAI publishes an official Node and TypeScript package on npm, with generated types for the API. `@micdrop/openai` builds `OpenaiAgent` and `OpenaiTTS` on that package. The SDK stops at the model. The microphone, the playback, the interruptions and the turn-taking are still yours to write, or [Micdrop's OpenAI integration can handle them](/docs/providers).
   </FaqItem>
   <FaqItem question="Is the Realtime API available on Azure?">
     Yes, Azure exposes the realtime models through its own resource and deployment model, over WebRTC and WebSocket. Authentication and endpoints follow Azure conventions, so the calling code differs from OpenAI's own API, and the billing and the regional controls come from your Azure subscription.
   </FaqItem>
   <FaqItem question="Does Micdrop support the OpenAI Realtime API?">
-    Yes, for speech to speech and for transcription. `OpenaiRealtime` runs a Realtime session that hears the user and answers in its own voice, passed to `MicdropServer` as `realtime` in place of transcription, an agent and a voice. `OpenaiSTT` uses the same endpoint in transcription mode, inside a pipeline where the agent and the voice can come from any provider. The browser client stays the same in both cases, and you can see [what a realtime model changes in a Micdrop call](/docs/server/realtime).
+    Yes, for speech to speech and for transcription. `OpenaiRealtime` runs a Realtime session that hears the user and answers in its own voice, passed to `MicdropServer` as `realtime` in place of transcription, an agent and a voice. `OpenaiSTT` uses the same endpoint in transcription mode, inside a pipeline where the agent and the voice can come from any provider. The browser client stays the same in both cases, and you can see [what a realtime model changes in a Micdrop call](/docs/realtime).
   </FaqItem>
   <FaqItem question="Does Micdrop support Gemini Live?">
     Yes. `GeminiLive`, from `@micdrop/gemini`, runs Gemini 3.8 Live or its Extended Thinking variant as a realtime model, with the same client, tools and conversation messages as `OpenaiRealtime`. Gemini closes a Live connection after about ten minutes, and `GeminiLive` resumes the session on a new one so the call goes on.

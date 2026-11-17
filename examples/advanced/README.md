@@ -142,7 +142,7 @@ The Qwen3-TTS entry stays greyed out until that server answers. Set
 `QWEN_URL` to use another address. The 2.6 GB checkpoint is downloaded on the
 first sentence, so run one call before a demo.
 
-The [local models guide](https://micdrop.dev/docs/ai-integration/local-models)
+The [local models guide](https://micdrop.dev/docs/local-models)
 covers the models worth picking and what they cost in latency and memory.
 
 ## Testing on a phone

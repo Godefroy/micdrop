@@ -40,8 +40,8 @@ Click **Start call**, allow the microphone, and talk.
 - [Getting started](https://micdrop.dev/docs/getting-started)
 - [Client documentation](https://micdrop.dev/docs/client)
 - [Server documentation](https://micdrop.dev/docs/server)
-- [Other AI providers](https://micdrop.dev/docs/ai-integration), including
-  [models running on your own machine](https://micdrop.dev/docs/ai-integration/local-models)
+- [Other AI providers](https://micdrop.dev/docs/providers), including
+  [models running on your own machine](https://micdrop.dev/docs/local-models)
 - [React hooks](https://micdrop.dev/docs/client/react-hooks) for a real UI
 
 For a full featured demo, with every provider wired in, see

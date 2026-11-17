@@ -1,0 +1,150 @@
+---
+title: 'Gradium TTS in Node.js'
+sidebarLabel: 'Gradium'
+description: 'Speak the answers of a voice agent with Gradium text to speech in Node.js, over its WebSocket streaming API, on the EU endpoint by default or on the US one.'
+order: 47.5
+---
+
+# Gradium TTS in Node.js
+
+`GradiumTTS` reads the answers of your agent with Gradium's voices over its WebSocket streaming API. It connects to the EU endpoint by default.
+
+## Installation
+
+```bash
+npm install @micdrop/gradium
+```
+
+The same package also provides [a speech to text](../speech-to-text/gradium). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { GradiumTTS } from '@micdrop/gradium'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new GradiumTTS({
+  apiKey: process.env.GRADIUM_API_KEY || '',
+  voiceId: 'Bla6SbVMczYnOhfK', // Gradium voice ID
+  modelName: 'default', // Optional: model name
+  outputFormat: 'pcm_16000', // Optional: audio format
+  region: 'eu', // Optional: 'eu' or 'us'
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { GradiumTTS } from '@micdrop/gradium'
+import { Readable } from 'stream'
+
+const tts = new GradiumTTS({
+  apiKey: process.env.GRADIUM_API_KEY || '',
+  voiceId: 'Bla6SbVMczYnOhfK',
+})
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+## Events
+
+| Event    | Payload    | Description                                                                                                                               |
+| -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                                                          |
+| `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
+
+See the [TTS interface](./custom) for the full contract.
+
+## Options
+
+| Option              | Type                  | Default       | Description                                                            |
+| ------------------- | --------------------- | ------------- | ---------------------------------------------------------------------- |
+| `apiKey`            | `string`              | Required      | Your Gradium API key                                                   |
+| `voiceId`           | `string`              | Required      | Gradium voice ID                                                       |
+| `modelName`         | `string`              | `'default'`   | Model name to use for speech synthesis                                 |
+| `outputFormat`      | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                                    |
+| `region`            | `'eu' \| 'us'`        | `'eu'`        | API region (EU or US endpoint)                                         |
+| `jsonConfig`        | `GradiumJsonConfig`   | Optional      | Advanced voice configuration                                           |
+| `connectionTimeout` | `number`              | `5000`        | Timeout in milliseconds for WebSocket connection                       |
+| `retryDelay`        | `number`              | `1000`        | Delay in milliseconds between reconnection attempts                    |
+| `maxRetry`          | `number`              | `3`           | Number of failed connection attempts in a row before emitting `Failed` |
+
+## Interruptions and reconnection
+
+Gradium stops a synthesis when its connection closes, so an interruption closes the connection and opens a new one right away, without counting as a failed attempt. A connection that drops on its own, a graceful close included, opens again and receives the sentence under way.
+
+## Output Formats
+
+| Format      | Description                            |
+| ----------- | -------------------------------------- |
+| `pcm`       | PCM 48kHz, 16-bit signed integer mono  |
+| `pcm_16000` | PCM 16kHz, 16-bit signed integer mono  |
+| `pcm_24000` | PCM 24kHz, 16-bit signed integer mono  |
+| `pcm_8000`  | PCM 8kHz, 16-bit signed integer mono   |
+| `wav`       | WAV format                             |
+| `opus`      | Opus codec wrapped in an Ogg container |
+| `ulaw_8000` | u-law 8kHz                             |
+| `alaw_8000` | A-law 8kHz                             |
+
+## Advanced Voice Configuration
+
+The `jsonConfig` option allows you to fine-tune voice characteristics:
+
+```typescript
+const tts = new GradiumTTS({
+  apiKey: 'your-api-key',
+  voiceId: 'your-voice-id',
+  jsonConfig: {
+    temp: 0.7, // Temperature: 0 to 1.4 (default: 0.7)
+    cfg_coef: 2.0, // Voice similarity: 1.0 to 4.0 (default: 2.0)
+    padding_bonus: 0, // Speed control: -4.0 to 4.0
+  },
+})
+```
+
+| Parameter       | Type     | Range      | Default | Description                               |
+| --------------- | -------- | ---------- | ------- | ----------------------------------------- |
+| `temp`          | `number` | 0 - 1.4    | 0.7     | Controls randomness in speech generation  |
+| `cfg_coef`      | `number` | 1.0 - 4.0  | 2.0     | Controls similarity to the original voice |
+| `padding_bonus` | `number` | -4.0 - 4.0 | 0       | Controls speech speed                     |
+
+## On-device voices with Phonon
+
+Gradium also publishes Phonon, a model of 31 to 40 million parameters that runs
+on the CPU, with no API key and no audio leaving the machine. [@micdrop/phonon](./phonon)
+runs it inside your Node server, in English, French, German, Spanish and
+Portuguese. It suits a call that has to stay on the machine, and the hosted
+API suits a call that needs more voices or voice cloning.
+
+## Getting Started
+
+1. Sign up for a [Gradium account](https://gradium.ai) and get your API key
+2. Choose a voice ID from the Gradium voice library
+3. Install the package and configure with your credentials
+
+```typescript
+import { GradiumTTS } from '@micdrop/gradium'
+
+const tts = new GradiumTTS({
+  apiKey: 'your-gradium-api-key',
+  voiceId: 'your-voice-id',
+  region: 'eu', // Use 'us' for US endpoint
+  outputFormat: 'pcm_16000',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```

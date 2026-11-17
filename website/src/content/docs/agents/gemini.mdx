@@ -1,0 +1,96 @@
+---
+title: 'Gemini LLM Agent in Node.js'
+sidebarLabel: 'Gemini'
+description: 'Answer the user of a TypeScript voice agent with Gemini models, from Gemini 3.5 Flash-Lite to Gemini 3.8 Flash, through the Interactions API, with tools and retries.'
+order: 48.3
+---
+
+# Gemini LLM Agent in Node.js
+
+`GeminiAgent` answers with Gemini models through the Interactions API. It
+sends the whole conversation on every turn, so the history stays on your server.
+
+## Installation
+
+```bash
+npm install @micdrop/gemini
+```
+
+The same package also provides [a speech to text](../speech-to-text/gemini), [a text to speech](../text-to-speech/gemini), [Gemini Live](../realtime/gemini-live) and [a classifier](../classifiers/gemini-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { GeminiAgent } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const agent = new GeminiAgent({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-3.8-flash', // Default model
+  thinkingLevel: 'low', // Optional, the lower the sooner the first word
+  systemPrompt: 'You are a helpful assistant',
+
+  // Advanced features (optional)
+  autoEndCall: true, // Automatically end call when user requests
+  autoSemanticTurn: true, // Handle incomplete sentences
+  autoIgnoreUserNoise: true, // Filter out meaningless sounds
+})
+
+new MicdropServer(socket, {
+  agent,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { GeminiAgent } from '@micdrop/gemini'
+
+const agent = new GeminiAgent({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  systemPrompt: 'You are a helpful assistant',
+})
+
+agent.on('Message', (message) => console.log('Message:', message))
+
+agent.addUserMessage('Hello, what can you do?')
+
+// The answer is a text stream, written as the model generates it
+agent.answer().on('data', (chunk) => process.stdout.write(chunk))
+```
+
+## Events
+
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
+| `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
+
+See the [Agent interface](./custom) for the full contract.
+
+## Options
+
+| Option          | Type                      | Default              | Description                                                   |
+| --------------- | ------------------------- | -------------------- | ------------------------------------------------------------- |
+| `apiKey`        | `string`                  | Required\*           | Your Gemini API key (required if `genai` not provided)        |
+| `genai`         | `GoogleGenAI`             | Optional             | Client of `@google/genai` (alternative to `apiKey`)           |
+| `model`         | `string`                  | `'gemini-3.8-flash'` | Model to use (`gemini-3.8-flash`, `gemini-3.5-flash-lite`...) |
+| `thinkingLevel` | `string`                  | Model default        | How long the model thinks (`low`, `medium`, `high`)           |
+| `settings`      | `Record<string, unknown>` | `undefined`          | Other generation settings, such as `temperature`              |
+| `maxRetry`      | `number`                  | `3`                  | Attempts after a failed request                               |
+| `retryDelay`    | `number`                  | `1000`               | Delay between two attempts, in milliseconds                   |
+| `maxSteps`      | `number`                  | `5`                  | Requests in a row when the model keeps calling tools          |
+
+A failed request is sent again while none of its answer has been spoken. Once
+part of it has been streamed, the agent keeps what was said in the conversation
+and stops there, so the user never hears the same words twice. Cancelling the
+answer also stops the attempts waiting for their delay.
+
+For a voice call, the delay before the first word matters most.
+`gemini-3.5-flash-lite` answers in about a second, while `gemini-3.8-flash`,
+more capable, takes several seconds even with `thinkingLevel: 'low'`.

@@ -63,12 +63,12 @@ Six hosted APIs built for voice agents speak French. The prices come from each v
 
 | API | French | First audio | Price | Audio generated in the EU |
 | --- | --- | --- | --- | --- |
-| [ElevenLabs](/docs/ai-integration/provided-integrations/elevenlabs) | Flash v2.5, Multilingual v2 (France and Canada), v4 Turbo | About 150 ms median for v4 Turbo, by ElevenLabs | $40 per 1M characters on Flash v2.5 and v4 Turbo, $80 on Multilingual v2 | Enterprise data residency |
-| [Cartesia](/docs/ai-integration/provided-integrations/cartesia) Sonic 3.6 | `fr-FR` and `fr-CA` locales | 262 ms median in the ElevenLabs test, under 90 ms by Cartesia | $37 to $50 per 1M characters, depending on the plan | No EU endpoint documented |
-| [Gradium](/docs/ai-integration/provided-integrations/gradium) | One of its five languages | 258 ms median, by Gradium | 1 credit per character, $36 to $58 per 1M depending on the plan | EU endpoint |
-| [Voxtral Speech 3](/docs/ai-integration/provided-integrations/mistral) (Mistral) | Four preset French voices, and cloning | 0.5 to 0.6 s, measured | $13 per 1M characters | EU endpoint |
-| [Gemini TTS](/docs/ai-integration/provided-integrations/gemini) | Follows the language of the text | About 1 s to 3 s depending on the model, measured | $0.50 per 1M text tokens and $10 per 1M audio tokens on 2.5 Flash | No |
-| [OpenAI](/docs/ai-integration/provided-integrations/openai) `gpt-4o-mini-tts` | Speaks French with voices tuned for English | 814 ms median in the ElevenLabs test | $0.60 per 1M text tokens and $12 per 1M audio tokens | No |
+| [ElevenLabs](/docs/text-to-speech/elevenlabs) | Flash v2.5, Multilingual v2 (France and Canada), v4 Turbo | About 150 ms median for v4 Turbo, by ElevenLabs | $40 per 1M characters on Flash v2.5 and v4 Turbo, $80 on Multilingual v2 | Enterprise data residency |
+| [Cartesia](/docs/text-to-speech/cartesia) Sonic 3.6 | `fr-FR` and `fr-CA` locales | 262 ms median in the ElevenLabs test, under 90 ms by Cartesia | $37 to $50 per 1M characters, depending on the plan | No EU endpoint documented |
+| [Gradium](/docs/text-to-speech/gradium) | One of its five languages | 258 ms median, by Gradium | 1 credit per character, $36 to $58 per 1M depending on the plan | EU endpoint |
+| [Voxtral Speech 3](/docs/text-to-speech/mistral) (Mistral) | Four preset French voices, and cloning | 0.5 to 0.6 s, measured | $13 per 1M characters | EU endpoint |
+| [Gemini TTS](/docs/text-to-speech/gemini) | Follows the language of the text | About 1 s to 3 s depending on the model, measured | $0.50 per 1M text tokens and $10 per 1M audio tokens on 2.5 Flash | No |
+| [OpenAI](/docs/text-to-speech/openai) `gpt-4o-mini-tts` | Speaks French with voices tuned for English | 814 ms median in the ElevenLabs test | $0.60 per 1M text tokens and $12 per 1M audio tokens | No |
 
 ElevenLabs has the broadest choice of French voices, plus cloning, with Multilingual v2 in a France and a Canada variant. Watch the numbers on Flash v2.5. ElevenLabs skips number normalization on that model by default to save latency. Turning it on (`apply_text_normalization`) requires an Enterprise plan, so dates and prices can come out wrong on the other plans. ElevenLabs recommends switching to Multilingual v2 for phone numbers, or sending them already written in words.
 
@@ -88,7 +88,7 @@ Five engines run next to a Node server without an API key: Phonon, Piper, Kokoro
 
 ### Phonon 40M French, measured
 
-[Phonon](/docs/ai-integration/provided-integrations/phonon) is Gradium's on-device text to speech model, built on Kyutai's Pocket TTS. Gradium publishes it on Hugging Face in seven variants, one of them trained on French alone, `gradium/phonon-40m-fr`. Its runtime is compiled to WebAssembly, so it runs on a worker thread of the Node process, with no native addon and no Python.
+[Phonon](/docs/text-to-speech/phonon) is Gradium's on-device text to speech model, built on Kyutai's Pocket TTS. Gradium publishes it on Hugging Face in seven variants, one of them trained on French alone, `gradium/phonon-40m-fr`. Its runtime is compiled to WebAssembly, so it runs on a worker thread of the Node process, with no native addon and no Python.
 
 On a MacBook Pro M2, on one CPU core, we measured:
 
@@ -111,11 +111,11 @@ The French voice changed the timbre and nothing else. The model read every word 
 
 ### Piper, Kokoro, Pocket TTS and Qwen3-TTS
 
-[Piper](/docs/ai-integration/provided-integrations/piper) speaks French through voices trained one language at a time, such as `fr_FR-siwis-medium`. The French voices are siwis, upmc, tom, mls and gilles, in low or medium quality. Each voice is a file of a few dozen megabytes that runs on the CPU. Piper put out its first sound after about 390 ms on the same laptop. Its engine is GPL-3.0, so Micdrop runs it as a separate process.
+[Piper](/docs/text-to-speech/piper) speaks French through voices trained one language at a time, such as `fr_FR-siwis-medium`. The French voices are siwis, upmc, tom, mls and gilles, in low or medium quality. Each voice is a file of a few dozen megabytes that runs on the CPU. Piper put out its first sound after about 390 ms on the same laptop. Its engine is GPL-3.0, so Micdrop runs it as a separate process.
 
-[Kokoro](/docs/ai-integration/provided-integrations/kokoro) has a French voice upstream, `ff_siwis`, in the Python package. `kokoro-js`, the JavaScript port that runs in Node, lists English voices only and throws on any other id. Pocket TTS has a French checkpoint at Kyutai with no ONNX conversion, so the Node addon runs the English model alone. In Node, both speak English only.
+[Kokoro](/docs/text-to-speech/kokoro) has a French voice upstream, `ff_siwis`, in the Python package. `kokoro-js`, the JavaScript port that runs in Node, lists English voices only and throws on any other id. Pocket TTS has a French checkpoint at Kyutai with no ONNX conversion, so the Node addon runs the English model alone. In Node, both speak English only.
 
-[Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts) reads ten languages from one checkpoint, French among them. In a test of nine French sentences across four of its speakers, Whisper transcribed eight word for word. It needs an Apple Silicon GPU through an mlx-audio server, takes about 2.5 GB of memory, and put out its first sound after about 400 ms. Its weights are under Apache 2.0.
+[Qwen3-TTS](/docs/text-to-speech/qwen-tts) reads ten languages from one checkpoint, French among them. In a test of nine French sentences across four of its speakers, Whisper transcribed eight word for word. It needs an Apple Silicon GPU through an mlx-audio server, takes about 2.5 GB of memory, and put out its first sound after about 400 ms. Its weights are under Apache 2.0.
 
 We compared the latency, memory use and setup of these engines on English text when we benchmarked [local text to speech in Node](/blog/local-tts-node-kokoro-vs-piper).
 
@@ -168,7 +168,7 @@ The script takes about eighty lines of TypeScript and runs against any engine in
 
 [Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. It handles the microphone, speech detection, interruptions and audio streaming between the browser and your Node server. Micdrop's integrations for the six hosted APIs and the five local engines share one TTS interface.
 
-[Phonon 40M French takes two options](/docs/ai-integration/provided-integrations/phonon), the model and a French voice:
+[Phonon 40M French takes two options](/docs/text-to-speech/phonon), the model and a French voice:
 
 ```typescript
 import { PHONON_MODELS, PhononTTS } from '@micdrop/phonon'
@@ -187,7 +187,7 @@ new MicdropServer(socket, {
 
 The weights are gated on Hugging Face, so accept their terms on the model page and set `HF_TOKEN` before the first run. The package downloads the model once and starts offline afterwards.
 
-For a hosted French voice in Europe, [Gradium](/docs/ai-integration/provided-integrations/gradium) and [Mistral](/docs/ai-integration/provided-integrations/mistral) plug into the same `tts` option:
+For a hosted French voice in Europe, [Gradium](/docs/text-to-speech/gradium) and [Mistral](/docs/text-to-speech/mistral) plug into the same `tts` option:
 
 ```typescript
 import { GradiumTTS } from '@micdrop/gradium'
@@ -207,7 +207,7 @@ const voxtral = new MistralTTS({
 })
 ```
 
-A local voice and a hosted one also work together. [FallbackTTS](/docs/ai-integration/fallback-strategies/tts-fallback) tries the first engine and replays the unspoken text to the next one when it fails, so a call can start on Piper and move to Voxtral Speech 3 if the local process crashes:
+A local voice and a hosted one also work together. [FallbackTTS](/docs/text-to-speech/fallback) tries the first engine and replays the unspoken text to the next one when it fails, so a call can start on Piper and move to Voxtral Speech 3 if the local process crashes:
 
 ```typescript
 import { FallbackTTS } from '@micdrop/server'
@@ -231,7 +231,7 @@ Without Micdrop, you would write these clients yourself. Micdrop's Gradium clien
 
 The other route is a hosted platform. [Vapi](https://vapi.ai/pricing) charged $0.05 a minute on October 19, 2026, with each provider billed on top. Micdrop is MIT licensed and runs on your server with your own keys, so you pay each provider directly with no platform fee, and nothing for the voice with a local engine. In exchange, you host the server and build the call history and the dashboard a platform would give you. Products such as [Raconte](https://raconte.ai), built by Micdrop's maintainer, and [Cibli](https://cibli.fr) run on Micdrop.
 
-For a whole European stack, with Mistral as the agent and the transcription next to the voice, follow the setup for a [sovereign voice AI](/docs/ai-integration/sovereign-voice-ai).
+For a whole European stack, with Mistral as the agent and the transcription next to the voice, follow the setup for a [sovereign voice AI](/docs/providers/sovereign-voice-ai).
 
 ## Frequently asked questions
 

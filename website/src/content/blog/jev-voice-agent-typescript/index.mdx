@@ -198,7 +198,7 @@ new TypesafeClassifier({
 
 Questions can then point at `customer` too, as in "Does the problem the customer in `turn` describes match `customer.outageInArea`?".
 
-`questions` also accepts a function of the input, to ask a different set per turn, for instance to [ask opening questions on the first turn only](/docs/ai-integration/provided-integrations/typesafe#questions).
+`questions` also accepts a function of the input, to ask a different set per turn, for instance to [ask opening questions on the first turn only](/docs/classifiers/jev#questions).
 
 ## Routing in onBeforeAnswer, before the LLM writes a token
 
@@ -357,10 +357,10 @@ In the twenty questions demo, you ask the questions and Jev answers them. The se
 
 The middle band catches the questions that are ambiguous for this secret, which a plain yes or no would get wrong half the time. With no agent, the server writes each answer into the conversation with `addAssistantMessage()`, so Jev finds it in `history` on the next turn and reads "and is it big?" as a follow-up to the question before.
 
-Jev understands English best. Other languages work, with less accurate answers. It reads text only, so the tone of the voice reaches it through the words alone. Its answers are always a label, a score or a probability of yes, so to pull a value out of a sentence, use the LLM or [structured extraction](/docs/server/extract). To put another model behind the same server options, [extend the `Classifier` base class](/docs/ai-integration/custom-integrations/custom-classifier). The same routing also works with OpenAI's model, with [the Decisions API as the classifier of the voice agent](/blog/openai-decisions-api-voice-agent). A subclass can call an LLM with structured output, or match a plain list of keywords.
+Jev understands English best. Other languages work, with less accurate answers. It reads text only, so the tone of the voice reaches it through the words alone. Its answers are always a label, a score or a probability of yes, so to pull a value out of a sentence, use the LLM or [structured extraction](/docs/server/extract). To put another model behind the same server options, [extend the `Classifier` base class](/docs/classifiers/custom). The same routing also works with OpenAI's model, with [the Decisions API as the classifier of the voice agent](/blog/openai-decisions-api-voice-agent). A subclass can call an LLM with structured output, or match a plain list of keywords.
 
 ## Run it on your own calls
 
 Routing with Jev comes down to three pieces of code: the questions, a `route()` function with its thresholds, and an `onBeforeAnswer` hook that returns a string or lets the LLM answer. A `state` function adds your own data when Jev needs more than the conversation. Start from the questions of the support demo and adapt their labels to your product. Then log a few days of classifications with `DEBUG=1` before you pick the thresholds.
 
-For the server options, the timing of each classification and the client events, read [how the Micdrop classifier works](/docs/server/classifier). You can find the robot, slides and twenty questions demos, which all run on Jev, with the [other Micdrop examples](/docs/examples). If Micdrop is new to you, [start with a first voice call in five minutes](/docs/getting-started), then add the classifier on top.
+For the server options, the timing of each classification and the client events, read [how the Micdrop classifier works](/docs/classifiers). You can find the robot, slides and twenty questions demos, which all run on Jev, with the [other Micdrop examples](/docs/examples). If Micdrop is new to you, [start with a first voice call in five minutes](/docs/getting-started), then add the classifier on top.

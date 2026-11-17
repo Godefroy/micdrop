@@ -1,6 +1,6 @@
 # @micdrop/kokoro
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/kokoro)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/kokoro)
 
 Local Kokoro text to speech for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -10,7 +10,7 @@ machine. Kokoro is an 82 million parameter model with a quality well above what
 its size suggests.
 
 Kokoro only speaks English here, since `kokoro-js` phonemizes every input with
-the English rules. Use [@micdrop/piper](https://micdrop.dev/docs/ai-integration/provided-integrations/piper) for the other languages.
+the English rules. Use [@micdrop/piper](https://micdrop.dev/docs/text-to-speech/piper) for the other languages.
 
 ## Installation
 
@@ -59,11 +59,11 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
 | `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Kokoro integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/kokoro) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/ai-integration/local-models).
+Read full [documentation of the Kokoro integration for Micdrop](https://micdrop.dev/docs/text-to-speech/kokoro) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/local-models).
 
 ## License
 

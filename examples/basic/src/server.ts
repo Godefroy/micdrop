@@ -21,7 +21,7 @@ server.on('connection', (socket) => {
     firstMessage: 'Hi! What can I do for you?',
 
     // The brain, an LLM that writes the answers.
-    // https://micdrop.dev/docs/ai-integration/provided-integrations/openai
+    // https://micdrop.dev/docs/agents/openai
     agent: new OpenaiAgent({
       apiKey,
       systemPrompt:

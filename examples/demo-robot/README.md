@@ -79,5 +79,5 @@ commands accepted for each sentence in `src/server/sentences.ts`, the requests
 that failed, the questions refused, the tokens and the price of 1,000 requests.
 It needs `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` and
 `ANTHROPIC_API_KEY`, and saves each run in `measurements/`. The
-[classifier documentation](https://micdrop.dev/docs/server/classifier#measured-latency-and-accuracy)
+[classifier documentation](https://micdrop.dev/docs/classifiers#measured-latency-and-accuracy)
 sums up the last run.

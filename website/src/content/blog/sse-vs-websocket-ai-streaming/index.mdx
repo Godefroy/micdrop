@@ -141,7 +141,7 @@ wss.on('connection', (socket) => {
 })
 ```
 
-The server protocol uses the same socket for audio chunks and conversation events. The browser detects speech and sends audio while the user speaks. The server returns messages and audio as the providers produce them. The [Micdrop protocol documentation](/docs/server/protocol) lists the events in each direction, and the broader [Node server guide](/docs/server) covers the integrations and server frameworks, including [Fastify](/docs/server/with-fastify) and [NestJS](/docs/server/with-nestjs). Micdrop can also use Vercel AI SDK models through its [AI SDK agent integration](/docs/ai-integration/provided-integrations/ai-sdk).
+The server protocol uses the same socket for audio chunks and conversation events. The browser detects speech and sends audio while the user speaks. The server returns messages and audio as the providers produce them. The [Micdrop protocol documentation](/docs/server/protocol) lists the events in each direction, and the broader [Node server guide](/docs/server) covers the integrations and server frameworks, including [Fastify](/docs/server/with-fastify) and [NestJS](/docs/server/with-nestjs). Micdrop can also use Vercel AI SDK models through its [AI SDK agent integration](/docs/agents/ai-sdk).
 
 A WebSocket’s connection management makes sense here because the application needs upstream microphone audio and a downstream voice response at once. An HTTP stream usually needs less management for a text-only answer. For live transcription over WebSocket in TypeScript, including the message sequence and the points that fail in production, see [real-time transcription in TypeScript](/blog/real-time-transcription-websocket-typescript).
 

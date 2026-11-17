@@ -1,0 +1,167 @@
+---
+title: 'Cartesia TTS in Node.js and TypeScript'
+sidebarLabel: 'Cartesia'
+description: "Stream Cartesia's Sonic 3 voices from your Node server in TypeScript, in 44 languages, so the audio reaches the browser while the LLM is still writing."
+order: 47.2
+---
+
+# Cartesia TTS in Node.js and TypeScript
+
+`@micdrop/cartesia` plugs Cartesia TTS into a [@micdrop/server](../server) voice agent. It streams the agent's answer to Cartesia's Sonic 3 models over a WebSocket, sentence by sentence, and sends the audio back as raw PCM while the LLM is still writing. You pick the model, the voice and one of 44 languages. If you are still choosing a voice engine, you can [compare Cartesia and ElevenLabs for a voice agent](/blog/cartesia-vs-elevenlabs) on latency, voices, price and concurrency.
+
+## Installation
+
+```bash
+npm install @micdrop/cartesia
+```
+
+## Cartesia TTS (Text-to-Speech)
+
+### Usage with MicdropServer
+
+```typescript
+import { CartesiaTTS } from '@micdrop/cartesia'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new CartesiaTTS({
+  apiKey: process.env.CARTESIA_API_KEY || '',
+  modelId: 'sonic-3.6', // Cartesia model ID
+  voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091', // Voice ID
+  language: 'en', // Optional: specify language
+  generationConfig: { speed: 1.1 }, // Optional: speed, volume and emotion
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+### Usage without MicdropServer
+
+```typescript
+import { CartesiaTTS } from '@micdrop/cartesia'
+import { Readable } from 'stream'
+
+const tts = new CartesiaTTS({
+  apiKey: process.env.CARTESIA_API_KEY || '',
+  modelId: 'sonic-3.6',
+  voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
+})
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+### Events
+
+| Event    | Payload    | Description                                                                                               |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
+| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
+
+See the [TTS interface](./custom) for the full contract.
+
+### Options
+
+| Option              | Type                           | Default  | Description                                                            |
+| ------------------- | ------------------------------ | -------- | ---------------------------------------------------------------------- |
+| `apiKey`            | `string`                       | Required | Your Cartesia API key                                                  |
+| `modelId`           | `string`                       | Required | Cartesia model ID to use, such as `sonic-3.6`                          |
+| `voiceId`           | `string`                       | Required | Voice ID for speech synthesis                                          |
+| `language`          | `CartesiaLanguage`             | Optional | Language code for speech                                               |
+| `generationConfig`  | `CartesiaGenerationConfig`     | Optional | Speed, volume and emotion of the voice, see below                      |
+| `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Deprecated, Sonic 3 models read `generationConfig.speed`               |
+| `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection                       |
+| `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts                    |
+| `maxRetry`          | `number`                       | `3`      | Number of failed connection attempts in a row before emitting `Failed` |
+
+### Connection
+
+`CartesiaTTS` keeps one WebSocket open to Cartesia and opens it again whenever it drops, a graceful close included. The sentence under way goes out again on the new connection, unless the user interrupted it in the meantime. After `maxRetry` failed attempts in a row, it emits `Failed`, and the next utterance starts a new round of attempts.
+
+### Models
+
+`CartesiaTTS` has no default model, so set `modelId` in every agent. Use `sonic-3.6`, the current Sonic model, or pin its snapshot `sonic-3.6-2026-08-27` in production. Cartesia stops serving `sonic-turbo` and `sonic-2` after October 20, 2026, so an agent configured with one of them has to switch its `modelId` before that date. Cartesia lists [every model snapshot and its sunset date](https://docs.cartesia.ai/build-with-cartesia/tts-models/older-models).
+
+### Speed, volume and emotion
+
+`generationConfig` applies to every sentence the agent speaks. Cartesia treats its values as guidance and keeps the pacing natural.
+
+| Field     | Type              | Range      | Description                                                               |
+| --------- | ----------------- | ---------- | ------------------------------------------------------------------------- |
+| `speed`   | `number`          | 0.6 to 1.5 | Speech speed, `1` by default                                              |
+| `volume`  | `number`          | 0.5 to 2.0 | Volume, `1` by default                                                    |
+| `emotion` | `CartesiaEmotion` |            | Emotion the voice leans toward, such as `calm` or `content`, English only |
+
+```typescript
+const tts = new CartesiaTTS({
+  apiKey: process.env.CARTESIA_API_KEY || '',
+  modelId: 'sonic-3.6',
+  voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
+  generationConfig: { speed: 0.9, volume: 1.2, emotion: 'calm' },
+})
+```
+
+To change the tone sentence by sentence, the LLM can write [Cartesia's emotion and speed tags](https://docs.cartesia.ai/build-with-cartesia/capability-guides/volume-speed-emotion) into its answer, such as `<emotion value="calm"/>`.
+
+### Voices
+
+Set `voiceId` to the UUID of a Cartesia voice, such as `a0e99841-438c-4a64-b679-ae501e7d6091`. You can listen to the voices and copy their IDs in the [Cartesia voice library](https://play.cartesia.ai/voices), or list them from the API with a language filter:
+
+```bash
+curl "https://api.cartesia.ai/voices?language=fr&limit=20" \
+  -H "Authorization: Bearer $CARTESIA_API_KEY" \
+  -H "Cartesia-Version: 2026-08-14"
+```
+
+The response lists the `accents` of each voice and marks one of them as native. Pick a voice native to the language you set in `language`, so the agent sounds like a native speaker. To narrow the list, filter on `gender`, or pass `q` to search voice names and descriptions.
+
+### Supported Languages
+
+Sonic 3.6 speaks 44 languages:
+
+| Code | Language   | Code | Language   | Code | Language   |
+| ---- | ---------- | ---- | ---------- | ---- | ---------- |
+| `en` | English    | `fr` | French     | `de` | German     |
+| `es` | Spanish    | `pt` | Portuguese | `zh` | Chinese    |
+| `ja` | Japanese   | `hi` | Hindi      | `it` | Italian    |
+| `ko` | Korean     | `nl` | Dutch      | `pl` | Polish     |
+| `ru` | Russian    | `sv` | Swedish    | `tr` | Turkish    |
+| `tl` | Tagalog    | `bg` | Bulgarian  | `ro` | Romanian   |
+| `ar` | Arabic     | `cs` | Czech      | `el` | Greek      |
+| `fi` | Finnish    | `hr` | Croatian   | `ms` | Malay      |
+| `sk` | Slovak     | `da` | Danish     | `ta` | Tamil      |
+| `uk` | Ukrainian  | `hu` | Hungarian  | `no` | Norwegian  |
+| `vi` | Vietnamese | `bn` | Bengali    | `th` | Thai       |
+| `he` | Hebrew     | `ka` | Georgian   | `id` | Indonesian |
+| `te` | Telugu     | `gu` | Gujarati   | `kn` | Kannada    |
+| `ml` | Malayalam  | `mr` | Marathi    | `pa` | Punjabi    |
+| `or` | Odia       | `ur` | Urdu       |      |            |
+
+## Getting Started
+
+1. Sign up for a [Cartesia account](https://cartesia.ai) and get your API key. The free plan includes 20,000 credits a month at one credit per character, enough to test an agent.
+2. Choose a model ID and a voice ID
+3. Install the package and configure with your credentials
+
+```typescript
+import { CartesiaTTS } from '@micdrop/cartesia'
+
+const tts = new CartesiaTTS({
+  apiKey: 'your-cartesia-api-key',
+  modelId: 'sonic-3.6',
+  voiceId: 'your-preferred-voice-id',
+  language: 'en',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```

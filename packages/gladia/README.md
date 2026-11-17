@@ -1,6 +1,6 @@
 # @micdrop/gladia
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/gladia)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/speech-to-text/gladia)
 
 Gladia implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -51,11 +51,11 @@ stt.transcribe(createReadStream('speech.pcm'))
 | `Transcript` | `string`   | Transcription of one utterance. The text is empty when nothing was recognized. |
 | `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.   |
 
-See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
+See the [STT interface](https://micdrop.dev/docs/speech-to-text/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Gladia integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/gladia) on the [website](https://micdrop.dev).
+Read full [documentation of the Gladia integration for Micdrop](https://micdrop.dev/docs/speech-to-text/gladia) on the [website](https://micdrop.dev).
 
 ## License
 

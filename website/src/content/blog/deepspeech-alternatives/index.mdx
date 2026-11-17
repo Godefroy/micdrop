@@ -170,7 +170,7 @@ You can drop the `.scorer` file, since Parakeet's transducer has its own interna
 
 If your DeepSpeech integration listened to a microphone in a web or mobile app, the model was the easy part. You also had to capture the audio, detect when the user stopped speaking, send the sentence to the server and handle a user who talks over the answer. [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, handles those four jobs in the browser, on iOS and Android, and in a Node server.
 
-Micdrop already integrates Whisper. [`@micdrop/whisper`](/docs/ai-integration/provided-integrations/whisper) runs it inside the Node process, so replacing DeepSpeech in a voice app takes one class:
+Micdrop already integrates Whisper. [`@micdrop/whisper`](/docs/speech-to-text/whisper) runs it inside the Node process, so replacing DeepSpeech in a voice app takes one class:
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -182,7 +182,7 @@ new MicdropServer(socket, {
 })
 ```
 
-Run the server with no agent and no text to speech and you get a [dictation server](/docs/server/dictation), which is what many DeepSpeech apps were. Parakeet, Moonshine and Vosk plug into the same `stt` option once you [wrap their runtime in a custom speech to text class](/docs/ai-integration/custom-integrations/custom-stt), with a `transcribe()` method that collects one sentence of audio and emits a `Transcript` event. The Parakeet code written for `sherpa-onnx-node` fits in that method. The client's voice activity detection already cuts the audio into sentences, so an offline model like Parakeet works there without a streaming mode.
+Run the server with no agent and no text to speech and you get a [dictation server](/docs/server/dictation), which is what many DeepSpeech apps were. Parakeet, Moonshine and Vosk plug into the same `stt` option once you [wrap their runtime in a custom speech to text class](/docs/speech-to-text/custom), with a `transcribe()` method that collects one sentence of audio and emits a `Transcript` event. The Parakeet code written for `sherpa-onnx-node` fits in that method. The client's voice activity detection already cuts the audio into sentences, so an offline model like Parakeet works there without a streaming mode.
 
 Micdrop is only a library, with no hosting, dashboard or call history. You run the server and store the transcripts yourself, as you did with DeepSpeech.
 
@@ -211,4 +211,4 @@ Micdrop is only a library, with no hosting, dashboard or call history. You run t
 
 ## Getting started
 
-Pick the replacement from the job DeepSpeech did for you. Use Parakeet for accurate English on a server, Moonshine or Vosk for a small device or live partial transcripts, and Whisper for many languages with the simplest install in Node. Then test it on a few of your own recordings, names and numbers included, since benchmark recordings rarely sound like the people who will use your app. For a language other than English, start from the [Whisper checkpoint that fits it best](/docs/ai-integration/local-models/speech-to-text). If the transcription feeds a voice app, you can [start a first voice call with Micdrop in about five minutes](/docs/getting-started).
+Pick the replacement from the job DeepSpeech did for you. Use Parakeet for accurate English on a server, Moonshine or Vosk for a small device or live partial transcripts, and Whisper for many languages with the simplest install in Node. Then test it on a few of your own recordings, names and numbers included, since benchmark recordings rarely sound like the people who will use your app. For a language other than English, start from the [Whisper checkpoint that fits it best](/docs/local-models/speech-to-text). If the transcription feeds a voice app, you can [start a first voice call with Micdrop in about five minutes](/docs/getting-started).

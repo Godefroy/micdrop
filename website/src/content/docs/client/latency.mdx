@@ -18,7 +18,7 @@ The numbers below were measured on a MacBook Pro M2, in Chromium, over the Frenc
 | Turn detection, on a graphics card | ~25 ms |
 | Turn detection, on WebAssembly | 190 ms to 1.2 s |
 | Audio reaching the server | already there, streamed every 100 ms |
-| Transcription, agent and voice | [see the local models page](/docs/ai-integration/local-models/performance) |
+| Transcription, agent and voice | [see the local models page](/docs/local-models/performance) |
 
 The first line is the one that surprises people. Before any model has read anything, most of a second has already gone by waiting to be sure the speaker stopped, and that wait is a setting rather than a law.
 
@@ -93,9 +93,9 @@ Building the features costs 0.5 ms per 100 ms of audio while the speaker talks, 
 
 Once the turn closes, the audio is already on the server, since chunks are streamed every 100 ms while the user speaks rather than sent in one go at the end. What remains is transcription, the agent and the voice.
 
-Those three are where a local setup spends its second, and the [local models page](/docs/ai-integration/local-models/performance) measures each of them.
+Those three are where a local setup spends its second, and the [local models page](/docs/local-models/performance) measures each of them.
 
-The structural one is transcription. A batch model such as Whisper only starts once the turn closes, so its time lands entirely on the critical path, around 440 ms for a three second sentence. A streaming speech to text such as [Gladia](/docs/ai-integration/provided-integrations/gladia) transcribes while the person is still talking, so the transcript is all but ready when the turn ends and that time mostly disappears. It is the largest single saving available to a local setup, ahead of any model swap.
+The structural one is transcription. A batch model such as Whisper only starts once the turn closes, so its time lands entirely on the critical path, around 440 ms for a three second sentence. A streaming speech to text such as [Gladia](/docs/speech-to-text/gladia) transcribes while the person is still talking, so the transcript is all but ready when the turn ends and that time mostly disappears. It is the largest single saving available to a local setup, ahead of any model swap.
 
 Three habits then matter more than which model you pick:
 

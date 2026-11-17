@@ -80,7 +80,7 @@ The WebSocket arrives at a server you already run, inside your authentication. T
 
 ### You pick every provider, and change one in a constructor
 
-Micdrop ships [integrations](/docs/ai-integration) for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK. The model, the transcription and the voice are three separate objects, so each one comes from the provider that suits it:
+Micdrop ships [integrations](/docs/providers) for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK. The model, the transcription and the voice are three separate objects, so each one comes from the provider that suits it:
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -102,9 +102,9 @@ new MicdropServer(socket, {
 })
 ```
 
-To move to OpenAI's model, replace `GeminiAgent` with `OpenaiAgent`. The browser code stays the same. The AI SDK integration gives access to every model the Vercel AI SDK supports, Anthropic included. A call can also run on a [speech-to-speech model](/docs/server/realtime), OpenAI Realtime or Gemini Live, passed as one `realtime` option in place of the three providers.
+To move to OpenAI's model, replace `GeminiAgent` with `OpenaiAgent`. The browser code stays the same. The AI SDK integration gives access to every model the Vercel AI SDK supports, Anthropic included. A call can also run on a [speech-to-speech model](/docs/realtime), OpenAI Realtime or Gemini Live, passed as one `realtime` option in place of the three providers.
 
-Each layer can have a second provider too. `FallbackTTS` and its counterparts for [speech-to-text](/docs/ai-integration/fallback-strategies/stt-fallback) and the agent move to the next provider when the first one stops answering, so the user hears a short pause instead of a dropped call. When Micdrop lacks a provider, write a class for it: `Agent`, `STT` and `TTS` are abstract classes you can [extend with a custom integration](/docs/ai-integration/custom-integrations/custom-agent).
+Each layer can have a second provider too. `FallbackTTS` and its counterparts for [speech-to-text](/docs/speech-to-text/fallback) and the agent move to the next provider when the first one stops answering, so the user hears a short pause instead of a dropped call. When Micdrop lacks a provider, write a class for it: `Agent`, `STT` and `TTS` are abstract classes you can [extend with a custom integration](/docs/agents/custom).
 
 ### You pay each provider directly, on your own keys
 
@@ -114,7 +114,7 @@ You can lower each line of the bill separately: a cheaper voice lowers the voice
 
 ### Keep the call on your own machines
 
-Bland's strongest argument is that no third-party AI touches a call. Micdrop reaches the same result on hardware you control, with [local models](/docs/ai-integration/local-models): Whisper for the transcription, Kokoro, Piper, Pocket TTS or Qwen3-TTS for the voice, and any model served by Ollama, LM Studio or llama.cpp for the agent.
+Bland's strongest argument is that no third-party AI touches a call. Micdrop reaches the same result on hardware you control, with [local models](/docs/local-models): Whisper for the transcription, Kokoro, Piper, Pocket TTS or Qwen3-TTS for the voice, and any model served by Ollama, LM Studio or llama.cpp for the agent.
 
 ```typescript
 import { createOpenAI } from '@ai-sdk/openai'
@@ -138,7 +138,7 @@ new MicdropServer(socket, {
 })
 ```
 
-A European stack is the middle ground between US providers and your own machines. Mistral for the model, Gladia for the transcription and Gradium for the voice keep the conversation inside the EU, and you can [set up that sovereign stack](/docs/ai-integration/sovereign-voice-ai) by swapping the three providers. Micdrop makes these architectures possible, while the compliance of your deployment rests with you and your providers.
+A European stack is the middle ground between US providers and your own machines. Mistral for the model, Gladia for the transcription and Gradium for the voice keep the conversation inside the EU, and you can [set up that sovereign stack](/docs/providers/sovereign-voice-ai) by swapping the three providers. Micdrop makes these architectures possible, while the compliance of your deployment rests with you and your providers.
 
 {/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "Title at the top in a modern clean bold sans-serif: \"One vendor or your own picks\" Two vertical columns side by side, each a stack of five horizontal layer cards, same row order in both columns. Left column header: \"Bland\". All five cards are fused into one solid dark slate block with a single muted grey border, each card reading: \"Telephony: Bland\" \"Speech to text: Bland\" \"Model: base or turbo\" \"Voice: Bland\" \"Orchestration: Pathways\" Right column header: \"Micdrop\". Five separate cards with small gaps between them, each with an emerald border, reading: \"Transport: browser to your Node server\" \"Speech to text: Gladia, OpenAI, Gemini, Whisper\" \"Model: OpenAI, Gemini, Mistral, AI SDK, Ollama\" \"Voice: ElevenLabs, Cartesia, Gradium, Kokoro, Piper\" \"Orchestration: your TypeScript code\" Under the right column, a small sky blue tag: \"Your own API keys\". Under the left column, a small grey tag: \"Bland bills every layer per minute\". Wide 16:9 layout, flat vector style, generous spacing."
     Regenerate if Micdrop adds or drops a provider integration. Last data sync: 2026-10-09. */}

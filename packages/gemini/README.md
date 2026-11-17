@@ -1,10 +1,10 @@
 # @micdrop/gemini
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/gemini)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/providers)
 
 Google Gemini implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
-This package provides an agent (`GeminiAgent`), a speech-to-text (`GeminiSTT`) and a text-to-speech (`GeminiTTS`) running on the Gemini API. `GeminiLive` is a [realtime model](https://micdrop.dev/docs/server/realtime) running on the Gemini Live API: it hears the user and answers with its own voice, in place of the three. `GeminiClassifier` answers typed questions about each turn of the user with the [Decisions API](https://aistudio.google.com/docs/decisions-api).
+This package provides an agent (`GeminiAgent`), a speech-to-text (`GeminiSTT`) and a text-to-speech (`GeminiTTS`) running on the Gemini API. `GeminiLive` is a [realtime model](https://micdrop.dev/docs/realtime) running on the Gemini Live API: it hears the user and answers with its own voice, in place of the three. `GeminiClassifier` answers typed questions about each turn of the user with the [Decisions API](https://aistudio.google.com/docs/decisions-api).
 
 ## Installation
 
@@ -114,7 +114,7 @@ new MicdropServer(socket, {
 
 ## Documentation
 
-Read full [documentation of the Gemini integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/gemini) on the [website](https://micdrop.dev).
+Read full [documentation of the Gemini integration for Micdrop](https://micdrop.dev/docs/providers) on the [website](https://micdrop.dev).
 
 ## License
 

@@ -136,7 +136,7 @@ flowchart LR
 
 The client detects speech locally and streams audio only while the user talks. The server transcribes it, lets your agent answer, and starts speaking the first words while the model is still writing the rest. When the user talks over the assistant, playback stops and the server cancels the LLM and the voice.
 
-You can also replace the three stages with a single speech to speech model, [Gemini Live or the OpenAI Realtime API](https://micdrop.dev/docs/server/realtime), and keep the same client code.
+You can also replace the three stages with a single speech to speech model, [Gemini Live or the OpenAI Realtime API](https://micdrop.dev/docs/realtime), and keep the same client code.
 
 ## 🤔 Why Micdrop?
 
@@ -181,7 +181,7 @@ Detailed comparisons with [Vapi](https://micdrop.dev/blog/alternative-to-vapi), 
 
 For a local agent, point [`@micdrop/ai-sdk`](./packages/ai-sdk) at Ollama or any server speaking the OpenAI protocol.
 
-Any other provider plugs into the same interfaces: write a [custom agent](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-agent), [speech to text](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) or [text to speech](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts), and add a [fallback](https://micdrop.dev/docs/ai-integration/fallback-strategies/agent-fallback) that takes over when a provider fails.
+Any other provider plugs into the same interfaces: write a [custom agent](https://micdrop.dev/docs/agents/custom), [speech to text](https://micdrop.dev/docs/speech-to-text/custom) or [text to speech](https://micdrop.dev/docs/text-to-speech/custom), and add a [fallback](https://micdrop.dev/docs/agents/fallback) that takes over when a provider fails.
 
 ## ✨ Features
 
@@ -197,7 +197,7 @@ Any other provider plugs into the same interfaces: write a [custom agent](https:
 **On the server**
 
 - [Tool calls](https://micdrop.dev/docs/server/tools) that run your own code during the call
-- [Intent classification](https://micdrop.dev/docs/server/classifier) and [data extraction](https://micdrop.dev/docs/server/extract) on each turn
+- [Intent classification](https://micdrop.dev/docs/classifiers) and [data extraction](https://micdrop.dev/docs/server/extract) on each turn
 - [Semantic turn detection](https://micdrop.dev/docs/server/semantic-turn-detection) with Smart Turn
 - [Authentication and call parameters](https://micdrop.dev/docs/server/auth-and-parameters), [first message](https://micdrop.dev/docs/server/first-message), [automatic hang up](https://micdrop.dev/docs/server/auto-end-call)
 - [Audio recording](https://micdrop.dev/docs/server/recording-audio), [noise filtering](https://micdrop.dev/docs/server/noise-filtering), [resumed conversations](https://micdrop.dev/docs/server/resume-conversation)

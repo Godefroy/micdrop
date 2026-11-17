@@ -182,15 +182,15 @@ agent.addTool({
 })
 ```
 
-`addTool` belongs to the base agent class, so every agent accepts tools: the OpenAI, Gemini and Mistral agents, and the [AI SDK agent](/docs/ai-integration/provided-integrations/ai-sdk), which works with Anthropic and any other model the Vercel AI SDK supports.
+`addTool` belongs to the base agent class, so every agent accepts tools: the OpenAI, Gemini and Mistral agents, and the [AI SDK agent](/docs/agents/ai-sdk), which works with Anthropic and any other model the Vercel AI SDK supports.
 
 ### Current models, a second provider and local engines
 
-The integrations are updated as providers release new models. A call can run on a pipeline of speech-to-text, model and voice, or on a single [speech-to-speech model](/docs/server/realtime), OpenAI Realtime or Gemini Live, with the same browser code.
+The integrations are updated as providers release new models. A call can run on a pipeline of speech-to-text, model and voice, or on a single [speech-to-speech model](/docs/realtime), OpenAI Realtime or Gemini Live, with the same browser code.
 
-- A [fallback](/docs/ai-integration/fallback-strategies/tts-fallback) wraps two providers for the voice, the transcription or the agent, and replays the buffered text on the second when the first one fails.
-- [Local models](/docs/ai-integration/local-models) such as Whisper, Kokoro and Piper run the transcription and the voice on your own machine.
-- Mistral, Gladia and Gradium together make [a pipeline hosted in Europe](/docs/ai-integration/sovereign-voice-ai).
+- A [fallback](/docs/text-to-speech/fallback) wraps two providers for the voice, the transcription or the agent, and replays the buffered text on the second when the first one fails.
+- [Local models](/docs/local-models) such as Whisper, Kokoro and Piper run the transcription and the voice on your own machine.
+- Mistral, Gladia and Gradium together make [a pipeline hosted in Europe](/docs/providers/sovereign-voice-ai).
 
 Products such as [Raconte](https://raconte.ai), which runs voice interviews led by an AI, and [Cibli](https://cibli.fr), a recruitment platform where candidates answer out loud, run Micdrop in production. Raconte is built by Micdrop's own maintainer.
 
@@ -219,7 +219,7 @@ This comparison comes from each project's repository and documentation, as they 
 | **Last commit** | 15 November 2024 | Active |
 | **Maintained by** | Looking for community maintainers | One maintainer |
 
-Vocode has a wider catalogue of transcription and voice services: Micdrop integrates neither Deepgram nor Azure. You can add a provider missing from Micdrop's list by implementing the [speech-to-text](/docs/ai-integration/custom-integrations/custom-stt) or [text-to-speech](/docs/ai-integration/custom-integrations/custom-tts) interface.
+Vocode has a wider catalogue of transcription and voice services: Micdrop integrates neither Deepgram nor Azure. You can add a provider missing from Micdrop's list by implementing the [speech-to-text](/docs/speech-to-text/custom) or [text-to-speech](/docs/text-to-speech/custom) interface.
 
 ## What Vocode and Micdrop cost
 
@@ -289,7 +289,7 @@ The code that answers a phone number stays on Vocode, or moves to Pipecat or Liv
     Yes, several open source projects can replace Vocode. Pipecat, under BSD 2-Clause, and LiveKit Agents, under Apache 2.0, are the maintained frameworks closest to Vocode, both with telephony and a Python server. Dograh is a self-hosted platform with a visual workflow builder. Jambonz is a telecom stack in Node. Micdrop, under MIT, covers voice conversations inside a TypeScript web or mobile app. All of them appear in our comparison of [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks).
   </FaqItem>
   <FaqItem question="Is Vocode free?">
-    Vocode is free. The library is MIT-licensed, so you pay only the speech-to-text, model, text-to-speech and telephony providers it calls on your own keys. The hosted API that Vocode used to sell is still described in its documentation, but its dashboard and API addresses no longer resolve. Micdrop is free too, under the same licence, so you pay only [the providers you pick](/docs/ai-integration).
+    Vocode is free. The library is MIT-licensed, so you pay only the speech-to-text, model, text-to-speech and telephony providers it calls on your own keys. The hosted API that Vocode used to sell is still described in its documentation, but its dashboard and API addresses no longer resolve. Micdrop is free too, under the same licence, so you pay only [the providers you pick](/docs/providers).
   </FaqItem>
   <FaqItem question="Can I use Vocode with TypeScript or Node.js?">
     Vocode supports TypeScript on the client side only. Its npm package gives a React app a hook that connects to a Vocode back end, a Python FastAPI service you deploy beside your Node server. The npm package was last published in August 2023. Micdrop's browser client is in TypeScript, like its server, which runs in [the Node process you already run](/docs/server).
@@ -308,7 +308,7 @@ The code that answers a phone number stays on Vocode, or moves to Pipecat or Liv
 npm install @micdrop/web @micdrop/server @micdrop/openai @micdrop/gladia @micdrop/elevenlabs
 ```
 
-You can [run a first voice call in about five minutes](/docs/getting-started), then swap in [the providers your project needs](/docs/ai-integration).
+You can [run a first voice call in about five minutes](/docs/getting-started), then swap in [the providers your project needs](/docs/providers).
 
 If a Python framework is still on your shortlist, we ran the same comparison for [Micdrop and Pipecat](/blog/alternative-to-pipecat) and for [Micdrop and LiveKit Agents](/blog/alternative-to-livekit-agents).
 

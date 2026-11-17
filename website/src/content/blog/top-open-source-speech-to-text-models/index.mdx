@@ -30,7 +30,7 @@ takeaways:
 
 The best open source speech to text model for a real-time voice agent in November 2026 is NVIDIA's Nemotron Speech Streaming when you can run it on a GPU, and Moonshine when the transcription has to run on a CPU. Both transcribe while the user is still speaking, which most open models cannot do. Pipecat, an open source framework for voice agents, timed Nemotron's final English transcript at a median 221 ms after the user stopped speaking, the lowest median of everything it measured, hosted APIs included. Mistral's Voxtral Realtime and Kyutai STT are the two other streaming models in the ranking. For accuracy on a finished sentence, NVIDIA Nemotron 3.5 Transcribe and Alibaba's Qwen3-ASR lead the open models on the Hugging Face Open ASR Leaderboard, ahead of IBM Granite Speech, Cohere Transcribe, NVIDIA Parakeet and OpenAI Whisper. This ranking compares ten models with published weights on what a live agent needs from transcription: whether the model streams, its word error rate, the hardware it needs, its languages, and whether a company can ship the weights as published.
 
-[Micdrop](/), which publishes this ranking, is an open source TypeScript library for real-time voice conversations with AI. It trains no model, so it stays out of the ranking. Micdrop integrates one of the ten models, Whisper, through [@micdrop/whisper](/docs/ai-integration/provided-integrations/whisper). Micdrop measured the Whisper checkpoints itself on a MacBook Pro M2. Voxtral Mini 3B, which Micdrop tested on the same machine, took about 16.6 seconds per sentence on its CPU, too slow for a call. Micdrop's hosted integrations include Mistral, whose API also serves Voxtral Mini Transcribe Realtime 3, a newer model than the open Voxtral weights ranked here.
+[Micdrop](/), which publishes this ranking, is an open source TypeScript library for real-time voice conversations with AI. It trains no model, so it stays out of the ranking. Micdrop integrates one of the ten models, Whisper, through [@micdrop/whisper](/docs/speech-to-text/whisper). Micdrop measured the Whisper checkpoints itself on a MacBook Pro M2. Voxtral Mini 3B, which Micdrop tested on the same machine, took about 16.6 seconds per sentence on its CPU, too slow for a call. Micdrop's hosted integrations include Mistral, whose API also serves Voxtral Mini Transcribe Realtime 3, a newer model than the open Voxtral weights ranked here.
 
 Word error rates come from the [Open ASR Leaderboard](https://huggingface.co/spaces/hf-audio/open_asr_leaderboard), read on 5 November 2026. Licenses, sizes, dates and downloads come from each model card on the same day. Hosted APIs such as Deepgram and AssemblyAI have their own [ranking of speech to text APIs for voice agents](/blog/top-speech-to-text-apis-voice-agents). The browser's built-in recognition goes through the [Web Speech API](/blog/web-speech-api).
 
@@ -164,7 +164,7 @@ Parakeet transcribes a finished sentence. NVIDIA reports on the card of its para
 
 Whisper reads every sentence as a thirty second window, padding a two second answer with silence, so a short sentence costs almost as much as a long one. Micdrop measured about 320 ms for `tiny`, 440 ms for `base`, 1000 ms for `small` and 3800 ms for `turbo` on a three second sentence, on a MacBook Pro M2 CPU, through Transformers.js and ONNX Runtime with `q8` weights already loaded. Whisper large-v3 averages 8.18% in English on the Open ASR Leaderboard, and turbo 8.68%. Outside English, fine-tuning on one language can matter more than size. On five French test sentences, the French `whisper-small` made 2% word errors, where `turbo` made 17%.
 
-Whisper also invents words on silence and noise. Allison Koenecke, then at Cornell University, and her coauthors found hallucinated phrases in about 1% of transcriptions in a 2024 study. No comparable study covers the newer models yet. Whisper still has the widest set of runtimes: faster-whisper, whisper.cpp, sherpa-onnx, MLX, and Transformers.js, which runs it inside Node or a browser. [@micdrop/whisper](/docs/ai-integration/provided-integrations/whisper) runs it inside the Node process through Transformers.js.
+Whisper also invents words on silence and noise. Allison Koenecke, then at Cornell University, and her coauthors found hallucinated phrases in about 1% of transcriptions in a 2024 study. No comparable study covers the newer models yet. Whisper still has the widest set of runtimes: faster-whisper, whisper.cpp, sherpa-onnx, MLX, and Transformers.js, which runs it inside Node or a browser. [@micdrop/whisper](/docs/speech-to-text/whisper) runs it inside the Node process through Transformers.js.
 
 ## Other models worth knowing
 
@@ -207,7 +207,7 @@ Then decide whether you need streaming. A voice agent waits for the final transc
 
 Look at where the model runs. Moonshine, the Nemotron streaming model through NeMo-Speech.cpp, Parakeet and Qwen3-ASR 0.6B through sherpa-onnx, and the small Whisper checkpoints all run on a CPU next to your app. Nemotron 3.5 Transcribe and Qwen3-ASR 1.7B are the most accurate models for a GPU server. Voxtral Realtime needs one too and streams 13 languages. The leaderboard's error rates come from benchmark audio, so test the models on your own calls, with names, numbers and the accents of your users.
 
-In Micdrop, a speech to text model is one option of `MicdropServer`. Here Whisper runs in the Node process, with [`FallbackSTT`](/docs/ai-integration/fallback-strategies/stt-fallback) switching to a hosted API when the local model fails and replaying the audio of the sentence in progress:
+In Micdrop, a speech to text model is one option of `MicdropServer`. Here Whisper runs in the Node process, with [`FallbackSTT`](/docs/speech-to-text/fallback) switching to a hosted API when the local model fails and replaying the audio of the sentence in progress:
 
 ```typescript
 import { MicdropServer, FallbackSTT } from '@micdrop/server'
@@ -227,7 +227,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The other models plug into the same option once you [write a custom speech to text integration](/docs/ai-integration/custom-integrations/custom-stt), a class that wraps their runtime with a `transcribe()` method emitting a `Transcript` event. A model running on sherpa-onnx, such as Moonshine or Parakeet, fits in one such class. Transcription can also run [on the user's device, inside the browser](/blog/on-device-ai-voice-agent).
+The other models plug into the same option once you [write a custom speech to text integration](/docs/speech-to-text/custom), a class that wraps their runtime with a `transcribe()` method emitting a `Transcript` event. A model running on sherpa-onnx, such as Moonshine or Parakeet, fits in one such class. Transcription can also run [on the user's device, inside the browser](/blog/on-device-ai-voice-agent).
 
 ## Frequently asked questions
 
@@ -262,7 +262,7 @@ The other models plug into the same option once you [write a custom speech to te
 
 Pick Nemotron Speech Streaming for an English agent that has to answer fast on a GPU, Voxtral Realtime to stream more languages, and Moonshine to stream on a CPU. Pick Qwen3-ASR or Nemotron 3.5 Transcribe when accuracy on a finished sentence matters more, and Whisper when you want the model that runs everywhere, Node included.
 
-Whichever model you choose, record a few of your own calls, names and numbers included, and time the final transcript on the machine you will deploy to. Micdrop runs Whisper from Node next to a local language model and a local voice, so you can [run the whole voice pipeline on your own machine](/docs/ai-integration/local-models) and read [what each step costs in latency and memory](/docs/ai-integration/local-models/performance). The agent's voice has its own [ranking of open source text to speech models](/blog/top-open-source-text-to-speech-models). Then [start a first voice call in about five minutes](/docs/getting-started).
+Whichever model you choose, record a few of your own calls, names and numbers included, and time the final transcript on the machine you will deploy to. Micdrop runs Whisper from Node next to a local language model and a local voice, so you can [run the whole voice pipeline on your own machine](/docs/local-models) and read [what each step costs in latency and memory](/docs/local-models/performance). The agent's voice has its own [ranking of open source text to speech models](/blog/top-open-source-text-to-speech-models). Then [start a first voice call in about five minutes](/docs/getting-started).
 
 <RankingJsonLd
   name="Best open source speech to text models in 2026"

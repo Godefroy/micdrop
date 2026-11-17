@@ -98,13 +98,13 @@ The phone decides the speed far more than anything you control. Encoding 30 seco
 
 The raw `whisper.cpp` weights are smaller: 75, 142 and 466 MiB for tiny, base and small, in the unit its repository publishes. A mobile export is larger than the checkpoint it comes from, which is why the ExecuTorch figures sit well above the raw `whisper.cpp` numbers.
 
-You get a transcript with the network off, audio that never leaves the device, and no per-minute bill. The price is 151 MB of weights on the device with ExecuTorch and 375 to 410 MB of memory while it runs. The oldest phone you support also has to keep up. The same Whisper family is far cheaper to run on a server you already operate, since one copy serves every user, which is what the [local models guide](/docs/ai-integration/local-models) measures on the Node side.
+You get a transcript with the network off, audio that never leaves the device, and no per-minute bill. The price is 151 MB of weights on the device with ExecuTorch and 375 to 410 MB of memory while it runs. The oldest phone you support also has to keep up. The same Whisper family is far cheaper to run on a server you already operate, since one copy serves every user, which is what the [local models guide](/docs/local-models) measures on the Node side.
 
 ## Streaming to a server keeps web and mobile on the same transcript
 
 Apple's recogniser, Google's and a Whisper build on the device each write the sentence their own way. A transcription service keeps the model in one place instead, so a browser and a phone talking to the same server get one transcript, punctuation and vocabulary included. You make the same choice on the web, where Chrome and Safari each ship a recogniser of their own. Read [speech to text in JavaScript](/blog/web-speech-api) to see where those recognisers stop.
 
-Gladia, Deepgram, the OpenAI Realtime transcription endpoint and Mistral's Voxtral all expose a streaming WebSocket rather than a file upload, so partial results arrive while the user is still talking. [Pick between them](/docs/ai-integration) on language coverage, latency and where the data is processed. A [Gladia](/docs/ai-integration/provided-integrations/gladia) socket and a [self-hosted Whisper](/docs/ai-integration/provided-integrations/whisper) behave the same from the app's point of view, since the phone only ever talks to your server, whatever the server transcribes with.
+Gladia, Deepgram, the OpenAI Realtime transcription endpoint and Mistral's Voxtral all expose a streaming WebSocket rather than a file upload, so partial results arrive while the user is still talking. [Pick between them](/docs/providers) on language coverage, latency and where the data is processed. A [Gladia](/docs/speech-to-text/gladia) socket and a [self-hosted Whisper](/docs/speech-to-text/whisper) behave the same from the app's point of view, since the phone only ever talks to your server, whatever the server transcribes with.
 
 React Native ships no microphone capture of its own. Two maintained packages hand you raw samples: `react-native-audio-api`, whose `AudioRecorder` data callback delivers float32 frames between -1 and 1, and `expo-audio`, whose `useAudioStream()` returns float32 or int16 buffers at a sample rate you choose. Both need a development build. `react-native-live-audio-stream` and `react-native-audio-record` were last published in 2021 and 2019.
 
@@ -185,9 +185,9 @@ That is the entire server. The [WebSocket protocol](/docs/server/protocol) is ha
 
 One utterance is one stream. The audio reaches the transcription chunk by chunk rather than as a finished file, so the provider starts working before the user has stopped talking.
 
-Swapping the provider means changing the constructor, since every integration implements the same `STT` interface. `OpenaiSTT` sends the audio to OpenAI's realtime transcription endpoint, and [`GladiaSTT`](/docs/ai-integration/provided-integrations/gladia) or any other [STT integration](/docs/ai-integration) takes its place.
+Swapping the provider means changing the constructor, since every integration implements the same `STT` interface. `OpenaiSTT` sends the audio to OpenAI's realtime transcription endpoint, and [`GladiaSTT`](/docs/speech-to-text/gladia) or any other [STT integration](/docs/providers) takes its place.
 
-The same interface also takes a model you run yourself. [`WhisperSTT`](/docs/ai-integration/provided-integrations/whisper) runs Whisper inside the Node process through ONNX Runtime, so the audio stops at your own machine:
+The same interface also takes a model you run yourself. [`WhisperSTT`](/docs/speech-to-text/whisper) runs Whisper inside the Node process through ONNX Runtime, so the audio stops at your own machine:
 
 ```ts
 import { WhisperSTT } from '@micdrop/whisper'

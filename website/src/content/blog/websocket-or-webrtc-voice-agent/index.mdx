@@ -171,7 +171,7 @@ Micdrop covers calls between one browser and your server, and leaves group calls
     A WebSocket is the most common alternative for a browser talking to a server, carrying audio as binary messages over one TCP connection. WebTransport, built on HTTP/3, adds unreliable datagrams closer to what UDP offers, though browser support is still uneven. For phone calls, SIP with RTP remains the standard, usually reached through a telephony provider.
   </FaqItem>
   <FaqItem question="Should I use WebRTC with the OpenAI Realtime API?">
-    OpenAI recommends WebRTC when the browser connects straight to its Realtime API, and WebSocket when your server holds the connection. If your backend needs to run tools, store the transcript or switch providers, put it in the middle: the browser talks to your server, and your server talks to OpenAI. Micdrop runs the Realtime API that way, through its [realtime option](/docs/server/realtime).
+    OpenAI recommends WebRTC when the browser connects straight to its Realtime API, and WebSocket when your server holds the connection. If your backend needs to run tools, store the transcript or switch providers, put it in the middle: the browser talks to your server, and your server talks to OpenAI. Micdrop runs the Realtime API that way, through its [realtime option](/docs/realtime).
   </FaqItem>
 </FaqList>
 

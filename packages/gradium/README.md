@@ -1,6 +1,6 @@
 # @micdrop/gradium
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/gradium)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/providers)
 
 Gradium STT and TTS implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -64,7 +64,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
 | `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Gradium STT (Speech-to-Text)
 
@@ -116,11 +116,11 @@ stt.transcribe(createReadStream('speech.pcm'))
 | `Transcript` | `string`   | Transcription of one utterance, emitted once per utterance even when the next one starts before it returns. The text is empty when nothing was recognized. |
 | `Failed`     | `Buffer[]` | Every reconnection attempt failed, with the audio of the utterances still waiting for their transcript. The next utterance connects again.                 |
 
-See the [STT interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-stt) for the full contract.
+See the [STT interface](https://micdrop.dev/docs/speech-to-text/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Gradium integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/gradium) on the [website](https://micdrop.dev).
+Read full [documentation of the Gradium integration for Micdrop](https://micdrop.dev/docs/providers) on the [website](https://micdrop.dev).
 
 ## License
 

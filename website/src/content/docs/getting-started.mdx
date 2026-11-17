@@ -22,7 +22,7 @@ A call is a loop of turns. Each turn goes through six steps:
 
 Interruptions need echo cancellation. Without it, the microphone picks up the assistant's voice. If interruptions stayed on, the assistant would answer itself, so Micdrop turns them off. The [browser's echo cancellation](./client/vad#echo-and-interruptions) usually removes the assistant's voice from the microphone signal. With headphones, that voice never reaches the microphone.
 
-A realtime speech to speech model, such as the OpenAI Realtime API or Gemini Live, can replace speech to text, the LLM and text to speech on its own. It answers sooner and hears the tone of the voice. With three separate providers, you choose each one and often pay less per minute. Micdrop lets you [switch a call to a realtime model](./server/realtime) on the server and keep the same client code.
+A realtime speech to speech model, such as the OpenAI Realtime API or Gemini Live, can replace speech to text, the LLM and text to speech on its own. It answers sooner and hears the tone of the voice. With three separate providers, you choose each one and often pay less per minute. Micdrop lets you [switch a call to a realtime model](./realtime) on the server and keep the same client code.
 
 The OpenAI Realtime API and LiveKit connect the browser over WebRTC. Micdrop connects it over a WebSocket to your own backend instead, so you deploy only the server you already run. WebRTC is [worth choosing over a WebSocket](/blog/websocket-or-webrtc-voice-agent) for group calls, video, phone lines and weak mobile networks.
 
@@ -96,7 +96,7 @@ Install the server package and set up AI integrations:
 npm install @micdrop/server @micdrop/openai @micdrop/gladia @micdrop/elevenlabs
 ```
 
-This example uses OpenAI, Gladia and ElevenLabs. You can use other providers with [provided or custom integrations](./ai-integration).
+This example uses OpenAI, Gladia and ElevenLabs. You can use other providers with [provided or custom integrations](./providers).
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -235,9 +235,9 @@ through them:
 
 A provider that gives up after its retries emits `Failed`, and the call stays
 open without a word. In production, put a fallback behind each piece:
-[STT](./ai-integration/fallback-strategies/stt-fallback),
-[agent](./ai-integration/fallback-strategies/agent-fallback) and
-[TTS](./ai-integration/fallback-strategies/tts-fallback).
+[STT](./speech-to-text/fallback),
+[agent](./agents/fallback) and
+[TTS](./text-to-speech/fallback).
 
 ### The assistant does not hear you, or never stops listening
 
@@ -278,5 +278,5 @@ worth changing.
 
 - Let the agent act in your app with [tool calls on the server](./server/tools), then [show their results in the client](./client/handling-tool-calls).
 - Read the call state, errors and audio levels in your components with the [React hooks](./client/react-hooks).
-- Pick another provider for the LLM, the transcription or the voice among the [AI providers Micdrop integrates](./ai-integration), or [write your own integration](./ai-integration/custom-integrations/custom-agent).
+- Pick another provider for the LLM, the transcription or the voice among the [AI providers Micdrop integrates](./providers), or [write your own integration](./agents/custom).
 - Follow provider rankings, architecture choices and latency measurements on the [real-time voice AI blog](/blog).

@@ -171,7 +171,7 @@ Then pick on what your application needs most:
 
 Whatever you pick, set your thresholds on your own labelled inputs. TypeSafe, Google, Cloudflare and Microsoft all call their probabilities calibrated. In our test, the confidence flagged the mistakes of some models far more often than others. With a threshold of 0.6 on the question that counts the actions, Jev was unsure on 3 of its 12 wrong commands and on none of its right ones. Gemini Decisions was unsure on none of its 9 wrong commands, and on 3 of its right ones. OpenAI Decisions was unsure on 12 of its 30 wrong commands and on 9 of its right ones.
 
-Keep the provider swappable, since prices and models moved every few weeks this autumn. Most of these APIs accept Jev's questions with few changes. [Micdrop's classifier](/docs/server/classifier) gives Jev, OpenAI Decisions and Gemini Decisions the same interface on a voice server, so switching takes an import and a constructor. Each package exports its own question helpers:
+Keep the provider swappable, since prices and models moved every few weeks this autumn. Most of these APIs accept Jev's questions with few changes. [Micdrop's classifier](/docs/classifiers) gives Jev, OpenAI Decisions and Gemini Decisions the same interface on a voice server, so switching takes an import and a constructor. Each package exports its own question helpers:
 
 ```typescript
 import { GeminiClassifier, noul as geminiNoul } from '@micdrop/gemini'
@@ -200,7 +200,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The server classifies each turn when the user stops speaking and holds the answer up to one second, so your agent can transfer the call, play a scripted line or let the LLM answer. To use another API from this ranking, write a class that extends the [`Classifier` base class](/docs/ai-integration/custom-integrations/custom-classifier) and implements one method. Micdrop is a library you host yourself with your own keys, so the data terms of a call are those of the decision model you choose.
+The server classifies each turn when the user stops speaking and holds the answer up to one second, so your agent can transfer the call, play a scripted line or let the LLM answer. To use another API from this ranking, write a class that extends the [`Classifier` base class](/docs/classifiers/custom) and implements one method. Micdrop is a library you host yourself with your own keys, so the data terms of a call are those of the decision model you choose.
 
 ## Frequently asked questions
 
@@ -235,7 +235,7 @@ The server classifies each turn when the user stops speaking and holds the answe
 
 Take Gemini Decisions for accuracy and inputs beyond text if its v1beta status suits you, Jev for the fastest and cheapest answers we measured on English text, and OpenAI Decisions for HIPAA, processing in Europe and a generally available service. Perplexity's models and Clef-flash cost less than those three. Clef-flash and Perplexity's first Decider also have open weights. Microsoft-Decision-1 suits teams on Azure, while Laya suits data that has to stay on your servers.
 
-Whichever API you shortlist, write the questions your application needs, run them on a few dozen inputs you have labelled, and compare before you set a threshold. To route a voice call on the answers, [add a classifier to a Micdrop server](/docs/server/classifier) with Jev, OpenAI Decisions or Gemini Decisions, or [start with a first voice call in five minutes](/docs/getting-started).
+Whichever API you shortlist, write the questions your application needs, run them on a few dozen inputs you have labelled, and compare before you set a threshold. To route a voice call on the answers, [add a classifier to a Micdrop server](/docs/classifiers) with Jev, OpenAI Decisions or Gemini Decisions, or [start with a first voice call in five minutes](/docs/getting-started).
 
 <RankingJsonLd
   name="Best decisions APIs in 2026"

@@ -103,7 +103,7 @@ Text to speech engines generate audio at these rates:
 | Kokoro and Qwen3-TTS | 24 kHz |
 | Piper | 16 kHz for the low quality voices, 22.05 kHz for the others |
 
-The hosted voices let you ask for the rate you need, so the cheapest conversion is the one the provider does for you. Local engines generate at their own rate, which differs from one [local text to speech engine](/blog/local-tts-node-kokoro-vs-piper) to another. Kokoro and Qwen3-TTS produce 24 kHz, while Piper changes rate from one voice to the next and writes it in the voice's JSON file. A [voice stack that runs entirely on your machine](/docs/ai-integration/local-models) has to convert each of them on the server.
+The hosted voices let you ask for the rate you need, so the cheapest conversion is the one the provider does for you. Local engines generate at their own rate, which differs from one [local text to speech engine](/blog/local-tts-node-kokoro-vs-piper) to another. Kokoro and Qwen3-TTS produce 24 kHz, while Piper changes rate from one voice to the next and writes it in the voice's JSON file. A [voice stack that runs entirely on your machine](/docs/local-models) has to convert each of them on the server.
 
 ## A sample rate mismatch makes the voice slow and deep, or fast and high
 

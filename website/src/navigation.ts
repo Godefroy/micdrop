@@ -38,59 +38,37 @@ export const footerNav: { title: string; links: NavLink[] }[] = [
   {
     title: 'AI Integrations',
     links: [
-      {
-        label: 'OpenAI',
-        href: '/docs/ai-integration/provided-integrations/openai',
-      },
-      {
-        label: 'Gemini',
-        href: '/docs/ai-integration/provided-integrations/gemini',
-      },
-      {
-        label: 'ElevenLabs',
-        href: '/docs/ai-integration/provided-integrations/elevenlabs',
-      },
-      {
-        label: 'Gladia',
-        href: '/docs/ai-integration/provided-integrations/gladia',
-      },
-      {
-        label: 'Cartesia',
-        href: '/docs/ai-integration/provided-integrations/cartesia',
-      },
-      {
-        label: 'Mistral',
-        href: '/docs/ai-integration/provided-integrations/mistral',
-      },
-      {
-        label: 'Gradium',
-        href: '/docs/ai-integration/provided-integrations/gradium',
-      },
+      { label: 'Speech to Text', href: '/docs/speech-to-text' },
+      { label: 'Text to Speech', href: '/docs/text-to-speech' },
+      { label: 'LLM (Agent)', href: '/docs/agents' },
+      { label: 'Realtime', href: '/docs/realtime' },
+      { label: 'Classifiers', href: '/docs/classifiers' },
+      { label: 'Providers', href: '/docs/providers' },
     ],
   },
   {
     title: 'Local Models',
     links: [
-      { label: 'Running Locally', href: '/docs/ai-integration/local-models' },
+      { label: 'Running Locally', href: '/docs/local-models' },
       {
         label: 'Whisper',
-        href: '/docs/ai-integration/provided-integrations/whisper',
+        href: '/docs/speech-to-text/whisper',
       },
       {
         label: 'Kokoro',
-        href: '/docs/ai-integration/provided-integrations/kokoro',
+        href: '/docs/text-to-speech/kokoro',
       },
       {
         label: 'Piper',
-        href: '/docs/ai-integration/provided-integrations/piper',
+        href: '/docs/text-to-speech/piper',
       },
       {
         label: 'Pocket TTS',
-        href: '/docs/ai-integration/provided-integrations/pocket-tts',
+        href: '/docs/text-to-speech/pocket-tts',
       },
       {
         label: 'Qwen3-TTS',
-        href: '/docs/ai-integration/provided-integrations/qwen-tts',
+        href: '/docs/text-to-speech/qwen-tts',
       },
     ],
   },

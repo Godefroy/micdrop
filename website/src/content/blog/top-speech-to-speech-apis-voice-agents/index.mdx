@@ -212,7 +212,7 @@ Check who decides when the user has finished speaking. GPT-Live-1 decides on its
 
 Count the history in your budget. Most of these APIs bill the whole conversation again on every turn, so a thirty-minute call costs more than thirty separate one-minute calls. Grok Voice and Deepslate bill per minute of session instead. GPT-Live-1 does the same for the voice, with its backend model billed per token on top.
 
-Keep the provider swappable. Grok Voice, Higgs Realtime and Inworld accept OpenAI Realtime events, which shortens a migration, though some events, the voices and the tools still differ. [Micdrop](/) runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same browser client and Node server. You pass the [realtime model](/docs/server/realtime) to the server, so moving to the other provider, or to a pipeline, leaves the front end untouched:
+Keep the provider swappable. Grok Voice, Higgs Realtime and Inworld accept OpenAI Realtime events, which shortens a migration, though some events, the voices and the tools still differ. [Micdrop](/) runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same browser client and Node server. You pass the [realtime model](/docs/realtime) to the server, so moving to the other provider, or to a pipeline, leaves the front end untouched:
 
 ```typescript
 import { GeminiLive } from '@micdrop/gemini'
@@ -280,7 +280,7 @@ Whichever API you shortlist, play your own conversations to it, in your language
 npm install @micdrop/server @micdrop/web @micdrop/openai @micdrop/gemini
 ```
 
-[Run a first voice call in about five minutes](/docs/getting-started), then pass the [realtime model](/docs/server/realtime) you want to test.
+[Run a first voice call in about five minutes](/docs/getting-started), then pass the [realtime model](/docs/realtime) you want to test.
 
 <RankingJsonLd
   name="Best speech to speech APIs for voice agents in 2026"

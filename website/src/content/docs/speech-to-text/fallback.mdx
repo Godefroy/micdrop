@@ -1,0 +1,66 @@
+---
+title: 'STT Fallback Between Providers with FallbackSTT'
+sidebarLabel: 'FallbackSTT'
+description: 'The FallbackSTT class provides automatic failover between multiple STT providers for improved reliability.'
+order: 46.9
+---
+
+# STT Fallback Between Providers with FallbackSTT
+
+The `FallbackSTT` class provides automatic failover between multiple STT providers for improved reliability. When one provider fails after exhausting its retries, it automatically switches to the next provider in the list.
+
+## Features
+
+- **Automatic failover**: Seamlessly switches between providers when failures occur
+- **Audio buffering**: Retains audio chunks during failures and replays them to the next provider
+- **Circular rotation**: Cycles through providers indefinitely until transcription succeeds
+- **Zero configuration**: Works with any STT implementation
+
+## Usage
+
+```typescript
+import { FallbackSTT } from '@micdrop/server'
+import { OpenaiSTT } from '@micdrop/openai'
+import { GladiaSTT } from '@micdrop/gladia'
+
+// Create a fallback STT with multiple providers
+const stt = new FallbackSTT({
+  factories: [
+    // Primary provider: OpenAI with low retry count
+    () =>
+      new OpenaiSTT({
+        apiKey: process.env.OPENAI_API_KEY || '',
+        maxRetry: 2, // Fail faster to switch to backup
+      }),
+    // Backup provider: Gladia
+    () =>
+      new GladiaSTT({
+        apiKey: process.env.GLADIA_API_KEY || '',
+        maxRetry: 3,
+      }),
+  ],
+})
+
+// Use with MicdropServer
+const server = new MicdropServer(socket, {
+  stt,
+  // ... other options
+})
+```
+
+## Options
+
+| Option      | Type               | Description                                          |
+| ----------- | ------------------ | ---------------------------------------------------- |
+| `factories` | `Array<() => STT>` | Array of factory functions that create STT instances |
+
+## How It Works
+
+1. **Initialization**: Starts with the first provider in the list
+2. **Normal operation**: Forwards all audio to the current provider and emits transcripts
+3. **On failure**: When a provider emits the `Failed` event:
+   - Destroys the current provider
+   - Moves to the next provider (wraps around to first if at end)
+   - Hands every utterance still waiting for its transcript to the new provider, each as its own stream, so each still gets its own transcript
+   - An utterance still being spoken goes on with the new provider, so its end is heard too
+4. **Logging**: Inherits logger configuration and applies it to child providers

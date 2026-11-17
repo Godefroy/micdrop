@@ -1,0 +1,140 @@
+---
+title: 'Run a Voice Agent on Local Models'
+sidebarLabel: 'Local Models'
+description: 'Run the whole Micdrop pipeline on your own machine, with no API key and no data leaving it.'
+order: 64
+---
+
+# Run a Voice Agent on Local Models
+
+Micdrop splits a call into an agent, a transcription and a voice, and each one
+has a local counterpart. Run them all locally and the whole conversation stays
+on your machine, with no API key and no network call.
+
+This page sets up a complete local stack. Five other pages cover the rest:
+
+- [Local LLM](./agent) helps you choose the LLM and lists the mistakes local
+  models make.
+- [Local STT](./speech-to-text) helps you choose the Whisper checkpoint for your
+  language.
+- [Local TTS](./text-to-speech) compares the four local engines.
+- [Latency and memory](./performance) gives the delays and memory of a local
+  call, and explains what runs on the CPU and on the GPU.
+- [Explorations](./explorations) lists the models that were tested and not kept,
+  and why.
+
+All the figures in this section were measured on one machine, described on the
+[latency and memory](./performance) page, and the recommendations are made for
+that machine.
+
+## What runs locally
+
+| Part           | Package                                                    | Runs                                                            |
+| -------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
+| Agent          | [@micdrop/ai-sdk](../agents/ai-sdk)         | Any local server speaking the OpenAI protocol                   |
+| Speech to text | @micdrop/whisper                                             | [Local Whisper transcription in Node](../speech-to-text/whisper) |
+| Text to speech | [@micdrop/kokoro](../text-to-speech/kokoro)         | Kokoro, in your Node process, English only                      |
+| Text to speech | [@micdrop/phonon](../text-to-speech/phonon)         | Phonon, in your Node process, five languages                    |
+| Text to speech | [@micdrop/piper](../text-to-speech/piper)           | Piper, as a subprocess, 53 languages                            |
+| Text to speech | [@micdrop/pocket-tts](../text-to-speech/pocket-tts) | Pocket TTS, in your Node process, English only, cloning a voice |
+| Text to speech | [@micdrop/qwen-tts](../text-to-speech/qwen-tts)     | Qwen3-TTS, on an mlx-audio server, ten languages                |
+
+An npm install is enough for Whisper, Kokoro and Phonon. They download their weights on
+first use and run inside Node. The LLM needs a server such as
+[Ollama](https://ollama.com), Qwen3-TTS needs an mlx-audio server, Piper needs
+its binary, and Pocket TTS needs its archive extracted somewhere the server can
+read.
+
+## Setting it up
+
+Install Ollama and pull a model:
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull qwen3:4b-instruct
+```
+
+`ollama pull` sends a request to the Ollama daemon, so the daemon has to be up
+first. `brew services start` puts it in the background and keeps it across
+reboots. `ollama serve` also works, but it runs in the foreground until you
+stop it.
+
+The [local LLM page](./agent) explains why the tag matters, and which small models
+answer without reasoning first.
+
+Install the Micdrop packages:
+
+```bash
+npm install @micdrop/ai-sdk @micdrop/whisper @micdrop/kokoro @ai-sdk/openai
+```
+
+Then assemble the call:
+
+```typescript
+import { createOpenAI } from '@ai-sdk/openai'
+import { AiSdkAgent } from '@micdrop/ai-sdk'
+import { KokoroTTS } from '@micdrop/kokoro'
+import { MicdropServer } from '@micdrop/server'
+import { WhisperSTT } from '@micdrop/whisper'
+
+// Ollama serves the OpenAI protocol on /v1
+const ollama = createOpenAI({
+  baseURL: 'http://localhost:11434/v1',
+  apiKey: 'ollama', // Unused, the SDK refuses to start without one
+})
+
+new MicdropServer(socket, {
+  // .chat() rather than the provider itself: the default of the OpenAI
+  // provider is the Responses API, which a local server does not serve
+  agent: new AiSdkAgent({
+    model: ollama.chat('qwen3:4b-instruct'),
+    systemPrompt: 'You are a helpful voice assistant.',
+  }),
+
+  stt: new WhisperSTT({
+    model: 'base',
+    language: 'en',
+  }),
+
+  tts: new KokoroTTS({
+    voice: 'britishFemale',
+  }),
+})
+```
+
+LM Studio and the llama.cpp server answer on the same routes, so point
+`baseURL` at their port to run them instead of Ollama. The
+[local LLM server comparison](/blog/ollama-vs-llama-cpp-vs-lm-studio-vs-vllm)
+covers the runtime differences.
+
+A local stack has
+[traps a hosted one spares you](/blog/local-voice-agent-ollama-whisper-piper),
+such as a Qwen3 model that reasons for up to two minutes per turn when you
+pull its default tag, or a small model that says goodbye and leaves the line
+open.
+
+## First run
+
+Each part downloads its weights before it can answer, from 45 MB for the
+smallest transcription checkpoint to several gigabytes for an LLM. Some
+download on first use, others during the install, and each integration page
+says which. Run one call before a demo, so that the downloads are already done.
+
+## Licenses
+
+The recommended stack only uses models with permissive licenses, so you can use
+it commercially. This was a choice made for these integrations, and not every
+local model allows it. Each integration page gives the license of its model.
+Check the license of any model you add, since licenses can change.
+
+Most restrictions concern voice cloning. A permissive license covers the
+weights, not the voice: cloning someone's voice requires their consent. Several
+of the best cloning models are for non-commercial use only.
+
+## Trying it
+
+The demo in `examples/advanced` exposes every provider in the selects at the
+top of the page, local ones included. A provider whose key, binary or server is
+missing is greyed out, instead of failing during the call. You can use the demo
+to compare a local stack with a hosted one on the same conversation.

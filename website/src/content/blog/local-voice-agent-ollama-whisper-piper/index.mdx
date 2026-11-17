@@ -27,7 +27,7 @@ takeaways:
 
 A voice agent can run entirely on a laptop, with Whisper transcribing, a small LLM served by [Ollama](https://ollama.com) writing the answer and Piper speaking it, and no audio or text ever leaving the machine. On a MacBook Pro M2, that stack answers about one second after the user stops talking and holds around 4 GB of memory. This post sets it up from a Node server, gives the latency of each step, and covers the traps we hit while building it.
 
-Most guides for an offline voice assistant assemble the same three parts in Python, with a loop around the microphone. Here the loop runs in a web page and a Node server, with [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, handling the microphone, the WebSocket and the interruptions. Every figure comes from our [measurements of local models](/docs/ai-integration/local-models), all taken on that one machine.
+Most guides for an offline voice assistant assemble the same three parts in Python, with a loop around the microphone. Here the loop runs in a web page and a Node server, with [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, handling the microphone, the WebSocket and the interruptions. Every figure comes from our [measurements of local models](/docs/local-models), all taken on that one machine.
 
 ## What the three parts become when they run locally
 
@@ -35,15 +35,15 @@ A voice call chains three models. Speech to text turns the user's sentence into 
 
 | Part           | Local choice                                                     | Where it runs                       | Download     |
 | -------------- | ---------------------------------------------------------------- | ----------------------------------- | ------------ |
-| Speech to text | [Whisper](/docs/ai-integration/provided-integrations/whisper) `base` | Inside the Node process, on the CPU | ~85 MB       |
+| Speech to text | [Whisper](/docs/speech-to-text/whisper) `base` | Inside the Node process, on the CPU | ~85 MB       |
 | LLM            | Qwen3 4B Instruct, served by Ollama                              | The Ollama daemon, on the GPU       | 2.5 GB in Q4 |
-| Text to speech | [Piper](/docs/ai-integration/provided-integrations/piper)        | A subprocess, on the CPU            | A few dozen MB per voice |
+| Text to speech | [Piper](/docs/text-to-speech/piper)        | A subprocess, on the CPU            | A few dozen MB per voice |
 
-[Phonon](/docs/ai-integration/provided-integrations/phonon) is another local voice for Node. It runs on a worker thread without a subprocess or native addon, and sends its first audio 30 to 100 ms after receiving a sentence. We compare it with Piper and other [local text-to-speech engines in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
+[Phonon](/docs/text-to-speech/phonon) is another local voice for Node. It runs on a worker thread without a subprocess or native addon, and sends its first audio 30 to 100 ms after receiving a sentence. We compare it with Piper and other [local text-to-speech engines in Node](/blog/local-tts-node-kokoro-vs-piper). Whisper has faster rivals for [local speech to text in Node](/blog/local-speech-to-text-node), but it is the one you install with npm and nothing else.
 
 We picked Piper for this setup because it speaks 53 languages and runs well on any CPU. In English, Kokoro installs with a single npm command and Pocket TTS starts speaking a little sooner.
 
-Micdrop drives the LLM through its [AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port. For the trade-offs between these [local LLM servers](/blog/ollama-vs-llama-cpp-vs-lm-studio-vs-vllm), compare API coverage, tool calls and concurrency.
+Micdrop drives the LLM through its [AI SDK integration](/docs/agents/ai-sdk). Ollama serves the OpenAI protocol on `/v1`, like LM Studio and `llama-server`, so either one can replace it on another port. For the trade-offs between these [local LLM servers](/blog/ollama-vs-llama-cpp-vs-lm-studio-vs-vllm), compare API coverage, tool calls and concurrency.
 
 ```mermaid
 graph TD
@@ -183,7 +183,7 @@ Pull the tag ending in `-instruct`, which answers directly. Keep `reasoningEffor
 
 ### The call never ends on goodbye
 
-Micdrop's `autoEndCall` option asks the model to call an end-of-call tool when the user wants to hang up. None of the small models without reasoning triggered it in our tests. When the user said "Merci, au revoir !", Qwen3 4B and MiniCPM5-2B both said goodbye and left the line open. Mistral 7B thanked the user for "the instructions". Only the reasoning variant of Qwen3 4B ended the call, at the cost of up to two minutes per turn. A larger model does better: [MiniCPM-V 4.7 in its 35B-A3B size](/docs/ai-integration/local-models/explorations/minicpm-v) ended the call in 3 runs out of 4, but its weights take 15.5 GB of memory.
+Micdrop's `autoEndCall` option asks the model to call an end-of-call tool when the user wants to hang up. None of the small models without reasoning triggered it in our tests. When the user said "Merci, au revoir !", Qwen3 4B and MiniCPM5-2B both said goodbye and left the line open. Mistral 7B thanked the user for "the instructions". Only the reasoning variant of Qwen3 4B ended the call, at the cost of up to two minutes per turn. A larger model does better: [MiniCPM-V 4.7 in its 35B-A3B size](/docs/local-models/explorations/minicpm-v) ended the call in 3 runs out of 4, but its weights take 15.5 GB of memory.
 
 So leave `autoEndCall` off and end the call from the browser. A hang-up button covers the user who wants to leave, and an idle timer covers the one who stops talking:
 
@@ -203,7 +203,7 @@ Micdrop.on('StateChange', (state) => {
 hangUpButton.addEventListener('click', () => Micdrop.stop())
 ```
 
-Other tool calls hold up better. When we asked the time with a `get_time` tool available, Qwen3 4B called it and answered in 1.1 to 1.3 s, while Mistral 7B made up a time without calling anything. With `autoIgnoreUserNoise` on, Qwen3 4B skipped a meaningless "uh" three times out of four. You can compare [how the three local LLMs handle tool calls](/docs/ai-integration/local-models/agent#tool-calls), MiniCPM5-2B included.
+Other tool calls hold up better. When we asked the time with a `get_time` tool available, Qwen3 4B called it and answered in 1.1 to 1.3 s, while Mistral 7B made up a time without calling anything. With `autoIgnoreUserNoise` on, Qwen3 4B skipped a meaningless "uh" three times out of four. You can compare [how the three local LLMs handle tool calls](/docs/local-models/agent#tool-calls), MiniCPM5-2B included.
 
 ### Numbers come out in digits
 
@@ -235,7 +235,7 @@ A local stack makes sense for a product whose health or legal conversations must
 
 A local stack makes less sense when the agent has to follow a long script, call several tools reliably or hang up on its own. A 4B model handles a short exchange well and falls behind a hosted model as soon as the conversation needs judgment. The voice is the other limit. Piper sounds less natural than a hosted voice from ElevenLabs or Cartesia. Phonon gives you a faster local option, though its French, German, Spanish and Portuguese models carry a non-commercial license. Kokoro and Pocket TTS speak only English, while Qwen3-TTS needs a GPU and a server next to your app.
 
-You can mix the two. Each part is one line in the server, so a product can keep transcription local and send the text to a hosted LLM, or run everything locally in development and switch to [a European hosted stack](/docs/ai-integration/sovereign-voice-ai) in production. The browser code stays the same either way.
+You can mix the two. Each part is one line in the server, so a product can keep transcription local and send the text to a hosted LLM, or run everything locally in development and switch to [a European hosted stack](/docs/providers/sovereign-voice-ai) in production. The browser code stays the same either way.
 
 Micdrop handles what you would otherwise write around the three models: microphone capture and voice activity detection in the browser, audio streaming over the WebSocket, cutting the voice when the user interrupts, restarting the Piper process so it is ready for the next answer, and the warm-up that moves the first inference to call setup. A hosted platform such as Vapi charged $0.05 a minute in September 2026 for that orchestration, before any model bill. You still build what a platform adds on top, such as hosting, call history and a dashboard.
 

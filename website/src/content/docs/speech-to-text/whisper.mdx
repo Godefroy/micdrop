@@ -1,0 +1,213 @@
+---
+title: 'Run Whisper locally in Node'
+sidebarLabel: 'Whisper (local)'
+description: 'Keep speech-to-text audio on your machine with a TypeScript integration that runs Whisper through Transformers.js and ONNX in Node.'
+order: 46.6
+---
+
+# Run local Whisper speech-to-text in Node.js
+
+Run Whisper locally in a Node.js and TypeScript app with `@micdrop/whisper`.
+It runs through Transformers.js and ONNX Runtime in the Node process, so the
+speech-to-text model needs no Python environment, API key, or separate model
+server. The package downloads its weights on first use, caches them, and shares
+the loaded model across calls in the process.
+
+The table compares the available checkpoints by download size and measured
+latency. Transformers.js downloads the selected ONNX weights on first use, then
+runs inference in your Node process. Micdrop sends audio to the local model for
+transcription. Your app decides how to store transcripts, serve audio to the
+browser, and connect to a language model or voice. For a complete local voice
+pipeline, pair Whisper with local agent and speech synthesis integrations in
+the [local models setup](../local-models).
+
+| Shorthand | Repository                                 | Download in `q8` | Latency on a 3 second sentence |
+| --------- | ------------------------------------------ | ---------------- | ------------------------------ |
+| `tiny`    | `onnx-community/whisper-tiny`              | ~45 MB           | ~320 ms                        |
+| `base`    | `onnx-community/whisper-base`              | ~85 MB           | ~440 ms                        |
+| `small`   | `onnx-community/whisper-small`             | ~250 MB          | ~1000 ms                       |
+| `turbo`   | `onnx-community/whisper-large-v3-turbo`    | ~850 MB          | ~3800 ms                       |
+| `french`  | `onnx-community/whisper-small-cv11-french` | ~390 MB          | ~1100 ms                       |
+
+The `q8` downloads range from 45 MB for `tiny` to 850 MB for `turbo`. Larger
+checkpoints need more disk space, memory and inference time, so test the model
+on the hardware and language you expect to use.
+
+Latencies were measured on a MacBook Pro M2 with 24 GB of memory, on CPU. Most
+of each latency is fixed. Whisper reads thirty seconds of audio whatever the
+length of the utterance, so a one second sentence costs nearly as much as a ten
+second one. Only the decoding scales with what is being said. Moonshine and
+Parakeet read audio at its real length and [run in Node through
+sherpa-onnx](/blog/local-speech-to-text-node).
+
+Run it on the server without an agent or a voice to get
+[dictation that stays on the machine](../server/dictation).
+
+## Installation
+
+```bash
+npm install @micdrop/whisper
+```
+
+## Usage with MicdropServer
+
+```typescript
+import { WhisperSTT } from '@micdrop/whisper'
+import { MicdropServer } from '@micdrop/server'
+
+const stt = new WhisperSTT({
+  model: 'base',
+  language: 'en',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  stt,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { WhisperSTT } from '@micdrop/whisper'
+import { createReadStream } from 'fs'
+
+const stt = new WhisperSTT({
+  model: 'base',
+  language: 'en',
+})
+
+stt.on('Transcript', (text) => console.log('Transcript:', text))
+stt.on('Failed', (chunks) => console.error('Failed:', chunks.length, 'chunks'))
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+stt.transcribe(createReadStream('speech.pcm'))
+```
+
+## Events
+
+| Event        | Payload    | Description                                                                                                             |
+| ------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `Transcript` | `string`   | Transcription of one utterance, in the order the utterances were spoken. The text is empty when nothing was recognized. |
+| `Failed`     | `Buffer[]` | Transcription gave up after its retries, with the audio chunks left pending.                                            |
+
+See the [STT interface](./custom) for the full contract.
+
+## Options
+
+| Option                 | Type                              | Default  | Description                                                 |
+| ---------------------- | --------------------------------- | -------- | ----------------------------------------------------------- |
+| `model`                | `string`                          | `'base'` | Shorthand or Hugging Face repository holding an ONNX export |
+| `language`             | `string`                          | Auto     | Two letter code of the spoken language                      |
+| `dtype`                | `string \| Record<string,string>` | `'q8'`   | Weight precision                                            |
+| `device`               | `string`                          | `'cpu'`  | Execution provider passed to Transformers.js                |
+| `cacheDir`             | `string`                          | Optional | Where the weights are downloaded                            |
+| `minDurationMs`        | `number`                          | `250`    | Utterances shorter than this come back as an empty string   |
+| `chunkDurationMs`      | `number`                          | `30000`  | Longer utterances are transcribed in overlapping windows    |
+| `filterHallucinations` | `boolean`                         | `true`   | Drops sound tags and subtitle credits                       |
+| `warmup`               | `boolean`                         | `true`   | Runs one inference on silence at startup                    |
+
+## Whisper models
+
+The shorthands in the table point to community ONNX exports. You can also pass
+the repository id of any Whisper ONNX export as `model`.
+
+## Picking a model for another language
+
+A checkpoint fine-tuned on one language works better than a much heavier
+generic one. Over five French sentences carrying proper nouns, numbers and
+homophones, on the same machine:
+
+| Model    | Latency  | Word errors |
+| -------- | -------- | ----------- |
+| `base`   | ~440 ms  | 25%         |
+| `small`  | ~1000 ms | 22%         |
+| `turbo`  | ~3800 ms | 17%         |
+| `french` | ~1100 ms | 2%          |
+
+`french` costs what `small` costs and reads French better than `turbo`, which
+weighs twice as much and answers three times slower. Part of the gap is that the generic checkpoints write
+`"17h30"` where the French one writes `"dix-sept heures trente"`. A voice agent
+wants the spelled out form, since the answer will be read out loud.
+
+The other languages have no shorthand yet. Search the Hugging Face hub for a
+`whisper-small` fine-tuned on your language and exported to ONNX, then pass its
+repository id as `model` for the same benefit. The [local Whisper checkpoint comparison](../local-models/speech-to-text)
+places this choice in a call that runs entirely on your machine.
+
+<Callout type="tip">
+  Set `language` to save the detection pass and keep the model on the right
+  language when a sentence is short. Leave it out only when the call can switch
+  language, and keep it to a language your checkpoint handles.
+</Callout>
+
+## Whisper in TypeScript in Node.js
+
+Install `@micdrop/whisper` from npm and create a `WhisperSTT` instance in your
+TypeScript server. Transformers.js loads the automatic speech-recognition
+pipeline with an ONNX Whisper checkpoint. The default `base` model uses the
+`q8` weight precision and the CPU execution provider, and you can select a
+checkpoint, device, cache directory, or language through the constructor
+options.
+
+The integration accepts the Node.js `Readable` stream used by Micdrop's STT
+interface. It collects one utterance, converts 16-bit, 16 kHz mono PCM to
+floating-point samples, then passes the audio to Transformers.js. Micdrop's
+client voice activity detection marks the end of each utterance, so this
+integration returns a transcript after the speaker stops rather than streaming
+partial words while they speak. Longer audio is split into overlapping
+windows, and Transformers.js joins the results.
+
+Calls that use the same model configuration share one loaded instance inside
+the process. Set `language` when the call has a known language to skip
+detection, and set `device` to an execution provider available on your
+platform. You can pass a custom Hugging Face repository id when it contains an
+ONNX export of Whisper. This path suits Node.js voice applications that need
+local transcription with their own server code and TypeScript types.
+
+## How the audio is read
+
+Micdrop hands over one utterance at a time, already cut by the client's voice
+activity detection, so the model reads the whole utterance in one pass when the
+stream ends rather than as it arrives. The result comes back a few hundred
+milliseconds after the user stops speaking.
+
+## Hallucinations on silence
+
+Whisper describes what it hears even when nobody has spoken, so a breath or a
+door closing comes back as a sound tag such as `[BLANK_AUDIO]`, a music note, or
+one of the subtitle credits its training data is full of. The voice activity
+detection fires on those sounds too, so they show up regularly.
+
+A transcript carrying no speech at all comes back as an empty string, so the
+server skips the answer. A transcript mixing a tag and real words keeps its
+words. Set `filterHallucinations` to `false` to receive the raw text.
+
+## Devices
+
+`cpu` is the default and, on a Mac, the fastest option, since Transformers.js
+exposes no GPU device on macOS and the CoreML provider reached directly is three
+to five times slower on the Whisper encoder. On Windows `dml` uses DirectML, and
+on Linux with an NVIDIA card `cuda` is worth trying. The
+[local models guide](../local-models/performance) lists the measurements.
+
+## Memory and startup
+
+The weights are loaded once per configuration and shared by every call, so a
+second concurrent call costs nothing more. Loading takes from one to a few
+seconds depending on the model, and the first inference pays for the graph
+warm-up, which is why `warmup` runs one pass on silence while the call is being
+set up.
+
+The first run of a given model downloads it, so that run takes much longer than
+the ones after it.
+
+## Documentation
+
+See how Whisper fits with a local LLM and voice in a
+[local Micdrop pipeline](../local-models).
+
+## License
+
+Whisper is released by OpenAI under the MIT license.

@@ -111,7 +111,7 @@ So a voice feature costs you what those three providers charge, plus the server 
 
 ### Any provider, with a backup when it fails
 
-[Provider integrations](/docs/ai-integration) ship for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor. A call can also run on one [speech-to-speech model](/docs/server/realtime), OpenAI Realtime or Gemini Live, in place of separate speech-to-text, model and text-to-speech providers. The browser code stays the same either way.
+[Provider integrations](/docs/providers) ship for OpenAI, Google Gemini, Mistral, ElevenLabs, Cartesia, Gladia, Gradium and the Vercel AI SDK, and moving from one to another is changing a constructor. A call can also run on one [speech-to-speech model](/docs/realtime), OpenAI Realtime or Gemini Live, in place of separate speech-to-text, model and text-to-speech providers. The browser code stays the same either way.
 
 Outages are handled in the same place. `FallbackTTS` takes a list of factories and walks down it when a provider stops answering:
 
@@ -139,7 +139,7 @@ const tts = new FallbackTTS({
 })
 ```
 
-The pending text is buffered and replayed on the second provider, so the user hears a short pause instead of a dropped call. The same pattern covers [speech-to-text](/docs/ai-integration/fallback-strategies/stt-fallback) and the agent itself.
+The pending text is buffered and replayed on the second provider, so the user hears a short pause instead of a dropped call. The same pattern covers [speech-to-text](/docs/speech-to-text/fallback) and the agent itself.
 
 ### Every layer of Micdrop is yours to change
 
@@ -151,7 +151,7 @@ Underneath, `Agent`, `STT` and `TTS` are abstract classes on an event emitter. B
 
 ### A fully European stack is a configuration change
 
-Running Mistral for the model, Gladia for the transcription and Gradium for the voice keeps every packet of a conversation inside the EU, with no change to the orchestration code. The [sovereign stack guide](/docs/ai-integration/sovereign-voice-ai) walks through it. Micdrop makes a sovereign architecture possible, and the compliance of your deployment stays yours and your providers'.
+Running Mistral for the model, Gladia for the transcription and Gradium for the voice keeps every packet of a conversation inside the EU, with no change to the orchestration code. The [sovereign stack guide](/docs/providers/sovereign-voice-ai) walks through it. Micdrop makes a sovereign architecture possible, and the compliance of your deployment stays yours and your providers'.
 
 ### The real-time plumbing is already written
 

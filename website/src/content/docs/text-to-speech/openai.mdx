@@ -1,0 +1,97 @@
+---
+title: 'OpenAI TTS in Node.js and TypeScript'
+sidebarLabel: 'OpenAI'
+description: 'Speak the answers of a voice agent with OpenAI text to speech in Node.js, on gpt-realtime-2.1-mini or the speech endpoint models, sentence by sentence.'
+order: 47.45
+---
+
+# OpenAI TTS in Node.js and TypeScript
+
+Two ways to synthesize, picked by `model`:
+
+- **Speech endpoint** (default): `gpt-4o-mini-tts`, its dated snapshots, `tts-1` and `tts-1-hd`. OpenAI [deprecated](https://developers.openai.com/api/docs/deprecations) all of them, and the endpoint shuts down on **January 6, 2027**. Until then, they work as before.
+- **Realtime API**: `gpt-realtime-2.1-mini`, the replacement OpenAI names, recommended for new integrations. Each sentence is sent as an out-of-band response with instructions to read it word for word. The model is a voice model rather than a reader, so it can reword a sentence now and then (a contraction such as "I'm" for "I am"), and `OpenaiTTS` logs the transcript of any sentence it reads differently.
+
+Either way, the incoming text is buffered into sentences and each sentence is synthesized as soon as it is complete, so playback can start without waiting for the whole answer.
+
+## Installation
+
+```bash
+npm install @micdrop/openai
+```
+
+The same package also provides [an agent](../agents/openai), [a speech to text](../speech-to-text/openai), [the Realtime API](../realtime/openai-realtime) and [a classifier](../classifiers/openai-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { OpenaiTTS } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new OpenaiTTS({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  // Recommended: the speech endpoint models (default 'gpt-4o-mini-tts')
+  // shut down on January 6, 2027
+  model: 'gpt-realtime-2.1-mini',
+  voice: 'marin', // Default with gpt-realtime-*, 'alloy' otherwise
+
+  // Delivery control, not for tts-1 / tts-1-hd (optional)
+  instructions: 'Speak in a calm and friendly tone',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { OpenaiTTS } from '@micdrop/openai'
+import { Readable } from 'stream'
+
+const tts = new OpenaiTTS({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  voice: 'alloy',
+})
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+## Events
+
+| Event    | Payload    | Description                                                              |
+| -------- | ---------- | ------------------------------------------------------------------------ |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+
+See the [TTS interface](./custom) for the full contract.
+
+## Options
+
+| Option              | Type     | Default               | Description                                                                                                                       |
+| ------------------- | -------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`            | `string` | Required\*            | Your OpenAI API key (required if `openai` not provided)                                                                           |
+| `openai`            | `OpenAI` | Optional              | OpenAI instance (alternative to `apiKey`)                                                                                         |
+| `model`             | `string` | `'gpt-4o-mini-tts'`   | `gpt-realtime-2.1-mini` (recommended), or until January 6, 2027 the speech endpoint models `gpt-4o-mini-tts`, `tts-1`, `tts-1-hd` |
+| `voice`             | `string` | `'marin'` / `'alloy'` | `marin` with `gpt-realtime-*`, `alloy` otherwise. `fable`, `nova` and `onyx` only exist on the speech endpoint                    |
+| `instructions`      | `string` | `undefined`           | Delivery control (accent, emotion, tone). Works with `gpt-realtime-*` and `gpt-4o-mini-tts`                                       |
+| `speed`             | `number` | `undefined`           | Speech speed, from `0.25` to `1.5` with `gpt-realtime-*` (clamped), from `0.25` to `4.0` with `tts-1`/`tts-1-hd`                  |
+| `reasoningEffort`   | `string` | `'minimal'`           | Reasoning before speaking, `gpt-realtime-*` only: `minimal`, `low`, `medium`, `high`, `xhigh`                                     |
+| `connectionTimeout` | `number` | `5000`                | Timeout in milliseconds to open the Realtime connection, `gpt-realtime-*` only                                                    |
+
+With `gpt-realtime-*`, the connection opens again on its own when it closes. A sentence asked for meanwhile is sent once it is back, and so is a sentence the API had not started yet. A sentence that had started reading reports `Failed`.
+
+:::note
+
+**Voices**: the Realtime API offers `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin` and `cedar`. `fable`, `nova` and `onyx` only exist on the speech endpoint.
+
+**Language**: neither the speech endpoint nor the Realtime API has a language parameter, the voice follows the language of the input text. To influence the accent, use `instructions` (e.g. `'Speak with a Parisian accent'`) with `gpt-realtime-*` or `gpt-4o-mini-tts`.
+
+:::

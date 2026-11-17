@@ -129,7 +129,7 @@ Other providers sell a model that hears audio and speaks its answer, such as Gro
 
 ## Micdrop runs GPT-Realtime-2.1 and Gemini 3.8 Live behind the same client
 
-To compare two voice models on your own use case, you need an application where only the model changes. [Micdrop](/) is an open source TypeScript library that handles the microphone, the playback, the socket and the turns of a voice conversation. You pass a [realtime model](/docs/server/realtime) to `MicdropServer` in place of speech to text, an agent and a text to speech, while the browser client and the Node server stay the same.
+To compare two voice models on your own use case, you need an application where only the model changes. [Micdrop](/) is an open source TypeScript library that handles the microphone, the playback, the socket and the turns of a voice conversation. You pass a [realtime model](/docs/realtime) to `MicdropServer` in place of speech to text, an agent and a text to speech, while the browser client and the Node server stay the same.
 
 ```typescript
 import { GeminiLive } from '@micdrop/gemini'
@@ -156,9 +156,9 @@ new MicdropServer(socket, { realtime, generateFirstMessage: true })
 
 The comparison stays fair because the client decides when the user starts and stops speaking, for both models. Micdrop turns off the voice detection of each provider, so both models answer the same turns. The [tools](/docs/server/tools) you add with `realtime.addTool()` run on your server with either model. Micdrop returns the conversation in the same message format, whichever provider wrote the transcripts.
 
-[`OpenaiRealtime`](/docs/ai-integration/provided-integrations/openai#openai-realtime) passes its `model` option to the Realtime endpoint, so `gpt-realtime-2.1-mini` works the same way. It leaves the reasoning effort at OpenAI's default, `low`. [`GeminiLive`](/docs/ai-integration/provided-integrations/gemini#gemini-live) runs `gemini-3.8-live-extended-thinking` when you set it as `model` along with a `thinkingLevel` such as `'low'`. It also reconnects with the resumption handle when Gemini closes a connection.
+[`OpenaiRealtime`](/docs/realtime/openai-realtime) passes its `model` option to the Realtime endpoint, so `gpt-realtime-2.1-mini` works the same way. It leaves the reasoning effort at OpenAI's default, `low`. [`GeminiLive`](/docs/realtime/gemini-live) runs `gemini-3.8-live-extended-thinking` when you set it as `model` along with a `thinkingLevel` such as `'low'`. It also reconnects with the resumption handle when Gemini closes a connection.
 
-The [`Realtime` base class](/docs/server/realtime#writing-your-own) holds what every provider shares: the turn boundaries, the interruptions and the order of the transcripts. To run a model Micdrop does not ship, such as Amazon Nova Sonic or Grok Voice, extend it with the calls to that provider's API.
+The [`Realtime` base class](/docs/realtime#writing-your-own) holds what every provider shares: the turn boundaries, the interruptions and the order of the transcripts. To run a model Micdrop does not ship, such as Amazon Nova Sonic or Grok Voice, extend it with the calls to that provider's API.
 
 Micdrop does not run GPT-Live-1. The model needs its own endpoint and events, while `OpenaiRealtime` connects to the Realtime endpoint. GPT-Live-1 also decides when each turn ends, a decision Micdrop leaves to its client.
 

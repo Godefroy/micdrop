@@ -1,6 +1,6 @@
 # @micdrop/phonon
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/local-models)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/local-models)
 
 Local [Phonon](https://huggingface.co/collections/gradium/phonon) text to
 speech for [@micdrop/server](https://micdrop.dev/docs/server).
@@ -126,7 +126,7 @@ which generates the sentences one after the other.
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played. |
 | `Failed` | `string[]` | Synthesis failed, with the text that stayed unspoken.            |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## License
 

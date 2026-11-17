@@ -1,6 +1,6 @@
 # @micdrop/ai-sdk
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/ai-sdk)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/agents/ai-sdk)
 
 AI SDK implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -87,7 +87,7 @@ agent.answer().on('data', (chunk) => process.stdout.write(chunk))
 | `EndCall`               | none                      | The agent decided that the call is over.                                |
 | `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
 
-See the [Agent interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-agent) for the full contract.
+See the [Agent interface](https://micdrop.dev/docs/agents/custom) for the full contract.
 
 ### Supported Providers
 
@@ -101,7 +101,7 @@ The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 
 ## Documentation
 
-Read full [documentation of the AI SDK integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/ai-sdk) on the [website](https://micdrop.dev).
+Read full [documentation of the AI SDK integration for Micdrop](https://micdrop.dev/docs/agents/ai-sdk) on the [website](https://micdrop.dev).
 
 ## License
 

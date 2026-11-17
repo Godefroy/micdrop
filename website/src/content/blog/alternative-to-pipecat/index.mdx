@@ -215,7 +215,7 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 |--------|---------|---------|
 | **Server language** | Python | TypeScript / Node.js |
 | **Client library** | JS SDK (transport only) | Full browser SDK (VAD, mic, speaker, state) |
-| **Architecture** | Frame pipeline | Agent, STT and TTS, or one [realtime model](/docs/server/realtime) |
+| **Architecture** | Frame pipeline | Agent, STT and TTS, or one [realtime model](/docs/realtime) |
 | **Speech-to-speech models** | OpenAI Realtime, Gemini Live and others, as LLM services | OpenAI Realtime and Gemini Live, through the `realtime` option |
 | **Transport** | WebRTC (production) / WebSocket (dev) | WebSocket (production-ready) |
 | **Infrastructure** | Daily.co, another provider or your own WebRTC | Standard Node.js hosting |
@@ -252,7 +252,7 @@ Micdrop is built for one use case, and a common one: **adding real-time voice AI
 - Any Node.js hosting works, with the TURN, STUN and ICE layer gone from the deployment.
 - Fallback between providers is configured on the agent, the speech-to-text and the voice themselves, and noise filtering is a single option rather than one of the audio filters, most of which need a vendor key.
 - You bring your own provider keys, so the provider bills stay your only per-minute cost, under an MIT licence.
-- Native integrations with [Mistral](/docs/ai-integration/provided-integrations/mistral) (LLM and STT), [Gladia](/docs/ai-integration/provided-integrations/gladia) (STT) and [Gradium](/docs/ai-integration/provided-integrations/gradium) (STT and TTS) make a fully French stack possible.
+- Native integrations with [Mistral](/docs/providers) (LLM and STT), [Gladia](/docs/speech-to-text/gladia) (STT) and [Gradium](/docs/providers) (STT and TTS) make a fully French stack possible.
 - React hooks, TypeScript types and a ten-line setup carry the developer experience.
 - A React Native app talks to the same Node server as the web app, with the same call code.
 
@@ -263,7 +263,7 @@ Micdrop is built for one use case, and a common one: **adding real-time voice AI
     LiveKit Agents is the closest alternative to Pipecat: an Apache 2.0 framework in Python and Node that runs over a WebRTC media server and handles telephony and video as well. Dograh suits a team that wants a self-hosted platform with a visual workflow builder rather than a library. Micdrop adds a voice conversation to a TypeScript web app, over a WebSocket to your own Node server. Pipecat, LiveKit Agents, Dograh and Micdrop are four of the nine [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks) we compared on language, transport, telephony and licence. Vapi, Retell AI and Bland are hosted platforms billed per minute.
   </FaqItem>
   <FaqItem question="Is Pipecat free?">
-    Pipecat and its Smart Turn detection model are free, both under the BSD 2-Clause licence. Run the framework on your own servers and a call costs what your speech-to-text, model and text-to-speech providers charge, with nothing added by Pipecat. Daily, the company behind Pipecat, bills only for Pipecat Cloud, its managed hosting. Micdrop is free too, under the MIT licence, so you pay only [the providers you pick](/docs/ai-integration).
+    Pipecat and its Smart Turn detection model are free, both under the BSD 2-Clause licence. Run the framework on your own servers and a call costs what your speech-to-text, model and text-to-speech providers charge, with nothing added by Pipecat. Daily, the company behind Pipecat, bills only for Pipecat Cloud, its managed hosting. Micdrop is free too, under the MIT licence, so you pay only [the providers you pick](/docs/providers).
   </FaqItem>
   <FaqItem question="Is Pipecat open source?">
     Pipecat is open source under the BSD 2-Clause licence, which allows commercial use and modification as long as you keep its copyright notice and licence text. The Python framework is public on GitHub at pipecat-ai/pipecat. Micdrop is open source too, under MIT, and written in TypeScript from the [browser client](/docs/client) to the Node server.
@@ -282,7 +282,7 @@ Micdrop is built for one use case, and a common one: **adding real-time voice AI
 npm install @micdrop/server @micdrop/client @micdrop/openai @micdrop/gladia @micdrop/elevenlabs
 ```
 
-Check the [Getting Started guide](/docs/getting-started) for a complete walkthrough, or explore the [AI integrations](/docs/ai-integration/provided-integrations/openai) to choose your providers.
+Check the [Getting Started guide](/docs/getting-started) for a complete walkthrough, or explore the [AI integrations](/docs/providers) to choose your providers.
 
 If LiveKit Agents is the other framework on your shortlist, we ran the same comparison in [Micdrop as a TypeScript alternative to LiveKit Agents](/blog/alternative-to-livekit-agents), and the whole field sits side by side in our ranking of [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks). If you are leaving Vocode, we also compared [Vocode and Micdrop for a voice agent in a web app](/blog/alternative-to-vocode).
 

@@ -1,0 +1,47 @@
+---
+title: 'Speech to Text Providers for a Voice Agent'
+sidebarLabel: 'Speech to Text'
+description: 'The speech to text providers Micdrop integrates with, hosted or running locally in Node.js, compared on latency, languages and price per hour.'
+order: 46
+---
+
+# Speech to Text Providers for a Voice Agent
+
+The speech to text transcribes the voice of the user, utterance by utterance,
+and hands each transcript to the agent. It is passed to the server as `stt`, and
+on its own it turns the server into a [dictation tool](../server/dictation).
+
+## Hosted
+
+- **[Gladia](./gladia)**, fast and accurate multilingual transcription
+- **[Gemini Transcribe](./gemini)**, streaming transcription in 85+ languages
+- **[OpenAI](./openai)**, real-time transcription with `gpt-live-transcribe`
+- **[Mistral Voxtral](./mistral)**, real-time transcription with Voxtral 3 in 40+ languages
+- **[Gradium](./gradium)**, real-time transcription on an EU endpoint
+
+The hosted ones differ in [price, languages and time to the final transcript](/blog/gpt-4o-transcribe-vs-gemini-vs-voxtral). Providers without a ready integration, such as Deepgram or AssemblyAI, appear in a ranking of [streaming speech to text APIs for voice agents](/blog/top-speech-to-text-apis-voice-agents).
+
+## Local
+
+- **[Whisper](./whisper)**, transcription inside your Node process, with no API key
+
+The [local speech to text guide](../local-models/speech-to-text) helps pick a model.
+
+## Comparison
+
+| Provider            | Latency | Languages | Cost per hour | Best For                    |
+| ------------------- | ------- | --------- | ------------- | --------------------------- |
+| **Gladia 🇫🇷**       | ~200ms  | 99+       | $0.75         | General use, multilingual   |
+| **Gradium 🇫🇷**      | ~300ms  | 5         | $0.62         | French, EU data residency   |
+| **OpenAI Whisper**  | ~300ms  | 57        | $0.36         | High accuracy, multilingual |
+| **Whisper (local)** | ~440ms  | 99        | Free          | Privacy, no API key         |
+
+Costs are the published list price of the entry paid plan in August 2026, per
+hour of audio transcribed. Every provider charges less as the volume grows, and
+Gladia goes furthest with real-time transcription at $0.25 an hour on a
+commitment.
+
+## Your own
+
+Any other service plugs in by extending the [`STT` class](./custom), and
+[`FallbackSTT`](./fallback) switches to another provider when one fails.

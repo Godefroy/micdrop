@@ -36,17 +36,17 @@ takeaways:
 
 Running the voice locally removes the per-character bill, the network round trip, and the question of what a provider does with every sentence your assistant speaks. Five engines make that practical from a Node server today. Each one is the best on a different measure.
 
-Phonon speaks first, 30 to 100 ms after it is handed a sentence, on a single CPU core. Pocket TTS clones a voice from a few seconds of audio. Piper covers 53 languages on any CPU. Kokoro installs in one npm command and asks for nothing else. Qwen3-TTS sounds closest to a hosted voice and reads ten languages, but it needs a GPU. Every number here comes from the [local model measurements](/docs/ai-integration/local-models) taken on a MacBook Pro M2, on the CPU for Phonon, Pocket TTS, Piper and Kokoro, and on the Apple Silicon GPU for Qwen3-TTS.
+Phonon speaks first, 30 to 100 ms after it is handed a sentence, on a single CPU core. Pocket TTS clones a voice from a few seconds of audio. Piper covers 53 languages on any CPU. Kokoro installs in one npm command and asks for nothing else. Qwen3-TTS sounds closest to a hosted voice and reads ten languages, but it needs a GPU. Every number here comes from the [local model measurements](/docs/local-models) taken on a MacBook Pro M2, on the CPU for Phonon, Pocket TTS, Piper and Kokoro, and on the Apple Silicon GPU for Qwen3-TTS.
 
 ## What runs locally in Node today
 
 | Engine                                                              | Runs                    | Languages | First sound    | Voice comes from                         |
 | ------------------------------------------------------------------- | ----------------------- | --------- | -------------- | ---------------------------------------- |
-| [Phonon](/docs/ai-integration/provided-integrations/phonon)         | On a Node worker thread | 5         | 30 to 100 ms   | A catalog of 102 voices                  |
-| [Pocket TTS](/docs/ai-integration/provided-integrations/pocket-tts) | In the Node process     | English   | 250 to 430 ms  | A few seconds of reference audio         |
-| [Piper](/docs/ai-integration/provided-integrations/piper)           | In a subprocess         | 53        | ~390 ms        | A voice file you download                |
-| [Kokoro](/docs/ai-integration/provided-integrations/kokoro)         | In the Node process     | English   | 900 to 1300 ms | A catalog bundled with the model         |
-| [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts)    | On an mlx-audio server  | 10        | ~400 ms        | Nine speakers, a description or a sample |
+| [Phonon](/docs/text-to-speech/phonon)         | On a Node worker thread | 5         | 30 to 100 ms   | A catalog of 102 voices                  |
+| [Pocket TTS](/docs/text-to-speech/pocket-tts) | In the Node process     | English   | 250 to 430 ms  | A few seconds of reference audio         |
+| [Piper](/docs/text-to-speech/piper)           | In a subprocess         | 53        | ~390 ms        | A voice file you download                |
+| [Kokoro](/docs/text-to-speech/kokoro)         | In the Node process     | English   | 900 to 1300 ms | A catalog bundled with the model         |
+| [Qwen3-TTS](/docs/text-to-speech/qwen-tts)    | On an mlx-audio server  | 10        | ~400 ms        | Nine speakers, a description or a sample |
 
 Qwen3-TTS generates audio with a language model, so it needs more computation than the other four and runs outside Node. `@micdrop/qwen-tts` sends each sentence over HTTP to an [mlx-audio](https://github.com/Blaizzy/mlx-audio) server, which holds the weights on the Apple Silicon GPU. In exchange you get the voice closest to a hosted one, style instructions such as `"speak slowly"`, and a voice designed from a description or cloned from three seconds of audio.
 
@@ -179,7 +179,7 @@ Constructing an engine starts loading it, so a `speak` called on the very next l
 <Callout type="tip" title="From one class to a whole conversation">
   [MicdropServer](/docs/server) wires this same object to a WebSocket, next to
   speech to text and an agent. You can [run a complete voice conversation on
-  your machine](/docs/ai-integration/local-models), with Ollama for the agent
+  your machine](/docs/local-models), with Ollama for the agent
   and Whisper for the transcription.
 </Callout>
 
@@ -231,7 +231,7 @@ Put a whole stack together, with a 4B language model in `Q4`, Whisper `base` and
 
 Kokoro's `q8` quantized weights load in around a second and a half against 5.8 seconds for `fp32`, and they generate at the same speed, so quantization buys a faster start rather than faster speech.
 
-Phonon runs on a single CPU core through WebAssembly. Kokoro, Pocket TTS and Piper stay on the CPU on a Mac too. Transformers.js declares no GPU device on macOS, WebGPU does not exist in Node with or without a flag, and CoreML ran three to five times slower than the CPU, because it splits the graph into dozens of partitions and spends its time copying tensors between them. Piper's command line has a `--cuda` flag and no Metal equivalent. On Linux with an NVIDIA card, Kokoro, Pocket TTS and Piper have a GPU path worth trying. Measure that path against the [latency and memory of a local call on a Mac](/docs/ai-integration/local-models/performance).
+Phonon runs on a single CPU core through WebAssembly. Kokoro, Pocket TTS and Piper stay on the CPU on a Mac too. Transformers.js declares no GPU device on macOS, WebGPU does not exist in Node with or without a flag, and CoreML ran three to five times slower than the CPU, because it splits the graph into dozens of partitions and spends its time copying tensors between them. Piper's command line has a `--cuda` flag and no Metal equivalent. On Linux with an NVIDIA card, Kokoro, Pocket TTS and Piper have a GPU path worth trying. Measure that path against the [latency and memory of a local call on a Mac](/docs/local-models/performance).
 
 ## Piper's engine went GPL in 2025, Phonon's license depends on the model
 
@@ -253,11 +253,11 @@ Pick **Pocket TTS** for an English call that needs a specific voice. It [clones 
 
 Pick **Kokoro** for an English call when you want the shortest setup. One npm dependency is the whole setup, since the weights download on first use. It costs roughly one extra second before the first word, which a person on a call hears.
 
-Pick **Qwen3-TTS** when the voice has to sound like a hosted one and the machine has a GPU. It reads ten languages with one checkpoint, takes a style instruction, and can design or clone a voice. You pay for that with a Python server next to your app, 2.5 GB of memory, and a Mac with Apple Silicon, the only machine mlx-audio runs on. [Running Qwen3-TTS in Node](/docs/ai-integration/provided-integrations/qwen-tts) takes one npm package and one command to start the server. Chatterbox, CosyVoice 3 and Ming-3.0-tts also publish open weights, and need a GPU like Qwen3-TTS. They appear in a [ranking of open source text to speech models](/blog/top-open-source-text-to-speech-models) on latency and license.
+Pick **Qwen3-TTS** when the voice has to sound like a hosted one and the machine has a GPU. It reads ten languages with one checkpoint, takes a style instruction, and can design or clone a voice. You pay for that with a Python server next to your app, 2.5 GB of memory, and a Mac with Apple Silicon, the only machine mlx-audio runs on. [Running Qwen3-TTS in Node](/docs/text-to-speech/qwen-tts) takes one npm package and one command to start the server. Chatterbox, CosyVoice 3 and Ming-3.0-tts also publish open weights, and need a GPU like Qwen3-TTS. They appear in a [ranking of open source text to speech models](/blog/top-open-source-text-to-speech-models) on latency and license.
 
 Run more than one when the language changes from one call to the next. Micdrop takes a TTS instance per call, so an application serving English and French can hand each conversation the engine that suits its language.
 
-All five plug into the same pipeline as the hosted providers, speech to text then agent then voice, so swapping between them, or from ElevenLabs to a local voice, only means replacing the line that creates the engine. Cartesia, Gradium and OpenAI are the hosted [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript), billed per character instead of running on your machine. You can [compare every voice provider side by side](/docs/ai-integration) and [run a first voice call in about five minutes](/docs/getting-started).
+All five plug into the same pipeline as the hosted providers, speech to text then agent then voice, so swapping between them, or from ElevenLabs to a local voice, only means replacing the line that creates the engine. Cartesia, Gradium and OpenAI are the hosted [alternatives to ElevenLabs](/blog/elevenlabs-alternatives-typescript), billed per character instead of running on your machine. You can [compare every voice provider side by side](/docs/text-to-speech#comparison) and [run a first voice call in about five minutes](/docs/getting-started).
 
 ## Frequently asked questions
 
@@ -312,7 +312,7 @@ All five plug into the same pipeline as the hosted providers, speech to text the
     a CPU, pick Phonon for an English call that has to answer fast, Piper for a
     commercial call in any other language, Pocket TTS for a cloned English
     voice, and Kokoro when you want the shortest setup.
-    [Qwen3-TTS](/docs/ai-integration/provided-integrations/qwen-tts) sounds more
+    [Qwen3-TTS](/docs/text-to-speech/qwen-tts) sounds more
     natural than all four and reads ten languages with one checkpoint. In
     exchange it needs a GPU, an mlx-audio server running next to your app, and
     2.5 GB of memory once the checkpoint is loaded.

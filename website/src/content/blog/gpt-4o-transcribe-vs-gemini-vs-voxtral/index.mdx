@@ -58,7 +58,7 @@ Every provider below can decide on its own when the sentence is over. [Micdrop](
 
 OpenAI offers four models that stream over its Realtime API, two of which shut down in February 2027.
 
-`gpt-4o-transcribe` costs $0.006 a minute. It is the default of the [OpenAI speech to text integration](/docs/ai-integration/provided-integrations/openai) in Micdrop. `gpt-4o-mini-transcribe` costs half as much, $0.003 a minute, for a slightly higher error rate. gpt-4o-transcribe gets 4.0% of the words wrong on the Artificial Analysis benchmark of recorded files, and the mini version 4.5%. OpenAI deprecated both models and whisper-1 in August 2026 and shuts all three down on 26 February 2027.
+`gpt-4o-transcribe` costs $0.006 a minute. It is the default of the [OpenAI speech to text integration](/docs/speech-to-text/openai) in Micdrop. `gpt-4o-mini-transcribe` costs half as much, $0.003 a minute, for a slightly higher error rate. gpt-4o-transcribe gets 4.0% of the words wrong on the Artificial Analysis benchmark of recorded files, and the mini version 4.5%. OpenAI deprecated both models and whisper-1 in August 2026 and shuts all three down on 26 February 2027.
 
 `gpt-transcribe`, released in July 2026, replaces them at $0.0045 a minute and is the OpenAI model to start a new agent on in English. It waits for the server to close a turn before transcribing it. Micdrop already works that way, since the browser decides when the user has finished speaking.
 
@@ -96,7 +96,7 @@ const stt = new GeminiSTT({
 })
 ```
 
-`SMART` mode drops the "um"s and false starts before the agent reads the sentence, so the transcript is easier to read. Keep `VERBATIM` if you analyse how people speak. A Live session lasts ten minutes at most. [The Gemini integration](/docs/ai-integration/provided-integrations/gemini#gemini-stt-speech-to-text) opens the next one between two sentences, so a long call carries on without a break.
+`SMART` mode drops the "um"s and false starts before the agent reads the sentence, so the transcript is easier to read. Keep `VERBATIM` if you analyse how people speak. A Live session lasts ten minutes at most. [The Gemini integration](/docs/speech-to-text/gemini) opens the next one between two sentences, so a long call carries on without a break.
 
 ## Voxtral Realtime through Mistral's API
 
@@ -117,17 +117,17 @@ const stt = new MistralSTT({
 })
 ```
 
-The [Mistral integration](/docs/ai-integration/provided-integrations/mistral) sends the 16 kHz audio of the browser without resampling it. It sets the audio format before the first chunk, because version 3 locks the session settings as soon as audio arrives. The February model still works through the `model` option.
+The [Mistral integration](/docs/speech-to-text/mistral) sends the 16 kHz audio of the browser without resampling it. It sets the audio format before the first chunk, because version 3 locks the session settings as soon as audio arrives. The February model still works through the `model` option.
 
 ## Gladia, for calls that switch languages
 
-Gladia is a French company whose real-time API recognises more than 100 languages, switches between them within a call and accepts a custom vocabulary. It stores the data in Europe or in the United States, as you choose, which makes it one of the building blocks of a [voice pipeline hosted in Europe](/docs/ai-integration/sovereign-voice-ai), with Mistral and Gradium, a French provider of voices and transcription.
+Gladia is a French company whose real-time API recognises more than 100 languages, switches between them within a call and accepts a custom vocabulary. It stores the data in Europe or in the United States, as you choose, which makes it one of the building blocks of a [voice pipeline hosted in Europe](/docs/providers/sovereign-voice-ai), with Mistral and Gradium, a French provider of voices and transcription.
 
 When a call can move between languages, the transcript, agent response and spoken voice need to stay aligned. [Building a multilingual voice agent](/blog/multilingual-voice-agent) covers that whole path.
 
 Gladia's real-time transcription starts at €0.68 an hour on its self-serve plan, about €0.011 a minute. Its published volume discounts cover only recorded files. Only gpt-live-transcribe costs more per minute in this comparison. A new account gets €50 of credit, valid for a year.
 
-The [Gladia integration](/docs/ai-integration/provided-integrations/gladia) passes any session setting through `settings`. In a conversation, code switching and `endpointing` matter most.
+The [Gladia integration](/docs/speech-to-text/gladia) passes any session setting through `settings`. In a conversation, code switching and `endpointing` matter most.
 
 ```typescript
 import { GladiaSTT } from '@micdrop/gladia'
@@ -151,7 +151,7 @@ Gladia closes a sentence after `endpointing` seconds of silence, 50 ms by defaul
 
 OpenAI's `whisper-1` costs $0.006 a minute, the same as gpt-4o-transcribe, but it only reads recorded files. gpt-4o-transcribe makes fewer errors for the same price, according to OpenAI. Both shut down on 26 February 2027, so move a hosted pipeline to gpt-transcribe.
 
-Whisper keeps its place on your own server, where it costs nothing per minute and no audio leaves the machine. We compared it with Parakeet, Moonshine and Vosk when [running speech to text locally in Node](/blog/local-speech-to-text-node), and the docs say [which Whisper checkpoint to run locally](/docs/ai-integration/local-models/speech-to-text) for the language of your calls.
+Whisper keeps its place on your own server, where it costs nothing per minute and no audio leaves the machine. We compared it with Parakeet, Moonshine and Vosk when [running speech to text locally in Node](/blog/local-speech-to-text-node), and the docs say [which Whisper checkpoint to run locally](/docs/local-models/speech-to-text) for the language of your calls.
 
 ## Other streaming speech to text APIs
 
@@ -164,7 +164,7 @@ Micdrop integrates the providers above, plus Gradium for transcription. Several 
 
 All four sit next to gpt-4o-transcribe, Gemini and Voxtral, compared on accuracy and time to the final transcript, in a ranking of [the best speech to text APIs for voice agents](/blog/top-speech-to-text-apis-voice-agents).
 
-You can plug any of them into Micdrop by writing a [custom speech to text class](/docs/ai-integration/custom-integrations/custom-stt) with a single `transcribe()` method.
+You can plug any of them into Micdrop by writing a [custom speech to text class](/docs/speech-to-text/custom) with a single `transcribe()` method.
 
 ## Price, languages and accuracy side by side
 
@@ -215,7 +215,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The same interface makes an outage easy to plan for. [`FallbackSTT`](/docs/ai-integration/fallback-strategies/stt-fallback) takes a list of providers, moves to the next one when a provider gives up after its retries, and sends it the audio of the sentence in progress, so the user repeats nothing.
+The same interface makes an outage easy to plan for. [`FallbackSTT`](/docs/speech-to-text/fallback) takes a list of providers, moves to the next one when a provider gives up after its retries, and sends it the audio of the sentence in progress, so the user repeats nothing.
 
 ```typescript
 import { FallbackSTT } from '@micdrop/server'
@@ -241,7 +241,7 @@ Two providers from different companies rarely go down on the same day. Pair Mist
 - Pick Gladia for calls that switch languages, or when the data has to stay in Europe and Voxtral lacks the language.
 - Reserve gpt-live-transcribe for an interface that shows the words as the user speaks, such as [a dictation tool](/docs/server/dictation).
 
-You can [compare every transcription, agent and voice integration](/docs/ai-integration) and plug the one you chose into a Node server, or [start a first voice call in about five minutes](/docs/getting-started).
+You can [compare every transcription, agent and voice integration](/docs/providers) and plug the one you chose into a Node server, or [start a first voice call in about five minutes](/docs/getting-started).
 
 ## Frequently asked questions
 
@@ -272,7 +272,7 @@ You can [compare every transcription, agent and voice integration](/docs/ai-inte
     inside your own application, use OpenAI's API instead: gpt-transcribe reads recorded audio and
     closed turns for $0.0045 a minute, and gpt-live-transcribe streams words as the user speaks
     for $0.017 a minute. Micdrop can [run both models in a voice
-    agent](/docs/ai-integration/provided-integrations/openai).
+    agent](/docs/providers).
   </FaqItem>
   <FaqItem question="Can Gemini perform real-time transcription?">
     Yes. gemini-3.5-transcribe-live streams audio over the Gemini Live API and returns the text

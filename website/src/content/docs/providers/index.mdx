@@ -1,0 +1,78 @@
+---
+title: 'Voice AI Providers Supported by Micdrop'
+sidebarLabel: 'Providers'
+description: 'Every AI provider Micdrop integrates with, and the parts of a voice agent each one covers: speech to text, text to speech, LLM, realtime speech to speech and turn classification.'
+order: 51
+---
+
+# Voice AI Providers Supported by Micdrop
+
+A Micdrop server hands each part of the call to a provider of your choice, so
+you can mix them for cost and quality, run them all locally, or write your own.
+
+- **[Speech to text](../speech-to-text)** transcribes the user.
+- **[LLM (Agent)](../agents)** writes the answers.
+- **[Text to speech](../text-to-speech)** speaks them.
+- **[Realtime](../realtime)** models hear and speak in one connection, in place of the three above.
+- **[Classifiers](../classifiers)** turn each turn of the user into typed decisions next to the agent.
+
+Each provider ships as its own npm package. The table shows which part of a
+voice agent each one covers, with a link to its page.
+
+| Provider           | Package               | Speech to text                       | Text to speech                       | LLM                      | Realtime                                | Classifier                                   |
+| ------------------ | --------------------- | ------------------------------------ | ------------------------------------ | ------------------------ | --------------------------------------- | -------------------------------------------- |
+| Vercel AI SDK      | `@micdrop/ai-sdk`     |                                      |                                      | [Yes](../agents/ai-sdk)  |                                         |                                              |
+| Cartesia           | `@micdrop/cartesia`   |                                      | [Yes](../text-to-speech/cartesia)    |                          |                                         |                                              |
+| ElevenLabs         | `@micdrop/elevenlabs` |                                      | [Yes](../text-to-speech/elevenlabs)  |                          |                                         |                                              |
+| Gemini             | `@micdrop/gemini`     | [Yes](../speech-to-text/gemini)      | [Yes](../text-to-speech/gemini)      | [Yes](../agents/gemini)  | [Gemini Live](../realtime/gemini-live)  | [Decisions](../classifiers/gemini-decisions) |
+| Gladia             | `@micdrop/gladia`     | [Yes](../speech-to-text/gladia)      |                                      |                          |                                         |                                              |
+| Gradium            | `@micdrop/gradium`    | [Yes](../speech-to-text/gradium)     | [Yes](../text-to-speech/gradium)     |                          |                                         |                                              |
+| Kokoro (local)     | `@micdrop/kokoro`     |                                      | [Yes](../text-to-speech/kokoro)      |                          |                                         |                                              |
+| Mistral            | `@micdrop/mistral`    | [Voxtral](../speech-to-text/mistral) | [Voxtral](../text-to-speech/mistral) | [Yes](../agents/mistral) |                                         |                                              |
+| OpenAI             | `@micdrop/openai`     | [Yes](../speech-to-text/openai)      | [Yes](../text-to-speech/openai)      | [Yes](../agents/openai)  | [Realtime](../realtime/openai-realtime) | [Decisions](../classifiers/openai-decisions) |
+| Phonon (local)     | `@micdrop/phonon`     |                                      | [Yes](../text-to-speech/phonon)      |                          |                                         |                                              |
+| Piper (local)      | `@micdrop/piper`      |                                      | [Yes](../text-to-speech/piper)       |                          |                                         |                                              |
+| Pocket TTS (local) | `@micdrop/pocket-tts` |                                      | [Yes](../text-to-speech/pocket-tts)  |                          |                                         |                                              |
+| Qwen3-TTS (local)  | `@micdrop/qwen-tts`   |                                      | [Yes](../text-to-speech/qwen-tts)    |                          |                                         |                                              |
+| TypeSafe           | `@micdrop/typesafe`   |                                      |                                      |                          |                                         | [Jev](../classifiers/jev)                    |
+| Whisper (local)    | `@micdrop/whisper`    | [Yes](../speech-to-text/whisper)     |                                      |                          |                                         |                                              |
+
+The AI SDK package opens the LLM column to every model the
+[Vercel AI SDK](../agents/ai-sdk) supports, Anthropic, Groq or a local Ollama
+server included. Any other provider plugs in through a
+[custom speech to text](../speech-to-text/custom),
+[text to speech](../text-to-speech/custom), [agent](../agents/custom) or
+[classifier](../classifiers/custom).
+
+Mistral, Gladia and Gradium cover the three parts of a call with European
+companies, as the [sovereign voice AI guide](./sovereign-voice-ai) shows.
+
+## Mixing providers
+
+Each part is a separate option of the server, so every one can come from a
+different provider:
+
+```typescript
+import { MicdropServer } from '@micdrop/server'
+import { MistralAgent } from '@micdrop/mistral'
+import { GladiaSTT } from '@micdrop/gladia'
+import { CartesiaTTS } from '@micdrop/cartesia'
+
+new MicdropServer(socket, {
+  stt: new GladiaSTT({
+    apiKey: process.env.GLADIA_API_KEY,
+  }),
+  agent: new MistralAgent({
+    apiKey: process.env.MISTRAL_API_KEY,
+    model: 'mistral-large-latest',
+  }),
+  tts: new CartesiaTTS({
+    apiKey: process.env.CARTESIA_API_KEY,
+    voiceId: 'cartesia-voice-id',
+  }),
+})
+```
+
+The speech to text, the agent and the text to speech all have a local
+counterpart, so a whole conversation can also run on your machine with the
+[local models guide](../local-models).

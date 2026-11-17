@@ -1,6 +1,6 @@
 # @micdrop/piper
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/piper)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/piper)
 
 Local Piper text to speech for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -77,11 +77,11 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                              |
 | `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Piper integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/piper) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/ai-integration/local-models).
+Read full [documentation of the Piper integration for Micdrop](https://micdrop.dev/docs/text-to-speech/piper) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/local-models).
 
 ## License
 

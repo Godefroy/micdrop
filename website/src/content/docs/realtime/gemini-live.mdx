@@ -1,0 +1,120 @@
+---
+title: 'Gemini Live API in Node.js'
+sidebarLabel: 'Gemini Live'
+description: 'Run a whole voice call on the Gemini Live API from your Node server with GeminiLive: it hears the user and answers with its own voice, with tools, long sessions and reconnection.'
+order: 49.1
+---
+
+# Gemini Live API in Node.js
+
+`GeminiLive` is a [realtime model](.) running on the
+Gemini Live API. It hears the user and answers with its own voice, in place of a speech to text, an
+agent and a text to speech.
+
+Gemini 3.8 Live costs about a quarter of GPT-Realtime-2.1 per minute. It also
+[differs from OpenAI's realtime models in session length and reasoning](/blog/gpt-live-vs-gpt-realtime-vs-gemini-live).
+
+## Installation
+
+```bash
+npm install @micdrop/gemini
+```
+
+The same package also provides [an agent](../agents/gemini), [a speech to text](../speech-to-text/gemini), [a text to speech](../text-to-speech/gemini) and [a classifier](../classifiers/gemini-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { GeminiLive } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const realtime = new GeminiLive({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-3.8-live', // Default model
+  systemPrompt: 'You are a helpful assistant',
+  voice: 'Kore', // Optional, a prebuilt voice
+
+  // Advanced features (optional)
+  autoEndCall: true, // Automatically end call when user requests
+})
+
+new MicdropServer(socket, {
+  realtime,
+  generateFirstMessage: true,
+})
+```
+
+The Micdrop client detects when the user speaks, so `GeminiLive` turns off the
+automatic activity detection of Gemini. Each turn is sent between an `activityStart`
+and an `activityEnd`, and the model answers once the turn ends.
+
+## Tools
+
+Tools are added as with any agent, and run on your server:
+
+```typescript
+import { z } from 'zod'
+
+realtime.addTool({
+  name: 'get_weather',
+  description: 'Get the current weather in a city',
+  inputSchema: z.object({ city: z.string() }),
+  execute: async ({ city }) => fetchWeather(city),
+})
+```
+
+Gemini ends its turn when it calls a tool, then speaks about the result once it
+has it. The client keeps waiting for the answer in between. A tool declared
+with `skipAnswer` gives its result to the model silently.
+
+When the user interrupts the answer while a tool runs, its result still goes in
+the conversation and reaches the model silently, so the model knows it without
+speaking about it. A tool that finishes after a dropped connection, when the new
+session starts over, only goes in the conversation, since that session never
+heard of the call.
+
+Gemini reads the tools when the session opens, so add them right after creating
+the model, before the connection is established.
+
+## Events
+
+`GeminiLive` emits the events of an agent, and two of its own.
+
+| Event                   | Payload                   | Description                                                            |
+| ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| `Audio`                 | `Buffer`                  | A chunk of the voice of the model, PCM 16 bits, 16 kHz, mono.          |
+| `PartialMessage`        | `string`                  | The transcript of the answer so far.                                   |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation. |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output. |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.        |
+| `SkipAnswer`            | none                      | The model gave no spoken answer.                                       |
+| `EndCall`               | none                      | The model decided that the call is over.                               |
+| `Failed`                | none                      | The connection could not be restored after its retries.                |
+
+## Options
+
+| Option                | Type                | Default             | Description                                                              |
+| --------------------- | ------------------- | ------------------- | ------------------------------------------------------------------------ |
+| `apiKey`              | `string`            | Required            | Your Gemini API key                                                      |
+| `systemPrompt`        | `string`            | Required            | Instructions of the model                                                |
+| `model`               | `string`            | `'gemini-3.8-live'` | Live model to use                                                        |
+| `voice`               | `string`            | `undefined`         | Name of a prebuilt voice, such as `Kore` or `Puck`                       |
+| `thinkingLevel`       | `string`            | `undefined`         | Reasoning level, required by `gemini-3.8-live-extended-thinking`         |
+| `autoEndCall`         | `boolean \| string` | `false`             | Ends the call when the user asks for it                                  |
+| `autoSemanticTurn`    | `boolean \| string` | `false`             | Lets the model wait silently when the user did not finish their sentence |
+| `autoIgnoreUserNoise` | `boolean \| string` | `false`             | Drops the turn when it carries no meaning                                |
+| `connectionTimeout`   | `number`            | `5000`              | Time to open the connection, in milliseconds                             |
+| `retryDelay`          | `number`            | `1000`              | Delay before reconnecting, in milliseconds                               |
+| `maxRetry`            | `number`            | `3`                 | Reconnection attempts before giving up                                   |
+
+`gemini-3.8-live-extended-thinking` reasons before answering, for questions that
+take several steps. It refuses to start without a `thinkingLevel`, such as
+`'low'`, while `gemini-3.8-live` refuses any.
+
+## Long calls
+
+A Gemini connection lasts a few minutes. `GeminiLive` keeps the handle Gemini
+sends to resume the session, and moves to a new connection at the first silence
+once Gemini announces the end of the current one. `GeminiLive` also turns on
+context window compression, which lifts the fifteen minute limit of an audio
+session.

@@ -105,7 +105,7 @@ The table separates input streaming from audio output streaming. Vendor APIs cha
 
 Google [supports streaming audio output from Gemini TTS requests](https://ai.google.dev/gemini-api/docs/speech-generation). Gemini Live is a separate API for live audio conversations. For Mistral, use its [realtime TTS WebSocket](https://docs.mistral.ai/studio/audio/text-to-speech/speak-in-realtime) when the text itself arrives incrementally. Its regular [streamed speech endpoint](https://docs.mistral.ai/studio/audio/text-to-speech/stream-speech) streams audio for a complete text input.
 
-Micdrop’s [custom TTS interface](/docs/ai-integration/custom-integrations/custom-tts) takes a text stream, while its `SentenceTTS` base class buffers sentences for models that need complete text. Measurements of [local TTS engines in Node](/blog/local-tts-node-kokoro-vs-piper) compare Phonon, Pocket TTS, Piper, Kokoro and Qwen3-TTS on a MacBook Pro M2, and explain which engines return audio in frames.
+Micdrop’s [custom TTS interface](/docs/text-to-speech/custom) takes a text stream, while its `SentenceTTS` base class buffers sentences for models that need complete text. Measurements of [local TTS engines in Node](/blog/local-tts-node-kokoro-vs-piper) compare Phonon, Pocket TTS, Piper, Kokoro and Qwen3-TTS on a MacBook Pro M2, and explain which engines return audio in frames.
 
 ## How do you play streamed audio without gaps?
 
@@ -127,7 +127,7 @@ For a live agent, log turn close to first sound as the user-facing result, then 
 
 ## How does Micdrop stream text into TTS?
 
-[Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, connects a streaming agent to a TTS implementation through `MicdropServer`. Its WebSocket and audio pipeline carry the assistant’s text to the TTS engine and audio back to the browser. The [integrated speech and language model providers](/docs/ai-integration) run behind this pipeline.
+[Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, connects a streaming agent to a TTS implementation through `MicdropServer`. Its WebSocket and audio pipeline carry the assistant’s text to the TTS engine and audio back to the browser. The [integrated speech and language model providers](/docs/providers) run behind this pipeline.
 
 The provider determines how Micdrop sends text. ElevenLabs, Cartesia and Gradium accept incremental text over WebSockets. For a provider that needs complete text, Micdrop sends a sentence when it is complete, then emits the returned audio chunks. Its Mistral integration streams audio per sentence, while OpenAI’s integration buffers sentences and streams the audio response. The client can speak before the LLM finishes, even when the provider cannot accept token-by-token input.
 
@@ -185,4 +185,4 @@ Micdrop handles the browser audio path and server pipeline, including the microp
 
 A voice agent speaks sooner when the LLM and the TTS service work at the same time. The useful implementation depends on whether the provider accepts streamed text, how much context it buffers and how the client queues audio. Measure the whole path from the end of the user’s turn to the sound they hear, then tune the stage that actually holds it up.
 
-[Micdrop](/) connects streaming agents and TTS providers in a TypeScript voice pipeline, including providers that need a sentence before they synthesize. Compare the [integrated TTS providers](/docs/ai-integration), [start building a voice agent](/docs/getting-started) and measure its [turn and speech latency](/docs/client/latency) in your own setup.
+[Micdrop](/) connects streaming agents and TTS providers in a TypeScript voice pipeline, including providers that need a sentence before they synthesize. Compare the [integrated TTS providers](/docs/providers), [start building a voice agent](/docs/getting-started) and measure its [turn and speech latency](/docs/client/latency) in your own setup.

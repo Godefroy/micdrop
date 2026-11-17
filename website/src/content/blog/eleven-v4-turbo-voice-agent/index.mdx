@@ -227,7 +227,7 @@ Use an ellipsis for a pause.`,
 
 The [storyteller demo](https://github.com/Godefroy/micdrop/tree/main/examples/demo-storyteller) runs a campfire story voiced by v4 Turbo, shows each tag apart from the words, and lets you switch the voice to Flash v2.5 to hear the same story without tags.
 
-To keep the agent speaking when ElevenLabs fails, put a second engine behind it with [a text to speech fallback](/docs/ai-integration/fallback-strategies/tts-fallback). Pick a backup that performs audio tags, or strip the tags before the text reaches it: an engine that reads them would say "laughs" in the middle of the answer.
+To keep the agent speaking when ElevenLabs fails, put a second engine behind it with [a text to speech fallback](/docs/text-to-speech/fallback). Pick a backup that performs audio tags, or strip the tags before the text reaches it: an engine that reads them would say "laughs" in the middle of the answer.
 
 ## Frequently asked questions
 
@@ -274,4 +274,4 @@ To keep the agent speaking when ElevenLabs fails, put a second engine behind it 
 
 Eleven v4 Turbo gives a voice agent audio tags and more than 90 languages. It started speaking a short sentence in about 90 ms in our tests. In production, it needs code that flushes each sentence and reconnects on interruptions, plus one dialogue session per call at your peak.
 
-[Micdrop](/) flushes and reconnects for you in its [ElevenLabs integration](/docs/ai-integration/provided-integrations/elevenlabs). It also runs the microphone, the transcription and the playback, on your server with your own key. Moving your agent to v4 Turbo then means setting `modelId: 'eleven_v4_turbo'`. You can [run a first voice call in about five minutes](/docs/getting-started).
+[Micdrop](/) flushes and reconnects for you in its [ElevenLabs integration](/docs/text-to-speech/elevenlabs). It also runs the microphone, the transcription and the playback, on your server with your own key. Moving your agent to v4 Turbo then means setting `modelId: 'eleven_v4_turbo'`. You can [run a first voice call in about five minutes](/docs/getting-started).

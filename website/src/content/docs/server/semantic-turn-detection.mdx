@@ -89,7 +89,7 @@ Ending a turn on silence, on the sound of the voice or on the words [comes at a 
 
 ## When the user interrupts the assistant
 
-The user can speak over the assistant as soon as its voice plays. When the client VAD confirms speech, the client stops playing the answer, drops the unfinished assistant message, and tells the server the user started speaking. The server then cancels text to speech and the agent, and empties its queue of pending operations. Micdrop cancels a [realtime model](/docs/server/realtime) the same way and drops whatever audio the model still sends for the interrupted answer.
+The user can speak over the assistant as soon as its voice plays. When the client VAD confirms speech, the client stops playing the answer, drops the unfinished assistant message, and tells the server the user started speaking. The server then cancels text to speech and the agent, and empties its queue of pending operations. Micdrop cancels a [realtime model](/docs/realtime) the same way and drops whatever audio the model still sends for the interrupted answer.
 
 An interruption relies on echo cancellation, which keeps the assistant's voice out of the microphone. The client disables interruptions when the browser reports echo cancellation off. `isInterruptionDisabled` is true whenever they are off. Pass `disableInterruption: true` to turn them off for the whole call. Micdrop also catches [echo the browser fails to cancel](/docs/client/vad#echo-and-interruptions), on iOS for instance.
 

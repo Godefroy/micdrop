@@ -1,6 +1,6 @@
 # @micdrop/pocket-tts
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/pocket-tts)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/pocket-tts)
 
 Local [Pocket TTS](https://github.com/kyutai-labs/pocket-tts) text to speech for
 [@micdrop/server](https://micdrop.dev/docs/server).
@@ -11,7 +11,7 @@ machine. Pocket TTS is a 100 million parameter model from Kyutai, built for the
 CPU, that clones the voice of a few seconds of reference audio and hands its
 audio over while it is still generating the rest.
 
-It speaks English. Use [@micdrop/piper](https://micdrop.dev/docs/ai-integration/provided-integrations/piper)
+It speaks English. Use [@micdrop/piper](https://micdrop.dev/docs/text-to-speech/piper)
 for the other languages.
 
 ## Installation
@@ -77,7 +77,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
 | `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Voices
 
@@ -99,7 +99,7 @@ requires.
 
 ## Documentation
 
-Read full [documentation of the Pocket TTS integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/pocket-tts) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/ai-integration/local-models).
+Read full [documentation of the Pocket TTS integration for Micdrop](https://micdrop.dev/docs/text-to-speech/pocket-tts) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/local-models).
 
 ## License
 

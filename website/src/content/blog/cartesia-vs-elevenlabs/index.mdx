@@ -146,7 +146,7 @@ Micdrop is MIT licensed and runs on your server with your own API keys, so you o
 
 ## Using both with FallbackTTS
 
-You don't have to choose for good. [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback) takes a list of engines, speaks through the first, and switches to the next one when it fails after its retries. It keeps a copy of the text it sent, so the second engine speaks the words the first never got to say. The caller hears the voice change in the middle of an answer, which is better than silence.
+You don't have to choose for good. [`FallbackTTS`](/docs/text-to-speech/fallback) takes a list of engines, speaks through the first, and switches to the next one when it fails after its retries. It keeps a copy of the text it sent, so the second engine speaks the words the first never got to say. The caller hears the voice change in the middle of an answer, which is better than silence.
 
 ```typescript
 import { CartesiaTTS } from '@micdrop/cartesia'
@@ -225,4 +225,4 @@ Keep `maxRetry` low on the first engine. The default of three retries, one secon
 
 Cartesia Sonic 3.6 gives you more characters for the same monthly price and a voice cloned from 10 seconds of audio. ElevenLabs gives you more languages, more voices, more calls at once on the same plan and the audio tags of v4 Turbo. On latency, trust a measure taken from your own region over either vendor's benchmark.
 
-[Micdrop](/) runs both behind one interface, on your server with your own keys, so the choice stays reversible. Pick one engine and put the other behind it as [a text to speech fallback](/docs/ai-integration/fallback-strategies/tts-fallback). You can [run a first voice call in about five minutes](/docs/getting-started).
+[Micdrop](/) runs both behind one interface, on your server with your own keys, so the choice stays reversible. Pick one engine and put the other behind it as [a text to speech fallback](/docs/text-to-speech/fallback). You can [run a first voice call in about five minutes](/docs/getting-started).

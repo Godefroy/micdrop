@@ -151,7 +151,7 @@ Self-hosting pays off when you already run media servers, when your data must st
 
 A browser talking to your own server is a one-to-one call. A WebSocket carries the call's audio through the same load balancers and proxies as your HTTPS traffic, so you skip the room, the UDP ports and the TURN relay. WebRTC still handles lost packets better on poor networks, as we explained when choosing between [WebSocket and WebRTC for a voice agent](/blog/websocket-or-webrtc-voice-agent).
 
-[Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. `@micdrop/client` handles the microphone, voice activity detection and playback in the browser, while `@micdrop/server` runs the conversation, turn-taking and interruptions inside your existing Node server, on the [providers you choose](/docs/ai-integration) with your own keys. Micdrop is free and MIT licensed. This server runs the stack of the worked example:
+[Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. `@micdrop/client` handles the microphone, voice activity detection and playback in the browser, while `@micdrop/server` runs the conversation, turn-taking and interruptions inside your existing Node server, on the [providers you choose](/docs/providers) with your own keys. Micdrop is free and MIT licensed. This server runs the stack of the worked example:
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'

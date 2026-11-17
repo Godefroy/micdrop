@@ -1,0 +1,57 @@
+---
+title: 'Text to Speech Providers for a Voice Agent'
+sidebarLabel: 'Text to Speech'
+description: 'The text to speech providers Micdrop integrates with, hosted or running locally in Node.js, compared on latency, quality, voices and price per hour.'
+order: 47
+---
+
+# Text to Speech Providers for a Voice Agent
+
+The text to speech reads the answers of the agent while they are written, so the
+user hears the first sentence before the last one exists. It is passed to the
+server as `tts`.
+
+## Hosted
+
+- **[ElevenLabs](./elevenlabs)**, high-quality voice synthesis, with audio tags on Eleven v4 Turbo
+- **[Cartesia](./cartesia)**, low-latency streaming TTS
+- **[Gemini TTS](./gemini)**, 30 voices, directed with plain instructions
+- **[Mistral Voxtral Speech](./mistral)**, Voxtral Speech 3 in 35+ languages, with voice cloning
+- **[OpenAI](./openai)**, `gpt-realtime-2.1-mini` or the speech endpoint models
+- **[Gradium](./gradium)**, streaming voices on an EU endpoint
+
+## Local
+
+- **[Kokoro](./kokoro)**, in your Node process, English only
+- **[Phonon](./phonon)**, by Gradium, in your Node process, five languages
+- **[Piper](./piper)**, 53 languages
+- **[Pocket TTS](./pocket-tts)**, voice cloning in your Node process, English only
+- **[Qwen3-TTS](./qwen-tts)**, ten languages, on an mlx-audio server
+
+The [local text to speech guide](../local-models/text-to-speech) helps pick a model.
+
+## Comparison
+
+| Provider                | Latency | Quality   | Voices | Cost per hour                               | Best For                      |
+| ----------------------- | ------- | --------- | ------ | ------------------------------------------- | ----------------------------- |
+| **ElevenLabs**          | ~400ms  | Excellent | 1000+  | $1.80 (Flash v2.5), $3.60 (Multilingual v2) | High-quality voices           |
+| **ElevenLabs v4 Turbo** | ~100ms  | Excellent | 1000+  | $1.80                                       | Expressive voices, audio tags |
+| **Cartesia**            | ~150ms  | Good      | 50+    | $1.80                                       | Low-latency streaming         |
+| **Gradium 🇫🇷**          | ~300ms  | Excellent | 150+   | $2.60                                       | French, EU data residency     |
+| **Kokoro (local)**      | ~1000ms | Good      | 28     | Free                                        | Privacy, English only         |
+| **Phonon (local) 🇫🇷**   | ~50ms   | Very good | 102    | Free                                        | Privacy, five languages       |
+| **Piper (local)**       | ~390ms  | Fair      | 178    | Free                                        | Privacy, 53 languages         |
+| **Qwen3-TTS (local)**   | ~400ms  | Very good | 9      | Free                                        | Privacy, ten languages        |
+
+Costs are the published list price of the entry paid plan in August 2026, per
+hour of audio generated. [ElevenLabs bills its API in dollars](/blog/elevenlabs-api-pricing-voice-agent) at
+the same price on every plan, $40 per million characters on Eleven v4 Turbo and
+Flash v2.5 and $80 on Multilingual v2 (list prices read on October 20, 2026).
+Every provider charges less as the volume grows. The prices per character are
+converted at the 45,000 characters an hour Gradium publishes for its own voices.
+The [voice AI blog](/blog) ranks more providers on measured latency and price.
+
+## Your own
+
+Any other service plugs in by extending the [`TTS` class](./custom), and
+[`FallbackTTS`](./fallback) switches to another provider when one fails.

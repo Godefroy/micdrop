@@ -164,7 +164,7 @@ new MicdropServer(socket, {
 })
 ```
 
-The prompt and the tools get their own tests, at text level, with the real model. Every agent extends the same [`Agent` class](/docs/ai-integration/custom-integrations/custom-agent), so a test adds a user message and reads the answer stream:
+The prompt and the tools get their own tests, at text level, with the real model. Every agent extends the same [`Agent` class](/docs/agents/custom), so a test adds a user message and reads the answer stream:
 
 ```typescript
 import assert from 'node:assert/strict'

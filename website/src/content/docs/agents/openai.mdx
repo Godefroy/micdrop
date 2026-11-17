@@ -1,0 +1,144 @@
+---
+title: 'OpenAI GPT Agent in Node.js'
+sidebarLabel: 'OpenAI'
+description: 'Answer the user of a TypeScript voice agent with OpenAI GPT models through the Responses API, with tools, retries and Langfuse observability.'
+order: 48.2
+---
+
+# OpenAI GPT Agent in Node.js
+
+`OpenaiAgent` answers with OpenAI models through the Responses API. It works with any speech to text and text to speech.
+
+## Installation
+
+```bash
+npm install @micdrop/openai
+```
+
+The same package also provides [a speech to text](../speech-to-text/openai), [a text to speech](../text-to-speech/openai), [the Realtime API](../realtime/openai-realtime) and [a classifier](../classifiers/openai-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { OpenaiAgent } from '@micdrop/openai'
+import { MicdropServer } from '@micdrop/server'
+
+const agent = new OpenaiAgent({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-4o', // Default model
+  systemPrompt: 'You are a helpful assistant',
+
+  // Custom OpenAI Responses API settings (optional)
+  settings: {
+    temperature: 0.7,
+    max_output_tokens: 150,
+  },
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  agent,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { OpenaiAgent } from '@micdrop/openai'
+
+const agent = new OpenaiAgent({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  systemPrompt: 'You are a helpful assistant',
+})
+
+agent.on('Message', (message) => console.log('Message:', message))
+
+agent.addUserMessage('Hello, what can you do?')
+
+// The answer is a text stream, written as the model generates it
+agent.answer().on('data', (chunk) => process.stdout.write(chunk))
+```
+
+## Events
+
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
+| `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
+
+See the [Agent interface](./custom) for the full contract.
+
+## Options
+
+| Option                | Type                                                                                                                              | Default     | Description                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `apiKey`              | `string`                                                                                                                          | Required\*  | Your OpenAI API key (required if `openai` not provided)                                     |
+| `openai`              | `OpenAI`                                                                                                                          | Optional    | OpenAI instance (alternative to `apiKey`)                                                   |
+| `model`               | `string`                                                                                                                          | `'gpt-4o'`  | OpenAI model to use                                                                         |
+| `systemPrompt`        | `string`                                                                                                                          | Required    | System prompt for the agent                                                                 |
+| `retryDelay`          | `number`                                                                                                                          | `1000`      | Delay in milliseconds between retry attempts                                                |
+| `maxRetry`            | `number`                                                                                                                          | `3`         | Maximum number of retries on API failures                                                   |
+| `maxSteps`            | `number`                                                                                                                          | `5`         | Maximum number of steps (for tool calls)                                                    |
+| `autoEndCall`         | `boolean \| string`                                                                                                               | `false`     | [Auto-detect when user wants to end call](../server/auto-end-call)                       |
+| `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`     | [Handle incomplete user sentences](../server/semantic-turn-detection)                    |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`     | [Filter meaningless user sounds](../server/noise-filtering)                              |
+| `extract`             | [`ExtractJsonOptions`](../server/extract#json-extraction) \| [`ExtractTagOptions`](../server/extract#custom-tag-extraction) | `undefined` | Extract structured data from responses                                                      |
+| `onBeforeAnswer`      | `function`                                                                                                                        | `undefined` | Hook called before answer generation, returns `true` to skip it or a text to answer instead |
+| `settings`            | `object`                                                                                                                          | `{}`        | Additional OpenAI Responses API parameters                                                  |
+
+A request that fails before writing anything is retried, up to `maxRetry` times. Once text reached the stream or a tool ran, the answer keeps what it got: the text already said goes in the conversation as the answer, so a retry never says it twice. Cancelling the answer also stops the retries.
+
+The OpenAI Agent supports adding and removing custom tools to extend its capabilities. For detailed information about tool management, see the [Tools documentation](../server/tools).
+
+## Advanced Features
+
+The OpenAI Agent supports advanced features for improved conversation handling:
+
+- **[Auto End Call](../server/auto-end-call)**: Automatically detect when users want to end the conversation
+- **[Semantic Turn Detection](../server/semantic-turn-detection)**: Handle incomplete sentences for natural flow
+- **[User Noise Filtering](../server/noise-filtering)**: Filter out meaningless sounds and filler words
+- **[Extract Value from Answer](../server/extract)**: Extract structured data from responses
+- **[Tools](../server/tools)**: Add custom tools to the agent
+
+## Langfuse Integration
+
+You can integrate Langfuse for observability by using the `openai` option with a Langfuse-wrapped OpenAI client:
+
+```typescript
+import { OpenaiAgent } from '@micdrop/openai'
+import { Langfuse, observeOpenAI } from 'langfuse'
+import OpenAI from 'openai'
+
+// Initialize Langfuse
+const langfuse = new Langfuse({
+  secretKey: process.env.LANGFUSE_SECRET_KEY,
+  publicKey: process.env.LANGFUSE_PUBLIC_KEY,
+  baseUrl: process.env.LANGFUSE_BASE_URL, // Optional, defaults to https://cloud.langfuse.com
+})
+
+// Get system prompt from Langfuse
+const systemPrompt = await langfuse.getPrompt('voice-assistant-system-prompt')
+
+// Create OpenAI client and wrap with Langfuse observability
+const openai = observeOpenAI(
+  new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  {
+    sessionId: 'session-123',
+    userId: 'user-456',
+  }
+)
+
+// Create agent with Langfuse-wrapped OpenAI client
+const agent = new OpenaiAgent({
+  openai,
+  model: 'gpt-4o',
+  systemPrompt: systemPrompt.prompt,
+})
+```
+
+This integration will automatically track all OpenAI API calls, token usage, and conversation flows in your Langfuse dashboard with session and user context.

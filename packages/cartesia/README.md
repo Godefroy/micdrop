@@ -1,6 +1,6 @@
 # @micdrop/cartesia
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/cartesia)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/cartesia)
 
 Cartesia implementation for [@micdrop/server](https://micdrop.dev/docs/server).
 
@@ -59,11 +59,11 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
 | `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Documentation
 
-Read full [documentation of the Cartesia integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/cartesia) on the [website](https://micdrop.dev).
+Read full [documentation of the Cartesia integration for Micdrop](https://micdrop.dev/docs/text-to-speech/cartesia) on the [website](https://micdrop.dev).
 
 ## License
 

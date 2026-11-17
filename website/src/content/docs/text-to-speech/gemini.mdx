@@ -1,0 +1,166 @@
+---
+title: 'Gemini TTS in Node.js and TypeScript'
+sidebarLabel: 'Gemini TTS'
+description: 'Speak the answers of a voice agent with Gemini TTS in Node.js: 30 prebuilt voices, over 130 languages, a tone set by plain instructions, and the price of each model.'
+order: 47.3
+---
+
+# Gemini TTS in Node.js and TypeScript
+
+Gemini TTS is the text to speech of the Gemini API: a Gemini model reads the
+text in one of 30 prebuilt voices, in the tone your instructions ask for.
+Google's newest models are Gemini 3.8 Flash TTS and Gemini 3.8 Flash-Lite TTS.
+Flash TTS speaks over 130 languages. Flash-Lite TTS speaks over 100 and costs a
+third less for audio.
+[Gemini TTS costs](https://ai.google.dev/gemini-api/docs/pricing) from $0.50
+per million text tokens and $6 per million audio tokens in November 2026.
+
+`GeminiTTS` reads the answers of your agent with Gemini TTS. The model needs a
+whole text before it speaks, so `GeminiTTS` cuts the answer into sentences and
+sends the audio of each one as the model streams it.
+
+## Installation
+
+```bash
+npm install @micdrop/gemini
+```
+
+The same package also provides [an agent](../agents/gemini), [a speech to text](../speech-to-text/gemini), [Gemini Live](../realtime/gemini-live) and [a classifier](../classifiers/gemini-decisions). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { GeminiTTS } from '@micdrop/gemini'
+import { MicdropServer } from '@micdrop/server'
+
+const tts = new GeminiTTS({
+  apiKey: process.env.GEMINI_API_KEY || '',
+  model: 'gemini-2.5-flash-preview-tts', // Default model
+  voice: 'Kore', // Default voice
+
+  // Direction put before each sentence (optional)
+  instructions: 'Say in a calm and friendly tone',
+})
+
+new MicdropServer(socket, {
+  tts,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { GeminiTTS } from '@micdrop/gemini'
+import { Readable } from 'stream'
+
+const tts = new GeminiTTS({ apiKey: process.env.GEMINI_API_KEY || '' })
+
+// Audio is raw PCM, 16 bits, 16 kHz, mono
+tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
+tts.on('Failed', (texts) => console.error('Failed:', texts))
+
+tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
+```
+
+## Events
+
+| Event    | Payload    | Description                                                           |
+| -------- | ---------- | --------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.      |
+| `Failed` | `string[]` | Synthesis gave up after an error, with the text that stayed unspoken. |
+
+See the [TTS interface](./custom) for the full contract.
+
+## Options
+
+| Option         | Type          | Default                          | Description                                              |
+| -------------- | ------------- | -------------------------------- | -------------------------------------------------------- |
+| `apiKey`       | `string`      | Required\*                       | Your Gemini API key (required if `genai` not provided)   |
+| `genai`        | `GoogleGenAI` | Optional                         | Client of `@google/genai` (alternative to `apiKey`)      |
+| `model`        | `string`      | `'gemini-2.5-flash-preview-tts'` | Speech model to use                                      |
+| `voice`        | `string`      | `'Kore'`                         | One of the 30 prebuilt voices, such as `Puck` or `Aoede` |
+| `instructions` | `string`      | `undefined`                      | How to say the text, such as `Say cheerfully`            |
+| `maxRetry`     | `number`      | `2`                              | Attempts after Gemini blocked a sentence by mistake      |
+
+The voice speaks the language of the text. Gemini 3.8 Flash TTS speaks over
+130 languages, and Gemini 3.8 Flash-Lite TTS over 100.
+
+Gemini now and then blocks an ordinary sentence as if its content were
+forbidden, then accepts the very same sentence on the next request.
+`GeminiTTS` asks again, up to `maxRetry` times, as long as no audio of that
+sentence has been played.
+
+## Models
+
+Set the `model` option to one of the Gemini TTS models. Prices are those of
+the Gemini API per million tokens, text in and audio out, on November 7, 2026.
+Both prices of the 3.8 models double on January 1, 2027.
+
+| Model                          | First audio of a sentence | Free tier | Paid, text / audio |
+| ------------------------------ | ------------------------- | --------- | ------------------ |
+| `gemini-3.8-flash-tts`         | Not measured              | Yes       | $0.50 / $9         |
+| `gemini-3.8-flash-lite-tts`    | Not measured              | Yes       | $0.50 / $6         |
+| `gemini-2.5-flash-preview-tts` | About three seconds       | Yes       | $0.50 / $10        |
+| `gemini-2.5-pro-preview-tts`   | Not measured              | No        | $1 / $20           |
+| `gemini-3.1-flash-tts-preview` | About one second          | Yes       | $1 / $20           |
+
+`gemini-2.5-flash-preview-tts` is the default, because it sends each sentence
+whole and the call plays without a gap. `gemini-3.1-flash-tts-preview` starts
+speaking sooner, then streams the rest slower than it is spoken, which leaves
+gaps in a long sentence. `gemini-2.5-pro-preview-tts`, the larger model, is
+open to paid accounts only.
+
+Google may shut the 2.5 and 3.1 preview models down from November 17, 2026.
+It names `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts` to replace
+them. Both 3.8 models can also create a voice from a written description, while
+the `voice` option of `GeminiTTS` takes one of the 30 prebuilt names.
+
+## Voices
+
+Gemini TTS has 30 prebuilt voices. Pass the name as `voice`. Google describes
+each voice by its tone:
+
+| Voice      | Tone        | Voice      | Tone        | Voice         | Tone          |
+| ---------- | ----------- | ---------- | ----------- | ------------- | ------------- |
+| Zephyr     | Bright      | Autonoe    | Bright      | Alnilam       | Firm          |
+| Puck       | Upbeat      | Enceladus  | Breathy     | Schedar       | Even          |
+| Charon     | Informative | Iapetus    | Clear       | Gacrux        | Mature        |
+| Kore       | Firm        | Umbriel    | Easy-going  | Pulcherrima   | Forward       |
+| Fenrir     | Excitable   | Algieba    | Smooth      | Achird        | Friendly      |
+| Leda       | Youthful    | Despina    | Smooth      | Zubenelgenubi | Casual        |
+| Orus       | Firm        | Erinome    | Clear       | Vindemiatrix  | Gentle        |
+| Aoede      | Breezy      | Algenib    | Gravelly    | Sadachbia     | Lively        |
+| Callirrhoe | Easy-going  | Rasalgethi | Informative | Sadaltager    | Knowledgeable |
+| Laomedeia  | Upbeat      | Achernar   | Soft        | Sulafat       | Warm          |
+
+Write in `instructions`, in plain language, how the model should say the text.
+`GeminiTTS` puts it before each sentence, as in
+`Say in a calm and friendly tone: Your order has shipped.`, so the model reads
+the sentence in that tone. An instruction can set the emotion, the pace or an
+accent, such as `Speak slowly and warmly` or `Say it with a British accent`.
+It applies to the whole call, so keep it short and give the agent the
+personality through its prompt.
+
+Gemini TTS is one of the
+[ElevenLabs alternatives for a TypeScript voice agent](/blog/elevenlabs-alternatives-typescript),
+next to Cartesia, OpenAI and the models that run locally.
+
+## FAQ
+
+<FaqList>
+  <FaqItem question="Can Gemini do text to voice?">
+    Yes. The Gemini API turns a text into speech with its TTS models, such as
+    Gemini 3.8 Flash TTS, in 30 prebuilt voices and over 130 languages.
+    `GeminiTTS`, from the `@micdrop/gemini` package for Node.js, reads the
+    answers of a voice agent with these models, sentence by sentence, while the
+    agent writes them.
+  </FaqItem>
+  <FaqItem question="Can I generate native speech using Gemini?">
+    Yes, Gemini generates speech in two ways. The Gemini TTS models read a text
+    in the tone a plain instruction such as `Say cheerfully` asks for. Gemini
+    Live goes from the voice of the user straight to its own spoken answer.
+    Micdrop runs Gemini Live as a [realtime model](../realtime),
+    through `GeminiLive`.
+  </FaqItem>
+</FaqList>

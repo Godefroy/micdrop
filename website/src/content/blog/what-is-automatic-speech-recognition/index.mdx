@@ -186,7 +186,7 @@ new MicdropServer(socket, {
 })
 ```
 
-In Micdrop, the browser client runs voice detection, so only speech reaches the provider. The client also decides when each sentence ends. Each integration sends the end of sentence signal its provider expects and waits four seconds at most for the final transcript, then passes on whatever text it has. [`FallbackSTT`](/docs/ai-integration/fallback-strategies/stt-fallback) moves to the next provider when one fails and replays the audio of the sentence in progress. Write a [custom speech to text class](/docs/ai-integration/custom-integrations/custom-stt) with a single `transcribe()` method to connect Deepgram, AssemblyAI or any other provider without a ready integration.
+In Micdrop, the browser client runs voice detection, so only speech reaches the provider. The client also decides when each sentence ends. Each integration sends the end of sentence signal its provider expects and waits four seconds at most for the final transcript, then passes on whatever text it has. [`FallbackSTT`](/docs/speech-to-text/fallback) moves to the next provider when one fails and replays the audio of the sentence in progress. Write a [custom speech to text class](/docs/speech-to-text/custom) with a single `transcribe()` method to connect Deepgram, AssemblyAI or any other provider without a ready integration.
 
 Micdrop passes the final transcript of each sentence to your agent, which answers it. Since Micdrop is a library, you run the server yourself, keep your own provider keys, and store the transcripts and the call history.
 
@@ -237,4 +237,4 @@ Micdrop passes the final transcript of each sentence to your agent, which answer
 
 ## Getting started
 
-Automatic speech recognition gives a voice agent its ears. For a live call, pick a model that streams or one that is fast on a short sentence, judge it on the time to the final transcript as much as on word error rate, and decide which part of your system owns the end of the turn. Then try two providers on your own calls before you commit. With Micdrop, you can [start with a first voice call in five minutes](/docs/getting-started), then [mix and swap speech to text providers](/docs/ai-integration) behind one server option without touching the browser.
+Automatic speech recognition gives a voice agent its ears. For a live call, pick a model that streams or one that is fast on a short sentence, judge it on the time to the final transcript as much as on word error rate, and decide which part of your system owns the end of the turn. Then try two providers on your own calls before you commit. With Micdrop, you can [start with a first voice call in five minutes](/docs/getting-started), then [mix and swap speech to text providers](/docs/providers) behind one server option without touching the browser.

@@ -54,7 +54,7 @@ Any of the provided integrations works here, the transcription being the only AI
 component the call uses. Swapping `OpenaiSTT` for another one is a single line
 in [`src/server.ts`](./src/server.ts).
 
-See [the list of integrations](https://micdrop.dev/docs/ai-integration).
+See [the list of integrations](https://micdrop.dev/docs/providers).
 
 ## Where to go next
 

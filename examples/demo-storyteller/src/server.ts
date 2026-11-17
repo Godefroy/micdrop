@@ -2,7 +2,7 @@
 // Eleven v4 performs the audio tags the LLM writes into its answers, such as
 // [whispers] or [laughs], rather than reading them out. Flash v2.5 would read
 // them, so the same storyteller speaks without them there.
-// https://micdrop.dev/docs/ai-integration/provided-integrations/elevenlabs
+// https://micdrop.dev/docs/text-to-speech/elevenlabs
 
 import { ElevenLabsTTS } from '@micdrop/elevenlabs'
 import { OpenaiAgent, OpenaiSTT } from '@micdrop/openai'

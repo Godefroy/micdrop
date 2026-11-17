@@ -221,7 +221,7 @@ await Micdrop.stop()
 
 You may want the assistant to be able to end the call, for example when the user says "Bye bye".
 
-The [agent](../ai-integration/custom-integrations/custom-agent.mdx) can send an `EndCall` that can be listened to by the client.
+The [agent](../agents/custom) can send an `EndCall` that can be listened to by the client.
 
 ```typescript
 Micdrop.on('EndCall', () => {

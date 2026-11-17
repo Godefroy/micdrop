@@ -182,11 +182,11 @@ Then test tool calls on your own script. A voice agent that books, transfers or 
 
 Watch the 95th percentile as closely as the median. Gemini 3.6 Flash starts later than Claude Haiku 4.5 at the median, but 95% of its answers start within one second, while Haiku's 95th percentile is 1.6 seconds.
 
-Look at where the data is processed. Z.ai, Moonshot and DeepSeek publish no European region, so a European team runs their open weights on its own servers or through a host it trusts. Some procurement teams also look at who owns the model. Z.ai, Alibaba, DeepSeek and Moonshot are Chinese companies. OpenAI, Anthropic and Google are US companies under US law, even on a European endpoint. Mistral, a French company, falls under EU law instead. You can [keep every step of the pipeline in Europe](/docs/ai-integration/sovereign-voice-ai) with Mistral for the language model, Gladia for the transcription and Gradium for the voice.
+Look at where the data is processed. Z.ai, Moonshot and DeepSeek publish no European region, so a European team runs their open weights on its own servers or through a host it trusts. Some procurement teams also look at who owns the model. Z.ai, Alibaba, DeepSeek and Moonshot are Chinese companies. OpenAI, Anthropic and Google are US companies under US law, even on a European endpoint. Mistral, a French company, falls under EU law instead. You can [keep every step of the pipeline in Europe](/docs/providers/sovereign-voice-ai) with Mistral for the language model, Gladia for the transcription and Gradium for the voice.
 
 Price matters less than delay and tool calls for most agents. Every turn resends the system prompt and the history. A ten minute call of 40 turns, with a 1,500 token prompt and about 50 tokens of conversation per turn, sends the model about 100,000 input tokens before any tool definitions. At $1 per million input tokens, the model input costs about ten cents for the call. Prompt caching cuts most of that, since the start of every request repeats.
 
-Plan for outages. A voice agent stops talking when its model provider goes down. Raconte runs OpenAI GPT-5.4 first, with Mistral Large as its fallback, and Mistral Large alone for organisations that keep their data in Europe. GPT-5.4 passed 97.0% of aiewf-eval turns at low reasoning, with a median of 782 ms. In Micdrop, [`FallbackAgent`](/docs/ai-integration/fallback-strategies/agent-fallback) moves to the next model when one fails, with the same conversation history. This configuration uses two integrations that need no adapter, Gemini 3.6 Flash first and Mistral Small from another provider as the fallback:
+Plan for outages. A voice agent stops talking when its model provider goes down. Raconte runs OpenAI GPT-5.4 first, with Mistral Large as its fallback, and Mistral Large alone for organisations that keep their data in Europe. GPT-5.4 passed 97.0% of aiewf-eval turns at low reasoning, with a median of 782 ms. In Micdrop, [`FallbackAgent`](/docs/agents/fallback) moves to the next model when one fails, with the same conversation history. This configuration uses two integrations that need no adapter, Gemini 3.6 Flash first and Mistral Small from another provider as the fallback:
 
 ```typescript
 import { FallbackAgent } from '@micdrop/server'
@@ -217,7 +217,7 @@ const agent = new FallbackAgent({
 })
 ```
 
-Micdrop's Gemini integration defaults to Gemini 3.8 Flash, which [takes several seconds to answer even at `low` thinking](/docs/ai-integration/provided-integrations/gemini#gemini-agent), so name `gemini-3.6-flash` explicitly for a call. GLM-5.2, Qwen on Cerebras or Groq, Claude, DeepSeek, Gemma, Kimi and gpt-oss plug in through [the AI SDK integration](/docs/ai-integration/provided-integrations/ai-sdk), which accepts any AI SDK model.
+Micdrop's Gemini integration defaults to Gemini 3.8 Flash, which [takes several seconds to answer even at `low` thinking](/docs/agents/gemini), so name `gemini-3.6-flash` explicitly for a call. GLM-5.2, Qwen on Cerebras or Groq, Claude, DeepSeek, Gemma, Kimi and gpt-oss plug in through [the AI SDK integration](/docs/agents/ai-sdk), which accepts any AI SDK model.
 
 ## Frequently asked questions
 
@@ -255,7 +255,7 @@ Whichever you choose, play your own conversations to it, with real tool calls an
 npm install @micdrop/server @micdrop/web @micdrop/gemini @micdrop/mistral @micdrop/ai-sdk
 ```
 
-You can [compare the agent, transcription and voice integrations](/docs/ai-integration), then [run a first voice call in about five minutes](/docs/getting-started).
+You can [compare the agent, transcription and voice integrations](/docs/providers), then [run a first voice call in about five minutes](/docs/getting-started).
 
 <RankingJsonLd
   name="Best LLMs for voice agents in 2026"

@@ -95,8 +95,8 @@ A phone plugged in over USB reaches the machine through
 
 - [React Native documentation](https://micdrop.dev/docs/react-native)
 - [Server documentation](https://micdrop.dev/docs/server)
-- [Other AI providers](https://micdrop.dev/docs/ai-integration), including
-  [models running on your own machine](https://micdrop.dev/docs/ai-integration/local-models)
+- [Other AI providers](https://micdrop.dev/docs/providers), including
+  [models running on your own machine](https://micdrop.dev/docs/local-models)
 
 For the browser, see [the basic example](../basic) and
 [the advanced demo](../advanced).

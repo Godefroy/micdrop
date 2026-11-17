@@ -118,7 +118,7 @@ The price of a character is fixed, so your bill depends on the model you pick an
 - Ask the LLM for short answers in its system prompt. Two sentences instead of five cut the voice bill of that turn by more than half. Users tend to interrupt long answers anyway.
 - Check a second provider. Cartesia charges between $37 and $50 per million characters on its plans, about the price of Flash v2.5, so the cheaper of the two depends on your Cartesia plan. You can [compare Cartesia and ElevenLabs on price and concurrency](/blog/cartesia-vs-elevenlabs) before choosing which one your agent calls first.
 
-A second provider also keeps calls going when you hit the concurrency limit. In [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback) speaks through the first engine and moves to the next when the first one fails after its retries. When ElevenLabs refuses the connection of a v4 Turbo call because your plan has no dialogue session left, the retries fail too, so the call goes on with the backup voice:
+A second provider also keeps calls going when you hit the concurrency limit. In [Micdrop](/), an open source TypeScript library for real-time voice conversations with AI, [`FallbackTTS`](/docs/text-to-speech/fallback) speaks through the first engine and moves to the next when the first one fails after its retries. When ElevenLabs refuses the connection of a v4 Turbo call because your plan has no dialogue session left, the retries fail too, so the call goes on with the backup voice:
 
 ```typescript
 import { CartesiaTTS } from '@micdrop/cartesia'
@@ -198,4 +198,4 @@ If the concurrency limit or the price per character pushes you off ElevenLabs, l
 
 For a voice agent, ElevenLabs costs about $0.04 per minute of speech on Flash v2.5 and twice that on Multilingual v2, or on Eleven v4 from October 13. ElevenLabs charges the same price per character on every plan, so choose your plan by the concurrency limit your busiest hour needs.
 
-[Micdrop](/) streams every ElevenLabs model from your own server, with your own key, through its [ElevenLabs integration](/docs/ai-integration/provided-integrations/elevenlabs). Switching between Flash v2.5 and v4 Turbo means changing `modelId`. You can [run a first voice call in about five minutes](/docs/getting-started).
+[Micdrop](/) streams every ElevenLabs model from your own server, with your own key, through its [ElevenLabs integration](/docs/text-to-speech/elevenlabs). Switching between Flash v2.5 and v4 Turbo means changing `modelId`. You can [run a first voice call in about five minutes](/docs/getting-started).

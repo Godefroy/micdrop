@@ -25,7 +25,7 @@ server.on('connection', async (socket) => {
     // https://micdrop.dev/docs/server/installation
     new MicdropServer(socket, {
       // The ears, and the only AI component this call needs.
-      // https://micdrop.dev/docs/ai-integration/provided-integrations/openai
+      // https://micdrop.dev/docs/speech-to-text/openai
       stt: new OpenaiSTT({ apiKey, language }),
     })
   } catch (error) {

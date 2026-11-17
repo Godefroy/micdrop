@@ -93,7 +93,7 @@ Gradium a levé 70 millions de dollars en décembre 2025, puis porté ce tour à
 
 Vous pouvez [régler la synthèse vocale française de Gradium](/blog/gradium-text-to-speech-souverain) et lui prévoir un secours en cas de panne.
 
-Mistral vend aussi une synthèse vocale. Voxtral Speech 3, sortie le 20 octobre 2026, coûte 13 $ le million de caractères, parle plus de 35 langues, propose quatre voix françaises prêtes à l’emploi et clone une voix à partir de quelques secondes d’audio. Micdrop l’intègre avec [`MistralTTS`](/docs/ai-integration/provided-integrations/mistral#mistral-tts-text-to-speech), qui se connecte au point de terminaison européen `api.eu.mistral.ai` avec son option `baseUrl`. Les poids de la version précédente, Voxtral TTS, sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
+Mistral vend aussi une synthèse vocale. Voxtral Speech 3, sortie le 20 octobre 2026, coûte 13 $ le million de caractères, parle plus de 35 langues, propose quatre voix françaises prêtes à l’emploi et clone une voix à partir de quelques secondes d’audio. Micdrop l’intègre avec [`MistralTTS`](/docs/text-to-speech/mistral), qui se connecte au point de terminaison européen `api.eu.mistral.ai` avec son option `baseUrl`. Les poids de la version précédente, Voxtral TTS, sont publiés sous licence CC BY-NC 4.0, qui interdit l’usage commercial. Pour un produit, passez donc par l’API.
 
 [Voxygen](https://www.voxygen.fr) est une entreprise issue d’Orange Labs, créée en 2011 près de Lannion. Elle fait de la synthèse vocale française et propose un déploiement sur site. [KugelAudio](https://huggingface.co/kugelaudio/kugelaudio-0-open), une équipe allemande liée au Hasso-Plattner-Institut, publie un modèle TTS ouvert de 7 milliards de paramètres sous licence MIT, dans 24 langues européennes.
 
@@ -165,7 +165,7 @@ import { Micdrop } from '@micdrop/web'
 Micdrop.start({ url: 'wss://voix.votre-domaine.fr' })
 ```
 
-Pour transcrire avec Voxtral, remplacez `GladiaSTT` par `MistralSTT`, l’une des [intégrations Mistral de Micdrop](/docs/ai-integration/provided-integrations/mistral). `MistralSTT` appelle le point de terminaison global de Mistral, qui ne garantit aucun traitement en Europe. Gardez Gladia ou Gradium quand la transcription doit y rester.
+Pour transcrire avec Voxtral, remplacez `GladiaSTT` par `MistralSTT`, l’une des [intégrations Mistral de Micdrop](/docs/providers). `MistralSTT` appelle le point de terminaison global de Mistral, qui ne garantit aucun traitement en Europe. Gardez Gladia ou Gradium quand la transcription doit y rester.
 
 ### Un secours qui reste en Europe
 
@@ -193,7 +193,7 @@ const stt = new FallbackSTT({
 })
 ```
 
-La voix a moins d’options européennes que la transcription. Pour prendre Voxtral Speech 3 en secours de Gradium, placez `MistralTTS` avec `baseUrl: 'https://api.eu.mistral.ai'` en second dans un [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback). Pendant une bascule de transcription, Micdrop [garde l’audio reçu et le rejoue au fournisseur suivant](/docs/ai-integration/fallback-strategies/stt-fallback).
+La voix a moins d’options européennes que la transcription. Pour prendre Voxtral Speech 3 en secours de Gradium, placez `MistralTTS` avec `baseUrl: 'https://api.eu.mistral.ai'` en second dans un [`FallbackTTS`](/docs/text-to-speech/fallback). Pendant une bascule de transcription, Micdrop [garde l’audio reçu et le rejoue au fournisseur suivant](/docs/speech-to-text/fallback).
 
 ## La voie open source, auto-hébergée sur votre serveur
 
@@ -201,17 +201,17 @@ Les API européennes gardent les données en Europe, chez un tiers. Certains pro
 
 ### Un logiciel de reconnaissance vocale open source en français
 
-Whisper, le modèle d’OpenAI publié sous licence MIT, tourne sur un simple processeur et fonctionne hors ligne une fois téléchargé. Ses versions génériques se trompent souvent en français. Sur nos cinq phrases de test, le modèle `small` faisait 22 % d’erreurs par mot. Une version de `whisper-small` affinée sur le corpus français Common Voice descend à 2 % sur ces mêmes phrases, en 1,1 s environ sur un ordinateur portable. Cinq phrases restent un petit échantillon, mais l’écart est net. La documentation sur la [transcription locale avec Whisper](/docs/ai-integration/local-models/speech-to-text) indique quel modèle choisir selon la langue de l’appel. Nous avons aussi mesuré Parakeet, Moonshine et Vosk pour la [transcription locale dans Node](/blog/local-speech-to-text-node).
+Whisper, le modèle d’OpenAI publié sous licence MIT, tourne sur un simple processeur et fonctionne hors ligne une fois téléchargé. Ses versions génériques se trompent souvent en français. Sur nos cinq phrases de test, le modèle `small` faisait 22 % d’erreurs par mot. Une version de `whisper-small` affinée sur le corpus français Common Voice descend à 2 % sur ces mêmes phrases, en 1,1 s environ sur un ordinateur portable. Cinq phrases restent un petit échantillon, mais l’écart est net. La documentation sur la [transcription locale avec Whisper](/docs/local-models/speech-to-text) indique quel modèle choisir selon la langue de l’appel. Nous avons aussi mesuré Parakeet, Moonshine et Vosk pour la [transcription locale dans Node](/blog/local-speech-to-text-node).
 
 Voxtral Realtime, avec ses poids sous Apache 2.0, fait la même transcription que l’API de Mistral, sur votre propre GPU. Cette famille de modèles est trop lourde pour un processeur. Sur le processeur de notre machine de test, Voxtral Mini 3B, le modèle de transcription précédent de Mistral, mettait environ 16,6 s par phrase, 35 fois plus que Whisper `base`. Kyutai publie `stt-1b-en_fr`, un modèle de transcription en streaming pour l’anglais et le français, sous licence CC-BY 4.0. Il tourne en Python ou via le serveur Rust de Kyutai, auquel votre serveur Node parle par WebSocket.
 
 ### Un agent conversationnel open source
 
-Ollama sert un modèle ouvert sur votre machine avec le protocole d’OpenAI, ce qui suffit à `@micdrop/ai-sdk`. Pour un [LLM local branché sur Micdrop](/docs/ai-integration/local-models/agent), nous recommandons Qwen3 4B Instruct, qui parle français, tient en 2,5 Go et écrit le premier mot en 145 ms environ sur la machine de test. Ministral 3, publié en Apache 2.0 depuis décembre 2025, est l’alternative française à essayer, que nous n’avons pas encore mesurée.
+Ollama sert un modèle ouvert sur votre machine avec le protocole d’OpenAI, ce qui suffit à `@micdrop/ai-sdk`. Pour un [LLM local branché sur Micdrop](/docs/local-models/agent), nous recommandons Qwen3 4B Instruct, qui parle français, tient en 2,5 Go et écrit le premier mot en 145 ms environ sur la machine de test. Ministral 3, publié en Apache 2.0 depuis décembre 2025, est l’alternative française à essayer, que nous n’avons pas encore mesurée.
 
 ### Une voix française en local
 
-Piper fait parler un serveur sans GPU, avec une voix française comme `fr_FR-siwis-medium`, un petit modèle de quelques dizaines de mégaoctets. Qwen3-TTS, le modèle ouvert d’Alibaba sous Apache 2.0, parle français avec une voix plus naturelle et [s’intègre aussi à Micdrop](/docs/ai-integration/provided-integrations/qwen-tts), mais il lui faut un GPU. Kyutai TTS, qui parle anglais et français, et le modèle ouvert de KugelAudio demandent eux aussi un GPU et un environnement Python. En local, Voxtral TTS sonne mieux que toutes les autres voix que nous avons essayées, mais sur notre machine de test il met plus de temps à générer une phrase qu’à la prononcer. Sa licence interdit en plus l’usage commercial.
+Piper fait parler un serveur sans GPU, avec une voix française comme `fr_FR-siwis-medium`, un petit modèle de quelques dizaines de mégaoctets. Qwen3-TTS, le modèle ouvert d’Alibaba sous Apache 2.0, parle français avec une voix plus naturelle et [s’intègre aussi à Micdrop](/docs/text-to-speech/qwen-tts), mais il lui faut un GPU. Kyutai TTS, qui parle anglais et français, et le modèle ouvert de KugelAudio demandent eux aussi un GPU et un environnement Python. En local, Voxtral TTS sonne mieux que toutes les autres voix que nous avons essayées, mais sur notre machine de test il met plus de temps à générer une phrase qu’à la prononcer. Sa licence interdit en plus l’usage commercial.
 
 Le serveur entièrement local tient en quelques lignes :
 
@@ -320,4 +320,4 @@ Des fournisseurs européens rendent une architecture souveraine possible, mais l
 
 ## Monter votre premier agent vocal souverain
 
-Mistral, Gladia et Gradium couvrent les trois briques d’un agent vocal IA avec des entreprises françaises. Whisper, Voxtral, un modèle ouvert et Piper font la même chose sur vos propres machines. Avec les API, choisissez la région de chaque fournisseur et un secours européen. Dans les deux cas, hébergez votre serveur chez un acteur européen. Pour brancher cette stack dans votre application web, suivez la [mise en place d’une IA vocale souveraine avec Micdrop](/docs/ai-integration/sovereign-voice-ai), ou [lancez un premier appel vocal en cinq minutes](/docs/getting-started) avant de remplacer les fournisseurs un par un.
+Mistral, Gladia et Gradium couvrent les trois briques d’un agent vocal IA avec des entreprises françaises. Whisper, Voxtral, un modèle ouvert et Piper font la même chose sur vos propres machines. Avec les API, choisissez la région de chaque fournisseur et un secours européen. Dans les deux cas, hébergez votre serveur chez un acteur européen. Pour brancher cette stack dans votre application web, suivez la [mise en place d’une IA vocale souveraine avec Micdrop](/docs/providers/sovereign-voice-ai), ou [lancez un premier appel vocal en cinq minutes](/docs/getting-started) avant de remplacer les fournisseurs un par un.

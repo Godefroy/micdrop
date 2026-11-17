@@ -1,6 +1,6 @@
 # @micdrop/qwen-tts
 
-[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/ai-integration/provided-integrations/qwen-tts)
+[Micdrop website](https://micdrop.dev) | [Documentation](https://micdrop.dev/docs/text-to-speech/qwen-tts)
 
 Local [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) text to speech for
 [@micdrop/server](https://micdrop.dev/docs/server).
@@ -19,9 +19,9 @@ GPU through MLX. Nothing leaves the machine and there is no API key.
 
 Qwen3-TTS needs more computation than the other local voices, because it
 generates audio with a language model. On a machine without a GPU, use
-[@micdrop/piper](https://micdrop.dev/docs/ai-integration/provided-integrations/piper)
+[@micdrop/piper](https://micdrop.dev/docs/text-to-speech/piper)
 or
-[@micdrop/kokoro](https://micdrop.dev/docs/ai-integration/provided-integrations/kokoro).
+[@micdrop/kokoro](https://micdrop.dev/docs/text-to-speech/kokoro).
 
 ## Installation
 
@@ -82,7 +82,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 | `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.       |
 | `Failed` | `string[]` | The server answered with an error, with the text that stayed unspoken. |
 
-See the [TTS interface](https://micdrop.dev/docs/ai-integration/custom-integrations/custom-tts) for the full contract.
+See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
 ## Options
 
@@ -170,7 +170,7 @@ OpenAI fields (`model`, `input`, `voice`) and the Qwen fields (`instruct`,
 
 ## Documentation
 
-Read full [documentation of the Qwen3-TTS integration for Micdrop](https://micdrop.dev/docs/ai-integration/provided-integrations/qwen-tts) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/ai-integration/local-models).
+Read full [documentation of the Qwen3-TTS integration for Micdrop](https://micdrop.dev/docs/text-to-speech/qwen-tts) on the [website](https://micdrop.dev), and the [guide on running Micdrop with local models](https://micdrop.dev/docs/local-models).
 
 ## License
 

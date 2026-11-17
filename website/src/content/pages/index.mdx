@@ -115,7 +115,7 @@ fullWidth: true
   agent="OpenAI"
   tts="ElevenLabs"
   note="Each stage streams into the next. To swap a provider, you change its line."
-  href="/docs/ai-integration"
+  href="/docs/providers"
 >
 
 ```typescript wrap hangingIndent=2
@@ -138,7 +138,7 @@ new MicdropServer(socket, {
   summary="Gemini Live or the OpenAI Realtime API"
   realtime="Gemini Live"
   note="One model hears the audio and answers in audio. Micdrop still handles the turns, the interruptions and the order of the transcript."
-  href="/docs/server/realtime"
+  href="/docs/realtime"
 >
 
 ```typescript wrap hangingIndent=2
@@ -162,7 +162,7 @@ new MicdropServer(socket, {
   agent="Mistral"
   tts="Gradium"
   note="Three European providers keep the audio and the conversation inside the EU. They handle French and 90 other languages."
-  href="/docs/ai-integration/sovereign-voice-ai"
+  href="/docs/providers/sovereign-voice-ai"
 >
 
 ```typescript wrap hangingIndent=2
@@ -187,7 +187,7 @@ new MicdropServer(socket, {
   agent="Mistral"
   tts="Voxtral Speech 3"
   note="Mistral transcribes, answers and speaks, so the whole call runs on one account and one bill. Voxtral Speech 3 reads more than 35 languages and clones a voice from a few seconds of audio."
-  href="/docs/ai-integration/provided-integrations/mistral"
+  href="/docs/providers"
 >
 
 ```typescript wrap hangingIndent=2
@@ -211,7 +211,7 @@ new MicdropServer(socket, {
   tts="Kokoro"
   server="Your machine"
   note="Whisper and Kokoro run inside your Node process while Ollama runs the agent. The call works offline and needs no API key. The audio stays on your machine."
-  href="/docs/ai-integration/local-models"
+  href="/docs/local-models"
 >
 
 ```typescript wrap hangingIndent=2
@@ -320,7 +320,7 @@ new MicdropServer(socket, {
   variant="plain"
 >
   <CapabilityLink label="Tool calls" href="/docs/server/tools" />
-  <CapabilityLink label="Intent classification" href="/docs/server/classifier" />
+  <CapabilityLink label="Intent classification" href="/docs/classifiers" />
   <CapabilityLink label="Data extraction" href="/docs/server/extract" />
   <CapabilityLink label="Dictation" href="/docs/server/dictation" />
   <CapabilityLink label="First message" href="/docs/server/first-message" />
@@ -336,15 +336,15 @@ new MicdropServer(socket, {
   description="Micdrop ships integrations for OpenAI, Gemini, Mistral, Gladia, ElevenLabs, Cartesia, Gradium and local models. You can plug any other provider into the same interfaces. When a provider fails, a fallback takes over."
   variant="grid"
 >
-  <CapabilityLink label="Provided integrations" href="/docs/ai-integration" />
-  <CapabilityLink label="Local models" href="/docs/ai-integration/local-models" />
-  <CapabilityLink label="Sovereign voice AI" href="/docs/ai-integration/sovereign-voice-ai" />
-  <CapabilityLink label="Custom agent" href="/docs/ai-integration/custom-integrations/custom-agent" />
-  <CapabilityLink label="Custom speech to text" href="/docs/ai-integration/custom-integrations/custom-stt" />
-  <CapabilityLink label="Custom text to speech" href="/docs/ai-integration/custom-integrations/custom-tts" />
-  <CapabilityLink label="Agent fallback" href="/docs/ai-integration/fallback-strategies/agent-fallback" />
-  <CapabilityLink label="Speech to text fallback" href="/docs/ai-integration/fallback-strategies/stt-fallback" />
-  <CapabilityLink label="Text to speech fallback" href="/docs/ai-integration/fallback-strategies/tts-fallback" />
+  <CapabilityLink label="Provided integrations" href="/docs/providers" />
+  <CapabilityLink label="Local models" href="/docs/local-models" />
+  <CapabilityLink label="Sovereign voice AI" href="/docs/providers/sovereign-voice-ai" />
+  <CapabilityLink label="Custom agent" href="/docs/agents/custom" />
+  <CapabilityLink label="Custom speech to text" href="/docs/speech-to-text/custom" />
+  <CapabilityLink label="Custom text to speech" href="/docs/text-to-speech/custom" />
+  <CapabilityLink label="Agent fallback" href="/docs/agents/fallback" />
+  <CapabilityLink label="Speech to text fallback" href="/docs/speech-to-text/fallback" />
+  <CapabilityLink label="Text to speech fallback" href="/docs/text-to-speech/fallback" />
 </CapabilityGroup>
 
 </CapabilitiesSection>

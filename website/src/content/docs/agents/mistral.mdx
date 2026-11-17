@@ -1,0 +1,128 @@
+---
+title: 'Mistral LLM Agent in Node.js'
+sidebarLabel: 'Mistral'
+description: 'Answer the user of a TypeScript voice agent with Mistral models through the Mistral AI API, with tools, retries and cancellation.'
+order: 48.4
+---
+
+# Mistral LLM Agent in Node.js
+
+`MistralAgent` answers with Mistral models through Mistral AI's API. It works with any speech to text and text to speech. It calls the global endpoint, `api.mistral.ai`. To keep the agent in Europe, use [`@micdrop/ai-sdk`](./ai-sdk) with a Mistral model set to `api.eu.mistral.ai`, as in this [sovereign voice AI setup](../providers/sovereign-voice-ai).
+
+For a comparison of the Mistral Voice Agents SDK, a custom WebSocket client and a Micdrop pipeline, see how to [build a Mistral voice agent with Voxtral 3](/blog/mistral-voice-agent-voxtral-3).
+
+## Installation
+
+```bash
+npm install @micdrop/mistral
+```
+
+The same package also provides [a speech to text](../speech-to-text/mistral) and [a text to speech](../text-to-speech/mistral). The [providers page](../providers) shows what every provider covers.
+
+## Usage with MicdropServer
+
+```typescript
+import { MistralAgent } from '@micdrop/mistral'
+import { MicdropServer } from '@micdrop/server'
+
+const agent = new MistralAgent({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  model: 'mistral-large-latest',
+  systemPrompt: 'You are a helpful assistant',
+})
+
+// Use with MicdropServer
+new MicdropServer(socket, {
+  agent,
+  // ... other options
+})
+```
+
+## Usage without MicdropServer
+
+```typescript
+import { MistralAgent } from '@micdrop/mistral'
+
+const agent = new MistralAgent({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  systemPrompt: 'You are a helpful assistant',
+})
+
+agent.on('Message', (message) => console.log('Message:', message))
+
+agent.addUserMessage('Hello, what can you do?')
+
+// The answer is a text stream, written as the model generates it
+agent.answer().on('data', (chunk) => process.stdout.write(chunk))
+```
+
+## Events
+
+| Event                   | Payload                   | Description                                                             |
+| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation.  |
+| `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output.  |
+| `CancelLastUserMessage` | none                      | The last user message was dropped because it carried no intent.         |
+| `SkipAnswer`            | none                      | The agent stays silent and waits for the user to finish their sentence. |
+| `EndCall`               | none                      | The agent decided that the call is over.                                |
+| `Failed`                | none                      | The agent gave up generating an answer after its retries.               |
+
+See the [Agent interface](./custom) for the full contract.
+
+## Options
+
+| Option                | Type                                                                                                                              | Default                  | Description                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------ |
+| `apiKey`              | `string`                                                                                                                          | Required                 | Your Mistral AI API key                                                  |
+| `model`               | `string`                                                                                                                          | `'mistral-large-latest'` | Mistral AI model to use                                                  |
+| `systemPrompt`        | `string`                                                                                                                          | Required                 | System prompt for the agent                                              |
+| `maxRetry`            | `number`                                                                                                                          | `3`                      | Maximum number of retries on API failures                                |
+| `retryDelay`          | `number`                                                                                                                          | `500`                    | Delay in milliseconds between retries                                    |
+| `maxSteps`            | `number`                                                                                                                          | `5`                      | Maximum number of steps (for tool calls)                                 |
+| `autoEndCall`         | `boolean \| string`                                                                                                               | `false`                  | [Auto-detect when user wants to end call](../server/auto-end-call)    |
+| `autoSemanticTurn`    | `boolean \| string`                                                                                                               | `false`                  | [Handle incomplete user sentences](../server/semantic-turn-detection) |
+| `autoIgnoreUserNoise` | `boolean \| string`                                                                                                               | `false`                  | [Filter meaningless user sounds](../server/noise-filtering)           |
+| `extract`             | [`ExtractJsonOptions`](../server/extract#json-extraction) \| [`ExtractTagOptions`](../server/extract#custom-tag-extraction) | `undefined`              | Extract structured data from responses                                   |
+| `onBeforeAnswer`      | `function`                                                                                                                        | `undefined`              | Hook called before answer generation, returns `true` to skip it or a text to answer instead |
+| `settings`            | `object`                                                                                                                          | `{}`                     | Additional Mistral AI API parameters                                     |
+
+## Cancellation and Retries
+
+When the user interrupts, the request to Mistral is aborted and the unfinished answer stays out of the conversation. A request that fails before writing anything is retried up to `maxRetry` times, `retryDelay` apart, unless the answer was cancelled meanwhile. A request cut off after part of the answer reached the stream ends there, and the part already spoken is the answer recorded, so no sentence is ever spoken twice.
+
+## Available Models
+
+Mistral AI offers several models you can choose from:
+
+- **`ministral-8b-latest`** - Fast and efficient 8B parameter model (default)
+- **`mistral-large-latest`** - Most capable model for complex tasks
+- **`mistral-small-latest`** - Balanced performance and cost
+- **`codestral-latest`** - Specialized for code generation
+
+## Settings Object
+
+The `settings` parameter accepts any additional options from the Mistral AI Chat Completions API:
+
+```typescript
+const agent = new MistralAgent({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  systemPrompt: 'You are a helpful assistant',
+  settings: {
+    temperature: 0.7, // Controls randomness (0-1)
+    max_tokens: 1000, // Maximum tokens in response
+    top_p: 0.9, // Nucleus sampling parameter
+    random_seed: 42, // For reproducible outputs
+    safe_prompt: false, // Enable/disable safety filtering
+  },
+})
+```
+
+## Advanced Features
+
+The Mistral Agent supports advanced features for improved conversation handling:
+
+- **[Auto End Call](../server/auto-end-call)**: Automatically detect when users want to end the conversation
+- **[Semantic Turn Detection](../server/semantic-turn-detection)**: Handle incomplete sentences for natural flow
+- **[User Noise Filtering](../server/noise-filtering)**: Filter out meaningless sounds and filler words
+- **[Extract Value from Answer](../server/extract)**: Extract structured data from responses
+- **[Tools](../server/tools)**: Add custom tools to the agent
