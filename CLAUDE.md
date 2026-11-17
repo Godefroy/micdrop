@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Never run a test or a script that calls a paid API (the e2e suite included) without the user's approval for that run.
 - Never commit or push without explicit user approval, even for small follow-up fixes. One approval covers one commit, not the whole session.
 - Before committing changes to a package in `packages/`, propose a version bump for each modified package. A pushed version bump publishes it to npm (`.github/workflows/publish.yml`).
+- The same goes for an external PR that touches a package: when you merge one, or learn that one was merged, propose the version bump in the same step. A merge without a bump publishes nothing.
 - A new package in `packages/` can't be published by the workflow until it has a trusted publisher. Give the user these commands to run before pushing its first version:
   ```bash
   cd packages/<name> && pnpm install && pnpm build
