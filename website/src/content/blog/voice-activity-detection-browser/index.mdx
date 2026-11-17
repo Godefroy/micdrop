@@ -2,7 +2,7 @@
 title: 'Voice Activity Detection in the Browser: Silero vs WebRTC'
 summary: 'A browser voice agent needs voice activity detection to tell when the user speaks. Compare volume thresholds, WebRTC VAD and Silero, then tune your choice.'
 date: 2026-08-13
-update: 2026-11-05
+update: 2026-11-17
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -184,11 +184,7 @@ The combination emits a maybe as soon as either detector fires, and confirms onl
 
 ## VAD and interruptions
 
-Barge-in is the feature that separates a conversation from a menu system. Only the VAD can deliver it, because the transcription pipeline has nothing to work with while the assistant is talking. Something has to be listening to raw microphone audio and willing to act on it within a few hundred milliseconds.
-
-In Micdrop the browser handles it without a server round trip. The moment speech is confirmed, playback stops locally, the processing state is cleared, and a message goes out telling the server to abandon the answer it was streaming.
-
-The failure mode here is echo. If the assistant's voice reaches the microphone through the speakers, the VAD hears speech and interrupts the agent with its own words, on loop. Micdrop asks `getUserMedia` for `echoCancellation` and `noiseSuppression`, which handles most laptop and phone setups. Loud external speakers can still defeat it, so headphones remain the reliable answer for a demo that has to work.
+Echo cancellation reduces assistant playback in microphone input before the VAD sees it. The browser request and device determine how much echo disappears, so check the applied settings and listen to the real microphone signal. Read [how browser echo cancellation works](/blog/echo-cancellation-browser-voice-agent) before tuning interruptions.
 
 ## Where VAD stops and turn detection starts
 

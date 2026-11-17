@@ -2,6 +2,7 @@
 title: 'Voice Agent Barge-In: Handle Interruptions'
 summary: 'A voice agent needs to detect speech during playback, stop every output path, cancel stale generation and keep only the answer the user heard.'
 date: 2026-10-31
+update: 2026-11-17
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -32,7 +33,7 @@ Keep interruption detection separate from end-of-turn detection. VAD answers “
 
 A voice agent needs to keep listening to the microphone during playback if it should be interruptible. Detecting speech only after the assistant finishes makes barge-in impossible. In a browser app, run VAD on incoming microphone audio and watch for a confirmed speech event while the speaker is playing.
 
-The microphone also hears the agent’s own voice through speakers. Echo cancellation helps separate that output from the user’s voice. Without it, the VAD can mistake the assistant’s speech for a new user turn and interrupt itself. Headphones can help when the device’s echo cancellation does not remove enough playback echo. Learn [how browser VAD handles echo cancellation](/docs/client/vad) alongside volume and Silero speech detection.
+The microphone also hears the agent’s own voice through speakers. Echo cancellation helps separate that output from the user’s voice. Without it, the VAD can mistake the assistant’s speech for a new user turn and interrupt itself. Headphones can help when the device’s echo cancellation does not remove enough playback echo. Learn [how browser VAD handles echo cancellation](/docs/client/vad) alongside volume and Silero speech detection. See [what browser echo cancellation does to microphone audio](/blog/echo-cancellation-browser-voice-agent) before tuning the interruption path.
 
 VAD can also react to a cough, a door closing or a short “mm-hm.” A simple system can require confirmed speech before stopping playback, then use a noise filter to ignore a turn that carries no conversational meaning. A noise filter can ask the agent to classify sounds such as “uh” or “hmm” and ignore them. That decision happens after a turn reaches the agent, so it cannot prevent the initial playback interruption. The [noise filter for meaningless user sounds](/docs/server/noise-filtering) explains that distinction.
 

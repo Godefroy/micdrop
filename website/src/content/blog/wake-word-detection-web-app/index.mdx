@@ -3,7 +3,7 @@ title: 'Wake Word Detection in a Web App: openWakeWord vs Porcupine'
 h1: 'Wake word detection in a web app: openWakeWord, Porcupine or the transcript'
 summary: 'To start a voice agent hands-free in the browser, compare openWakeWord, Porcupine Web and a transcript regex on licenses, costs, code and false triggers.'
 date: 2026-10-23
-update: 2026-10-23
+update: 2026-11-17
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -221,6 +221,8 @@ Micdrop.on('EndCall', () => Micdrop.stop())
 On the server, give the call a [first message](/docs/server/first-message) so the agent greets the user as soon as the word is heard. The wake word engine only picks the moment the call begins. [Starting and stopping the call](/docs/client/start-stop-call) then work as in any other Micdrop app.
 
 Both libraries open their own microphone stream, and this example keeps both open during the call. That looks wasteful, but stopping the detector and restarting it after each call breaks on Firefox: a microphone requested again within about 15 seconds of its release comes back without echo cancellation or noise suppression, while its settings still report them on. Micdrop waits out that delay for its own streams but cannot know when another library has closed one. Keeping the detector open and ignoring its events during the call avoids the problem in every browser.
+
+The requested constraint can differ from the setting the microphone track reports, so check [how to verify browser echo cancellation](/blog/echo-cancellation-browser-voice-agent) on the active track.
 
 Both streams must use the same microphone. When the user picks one in your settings, pass the same `deviceId` to the engine and to Micdrop's [microphone selection](/docs/client/devices-management).
 
