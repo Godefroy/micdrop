@@ -48,7 +48,9 @@ export default function remarkDocLinks() {
 
     visit(tree, 'link', (node) => {
       const url = node.url
-      if (!url.startsWith('./') && !url.startsWith('../')) return
+      // `.` and `..` alone name the folder page, which the browser would
+      // otherwise resolve to a trailing slash URL.
+      if (!/^\.\.?(\/|#|$)/.test(url)) return
 
       const [target, hash] = url.split('#')
       const segments = dir.split('/').filter(Boolean)
