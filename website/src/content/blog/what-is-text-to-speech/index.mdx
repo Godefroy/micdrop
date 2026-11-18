@@ -99,7 +99,7 @@ They also brought a failure the older pipelines rarely had. A model that writes 
 
 A TTS system can return the audio in two ways. It can synthesize the whole text and return one file, which suits an audiobook or a saved announcement. Or it can stream the audio in small chunks as it produces them, which a live voice agent needs, because the listener starts hearing the answer while the rest is still being generated.
 
-For a voice agent, the delay before the first sound counts more than the total synthesis time. Micdrop's maintainer measured [very different first audio delays for local engines](/docs/ai-integration/local-models/performance) on one MacBook Pro M2:
+For a voice agent, the delay before the first sound counts more than the total synthesis time. Micdrop's maintainer measured [very different first audio delays for local engines](/docs/local-models/performance) on one MacBook Pro M2:
 
 | Engine | First audio on a MacBook Pro M2 CPU | How it produces audio |
 | --- | --- | --- |
@@ -108,10 +108,10 @@ For a voice agent, the delay before the first sound counts more than the total s
 | Piper | About 390 ms | Synthesizes short pieces quickly |
 | Kokoro 82M | 900 to 1300 ms | Synthesizes the whole sentence first |
 
-Kokoro sounds good, but it plays the first sound only once the whole sentence is synthesized, so the listener waits about a second on a long sentence. Hosted voices built for agents start much sooner. The [first audio delay of hosted voice providers](/docs/ai-integration) is about 100 ms for ElevenLabs Eleven v4 Turbo and about 150 ms for Cartesia.
+Kokoro sounds good, but it plays the first sound only once the whole sentence is synthesized, so the listener waits about a second on a long sentence. Hosted voices built for agents start much sooner. The [first audio delay of hosted voice providers](/docs/providers) is about 100 ms for ElevenLabs Eleven v4 Turbo and about 150 ms for Cartesia.
 
 {/* IMAGE regen: api.py image, infographic, 1600x900. Scene: "A horizontal range chart on a dark surface, four rows read from top to bottom, each with its label on the left and a horizontal bar spanning its range on a shared time axis from 0 ms to 1400 ms, with tick marks labelled '0 ms', '500 ms', '1000 ms' and '1400 ms' along the bottom. Row 1 labelled 'Phonon 31M', bar from 30 to 100 ms, bright emerald, value text '30 to 100 ms' at the end of the bar. Row 2 labelled 'Pocket TTS', bar from 250 to 430 ms, emerald, value text '250 to 430 ms'. Row 3 labelled 'Piper', a short bar centred on 390 ms, emerald, value text 'about 390 ms'. Row 4 labelled 'Kokoro 82M', bar from 900 to 1300 ms, sky blue, value text '900 to 1300 ms', with a small tag 'whole sentence first'. Bar positions strictly proportional to the axis. Title at the top in a modern clean bold sans-serif: 'Time to first audio, local TTS engines'. Subtitle: 'Measured on a MacBook Pro M2 CPU'. Each text is written once and only once. Flat vector style, generous spacing."
-    Infographic only: regenerate if the local model measurements in /docs/ai-integration/local-models/performance change. Last data sync: 2026-11-17. */}
+    Infographic only: regenerate if the local model measurements in /docs/local-models/performance change. Last data sync: 2026-11-17. */}
 ![Time to first audio of four local TTS engines on a MacBook Pro M2: Phonon 30 to 100 ms, Pocket TTS 250 to 430 ms, Piper about 390 ms, Kokoro 900 to 1300 ms](./time-to-first-audio.jpg)
 
 In a voice agent, the text itself also arrives in pieces, because the language model writes its answer word by word. Some TTS APIs accept that text while it is being written, over a WebSocket. Others need a complete sentence, so the agent splits the answer into sentences and sends each one as soon as it ends. Either approach works for [streaming text to speech from an LLM](/blog/streaming-text-to-speech-llm). Compare them on the delay between the end of the user's sentence and the first sound.
@@ -187,7 +187,7 @@ new MicdropServer(socket, {
 })
 ```
 
-Micdrop passes the agent's text to the TTS engine as the language model writes it. Providers that accept text over a WebSocket, such as ElevenLabs, Cartesia and Gradium, receive it in pieces. Engines that need a complete sentence receive one sentence at a time. Micdrop then streams the audio to the browser and stops it when the user interrupts. When an engine fails, [`FallbackTTS`](/docs/ai-integration/fallback-strategies/tts-fallback) moves to the next one and replays the pending text. To connect a provider without a ready integration, write a [custom TTS class](/docs/ai-integration/custom-integrations/custom-tts) with a `cancel()` method and a `speak()` method that receives the text stream.
+Micdrop passes the agent's text to the TTS engine as the language model writes it. Providers that accept text over a WebSocket, such as ElevenLabs, Cartesia and Gradium, receive it in pieces. Engines that need a complete sentence receive one sentence at a time. Micdrop then streams the audio to the browser and stops it when the user interrupts. When an engine fails, [`FallbackTTS`](/docs/text-to-speech/fallback) moves to the next one and replays the pending text. To connect a provider without a ready integration, write a [custom TTS class](/docs/text-to-speech/custom) with a `cancel()` method and a `speak()` method that receives the text stream.
 
 Since Micdrop is a library, you run the server yourself, with your own provider keys and the voices of the engines you choose. Micdrop has no hosted version and no dashboard.
 
@@ -236,4 +236,4 @@ Since Micdrop is a library, you run the server yourself, with your own provider 
 
 ## Getting started
 
-For a live conversation, pick an engine that streams, judge it on the time to its first sound as much as on how natural it is, and test it on the names, prices and dates your product says. Then compare a hosted voice and an open model on your own sentences before you commit. With Micdrop, you can [start a first voice call in about five minutes](/docs/getting-started), then [mix and swap text to speech providers](/docs/ai-integration) behind one server option while the browser code stays the same.
+For a live conversation, pick an engine that streams, judge it on the time to its first sound as much as on how natural it is, and test it on the names, prices and dates your product says. Then compare a hosted voice and an open model on your own sentences before you commit. With Micdrop, you can [start a first voice call in about five minutes](/docs/getting-started), then [mix and swap text to speech providers](/docs/providers) behind one server option while the browser code stays the same.
