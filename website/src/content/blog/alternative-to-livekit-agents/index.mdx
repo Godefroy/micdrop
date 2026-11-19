@@ -3,7 +3,7 @@ title: 'LiveKit Agents Alternative: Voice AI in TypeScript'
 h1: 'Micdrop, a TypeScript alternative to LiveKit Agents'
 summary: 'Micdrop runs a voice call in TypeScript over a WebSocket to your own Node server. LiveKit Agents works in Node too, as a worker that joins a WebRTC room.'
 date: 2026-08-13
-update: 2026-09-28
+update: 2026-11-19
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -14,11 +14,14 @@ keywords:
   - 'LiveKit agents TypeScript'
   - 'LiveKit vs Micdrop'
   - 'LiveKit agents Node.js'
+  - 'LiveKit voice agents'
   - 'open source voice agent framework'
   - 'voice AI TypeScript'
   - 'WebSocket voice AI'
 similarPosts:
   - 'alternative-to-pipecat'
+  - 'pipecat-vs-livekit-agents'
+  - 'livekit-pricing'
 takeaways:
   - 'LiveKit Agents has a real Node.js SDK, and its own README describes it as a distribution of a framework originally written in Python.'
   - 'A LiveKit agent is a server-side participant inside a WebRTC room, which means an SFU to run or a cloud plan to pay for.'
@@ -34,15 +37,23 @@ Adding a voice agent to a web application that already exists is mostly a plumbi
 
 ## What LiveKit Agents does well
 
-LiveKit is a WebRTC media server with an agent framework on top, and both halves are open source, the framework under Apache-2.0. The agents repository has more than 13,000 stars. The framework covers semantic turn detection through a transformer model, native MCP support, SIP telephony for inbound and outbound calls, video and vision, multi-agent handoff, and a managed deployment path with observability and recording.
+LiveKit is a WebRTC media server with an agent framework on top. Both halves are open source, the framework under Apache-2.0. The Python agents repository has more than 15,000 stars. The framework covers semantic turn detection through a transformer model, native MCP support, SIP telephony for inbound and outbound calls, video and vision, multi-agent handoff, and a managed deployment path with observability and recording.
 
-That breadth is earned. LiveKit's own homepage lists OpenAI, NVIDIA and Salesforce among the companies running calls on it, and the plugin catalogue covers most of the speech and model providers a team would want. If your voice product involves phone numbers, video, or physical devices, this article ends here and LiveKit is your answer.
+That breadth is earned. OpenAI is the best-known customer. When the two companies announced their partnership in October 2024, LiveKit said [ChatGPT's Advanced Voice Mode ran on LiveKit](https://livekit.com/blog/openai-livekit-partnership-advanced-voice-realtime-api), with a LiveKit client SDK inside the ChatGPT app. ChatGPT replaced Advanced Voice Mode with [GPT-Live](/blog/gpt-live-vs-gpt-realtime-vs-gemini-live) in July 2026. LiveKit's homepage also lists NVIDIA and Salesforce among the companies running calls on it. The plugin catalogue covers most of the speech and model providers a team would want. If your voice product involves phone numbers, video, or physical devices, this article ends here and LiveKit is your answer.
+
+## LiveKit Agents in Node.js today
+
+We read the `agents-js` repository and LiveKit's documentation again on November 19, 2026.
+
+The Node SDK, `@livekit/agents` on npm, ships its releases within days of the Python ones. The `agents-js` README calls it a [Node.js distribution of the LiveKit Agents framework](https://github.com/livekit/agents-js), originally written in Python. For a voice agent, the core matches the Python SDK: `AgentSession`, tools defined with Zod, MCP servers, handoff between agents, the LiveKit turn detector, fallback adapters for the LLM, the STT and the TTS, and realtime models from OpenAI, Google and xAI.
+
+The plugins are where Node falls behind. The Node repository holds about 40 plugin packages, against 86 in the Python one. The table in the Node README lists only 23 of those 40. When your provider has no Node plugin, you write it yourself or buy the model through LiveKit Inference, on the LiveKit bill. A TypeScript team therefore works on the smaller of the two SDKs, on a roadmap set in Python.
+
+Both SDKs, the media server and the SIP service are open source under Apache-2.0. Agents [register with a LiveKit server](https://docs.livekit.io/agents/), self-hosted or on LiveKit Cloud, and you deploy the agent process wherever you like. LiveKit Cloud adds managed agent deployment, transcripts and traces.
+
+Telephony works from Node as well. Agents place and receive calls through LiveKit's SIP service. The Node examples include a warm transfer to a human supervisor over an outbound SIP trunk, plus answering machine detection. In the browser, LiveKit's JavaScript client SDK and its React components and hooks join the room and show the agent's state.
 
 ## Where LiveKit Agents gets heavy for a TypeScript team
-
-### The Node SDK trails the Python one
-
-`@livekit/agents` is real, maintained and shipping releases. Its README describes it as a Node.js distribution of the LiveKit Agents framework, originally written in Python, and the plugin table it publishes lists twenty-two packages, against a much longer list on the Python side. A TypeScript team therefore works on the smaller of the two SDKs, on a roadmap set elsewhere. That gap keeps closing, and it is still the gap you inherit today.
 
 ### An agent is a participant in a WebRTC room
 
@@ -50,11 +61,22 @@ The mental model is the same in both languages. A worker process authenticates a
 
 ### A second process to deploy
 
-`defineAgent`, `prewarm`, `entrypoint`, `WorkerOptions` and the `cli` helper describe a worker with its own lifecycle, sitting next to the Node server you already deploy. Two services, two sets of logs, two scaling stories, for one voice feature inside one product.
+You write an agent server with `defineAgent`, `prewarm`, `entrypoint`, `ServerOptions` and the `cli` helper. It has its own lifecycle and runs next to the Node server you already deploy, so one voice feature inside one product leaves you with two services to run, each with its own logs and its own scaling.
 
 ### Per-minute billing on top of provider billing
 
-LiveKit Cloud starts free with 1,000 agent session minutes, five concurrent sessions and 5,000 WebRTC minutes. Past that, agent sessions bill at $0.01 per minute and WebRTC minutes at $0.0005, with paid plans opening at $50 and $500 per month (prices read on the LiveKit pricing page in August 2026). Those amounts land on top of what you already pay your speech and model providers. With GPT-5.6 Terra, ElevenLabs Flash and gpt-4o-transcribe, a web agent comes to [about $0.055 a minute on LiveKit Cloud](/blog/livekit-pricing), providers included. The pricing is reasonable for what the platform does, and it is a per-minute line that grows with usage.
+LiveKit Cloud starts free with 1,000 agent session minutes, five concurrent sessions and 5,000 WebRTC minutes. Past that, agent sessions bill at $0.01 per minute and WebRTC minutes at $0.0005, with paid plans opening at $50 and $500 per month (prices read on the LiveKit pricing page in August 2026). Those amounts come on top of what you already pay your speech and model providers. With GPT-5.6 Terra, ElevenLabs Flash and gpt-4o-transcribe, a web agent comes to [about $0.055 a minute on LiveKit Cloud](/blog/livekit-pricing), providers included. The pricing is reasonable for what the platform does, but it is a per-minute line that grows with usage.
+
+## Other alternatives to LiveKit Agents
+
+- [Pipecat](https://pipecat.ai), built by Daily, is the other large open source framework. It is a Python pipeline that runs over Daily's WebRTC, a WebSocket or even a LiveKit room. We compared [Pipecat with LiveKit Agents](/blog/pipecat-vs-livekit-agents), and [Pipecat with Micdrop](/blog/alternative-to-pipecat).
+- [Daily](https://www.daily.co) sells the hosted WebRTC transport and Pipecat Cloud, which runs your Pipecat bots for you. Together they are the closest equivalent to LiveKit Cloud.
+- [Vapi](https://vapi.ai) is a hosted platform that runs the phone numbers, the dashboard and the pipeline for you, billed per minute. We weighed [owning the voice loop instead of renting it from Vapi](/blog/alternative-to-vapi).
+- The [OpenAI Realtime API](https://developers.openai.com/api/docs/guides/realtime) lets the browser talk to one speech to speech model directly over WebRTC, with the transcription, the model and the voice all bought from OpenAI. We compared [the Realtime API with an STT, LLM and TTS pipeline](/blog/openai-realtime-api-vs-pipeline). Micdrop also runs it behind its own client with the [`realtime` option](/docs/realtime).
+- [Dograh](https://github.com/dograh-hq/dograh) is an open source platform you host yourself, with a visual workflow builder, telephony and a dashboard, for teams that want what Vapi offers on their own servers.
+- Vocode, an older open source Python framework, stopped shipping releases in 2024, so we wrote up [the maintained alternatives to Vocode](/blog/alternative-to-vocode).
+
+We also ranked nine [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks) side by side, with their languages, transports and licenses.
 
 ## The Micdrop pipeline, TypeScript end to end
 
@@ -97,11 +119,11 @@ wss.on('connection', (socket) => {
 })
 ```
 
-Micdrop adds a socket handler to the [Fastify](/docs/server/with-fastify) or [NestJS](/docs/server/with-nestjs) application you already run, and the audio goes through the same load balancer as the rest of your traffic. The room, the worker and the media server have no equivalent here because there would be nothing for them to do.
+Micdrop adds a socket handler to the [Fastify](/docs/server/with-fastify) or [NestJS](/docs/server/with-nestjs) application you already run, so the audio goes through the same load balancer as the rest of your traffic. The room, the worker and the media server have no equivalent here because there would be nothing for them to do.
 
-Two behaviours that usually cost time are options rather than code. Micdrop [detects the end of a turn](/docs/client/turn-detection) with Smart Turn, an open model that hears whether the sentence sounds finished, so the assistant waits through a mid-sentence pause. The server can also [ask the LLM](/docs/server/semantic-turn-detection) whether the thought is complete. LiveKit's detector and Smart Turn both listen to the audio of the sentence, which is the faster of the [signals that end a turn](/blog/end-of-turn-detection-voice-agents). Noise filtering drops the "uh" and "hmm" that would otherwise trigger a full round trip. On the browser side, [voice activity detection](/docs/client/vad) runs on volume, on a Silero model, or on both at once, which is how you trade latency against false positives.
+Two behaviours that usually cost time are options rather than code. Micdrop [detects the end of a turn](/docs/client/turn-detection) with Smart Turn, an open model that hears whether the sentence sounds finished, so the assistant waits through a mid-sentence pause. The server can also [ask the LLM](/docs/server/semantic-turn-detection) whether the thought is complete. LiveKit's detector and Smart Turn both listen to the audio of the sentence, the faster of the [signals that end a turn](/blog/end-of-turn-detection-voice-agents). Noise filtering drops the "uh" and "hmm" that would otherwise trigger a full round trip. On the browser side, [voice activity detection](/docs/client/vad) runs on volume, on a Silero model, or on both at once. Your pick sets the balance between latency and false positives.
 
-Keys stay yours. Micdrop calls the providers you configure with your own credentials, so the only per-minute bills are theirs. Provider choice is open through [the AI integrations](/docs/providers), including a fully European stack with [Mistral, Gladia and Gradium](/docs/providers/sovereign-voice-ai), and each layer accepts a fallback provider that takes over when the primary one fails.
+Keys stay yours. Micdrop calls the providers you configure with your own credentials, so the only per-minute bills are theirs. You pick your providers among [Micdrop's AI integrations](/docs/providers), including a fully European stack with [Mistral, Gladia and Gradium](/docs/providers/sovereign-voice-ai). Each layer accepts a fallback provider that takes over when the primary one fails.
 
 ## API equivalences for a migration
 
@@ -110,7 +132,7 @@ Most of a migration is deleting the transport layer.
 | LiveKit Agents | Micdrop |
 |---|---|
 | Room and participants | One WebSocket per call |
-| Worker, job, `entrypoint` | The upgrade handler of your existing server |
+| Agent server, job, `entrypoint` | The upgrade handler of your existing server |
 | `AgentSession` | `new MicdropServer(socket, options)` |
 | `defineAgent` with `instructions` | `agent` option with `systemPrompt` |
 | STT, LLM and TTS plugins | `stt`, `agent` and `tts` options |
@@ -137,7 +159,7 @@ LiveKit holds up better on a weak network, because WebRTC sends audio over UDP. 
 
 ## Feature comparison
 
-This comparison was checked in August 2026, and both projects keep moving fast.
+We checked this comparison again on November 19, 2026. Both projects keep moving fast.
 
 | Aspect | LiveKit Agents | Micdrop |
 |---|---|---|
@@ -149,18 +171,18 @@ This comparison was checked in August 2026, and both projects keep moving fast.
 | **Video and vision** | Yes | No, voice only |
 | **Speech-to-speech models** | OpenAI Realtime, Gemini Live and several others | OpenAI Realtime and Gemini Live |
 | **Turn detection** | Audio model, local or on LiveKit Inference | Smart Turn audio model, plus an optional LLM check |
-| **Provider fallback** | On you | Built in for agent, STT and TTS |
+| **Provider fallback** | Fallback adapters for LLM, STT and TTS | Built in for agent, STT and TTS |
 | **Tool calling** | Yes, with Zod | Yes, with Zod |
 | **React** | Components and hooks | `@micdrop/react` hooks |
 | **React Native** | `@livekit/react-native`, on WebRTC | `@micdrop/react-native`, on WebSocket |
 | **Observability dashboard** | Yes, on LiveKit Cloud | No |
 | **Pricing** | Free tier, then per minute | Your provider bills only |
 | **License** | Apache-2.0 | MIT |
-| **Community** | Above 13,000 stars | Small and young |
+| **Community** | Above 15,000 stars on the Python repository | Small and young |
 
 ## What Micdrop leaves to LiveKit
 
-Micdrop ships no infrastructure of its own. The media server, the phone numbers, the SLA and the hosted plan all sit outside the packages, and a single maintainer stands behind Micdrop rather than a company with a support desk. The project started in 2025, so its community is a fraction of LiveKit's and you will find fewer tutorials and fewer third-party plugins.
+Micdrop ships no infrastructure of its own. The media server, the phone numbers, the SLA and the hosted plan all sit outside the packages. A single maintainer stands behind Micdrop rather than a company with a support desk. The project started in 2025, so its community is a fraction of LiveKit's and you will find fewer tutorials and fewer third-party plugins.
 
 ## How to choose
 
@@ -168,14 +190,12 @@ Pick LiveKit Agents when voice is your product rather than a feature of it, when
 
 Pick Micdrop when you are adding voice to a web application, when your stack is Node and TypeScript and you would rather keep it that way, when you want the browser side handled for you instead of assembling it on top of a WebRTC SDK, and when the only per-minute bills you want are the ones from the providers you picked.
 
-The same reasoning applies to Pipecat, the other open source framework on this terrain, which we compared with Micdrop in [the Pipecat comparison](/blog/alternative-to-pipecat). Vocode, an older open source Python framework, stopped shipping releases in 2024, so we wrote up [the maintained alternatives to Vocode](/blog/alternative-to-vocode).
-
 ## Getting started
 
 ```bash
 npm install @micdrop/server @micdrop/client @micdrop/openai @micdrop/gladia @micdrop/elevenlabs
 ```
 
-The [Getting Started guide](/docs/getting-started) walks through a working call in a few minutes, and the [React hooks](/docs/client/react-hooks) cover the UI states you will want to render.
+You can [set up a working call in a few minutes](/docs/getting-started). The [React hooks](/docs/client/react-hooks) cover the UI states you will want to render.
 
-LiveKit built the media platform that a large slice of the voice industry runs on, and choosing it means taking that platform on, either running the media server or paying for its cloud plan. When your voice feature lives inside a web app you already ship, a WebSocket to your own Node server and a browser package that knows what a microphone is will get you there with less to operate.
+LiveKit built the media platform that a large slice of the voice industry runs on. Choosing it means taking that platform on, either running the media server or paying for its cloud plan. When your voice feature lives inside a web app you already ship, a WebSocket to your own Node server and a browser package that knows what a microphone is will get you there with less to operate.
