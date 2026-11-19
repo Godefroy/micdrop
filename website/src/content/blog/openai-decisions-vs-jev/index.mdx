@@ -3,6 +3,7 @@ title: 'OpenAI Decisions vs Jev: gpt-6-luna Benchmark'
 h1: 'OpenAI Decisions API (gpt-6-luna) vs Jev on the same 90 voice commands'
 summary: 'gpt-6-luna, Jev and Claude Haiku 4.5 read the same 90 voice commands. Compare their latency, the commands they got right and the price of 1,000 turns.'
 date: 2026-10-13
+update: 2026-11-19
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -168,7 +169,7 @@ graph TD
 ```
 
 - Pick Jev when latency comes first and your calls are in English. It was the fastest, the most regular and the cheapest in this run, and it always answers. English is its main training language, so test other languages on your own turns.
-- Pick the Decisions API when you need documented data residency in Europe, HIPAA eligibility or image inputs, or when your agent already runs on OpenAI and one vendor is enough. Plan for refusals in your code, and remember that the API is in public beta.
+- Pick the Decisions API when you need documented data residency in Europe, HIPAA eligibility or image inputs, or when your agent already runs on OpenAI and one vendor is enough. Plan for refusals in your code. The API left its public beta on 22 October 2026 and is now generally available.
 - Keep an LLM for commands with several steps or a count, when a wrong action is worse for you than an extra second of waiting. You can also classify first and call the LLM only when the confidence is low.
 
 Whichever classifier you start with, a second one is a good fallback. When your LLM and your classifier both run on OpenAI, an OpenAI outage takes the routing down with the answers.

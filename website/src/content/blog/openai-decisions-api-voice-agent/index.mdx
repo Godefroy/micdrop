@@ -3,6 +3,7 @@ title: 'OpenAI Decisions API Tutorial: Route a Voice Agent'
 h1: 'Route a voice agent with the OpenAI Decisions API, in TypeScript'
 summary: 'Call the OpenAI Decisions API from Node, get typed answers from gpt-6-luna in 200 to 530 ms, and route each turn of a voice call before the LLM starts.'
 date: 2026-10-12
+update: 2026-11-19
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -148,7 +149,7 @@ for (const answer of decision.answers) {
 
 The SDK types `answers` as a union on `type`, so each branch of the `switch` reads the fields of its own kind of answer.
 
-The `input` is either a string or an array of user messages. A message holds text parts and images, each image written inline as a base64 data URL. The API rejects hosted image URLs, file IDs, audio and messages with a role other than `user`. To classify a conversation, write it into the input yourself, as text or as JSON. Micdrop sends it as JSON, with the turn to classify in one field and the messages before it in another.
+The `input` is either a string or an ordered array of messages, tool calls and tool outputs. A user message holds text, JSON parts (`input_json`) and images, written inline as a base64 data URL or given as a public URL. The API rejects file IDs and audio. Micdrop sends the conversation as one JSON input, with the turn to classify in one field and the messages before it in another.
 
 ## Writing questions the model can answer
 
@@ -159,7 +160,7 @@ These four rules come from OpenAI's guide.
 - Give every choice a distinct meaning and add a fallback such as `other`. Without it, the model has to put a turn that fits nowhere under a wrong value.
 - Describe the levels of a score so that two neighbours differ on a criterion. "Annoyed: complains or mentions a repeated problem" and "Angry: insults, threats or strong language" can be told apart. "Annoyed" and "Very annoyed" cannot.
 
-All the questions of a request share the same input, so you pay for the input tokens once. A question that rarely matters, such as a manipulation check, therefore costs only the tokens of its own instructions.
+All the questions of a request share the same input, so you pay for the input tokens once. A question that rarely matters, such as a manipulation check, therefore costs only the tokens of its own instructions. When requests start with the same input of at least 1,024 tokens, such as a long product description, the prompt cache bills that prefix at a discount.
 
 The probabilities are estimates from the model. Before you set a threshold in production, run your questions on a few dozen turns you have labelled yourself, then pick the value that separates the turns you labelled yes from the others.
 
@@ -351,14 +352,15 @@ A request of 470 input tokens costs about $0.00005. A call of twenty turns costs
 
 ## Limits of the Decisions API today
 
-- The API is in public beta. OpenAI's guide announces general availability "in the coming weeks", so fields and prices can still change.
-- `gpt-6-luna` is the only model the API accepts.
+- `gpt-6-luna` is the only model the API accepts, with up to 400 questions per request since the general availability of 22 October 2026.
 - Any question can come back as a refusal, with no reason given. Code that reads an answer without checking it breaks on that turn.
 - The model reads text and images. In a voice call it reads the transcript, so it knows the words and nothing of the tone. A caller who says "great, thanks a lot" in a furious voice reads as calm.
 - The answers are a probability, a value from your list or a score. To pull a date or an order number out of a sentence, use the LLM or [structured extraction](/docs/server/extract).
 - The classifier and the LLM share a vendor when both run on OpenAI. An OpenAI outage then takes the routing down with the answers.
 
-According to OpenAI, eligible customers can use the API with Zero Data Retention and under HIPAA, with data residency in the United States and in Europe.
+According to OpenAI, eligible customers can use the API with Zero Data Retention and under HIPAA, with data residency in the United States and in Europe, billed 10% above the standard price.
+
+Since 11 November 2026, Google offers the same kind of API with [Gemini Decision 1](/docs/classifiers/gemini-decisions), at the same $0.10 per million input tokens. It also reads audio, video and PDF, and it returns an answer to every question instead of a refusal. In Micdrop, `GeminiClassifier` takes the place of `OpenaiClassifier` in the same `MicdropServer` setup, and the [ranking of decision model APIs](/blog/top-decision-model-apis) compares both with the other models of this kind.
 
 The Decisions API has one direct equivalent, [Jev, the System One model of TypeSafe](/blog/what-is-jev), which answers the same three kinds of questions and costs $0.042 per million input tokens. When we sent 90 voice commands to both, [Jev answered faster than `gpt-6-luna` at the median and read more of them right](/blog/openai-decisions-vs-jev). The same Micdrop server can [route a voice call with Jev](/blog/jev-voice-agent-typescript) through another classifier class, with the same `onBeforeAnswer` hook. Keywords and an LLM with structured output are the two other [ways to classify the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
 
@@ -366,13 +368,13 @@ The Decisions API has one direct equivalent, [Jev, the System One model of TypeS
 
 <FaqList>
   <FaqItem question="What is the OpenAI Decisions API?">
-    The OpenAI Decisions API is an endpoint, `POST /v1/decisions`, that answers typed questions about a text or an image instead of writing a reply. Its model, `gpt-6-luna`, returns the probability that a condition is true, one value out of a list, or a score on ordered levels. It is in public beta in October 2026.
+    The OpenAI Decisions API is an endpoint, `POST /v1/decisions`, that answers typed questions about a text or an image instead of writing a reply. Its model, `gpt-6-luna`, returns the probability that a condition is true, one value out of a list, or a score on ordered levels. It has been generally available since 22 October 2026.
   </FaqItem>
   <FaqItem question="How do I use the OpenAI Decisions API?">
     Install version 7.30.0 or later of the `openai` package, then call `client.decisions.create()` with the model `gpt-6-luna`, an input and an array of questions. Each question has a type (`predicate`, `choice` or `score`), a name and instructions. Read the `answers` array of the response, in the order of your questions, and skip the answers whose type is `refusal`.
   </FaqItem>
   <FaqItem question="How much does the OpenAI Decisions API cost?">
-    Input costs $0.10 per million tokens with `gpt-6-luna`, and output is free. A request of 470 input tokens, which is one turn of a call with its history and three questions, costs about $0.00005. OpenAI applies a premium for regional processing.
+    Input costs $0.10 per million tokens with `gpt-6-luna`, and output is free. A request of 470 input tokens, which is one turn of a call with its history and three questions, costs about $0.00005. OpenAI adds 10% for regional processing in the United States or Europe, and bills input repeated across requests at a discount through the prompt cache.
   </FaqItem>
   <FaqItem question="How fast is the OpenAI Decisions API?">
     OpenAI announces it as about ten times faster than the Responses API. We measured 200 to 530 ms per request on October 7, 2026, with about 470 input tokens and three questions. The first request of a process took about 2.4 s, while it opened the connection.
@@ -381,7 +383,10 @@ The Decisions API has one direct equivalent, [Jev, the System One model of TypeS
     Structured outputs make an LLM write JSON that matches your schema, token by token, and the JSON can hold any text. The Decisions API writes no text. It returns a probability for each answer you defined, which your code can compare with a threshold, and it answers faster than a completion.
   </FaqItem>
   <FaqItem question="Can gpt-6-luna classify audio?">
-    The Decisions API reads text and inline images only. To classify what a caller says, transcribe the audio with a speech to text first, then send the transcript as the input.
+    The Decisions API reads text, JSON and images only. To classify what a caller says, transcribe the audio with a speech to text first, then send the transcript as the input. Gemini Decision 1, the decision model of Google, reads audio directly.
+  </FaqItem>
+  <FaqItem question="Can I switch from the OpenAI Decisions API to Gemini Decisions?">
+    Yes. In Micdrop, replace `OpenaiClassifier` from `@micdrop/openai` with `GeminiClassifier` from `@micdrop/gemini` and keep the rest of the `MicdropServer` setup, `classifierOptions` and the `onBeforeAnswer` hook included. Rename the `predicate()` questions to `noul()` and read `answers.wantsHuman.noul` instead of `probability`. Gemini answers every question, and an input its safety filters block leaves the turn without a classification, so the LLM answers it. The [Gemini Decisions classifier page](/docs/classifiers/gemini-decisions) lists its options.
   </FaqItem>
 </FaqList>
 
