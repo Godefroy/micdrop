@@ -1,8 +1,9 @@
 ---
 title: 'Synthflow Alternative: Voice AI With No Annual Contract'
 h1: 'Micdrop, an open source Synthflow alternative for TypeScript web apps'
-summary: 'Synthflow now starts at $30,000 a year. Micdrop is an open source TypeScript library that runs the voice loop in your Node server, billed by your providers.'
+summary: 'Synthflow now sells only annual enterprise contracts. Micdrop is an open source TypeScript library that runs the voice loop in your Node server.'
 date: 2026-10-05
+update: 2026-11-19
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -20,13 +21,13 @@ similarPosts:
   - 'alternative-to-retell-ai'
   - 'open-source-voice-agent-frameworks'
 takeaways:
-  - 'Synthflow sells only enterprise contracts to new customers, from $30,000 a year. Micdrop is a free npm package, and you pay your speech and model providers directly.'
+  - 'Synthflow sells new customers only annual enterprise contracts, priced on quote. Micdrop is a free npm package, and you pay your speech and model providers directly.'
   - 'A Synthflow agent is built in a flow builder and calls your code over HTTP. A Micdrop agent is a TypeScript class whose tools query your database in the same process.'
   - 'In the browser, Synthflow gives you an embedded widget or a raw audio protocol to implement. Micdrop ships the browser side as a package with React hooks.'
   - 'Synthflow includes phone numbers, contact centre integrations, a dashboard, SOC 2, HIPAA and an EU region, which a library leaves to you. Micdrop covers the voice conversation inside a web app.'
 ---
 
-[Synthflow](https://synthflow.ai) used to be the voice agent platform you could try on a credit card. Today its pricing page lists a single plan, an enterprise contract starting at $30,000 a year, and the older Pro, Growth and Agency plans are closed to new subscriptions. Teams that want voice inside a web application and want to start this week need an alternative they can install, such as an open source library.
+[Synthflow](https://synthflow.ai) used to be the voice agent platform you could try on a credit card. Today its pricing page offers only an annual enterprise agreement, with no published price, no free plan and no trial. Its older Pro, Growth and Agency plans are closed to new subscriptions. Teams that want voice inside a web application and want to start this week need an alternative they can install, such as an open source library.
 
 [Micdrop](/) is an open source TypeScript library for real-time voice conversations with AI. `@micdrop/client` handles the browser and `@micdrop/server` handles Node, both under the MIT licence, and together they run the speech-to-text, model and text-to-speech loop inside a server you already deploy. If your product makes phone calls at contact centre scale, Synthflow is built for you. If voice is a feature of a web app and your backend speaks TypeScript, start with Micdrop.
 
@@ -34,19 +35,19 @@ takeaways:
 
 ## What Synthflow does well
 
-Synthflow is a Berlin company backed by Accel, which led its $20M Series A in June 2025. Its homepage claims more than 500 million calls handled and 99.99% uptime, with the YMCA, Freshworks and Thryv as named customers. It runs its own telephony, accepts your Twilio account or your SIP trunk, and connects to PBX and contact centre systems such as 3CX, 8x8, Aircall and Genesys.
+Synthflow is a Berlin company backed by Accel, which led its $20M Series A in June 2025. Its homepage claims more than a million calls a day in over 30 countries and 99.99% uptime, with the YMCA, Freshworks, Thryv and Batteries Plus as named customers. It runs its own telephony, accepts your Twilio account or your SIP trunk, and has built-in connections for Zoom Phone, Zoom Contact Center, Five9, RingCentral and 8x8. Genesys and other phone systems connect over SIP.
 
-The product is broad. You build an agent in the Flow Designer, a node graph with branches, call transfers, real-time booking and subflows, or as a single prompt in the Prompt Builder. A knowledge base takes PDFs, URLs and site crawls. More than 200 integrations cover Salesforce, HubSpot, Zendesk, Cal.com, GoHighLevel, Zapier and Make. The Test Center runs simulated calls before a release, the analytics dashboard keeps every call afterwards, and agencies get white-label workspaces with subaccounts and their own pricing. Synthflow lists SOC 2, HIPAA with a BAA, GDPR and ISO 27001, and new accounts choose a US or an EU region. A library offers none of these features, so check which of them your product actually needs before you compare anything else.
+The product is broad. You build an agent in the Flow Designer, a node graph with branches, call transfers, real-time booking and subflows, or as a single prompt in the Prompt Builder. A knowledge base takes PDFs, URLs and site crawls. More than 200 integrations cover Salesforce, HubSpot, Zendesk, Cal.com, GoHighLevel, Zapier and Make. The Test Center runs simulated calls before a release, the analytics dashboard keeps every call afterwards, and agencies get white-label workspaces with subaccounts and their own pricing. Synthflow lists SOC 2, HIPAA with a BAA, GDPR, ISO 27001 and PCI DSS, with ISO 42001 in progress, and new accounts choose a US or an EU region. A library offers none of these features, so check which of them your product actually needs before you compare anything else.
 
 On Trustpilot, Synthflow scores 4.1 out of 5 over 215 reviews in October 2026, and the positive ones keep coming back to how easy the builder is.
 
 ## Why teams look for a Synthflow alternative
 
-### The entry price is a $30,000 annual contract
+### You start with an annual enterprise contract
 
-Synthflow's pricing page says enterprise contracts start at $30,000 a year, scoped on call volume, concurrency, telephony setup, integrations, security needs and launch support. It lists no per-minute rate, no trial and no self-serve plan in October 2026. Before Synthflow moved to enterprise contracts, third-party reviews put pay-as-you-go usage at roughly $0.15 to $0.24 a minute, with five concurrent calls included and $20 a month for each extra one.
+Synthflow sells an annual enterprise agreement, scoped to your call volume, phone system, integrations, security needs and launch support, with model usage included. Its pricing page gives no price and no per-minute rate. In October 2026 the same page still gave $30,000 a year as the starting point. Before Synthflow moved to enterprise contracts, third-party reviews put pay-as-you-go usage at roughly $0.15 to $0.24 a minute, with five concurrent calls included and $20 a month for each extra one.
 
-For a call centre replacing human agents, $30,000 a year is a modest line. For a product team that wants to find out whether its users will talk to a voice mode at all, it means a sales cycle and a budget approval before the first real conversation. A prototype that used to cost a few dollars of minutes now starts with a sales call.
+For a call centre replacing human agents, signing an annual platform contract is routine. For a product team that wants to find out whether its users will talk to a voice mode at all, it means a sales cycle and a budget approval before the first real conversation. A prototype that used to cost a few dollars of minutes now starts with a sales call.
 
 ### You build the agent in Synthflow's dashboard
 
@@ -131,13 +132,13 @@ Products already run on Micdrop. [Raconte.ai](https://raconte.ai), built by Micd
 
 ## Synthflow vs Micdrop, feature by feature
 
-Synthflow's terms below date from October 2026. Check its pricing page before you plan a budget, since the offer changed this year.
+Synthflow's terms below date from November 2026. Check its pricing page before you plan a budget, since the offer changed this year.
 
 | | Synthflow | Micdrop |
 |---|---|---|
 | **What it is** | Hosted enterprise voice AI platform | MIT library on npm |
 | **Where the conversation runs** | Synthflow's cloud, US or EU region | Your Node server |
-| **Entry price** | Enterprise contract from $30,000 a year | Free, plus your provider bills |
+| **Entry price** | Annual enterprise contract, priced on quote | Free, plus your provider bills |
 | **Agent authoring** | Flow Designer or Prompt Builder | TypeScript in your repository |
 | **Custom logic** | HTTP custom actions and webhooks | Tool functions with Zod schemas |
 | **Browser integration** | Voice widget or raw WebSocket RTP protocol | `@micdrop/client`, React and React Native packages |
@@ -145,14 +146,14 @@ Synthflow's terms below date from October 2026. Check its pricing page before yo
 | **Phone numbers, SIP, contact centres** | Yes, with its own telephony | Not covered |
 | **Dashboard, call history, analytics** | Included | Events and hooks, you build the UI |
 | **Testing** | Test Center with simulated calls | Your test suite |
-| **Compliance** | SOC 2, HIPAA with BAA, GDPR, ISO 27001 | Depends on your hosting and providers |
+| **Compliance** | SOC 2, HIPAA with BAA, GDPR, ISO 27001, PCI DSS | Depends on your hosting and providers |
 | **Support** | Managed launch support on contract | GitHub issues, one maintainer |
 
 Weigh support as heavily as price. Synthflow sells support with its contracts, while one person maintains Micdrop, a young project.
 
 ## What each option costs
 
-With Synthflow, the bill is a negotiated annual contract from $30,000, sized on your call volume, concurrency, telephony and security needs. It covers the platform, the telephony and the launch support in one invoice.
+With Synthflow, the bill is a negotiated annual contract with no published price, sized on your call volume, phone system, integrations and security needs. It covers the platform, the telephony, the model usage and the launch support in one invoice.
 
 With Micdrop, the library costs nothing. You pay transcription, the model and the voice at list price, directly to each provider, plus the share of your server that runs the calls. A voice feature with a few hundred conversations a month costs what those minutes cost at the providers you chose, and you can measure it on your first day of traffic.
 
@@ -197,10 +198,10 @@ Phone numbers stay where they are. Micdrop covers the conversation in the browse
     Yes, several. Dograh is the closest to the product itself: BSD 2-Clause, self-hosted with Docker, with a visual workflow builder, telephony and your own provider keys. Pipecat (BSD 2-Clause, Python), LiveKit Agents (Apache 2.0, Python and Node) and Bolna (MIT) are code-first frameworks that replace the orchestration and leave the dashboard to you. Micdrop (MIT, TypeScript) covers a voice conversation between a browser and your own Node server. With any of them, you run what Synthflow ran for you.
   </FaqItem>
   <FaqItem question="Is Synthflow free?">
-    Synthflow charges every new customer through an enterprise contract, starting at $30,000 a year in October 2026. The older self-serve plans are closed to new subscriptions. The open source frameworks are free to install, and you pay your speech and model providers plus your servers.
+    No. Synthflow has no free plan or trial. Every new customer signs an annual enterprise contract priced on quote. The older self-serve plans are closed to new subscriptions. The open source frameworks are free to install, and you pay your speech and model providers plus your servers.
   </FaqItem>
   <FaqItem question="How much does Synthflow cost?">
-    Synthflow's enterprise contracts start at $30,000 a year in October 2026, priced on call volume, concurrency, telephony setup, integrations, security needs and launch support. It publishes no per-minute rate. Third-party reviews put its earlier pay-as-you-go usage at roughly $0.15 to $0.24 a minute, with extra concurrent calls at $20 a month each, but those plans are closed to new customers.
+    Synthflow publishes no price. Its enterprise contracts are annual, priced on call volume, phone system, integrations, security needs and launch support, with model usage included. In October 2026 its pricing page still gave $30,000 a year as the starting point. Third-party reviews put its earlier pay-as-you-go usage at roughly $0.15 to $0.24 a minute, with extra concurrent calls at $20 a month each, but those plans are closed to new customers.
   </FaqItem>
   <FaqItem question="What is Synthflow used for?">
     Synthflow builds AI phone agents for inbound and outbound calls: customer support lines, appointment booking, lead qualification and call routing. Businesses configure them in a no-code builder and connect them to their phone system, their CRM and their calendar.

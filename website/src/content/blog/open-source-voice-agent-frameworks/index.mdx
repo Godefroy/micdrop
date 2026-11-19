@@ -71,7 +71,7 @@ Some well-known names are deliberately absent. General TypeScript agent framewor
 | **Vapi** | Hosted | WebRTC (Daily) | Nothing | Yes | Proprietary | $0.05/min + providers |
 | **Retell AI** | Hosted | WebRTC (LiveKit) | Nothing | Yes, broad CCaaS | Proprietary | $0.07 to $0.31/min |
 | **Bland** | Hosted | WebSocket | Nothing | Yes | Proprietary | $0.11 to $0.14/min |
-| **Synthflow** | Hosted | WebSocket | Nothing | Yes, own carrier | Proprietary | From $30,000/year |
+| **Synthflow** | Hosted | WebSocket | Nothing | Yes, own carrier | Proprietary | Annual contract, price on quote |
 
 ## Open source frameworks you run yourself
 
@@ -193,9 +193,9 @@ Bland raised a $50M Series C in June 2026 led by Dell Technologies Capital, serv
 
 ![Screenshot of the Synthflow homepage, an enterprise voice AI platform for automated phone calls](./synthflow.png)
 
-[Synthflow](https://synthflow.ai) is the one hosted vendor with EU hosting of its own. The company is AgentFlow AI GmbH, registered in Berlin, and it publishes EU and US hosting regions, ISO 27001, SOC 2, GDPR, HIPAA, PCI DSS, a 99.99% SLA and an EU AI Act transparency statement. It runs its own carrier network with regional points of presence, integrates with a dozen named contact-centre platforms including Five9, Genesys Cloud, Talkdesk, RingCentral and Zoom, and handles over 10 million calls a month across 30 countries for customers including Freshworks and Thryv.
+[Synthflow](https://synthflow.ai) is the one hosted vendor with EU hosting of its own. The company is AgentFlow AI GmbH, registered in Berlin, and it publishes EU and US hosting regions, ISO 27001, SOC 2, GDPR, HIPAA, PCI DSS, a 99.99% SLA and an EU AI Act transparency statement. It runs its own carrier network with regional points of presence, integrates with a dozen named contact-centre platforms including Five9, Genesys Cloud, Talkdesk, RingCentral and Zoom, and handles more than a million calls a day across more than 30 countries for customers including Freshworks and Thryv.
 
-There is no self-hosting and no SDK. The documented surface is a REST and streaming API, and what the marketing calls a WebSocket SDK is a protocol you implement yourself from copy-paste samples. The pricing page now publishes a single number: enterprise contracts start at $30,000 a year. The component rates that blend out to roughly $0.15 to $0.24 a minute come from third-party sources that agree with each other rather than from Synthflow directly. Its flows and custom actions become code once you [move a Synthflow agent into your own Node server](/blog/alternative-to-synthflow).
+There is no self-hosting and no SDK. The documented surface is a REST and streaming API, and what the marketing calls a WebSocket SDK is a protocol you implement yourself from copy-paste samples. Synthflow now sells only annual enterprise contracts and publishes no price. The component rates that blend out to roughly $0.15 to $0.24 a minute come from third-party sources that agree with each other rather than from Synthflow directly. Its flows and custom actions become code once you [move a Synthflow agent into your own Node server](/blog/alternative-to-synthflow).
 
 ## How to choose between them
 
@@ -211,7 +211,7 @@ If phone calls are the whole product, look at **Jambonz** to own the telecom lay
 
 If what you want is a hosted platform without the hosting, **Dograh** is the only entry in this list built for that. You get the dashboard, the workflow builder and the carrier integrations as a Docker stack on your own machines, under a permissive licence, and you accept operating a Python service and its dependencies to have them. Weigh it against the hosted four on operations rather than on features, since that is where the difference actually lands.
 
-Among the hosted four, the deciding question is where your money and your data go. **Vapi** is the one that separates the platform fee out, at $0.05 a minute, and lets you keep your own provider contracts. **Bland** is simplest to forecast because everything is included, and impossible to unbundle. **Retell** has the deepest verified SIP integrations and no European presence. **Synthflow** is the one to shortlist when EU hosting is a requirement and a $30,000 annual floor is acceptable.
+Among the hosted four, the deciding question is where your money and your data go. **Vapi** is the one that separates the platform fee out, at $0.05 a minute, and lets you keep your own provider contracts. **Bland** is simplest to forecast because everything is included, and impossible to unbundle. **Retell** has the deepest verified SIP integrations and no European presence. **Synthflow** is the one to shortlist when EU hosting is a requirement and an annual enterprise contract is acceptable.
 
 Two questions get skipped at selection time and asked in production. What happens when your text-to-speech provider goes down in the middle of a call? What happens to the conversation when the user pauses mid-sentence? Provider fallback and turn detection both deserve a test while you still have the choice. [Simulated calls on every release](/blog/top-voice-agent-testing-tools) keep both from breaking quietly later.
 
@@ -231,7 +231,7 @@ Two questions get skipped at selection time and asked in production. What happen
     Yes, though only three projects qualify. LiveKit Agents ships a Node distribution with roughly half the plugin catalogue of its Python side, the OpenAI Agents SDK runs a server-side voice loop over WebSocket if you use OpenAI's realtime model, and Micdrop is TypeScript on both the browser and the server, with swappable providers or a realtime model from OpenAI or Google, though it is much the smallest and youngest of the three. Everything else labelled a Node or TypeScript SDK by a voice vendor is a REST client that calls a service running the conversation elsewhere.
   </FaqItem>
   <FaqItem question="How much does an AI voice agent cost per minute in 2026?">
-    On a hosted platform, expect $0.05 a minute of platform fee with Vapi plus your provider bills, around $0.07 to $0.31 with Retell depending on the model, $0.11 to $0.14 all-inclusive with Bland, and roughly $0.15 to $0.24 with Synthflow. On a self-hosted framework you pay speech-to-text, the model and text-to-speech directly at each provider's list price, with no per-minute layer added on top, so the total depends entirely on which providers you pick.
+    On a hosted platform, expect $0.05 a minute of platform fee with Vapi plus your provider bills, around $0.07 to $0.31 with Retell depending on the model, and $0.11 to $0.14 all-inclusive with Bland, while Synthflow sells annual contracts with no published price. On a self-hosted framework you pay speech-to-text, the model and text-to-speech directly at each provider's list price, with no per-minute layer added on top, so the total depends entirely on which providers you pick.
   </FaqItem>
   <FaqItem question="Do I need WebRTC to build a voice agent?">
     No. WebRTC exists because many-to-many media is hard, and a browser talking to your own backend is a one-to-one connection. A WebSocket carries that traffic through standard load balancers and reverse proxies with no SFU, no TURN server and no ICE negotiation, provided voice activity detection runs in the browser so you send audio only while someone is speaking. [WebRTC earns its complexity](/blog/websocket-or-webrtc-voice-agent) when you add phone calls, video or several human participants in the same room.
