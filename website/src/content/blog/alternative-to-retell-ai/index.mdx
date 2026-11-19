@@ -3,7 +3,7 @@ title: 'Retell AI Alternative: Run the Voice Loop in Your App'
 h1: 'Micdrop, an open source Retell AI alternative for TypeScript web apps'
 summary: 'Micdrop runs the voice loop in your Node server, so you pay your AI providers directly. Retell AI bills it per minute and extra concurrent calls monthly.'
 date: 2026-08-24
-update: 2026-11-09
+update: 2026-11-19
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -38,11 +38,13 @@ Start with what your product is. If it makes and answers phone calls, Retell is 
 
 ## What Retell AI does well
 
-Retell says its agents have handled more than 200 million calls, it publishes customer logos including Motorola, Lenovo, Anker and Grab, and it holds a 4.8 average over roughly 1,750 G2 ratings. It carries SOC 2 Type 1 and Type 2, signs a GDPR data processing addendum, and lets you self-sign a HIPAA business associate agreement online at no extra cost, which is unusually direct for that paperwork.
+Retell says its agents handle more than 100 million calls a month for more than 4,000 businesses, it publishes customer logos including Motorola, Lenovo, Anker and Grab, and it holds a 4.8 average over roughly 2,600 G2 reviews. It carries SOC 2 Type 1 and Type 2, signs a GDPR data processing addendum, and lets you self-sign a HIPAA business associate agreement online at no extra cost, which is unusually direct for that paperwork.
 
 The product does much more than orchestrate a call. You build agents either as a single prompt or as a node-based conversation flow, attach a knowledge base fed by crawled pages and uploaded documents, and connect CRMs, helpdesks and calendars through prebuilt integrations. Before a release you run graded simulation test cases and A/B tests on live traffic. During a call you can watch it live and take over. Afterwards you get success scoring, sentiment analysis, full transcripts and an AI quality-assurance pass. For phone calls, Retell handles warm transfer, IVR navigation, DTMF capture, batch calling and branded caller ID.
 
-A library does not attempt that. Decide which of those pieces your product needs, and you know whether a library covers you.
+A library leaves all of that to you. Decide which of those pieces your product needs, and you know whether a library covers you.
+
+Retell advertises a response time around 600 milliseconds. G2 reviewers praise the latency and how quickly an inbound agent goes live more than anything else. They complain about the learning curve, pricing that gets harder to forecast as volume grows, the effort integrations and SMS setup take, support they find slow, and voices that sound weaker outside English.
 
 ## Why teams look for a Retell AI alternative
 
@@ -56,7 +58,7 @@ A mid-range web-app configuration, infrastructure plus a platform voice plus a m
 
 ### Concurrency is a monthly subscription line
 
-Twenty concurrent calls come with the account, and each additional one is $8 a month. For an outbound campaign you set that number yourself, from the volume you plan to dial. For a voice feature inside a product, concurrency is whatever your users happen to do at the same time, and that traffic swings hard. A product demo or a Monday morning across two time zones leaves you provisioning headroom you pay for all month, or watching calls queue at the ceiling.
+Twenty concurrent calls come with the account, and each additional one is $8 a month. For an outbound campaign you set that number yourself, from the volume you plan to dial. For a voice feature inside a product, concurrency is whatever your users happen to do at the same time, and that traffic swings hard. A product demo or a Monday morning across two time zones leaves you paying all month for headroom, or turning users away at the limit. Retell also connects the calls above your limit if you enable its burst option, at $0.10 a minute extra. That takes a mid-range minute from about $0.115 to $0.215, nearly double, for as long as the spike lasts.
 
 On a server you run, the same spike is CPU and sockets on infrastructure you already scale for the rest of the application.
 
@@ -79,6 +81,19 @@ Most teams never think about it. For a European product handling recorded voice,
 When a call goes wrong, the turn that broke it ran on Retell's machines. You get the transcript, the recording, the node transitions, the sentiment score and the timings, which is a lot, and you get them after the fact. Reproducing the bad turn means placing another call and hoping it misbehaves the same way, because there is no local process to attach a debugger to and no way to step through the decision that cut the user off mid-sentence.
 
 Turn-taking, interruption handling and end-of-turn detection are platform behaviour too, adjusted through agent settings, and the code behind those decisions stays out of reach.
+
+## The best Retell AI alternatives for developers
+
+Six alternatives come up most often when developers compare Retell. The list starts with the hosted platforms closest to Retell's product and ends with the frameworks where you write the agent yourself. Each price below comes from the vendor's pricing page on November 19, 2026. For comparison, Retell charges [$0.07 to $0.31 a minute before add-ons](/blog/retell-ai-pricing).
+
+1. [Vapi](https://vapi.ai) is the closest hosted replacement for a developer team. It charges a $0.05 platform fee a minute and accepts your own keys for every speech and model provider, which then bill you directly. The usage-only plan includes four concurrent lines, then charges $10 a month for each extra one. Pick it when you want a hosted phone agent and your own provider contracts. Vapi and Retell differ on [provider billing and call workflows](/blog/vapi-vs-retell-ai).
+2. [Bland](https://www.bland.ai) runs its own speech-to-text, model and text-to-speech, so the whole call stays inside Bland. It costs $0.14 a minute with every model included, or $0.12 on the $299 monthly Build plan, and offers US, EU or APAC data residency. It suits high-volume phone operations in regulated companies that accept Bland's models. A team that wants to [choose its own models and keys](/blog/alternative-to-bland-ai) picks one of the other five.
+3. [Dograh](https://www.dograh.com) is a complete voice agent platform published as open source under BSD 2-Clause, with 6,230 GitHub stars. It gives you a workflow builder, a dashboard and telephony integrations such as Twilio, Vonage, Telnyx, Plivo and Asterisk, as a Docker stack on your own servers with your own keys. Its managed cloud charges $0.01 a minute. Pick it when you want to host a builder and dashboard like Retell's yourself, and your team can run a Python service built on Pipecat.
+4. [Bolna](https://www.bolna.ai) publishes its orchestration framework in Python under MIT, with 831 GitHub stars, and keeps its hosted platform and no-code dashboard closed source. The framework connects to Twilio and Plivo. You can rent the hosted platform from around $0.06 a minute, with your own keys. Bolna is built around more than 22 Indian languages, Hinglish included, which makes it the first one to test for calls in India.
+5. [LiveKit Agents](https://github.com/livekit/agents) is an Apache 2.0 framework in Python and Node on top of LiveKit's open source WebRTC media server, with a SIP gateway for phone calls. LiveKit Cloud starts free with 1,000 agent minutes a month, then costs $50 or $500 a month, with extra minutes at $0.01. It fits teams that want web, mobile and phone agents on one real-time infrastructure. Most of its community writes Python, with 15,283 stars on the Python repository against 970 on the JavaScript one. Check [what LiveKit Agents offers in Node.js](/blog/alternative-to-livekit-agents) before you pick it for a Node team.
+6. [Pipecat](https://pipecat.ai) is a BSD 2-Clause framework and the most starred open source project built for voice agents, with 17,347 GitHub stars. It is Python only, connects to Twilio, Telnyx, Plivo and Exotel, and lets you swap every speech and model provider. Pipecat Cloud bills $0.01 to $0.03 per active agent minute. It suits Python teams that want to compose the pipeline themselves, while a TypeScript team adopting it runs a second service in another language.
+
+Micdrop is narrower than all six. It covers one case, a voice conversation between a browser and your own Node server.
 
 ## How Micdrop runs the loop inside your own server
 
@@ -167,7 +182,7 @@ Products already run on Micdrop. [Raconte.ai](https://raconte.ai) conducts voice
 
 ## Head to head
 
-These prices come from Retell's pricing page as read on November 9, 2026. Voice AI pricing moves fast, so check Retell's pricing page before you commit a budget.
+These prices come from Retell's pricing page as read on November 19, 2026. Voice AI pricing moves fast, so check Retell's pricing page before you commit a budget.
 
 | | Retell AI | Micdrop |
 |---|---|---|
@@ -178,7 +193,7 @@ These prices come from Retell's pricing page as read on November 9, 2026. Voice 
 | **Custom logic** | A public WebSocket Retell connects to | Functions and Zod schemas in your process |
 | **How the model is billed** | Per minute of call, from $0.0016 to $0.32, up to $0.64 on the fast tier | Per token, by your provider |
 | **Platform fee** | $0.055 / min of voice infrastructure | None |
-| **Concurrency** | 20 included, then $8 / line / month | Your server capacity |
+| **Concurrency** | 20 included, then $8 / line / month, or burst at +$0.10 / min | Your server capacity |
 | **Browser SDK** | `retell-client-js-sdk`, transcript and raw audio events | `@micdrop/client`, plus React hooks |
 | **Turn-taking and interruptions** | Platform behaviour, tuned in agent settings | Code you read, configure and replace |
 | **Phone numbers, SIP / PSTN** | Yes, with warm transfer, IVR and DTMF | Not covered |
@@ -254,7 +269,7 @@ Anything answering a phone number stays where it is. Micdrop covers the web leg,
     No. Micdrop connects a browser to your Node server over a WebSocket, and it has no SIP, PSTN or telephony layer. If your agent has to answer a phone number, a hosted platform like Retell or Vapi, or a telephony-capable framework like Pipecat or LiveKit Agents, is the right tool. Micdrop covers the web leg: a user talking to your application in a tab.
   </FaqItem>
   <FaqItem question="Is Retell AI a good product?">
-    It scores well on the usual measures, with a G2 rating and SOC 2 coverage that are strong for the category, and Motorola, Lenovo and Grab put their names on it. The recurring criticisms in the G2 reviews are the learning curve, the number of voices available for languages other than English, and pricing that is hard to forecast because it is assembled from many per-minute components. It stays a good choice for a phone operation.
+    It scores well on the usual measures, with a G2 rating and SOC 2 coverage that are strong for the category. Motorola, Lenovo and Grab also put their names on it. The recurring criticisms in the G2 reviews are the learning curve, pricing that is hard to forecast because it is assembled from many per-minute components, integrations that take effort to set up, slow support, and weaker voices for languages other than English. It stays a good choice for a phone operation.
   </FaqItem>
 </FaqList>
 
