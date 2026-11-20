@@ -157,6 +157,25 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
     // The last thought, whose signature goes with the tool call after it
     let signature = ''
 
+    // A piece of the answer, written to the stream unless it is extracted
+    const writeText = (text: string | undefined) => {
+      if (!text) return
+      this.log(`Answer chunk: "${text}"`)
+      progress.answer += text
+
+      // Extracting value?
+      if (extractOptions) {
+        if (extracting) return
+        const startTagIndex = text.indexOf(extractOptions.startTag)
+        if (startTagIndex !== -1) {
+          extracting = true
+          stream.write(text.slice(0, startTagIndex).trimEnd())
+          return
+        }
+      }
+      stream.write(text)
+    }
+
     for await (const event of response) {
       if (signal.aborted) break
 
@@ -170,6 +189,13 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
             arguments: '',
             signature: '',
           }
+          // A step can open with content already in it. The answer then
+          // starts there, and dropping it would lose its first words.
+          if (event.step.type === 'model_output') {
+            for (const content of (event.step as any).content ?? []) {
+              if (content?.type === 'text') writeText(content.text)
+            }
+          }
           break
 
         case 'step.delta': {
@@ -182,20 +208,7 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
           } else if (delta.type === 'arguments_delta') {
             step.arguments += delta.arguments ?? ''
           } else if (delta.type === 'text' && step.type === 'model_output') {
-            this.log(`Answer chunk: "${delta.text}"`)
-            progress.answer += delta.text
-
-            // Extracting value?
-            if (extractOptions) {
-              if (extracting) break
-              const startTagIndex = delta.text.indexOf(extractOptions.startTag)
-              if (startTagIndex !== -1) {
-                extracting = true
-                stream.write(delta.text.slice(0, startTagIndex).trimEnd())
-                break
-              }
-            }
-            stream.write(delta.text)
+            writeText(delta.text)
           }
           break
         }
