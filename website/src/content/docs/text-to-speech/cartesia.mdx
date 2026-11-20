@@ -113,7 +113,18 @@ To change the tone sentence by sentence, the LLM can write [Cartesia's emotion a
 
 ### Voices
 
-Set `voiceId` to the UUID of a Cartesia voice, such as `a0e99841-438c-4a64-b679-ae501e7d6091`. You can listen to the voices and copy their IDs in the [Cartesia voice library](https://play.cartesia.ai/voices), or list them from the API with a language filter:
+Set `voiceId` to the UUID of a Cartesia voice, such as `a0e99841-438c-4a64-b679-ae501e7d6091`. `CartesiaTTS.listVoices()` returns the voices the account can use, its own and the public ones:
+
+```typescript
+const voices = await CartesiaTTS.listVoices({
+  apiKey: process.env.CARTESIA_API_KEY || '',
+})
+// [{ id, name, languages, gender, description, custom }, ...]
+```
+
+Pass `language`, such as `fr` or `fr-FR`, to keep the voices that speak it, every locale of the language included. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again, after adding a voice to the account.
+
+You can also listen to the voices and copy their IDs in the [Cartesia voice library](https://play.cartesia.ai/voices), or list them from the API with a language filter:
 
 ```bash
 curl "https://api.cartesia.ai/voices?language=fr&limit=20" \

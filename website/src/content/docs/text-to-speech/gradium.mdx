@@ -90,6 +90,19 @@ Gradium streams raw PCM at 8, 16, 24 or 48 kHz, picked with `sampleRate`, 48 kHz
 
 `outputFormat` still works for the PCM formats (`pcm` for 48 kHz, `pcm_8000`, `pcm_16000`, `pcm_24000`). The client plays raw PCM only, so `wav`, `opus`, `ulaw_8000` and `alaw_8000` stay out of a call.
 
+## Voices
+
+`voiceId` takes a voice of the Gradium catalog, over a thousand voices in English, French, German, Spanish and Portuguese, or a voice cloned in the account. `GradiumTTS.listVoices()` returns them all, the voices of the account first:
+
+```typescript
+const voices = await GradiumTTS.listVoices({
+  apiKey: process.env.GRADIUM_API_KEY || '',
+})
+// [{ id, name, languages, gender, description, custom }, ...]
+```
+
+Pass `language`, such as `fr` or `fr-FR`, to keep the voices that speak it, every locale of the language included. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again, after adding a voice to the account.
+
 ## Advanced Voice Configuration
 
 The `jsonConfig` option allows you to fine-tune voice characteristics:

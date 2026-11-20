@@ -1,4 +1,11 @@
-import { ReconnectingSocket, TTS } from '@micdrop/server'
+import {
+  cachedVoices,
+  MicdropVoice,
+  ReconnectingSocket,
+  TTS,
+  voiceGender,
+  voicesForLanguage,
+} from '@micdrop/server'
 import { Readable } from 'stream'
 import { RawData } from 'ws'
 import {
@@ -6,6 +13,7 @@ import {
   DEFAULT_REGION,
   GradiumAudioResponse,
   GradiumEosMessage,
+  GradiumRegion,
   GradiumResponse,
   GradiumSetupMessage,
   GradiumTextMessage,
@@ -32,7 +40,44 @@ interface GradiumRequest {
   ended: boolean
 }
 
+/** A voice as the Gradium API lists it, the fields read here */
+interface GradiumVoice {
+  uid: string
+  name: string
+  description?: string | null
+  gender?: string | null
+  locale?: string | null
+  language?: string | null
+  is_catalog?: boolean
+}
+
+const VOICES_PAGE_SIZE = 500 // Voices per page of the listing
+
 export class GradiumTTS extends TTS {
+  /**
+   * Lists the voices the account can speak with: its own, then the Gradium
+   * catalog, over a thousand voices.
+   *
+   * `language`, such as `fr` or `fr-FR`, keeps the voices that speak it.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again, for a voice added a moment ago.
+   */
+  static listVoices(options: {
+    apiKey: string
+    region?: GradiumRegion
+    language?: string
+    refresh?: boolean
+  }): Promise<MicdropVoice[]> {
+    const region = options.region ?? DEFAULT_REGION
+    return cachedVoices(
+      ['gradium', region],
+      options.apiKey,
+      () => fetchVoices(options.apiKey, region),
+      options.refresh
+    ).then((voices) => voicesForLanguage(voices, options.language))
+  }
+
   private socket: ReconnectingSocket
   // Numbers the audio requests, and only moves when there is something to say
   private counter = 0
@@ -265,5 +310,44 @@ export class GradiumTTS extends TTS {
     this.request = undefined
     const text = request ? request.words + request.partial : ''
     this.emit('Failed', text ? [text] : [])
+  }
+}
+
+/** Reads every page of the voices, the catalog included */
+async function fetchVoices(
+  apiKey: string,
+  region: GradiumRegion
+): Promise<MicdropVoice[]> {
+  const voices: MicdropVoice[] = []
+  // The listing returns a bare array, a short page is the last one
+  for (let skip = 0; ; skip += VOICES_PAGE_SIZE) {
+    const params = new URLSearchParams({
+      include_catalog: 'true',
+      limit: String(VOICES_PAGE_SIZE),
+      skip: String(skip),
+    })
+    const response = await fetch(
+      `https://${region}.api.gradium.ai/api/voices/?${params}`,
+      { headers: { 'x-api-key': apiKey } }
+    )
+    if (!response.ok) throw new Error(`Gradium answered ${response.status}`)
+    const page = (await response.json()) as GradiumVoice[]
+    voices.push(...page.map(toMicdropVoice))
+    if (page.length < VOICES_PAGE_SIZE) break
+  }
+  return voices
+}
+
+function toMicdropVoice(voice: GradiumVoice): MicdropVoice {
+  // en-us becomes en-US, and a dialect such as fr-fr-x-southern its locale
+  const [language, region] = (voice.locale || voice.language || '').split('-')
+  const locale = region ? `${language}-${region.toUpperCase()}` : language
+  return {
+    id: voice.uid,
+    name: voice.name,
+    languages: locale ? [locale] : undefined,
+    gender: voiceGender(voice.gender),
+    description: voice.description || undefined,
+    custom: voice.is_catalog === false,
   }
 }

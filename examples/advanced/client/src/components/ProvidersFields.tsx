@@ -1,5 +1,6 @@
 import { useMicdropState } from '@micdrop/react'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { PiPlayFill, PiStopFill } from 'react-icons/pi'
 import {
   CallMode,
   LANGUAGE_OPTIONS,
@@ -9,7 +10,10 @@ import {
   ProviderInfo,
   Selection,
   useProviders,
+  useVoices,
+  VoiceOption,
 } from '../providers'
+import Button from './ui/Button'
 import Field from './ui/Field'
 import Select from './ui/Select'
 
@@ -72,6 +76,7 @@ export default function ProvidersFields() {
             label={PART_LABELS[part]}
             providers={catalog[part].providers}
             selection={selections[part]}
+            lang={lang}
             disabled={isStarted}
             onChange={(selection) => select(part, selection)}
           />
@@ -148,6 +153,8 @@ interface PartRowProps {
   label: string
   providers: ProviderInfo[]
   selection: Selection
+  /** Language of the call, which the voice should speak */
+  lang: string
   disabled: boolean
   onChange: (selection: Selection) => void
 }
@@ -157,6 +164,7 @@ function PartRow({
   label,
   providers,
   selection,
+  lang,
   disabled,
   onChange,
 }: PartRowProps) {
@@ -169,6 +177,10 @@ function PartRow({
 
   const handleModel = (event: React.ChangeEvent<HTMLSelectElement>) => {
     onChange({ provider: selection.provider, model: event.target.value })
+  }
+
+  const handleVoice = (voice: string) => {
+    onChange({ ...selection, voice })
   }
 
   return (
@@ -214,6 +226,218 @@ function PartRow({
           ))}
         </Select>
       )}
+
+      {provider?.hasVoices && (
+        <VoiceSelect
+          label={label}
+          provider={provider}
+          model={selection.model}
+          voice={selection.voice}
+          lang={lang}
+          disabled={disabled}
+          onChange={handleVoice}
+        />
+      )}
     </Field>
   )
+}
+
+interface VoiceSelectProps {
+  label: string
+  provider: ProviderInfo
+  model?: string
+  voice?: string
+  lang: string
+  disabled: boolean
+  onChange: (voice: string) => void
+}
+
+/**
+ * The voices of the chosen provider and model, read from the server once they
+ * are picked. Voices of the account come first, then the others by language.
+ */
+function VoiceSelect({
+  label,
+  provider,
+  model,
+  voice,
+  lang,
+  disabled,
+  onChange,
+}: VoiceSelectProps) {
+  const { voices, error, loading } = useVoices(provider, model, lang)
+
+  // Another language, provider or model: keep the voice while it is in the
+  // list and speaks the language, otherwise take the first one that does
+  useEffect(() => {
+    if (!voices?.length) return
+    const next = pickVoice(voices, voice, provider.defaultVoice, lang)
+    if (next && next !== voice) onChange(next)
+  }, [voices, lang])
+
+  if (error) {
+    return (
+      <p className="text-xs text-danger">Cannot read the voices: {error}</p>
+    )
+  }
+  if (loading || !voices) {
+    return <p className="text-xs text-faint">Loading…</p>
+  }
+
+  const selected = voices.find((option) => option.id === voice)
+
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    onChange(event.target.value)
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select
+        className="w-full"
+        value={voice ?? ''}
+        disabled={disabled}
+        aria-label={`${label} voice`}
+        title={selected ? describeVoice(selected) : undefined}
+        onChange={handleChange}
+      >
+        {groupVoices(voices).map(([group, options]) => (
+          <optgroup key={group} label={`${group} (${options.length})`}>
+            {options.map((option) => (
+              <option
+                key={option.id}
+                value={option.id}
+                title={describeVoice(option)}
+              >
+                {option.label}
+                {option.gender ? ` · ${option.gender}` : ''}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </Select>
+      {selected?.previewUrl && <PreviewButton url={selected.previewUrl} />}
+    </div>
+  )
+}
+
+/** Plays the sample of the selected voice */
+function PreviewButton({ url }: { url: string }) {
+  const audioRef = useRef<HTMLAudioElement | undefined>(undefined)
+  const [playing, setPlaying] = useState(false)
+
+  // Another voice was picked, or the select went away: stop the sample
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause()
+      setPlaying(false)
+    }
+  }, [url])
+
+  const handleClick = () => {
+    if (playing) {
+      audioRef.current?.pause()
+      setPlaying(false)
+      return
+    }
+    const audio = new Audio(url)
+    audio.onended = () => setPlaying(false)
+    audio.onerror = () => setPlaying(false)
+    audioRef.current = audio
+    setPlaying(true)
+    audio.play().catch(() => setPlaying(false))
+  }
+
+  return (
+    <Button
+      size="sm"
+      className="shrink-0"
+      aria-label={playing ? 'Stop the sample' : 'Listen to a sample'}
+      icon={playing ? <PiStopFill /> : <PiPlayFill />}
+      onClick={handleClick}
+    />
+  )
+}
+
+/**
+ * The voice to keep or to switch to: the current one when it is in the list and
+ * its own language is the one of the call, otherwise the first voice native to
+ * that language, in the order of the select, the default one first if it is
+ * native too. A voice only speaking it with an accent comes last. With no
+ * voice of that language at all, the current voice stays, or the default one.
+ */
+function pickVoice(
+  voices: VoiceOption[],
+  current: string | undefined,
+  defaultVoice: string | undefined,
+  lang: string
+): string | undefined {
+  const inList = voices.find((option) => option.id === current)
+  if (inList && isNative(inList, lang)) return inList.id
+
+  const ordered = groupVoices(voices).flatMap(([, options]) => options)
+  const preferred = [
+    ...ordered.filter((option) => option.id === defaultVoice),
+    ...ordered,
+  ]
+  const match =
+    preferred.find((option) => isNative(option, lang, true)) ??
+    preferred.find((option) => isNative(option, lang)) ??
+    preferred.find((option) => speaks(option, lang))
+  if (match) return match.id
+
+  if (inList) return inList.id
+  return (voices.find((option) => option.id === defaultVoice) ?? voices[0]).id
+}
+
+/** The language a voice is native to: the first it lists */
+function nativeLanguage(voice: VoiceOption): string | undefined {
+  return voice.language ?? voice.languages?.[0]
+}
+
+/**
+ * Whether a voice is native to a language: the same locale when `exact`, the
+ * same language otherwise. A voice declaring no language reads them all.
+ */
+function isNative(voice: VoiceOption, lang: string, exact = false): boolean {
+  const native = nativeLanguage(voice)
+  if (!native) return !exact
+  return exact
+    ? native.toLowerCase() === lang.toLowerCase()
+    : sameBase(native, lang)
+}
+
+/** Whether a voice speaks a language at all, with an accent included */
+function speaks(voice: VoiceOption, lang: string): boolean {
+  const languages = voice.language ? [voice.language] : voice.languages
+  if (!languages?.length) return true
+  return languages.some((code) => sameBase(code, lang))
+}
+
+/** Compares locales on their language only, so "es" matches "es-ES" */
+function sameBase(a: string, b: string): boolean {
+  return a.split('-')[0].toLowerCase() === b.split('-')[0].toLowerCase()
+}
+
+/** The voices of the account first, then one group per language */
+function groupVoices(voices: VoiceOption[]): Array<[string, VoiceOption[]]> {
+  const groups = new Map<string, VoiceOption[]>()
+  for (const voice of voices) {
+    const group = voice.custom
+      ? 'Your voices'
+      : (voice.language ?? voice.languages?.[0] ?? 'Every language')
+    groups.set(group, [...(groups.get(group) ?? []), voice])
+  }
+  return [...groups.entries()].sort(([a], [b]) => {
+    if (a === 'Your voices') return -1
+    if (b === 'Your voices') return 1
+    return a.localeCompare(b)
+  })
+}
+
+/** What the tooltip of a voice says: its description and its languages */
+function describeVoice(voice: VoiceOption): string {
+  const languages = voice.languages?.length
+    ? `Speaks ${voice.languages.join(', ')}`
+    : undefined
+  return [voice.description, languages].filter(Boolean).join('. ')
 }

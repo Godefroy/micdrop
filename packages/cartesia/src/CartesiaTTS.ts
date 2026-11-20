@@ -1,4 +1,11 @@
-import { ReconnectingSocket, TTS } from '@micdrop/server'
+import {
+  cachedVoices,
+  MicdropVoice,
+  ReconnectingSocket,
+  TTS,
+  voiceGender,
+  voicesForLanguage,
+} from '@micdrop/server'
 import { Readable } from 'stream'
 import { RawData } from 'ws'
 import {
@@ -11,6 +18,8 @@ import {
 } from './types'
 
 const DEFAULT_SAMPLE_RATE: CartesiaSampleRate = 48000
+// Version of the API both the WebSocket and the voice listing speak
+const CARTESIA_VERSION = '2025-04-16'
 
 export interface CartesiaTTSOptions {
   apiKey: string
@@ -50,7 +59,41 @@ interface CartesiaContext {
   ended: boolean
 }
 
+/** A voice as the Cartesia API lists it, the fields read here */
+interface CartesiaVoice {
+  id: string
+  name: string
+  description?: string
+  language?: string
+  gender?: string | null
+  is_owner?: boolean
+  preview_file_url?: string | null
+  /** Accents the voice can take, its native one among them */
+  accents?: Array<{ locale?: string; is_native?: boolean }>
+}
+
 export class CartesiaTTS extends TTS {
+  /**
+   * Lists the voices the account can speak with, its own and the public ones.
+   *
+   * `language`, such as `fr` or `fr-FR`, keeps the voices that speak it.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again, for a voice added a moment ago.
+   */
+  static listVoices(options: {
+    apiKey: string
+    language?: string
+    refresh?: boolean
+  }): Promise<MicdropVoice[]> {
+    return cachedVoices(
+      ['cartesia'],
+      options.apiKey,
+      () => fetchVoices(options.apiKey),
+      options.refresh
+    ).then((voices) => voicesForLanguage(voices, options.language))
+  }
+
   private socket: ReconnectingSocket
   // Numbers the audio contexts, and only moves when there is something to say
   private counter = 0
@@ -67,7 +110,7 @@ export class CartesiaTTS extends TTS {
     super()
 
     this.socket = new ReconnectingSocket({
-      url: `wss://api.cartesia.ai/tts/websocket?api_key=${this.options.apiKey}&cartesia_version=2025-04-16`,
+      url: `wss://api.cartesia.ai/tts/websocket?api_key=${this.options.apiKey}&cartesia_version=${CARTESIA_VERSION}`,
       connectionTimeout: options.connectionTimeout,
       retryDelay: options.retryDelay,
       maxRetry: options.maxRetry,
@@ -228,4 +271,52 @@ export class CartesiaTTS extends TTS {
     this.context = undefined
     this.emit('Failed', text ? [text] : [])
   }
+}
+
+/** Reads every page of the voices of the account */
+async function fetchVoices(apiKey: string): Promise<MicdropVoice[]> {
+  const voices: MicdropVoice[] = []
+  let startingAfter: string | undefined
+  do {
+    const params = new URLSearchParams({ limit: '100' })
+    if (startingAfter) params.set('starting_after', startingAfter)
+    const response = await fetch(`https://api.cartesia.ai/voices?${params}`, {
+      headers: {
+        'X-API-Key': apiKey,
+        'Cartesia-Version': CARTESIA_VERSION,
+      },
+    })
+    if (!response.ok) throw new Error(`Cartesia answered ${response.status}`)
+    const page = (await response.json()) as {
+      data: CartesiaVoice[]
+      has_more?: boolean
+      next_page?: string | null
+    }
+    for (const voice of page.data) {
+      voices.push({
+        id: voice.id,
+        name: voice.name,
+        // Its native language first, then the ones it speaks with an accent
+        languages: voiceLanguages(voice),
+        gender: voiceGender(voice.gender),
+        description: voice.description || undefined,
+        previewUrl: voice.preview_file_url || undefined,
+        custom: !!voice.is_owner,
+      })
+    }
+    startingAfter = page.has_more ? (page.next_page ?? undefined) : undefined
+  } while (startingAfter)
+  return voices
+}
+
+function voiceLanguages(voice: CartesiaVoice): string[] | undefined {
+  const accents = (voice.accents ?? [])
+    .slice()
+    .sort((a, b) => Number(!!b.is_native) - Number(!!a.is_native))
+    .map((accent) => accent.locale)
+    .filter((locale): locale is string => !!locale)
+  const languages = [...new Set([voice.language, ...accents])].filter(
+    (code): code is string => !!code
+  )
+  return languages.length ? languages : undefined
 }

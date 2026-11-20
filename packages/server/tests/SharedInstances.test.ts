@@ -105,3 +105,18 @@ describe('SharedInstances', () => {
     assert.equal(await instances.load(['b'], create), 'instance 2')
   })
 })
+
+describe('SharedInstances with a ttl', () => {
+  it('loads again once the time is up', async (t) => {
+    t.mock.timers.enable({ apis: ['Date'] })
+    const instances = new SharedInstances<number>({ ttl: 1000 })
+    let loads = 0
+    const load = () => instances.load('key', async () => ++loads)
+
+    assert.equal(await load(), 1)
+    t.mock.timers.tick(999)
+    assert.equal(await load(), 1)
+    t.mock.timers.tick(1)
+    assert.equal(await load(), 2)
+  })
+})

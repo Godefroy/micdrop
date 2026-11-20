@@ -15,6 +15,7 @@ import {
   ProviderInfo,
   ProviderRegistry,
   ProviderSelection,
+  VoiceOption,
 } from './types'
 
 export * from './types'
@@ -63,6 +64,30 @@ async function listModels<T>(
   return typeof models === 'function' ? await models() : models
 }
 
+/**
+ * The voices of a provider and model that speak the language of the call. A
+ * provider with no voice of that language, an English-only engine for
+ * instance, offers them all, and its voice then sets the language of the call.
+ */
+export async function listVoices<T>(
+  definition: ProviderDefinition<T>,
+  model?: string,
+  lang?: string
+): Promise<VoiceOption[]> {
+  if (!definition.voices) return []
+  const voices = await definition.voices(model, lang)
+  const speaking = lang ? voices.filter((voice) => speaks(voice, lang)) : voices
+  if (speaking.length > 0) return speaking
+  return lang ? await definition.voices(model) : voices
+}
+
+/** Whether a voice speaks a language, any locale of it. No language: all. */
+function speaks(voice: VoiceOption, lang: string): boolean {
+  const languages = voice.language ? [voice.language] : voice.languages
+  if (!languages?.length) return true
+  return languages.some((code) => sameLanguage(code, lang))
+}
+
 function missingEnv<T>(definition: ProviderDefinition<T>): string[] {
   return (definition.requiredEnv ?? []).filter((key) => !process.env[key])
 }
@@ -94,6 +119,8 @@ async function describeProvider<T>(
     // Listing the models of a provider that cannot run would fail anyway
     models: available ? await listModels(definition) : [],
     defaultModel: definition.defaultModel,
+    hasVoices: !!definition.voices,
+    defaultVoice: definition.defaultVoice,
   }
 }
 
@@ -136,6 +163,7 @@ export async function getCatalog(): Promise<Catalog> {
 interface Resolved<T> {
   definition: ProviderDefinition<T>
   model?: string
+  voice?: string
   language?: string
 }
 
@@ -149,7 +177,8 @@ interface Resolved<T> {
 async function resolve<T>(
   registry: ProviderRegistry<T>,
   selection: ProviderSelection | undefined,
-  defaultId: string
+  defaultId: string,
+  lang = ''
 ): Promise<Resolved<T>> {
   const requested = selection?.provider
   const candidates = [requested, defaultId, ...Object.keys(registry)]
@@ -167,10 +196,48 @@ async function resolve<T>(
       models.find((option) => option.id === definition.defaultModel) ??
       models[0]
 
-    return { definition, model: model?.id, language: model?.language }
+    const voice = await resolveVoice(
+      definition,
+      model?.id,
+      id === requested ? selection?.voice : undefined,
+      lang || undefined
+    )
+
+    return {
+      definition,
+      model: model?.id,
+      voice: voice?.id ?? definition.defaultVoice,
+      // A voice speaking one language alone sets it, before the model does
+      language: voice?.language ?? model?.language,
+    }
   }
 
   throw new Error(`No provider available for "${defaultId}"`)
+}
+
+/**
+ * The voice to speak with: the one picked when the list still has it, then
+ * the default one, then the first. A list that cannot be read leaves the
+ * provider to its default voice rather than failing the call.
+ */
+async function resolveVoice<T>(
+  definition: ProviderDefinition<T>,
+  model: string | undefined,
+  wanted: string | undefined,
+  lang: string | undefined
+): Promise<VoiceOption | undefined> {
+  if (!definition.voices) return undefined
+  try {
+    const voices = await listVoices(definition, model, lang)
+    return (
+      voices.find((voice) => voice.id === wanted) ??
+      voices.find((voice) => voice.id === definition.defaultVoice) ??
+      voices[0]
+    )
+  } catch (error) {
+    console.warn(`Cannot list the voices of ${definition.label}:`, error)
+    return undefined
+  }
 }
 
 /**
@@ -208,7 +275,7 @@ export async function createProviders(
   const [agent, stt, tts] = await Promise.all([
     resolve(agents, selection.agent, DEFAULT_PROVIDERS.agent),
     resolve(speech2Text, selection.stt, DEFAULT_PROVIDERS.stt),
-    resolve(text2Speech, selection.tts, DEFAULT_PROVIDERS.tts),
+    resolve(text2Speech, selection.tts, DEFAULT_PROVIDERS.tts, lang),
   ])
 
   // Two parts locked to different languages cannot both be satisfied, so say
@@ -236,7 +303,12 @@ export async function createProviders(
       prompt: selection.prompt,
     }),
     stt: stt.definition.create({ lang: language, model: stt.model, auto }),
-    tts: tts.definition.create({ lang: language, model: tts.model, auto }),
+    tts: tts.definition.create({
+      lang: language,
+      model: tts.model,
+      voice: tts.voice,
+      auto,
+    }),
   }
 }
 

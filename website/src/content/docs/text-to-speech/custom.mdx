@@ -111,6 +111,31 @@ Emit the audio at the rate the provider produces it and return that rate. The se
 
 A network chunk can end in the middle of a 16-bit sample. `Pcm16Aligner` from `@micdrop/server` holds the odd byte back until the next chunk, so every chunk emitted holds whole samples.
 
+## Listing voices
+
+A text to speech can offer a static `listVoices()` method, so an application can show the voices it speaks with. The built-in ones do, and return `MicdropVoice` objects from `@micdrop/server`: `id`, the value the `voice` option takes, `name`, and when the provider says it `languages`, `gender`, `description`, `previewUrl` and `custom` for a voice of the account.
+
+`cachedVoices()` keeps a list fetched from an API for a day, shared by every call of the process and kept apart per account. `voicesForLanguage()` then keeps the voices that speak a language:
+
+```typescript
+import { cachedVoices, MicdropVoice, voicesForLanguage } from '@micdrop/server'
+
+export class CustomStreamingTTS extends TTS {
+  static listVoices(options: {
+    apiKey: string
+    language?: string
+    refresh?: boolean
+  }): Promise<MicdropVoice[]> {
+    return cachedVoices(
+      ['custom-streaming'],
+      options.apiKey,
+      () => fetchVoicesFromApi(options.apiKey),
+      options.refresh
+    ).then((voices) => voicesForLanguage(voices, options.language))
+  }
+}
+```
+
 ## Public Methods
 
 ### `destroy()`

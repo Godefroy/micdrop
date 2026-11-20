@@ -1,7 +1,12 @@
 import { handleError, Logger, MicdropServer } from '@micdrop/server'
 import { FastifyInstance } from 'fastify'
 import { checkParams } from './params'
-import { createProviders, getCatalog } from './providers'
+import {
+  createProviders,
+  getCatalog,
+  listVoices,
+  text2Speech,
+} from './providers'
 import { record } from './record'
 import { createSmartTurn } from './smartTurn'
 import { addTools } from './tools'
@@ -9,6 +14,21 @@ import { addTools } from './tools'
 export default async (app: FastifyInstance) => {
   // Providers the client can pick from, read by the three selects of the demo
   app.get('/providers', async () => getCatalog())
+
+  // Voices of a text to speech, asked once the client picked its model
+  app.get<{
+    Params: { provider: string }
+    Querystring: { model?: string; lang?: string }
+  }>('/providers/tts/:provider/voices', async (request, reply) => {
+    const definition = text2Speech[request.params.provider]
+    if (!definition) return reply.code(404).send({ error: 'Unknown provider' })
+    try {
+      const { model, lang } = request.query
+      return await listVoices(definition, model, lang)
+    } catch (error) {
+      return reply.code(502).send({ error: String(error) })
+    }
+  })
 
   app.get('/call', { websocket: true }, async (socket) => {
     try {

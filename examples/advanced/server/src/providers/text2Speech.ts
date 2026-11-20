@@ -15,10 +15,36 @@ import {
 import { PiperTTS } from '@micdrop/piper'
 import { BUNDLED_VOICES, PocketTTS } from '@micdrop/pocket-tts'
 import { QWEN_SPEAKERS, Qwen3TTS } from '@micdrop/qwen-tts'
-import { FallbackTTS, MockTTS, TTS } from '@micdrop/server'
+import { FallbackTTS, MicdropVoice, MockTTS, TTS } from '@micdrop/server'
 import { existsSync, readdirSync } from 'fs'
 import path from 'path'
-import { ModelOption, ProviderRegistry } from './types'
+import { ProviderRegistry, VoiceOption } from './types'
+
+/**
+ * The voices a package lists, as the select shows them.
+ *
+ * A voice of a hosted provider reads every language of its model, so it only
+ * says what it speaks best. A local voice speaks its own language alone, which
+ * `setsLanguage` turns into the language of the call.
+ */
+function toVoiceOptions(
+  voices: MicdropVoice[],
+  { setsLanguage = false } = {}
+): VoiceOption[] {
+  return voices.map((voice) => ({
+    id: voice.id,
+    label: voice.name,
+    language:
+      setsLanguage && voice.languages?.length === 1
+        ? voice.languages[0]
+        : undefined,
+    languages: voice.languages,
+    gender: voice.gender,
+    description: voice.description,
+    previewUrl: voice.previewUrl,
+    custom: voice.custom,
+  }))
+}
 
 // Where the Pocket TTS archive was extracted, see the README of
 // @micdrop/pocket-tts
@@ -52,7 +78,7 @@ function getPhononModel(voice?: string): string | undefined {
   ].model
 }
 
-function listPhononVoices(): ModelOption[] {
+function listPhononVoices(): VoiceOption[] {
   const languages = getPhononLanguages()
   return PHONON_VOICES.filter(({ language }) =>
     languages.includes(language)
@@ -93,7 +119,7 @@ async function isQwenServerUp(): Promise<boolean> {
  * A voice is a pair of files named after its language and its speaker, such as
  * `fr_FR-siwis-medium.onnx`, so the locale comes straight from the file name.
  */
-function listPiperVoices(): ModelOption[] {
+function listPiperVoices(): VoiceOption[] {
   if (!existsSync(PIPER_VOICES_DIR)) return []
   return readdirSync(PIPER_VOICES_DIR)
     .filter((file) => file.endsWith('.onnx'))
@@ -119,12 +145,12 @@ const text2speech: ProviderRegistry<TTS> = {
       ]),
   },
 
-  // The voice comes from the environment, so the select offers the models.
   // Eleven v4 Turbo starts speaking soonest. Both v4 models perform the audio
-  // tags an LLM writes, such as [laughs], which the older ones read out.
+  // tags an LLM writes, such as [laughs], which the older ones read out. The
+  // voices are the ones of the account, ELEVENLABS_VOICE_ID picks the default.
   elevenlabs: {
     label: 'ElevenLabs',
-    requiredEnv: ['ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID'],
+    requiredEnv: ['ELEVENLABS_API_KEY'],
     models: [
       { id: 'eleven_v4_turbo', label: 'eleven_v4_turbo' },
       { id: 'eleven_v4', label: 'eleven_v4' },
@@ -133,27 +159,45 @@ const text2speech: ProviderRegistry<TTS> = {
       { id: 'eleven_multilingual_v2', label: 'eleven_multilingual_v2' },
     ],
     defaultModel: 'eleven_v4_turbo',
-    create: ({ model }) =>
+    voices: async (_model, lang) =>
+      toVoiceOptions(
+        await ElevenLabsTTS.listVoices({
+          apiKey: process.env.ELEVENLABS_API_KEY || '',
+          language: lang,
+        })
+      ),
+    defaultVoice: process.env.ELEVENLABS_VOICE_ID,
+    create: ({ model, voice }) =>
       new ElevenLabsTTS({
         apiKey: process.env.ELEVENLABS_API_KEY || '',
-        voiceId: process.env.ELEVENLABS_VOICE_ID || '',
+        voiceId: voice || process.env.ELEVENLABS_VOICE_ID || '',
         modelId: model as ElevenLabsTTSOptions['modelId'],
       }),
   },
 
+  // The voices of the account and the public ones, CARTESIA_VOICE_ID picks
+  // the default
   cartesia: {
     label: 'Cartesia',
-    requiredEnv: ['CARTESIA_API_KEY', 'CARTESIA_VOICE_ID'],
+    requiredEnv: ['CARTESIA_API_KEY'],
     models: [
       { id: 'sonic-3.6', label: 'sonic-3.6' },
       { id: 'sonic-3.5', label: 'sonic-3.5' },
     ],
     defaultModel: 'sonic-3.6',
-    create: ({ lang, model }) =>
+    voices: async (_model, lang) =>
+      toVoiceOptions(
+        await CartesiaTTS.listVoices({
+          apiKey: process.env.CARTESIA_API_KEY || '',
+          language: lang,
+        })
+      ),
+    defaultVoice: process.env.CARTESIA_VOICE_ID,
+    create: ({ lang, model, voice }) =>
       new CartesiaTTS({
         apiKey: process.env.CARTESIA_API_KEY || '',
         modelId: model || 'sonic-3.6',
-        voiceId: process.env.CARTESIA_VOICE_ID || '',
+        voiceId: voice || process.env.CARTESIA_VOICE_ID || '',
         language: lang.split('-')[0] as CartesiaLanguage,
       }),
   },
@@ -168,20 +212,34 @@ const text2speech: ProviderRegistry<TTS> = {
       { id: 'gemini-2.5-flash-preview-tts', label: 'gemini-2.5-flash-tts' },
     ],
     defaultModel: 'gemini-3.8-flash-tts',
-    create: ({ model }) =>
+    voices: async (_model, lang) =>
+      toVoiceOptions(await GeminiTTS.listVoices({ language: lang })),
+    defaultVoice: 'Kore',
+    create: ({ model, voice }) =>
       new GeminiTTS({
         apiKey: process.env.GEMINI_API_KEY || '',
         model,
+        voice,
       }),
   },
 
+  // The voices of the account and the Gradium catalog, GRADIUM_VOICE_ID picks
+  // the default
   gradium: {
     label: 'Gradium',
-    requiredEnv: ['GRADIUM_API_KEY', 'GRADIUM_VOICE_ID'],
-    create: () =>
+    requiredEnv: ['GRADIUM_API_KEY'],
+    voices: async (_model, lang) =>
+      toVoiceOptions(
+        await GradiumTTS.listVoices({
+          apiKey: process.env.GRADIUM_API_KEY || '',
+          language: lang,
+        })
+      ),
+    defaultVoice: process.env.GRADIUM_VOICE_ID || 'Bla6SbVMczYnOhfK',
+    create: ({ voice }) =>
       new GradiumTTS({
         apiKey: process.env.GRADIUM_API_KEY || '',
-        voiceId: process.env.GRADIUM_VOICE_ID || '',
+        voiceId: voice || process.env.GRADIUM_VOICE_ID || 'Bla6SbVMczYnOhfK',
       }),
   },
 
@@ -190,49 +248,39 @@ const text2speech: ProviderRegistry<TTS> = {
   mistral: {
     label: 'Mistral',
     requiredEnv: ['MISTRAL_API_KEY'],
-    models: [
-      { id: 'voice_3150', label: 'James (en-US)' },
-      { id: 'voice_478', label: 'Sheila (en-US)' },
-      { id: 'voice_3149', label: 'Hugo (en-GB)' },
-      { id: 'voice_590', label: 'Harriet (en-GB)' },
-      { id: 'voice_592', label: 'Marie (fr)' },
-      { id: 'voice_3141', label: 'Camille (fr)' },
-      { id: 'voice_3137', label: 'Manon (fr)' },
-      { id: 'voice_589', label: 'Lea (fr)' },
-      { id: 'voice_481', label: 'Heidi (de)' },
-      { id: 'voice_483', label: 'Elena (es)' },
-      { id: 'voice_482', label: 'Lorenzo (it)' },
-      { id: 'voice_480', label: 'Gabriela (pt)' },
-    ],
-    defaultModel: 'voice_3150',
-    create: ({ model }) =>
+    voices: async (_model, lang) =>
+      toVoiceOptions(
+        await MistralTTS.listVoices({
+          apiKey: process.env.MISTRAL_API_KEY || '',
+          language: lang,
+        })
+      ),
+    defaultVoice: 'voice_3150',
+    create: ({ voice }) =>
       new MistralTTS({
         apiKey: process.env.MISTRAL_API_KEY || '',
-        voiceId: model,
+        voiceId: voice,
       }),
   },
 
+  // The Realtime API reads each sentence sooner, the speech endpoint has
+  // three more voices
   openai: {
     label: 'OpenAI',
     requiredEnv: ['OPENAI_API_KEY'],
     models: [
-      { id: 'marin', label: 'marin' },
-      { id: 'cedar', label: 'cedar' },
-      { id: 'alloy', label: 'alloy' },
-      { id: 'ash', label: 'ash' },
-      { id: 'ballad', label: 'ballad' },
-      { id: 'coral', label: 'coral' },
-      { id: 'echo', label: 'echo' },
-      { id: 'sage', label: 'sage' },
-      { id: 'shimmer', label: 'shimmer' },
-      { id: 'verse', label: 'verse' },
+      { id: 'gpt-realtime-2.1-mini', label: 'gpt-realtime-2.1-mini' },
+      { id: 'gpt-4o-mini-tts', label: 'gpt-4o-mini-tts' },
     ],
-    defaultModel: 'marin',
-    create: ({ model }) =>
+    defaultModel: 'gpt-realtime-2.1-mini',
+    voices: async (model, lang) =>
+      toVoiceOptions(await OpenaiTTS.listVoices({ model, language: lang })),
+    defaultVoice: 'marin',
+    create: ({ model, voice }) =>
       new OpenaiTTS({
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: 'gpt-realtime-2.1-mini',
-        voice: model,
+        model,
+        voice,
       }),
   },
 
@@ -241,13 +289,14 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Kokoro',
     description: 'English only',
     local: true,
-    models: KOKORO_VOICE_IDS.map((id) => ({
-      id,
-      label: id,
-      language: id.startsWith('b') ? 'en-GB' : 'en-US',
-    })),
-    defaultModel: 'af_heart',
-    create: ({ model }) => new KokoroTTS({ voice: model }),
+    voices: () =>
+      KOKORO_VOICE_IDS.map((id) => ({
+        id,
+        label: id,
+        language: id.startsWith('b') ? 'en-GB' : 'en-US',
+      })),
+    defaultVoice: 'af_heart',
+    create: ({ voice }) => new KokoroTTS({ voice }),
   },
 
   // Local, many languages, needs the piper binary and the voice files
@@ -255,10 +304,10 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Piper',
     local: true,
     isAvailable: () => listPiperVoices().length > 0,
-    models: listPiperVoices,
-    create: ({ model }) =>
+    voices: listPiperVoices,
+    create: ({ voice }) =>
       new PiperTTS({
-        modelPath: path.join(PIPER_VOICES_DIR, model || ''),
+        modelPath: path.join(PIPER_VOICES_DIR, voice || ''),
         binaryPath: process.env.PIPER_BINARY,
       }),
   },
@@ -269,14 +318,14 @@ const text2speech: ProviderRegistry<TTS> = {
     description: 'English only, clones a voice',
     local: true,
     isAvailable: () => existsSync(POCKET_MODEL_DIR),
-    models: Object.keys(BUNDLED_VOICES).map((id) => ({
-      id,
-      label: id,
-      language: 'en-US',
-    })),
-    defaultModel: 'bria',
-    create: ({ model }) =>
-      new PocketTTS({ modelDir: POCKET_MODEL_DIR, voice: model }),
+    voices: () =>
+      Object.keys(BUNDLED_VOICES).map((id) => ({
+        id,
+        label: id,
+        language: 'en-US',
+      })),
+    defaultVoice: 'bria',
+    create: ({ voice }) => new PocketTTS({ modelDir: POCKET_MODEL_DIR, voice }),
   },
 
   // Local, downloads its model and voices from Hugging Face on first use
@@ -284,12 +333,12 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Phonon',
     description: 'Gradium, on-device',
     local: true,
-    models: listPhononVoices,
-    defaultModel: 'Easton',
-    create: ({ lang, model }) =>
+    voices: listPhononVoices,
+    defaultVoice: 'Easton',
+    create: ({ lang, voice }) =>
       new PhononTTS({
-        model: getPhononModel(model),
-        voice: model,
+        model: getPhononModel(voice),
+        voice,
         // The model decides which languages sound right, the language of the
         // call only decides how numbers and symbols are read
         language: lang,
@@ -304,16 +353,17 @@ const text2speech: ProviderRegistry<TTS> = {
     isAvailable: isQwenServerUp,
     // Every speaker reads the ten languages, so the select offers them all
     // whatever the language of the call
-    models: Object.entries(QWEN_SPEAKERS).map(([id, origin]) => ({
-      id,
-      label: `${id} (${origin})`,
-    })),
-    defaultModel: 'Ryan',
-    create: ({ lang, model }) =>
+    voices: () =>
+      Object.entries(QWEN_SPEAKERS).map(([id, origin]) => ({
+        id,
+        label: `${id} (${origin})`,
+      })),
+    defaultVoice: 'Ryan',
+    create: ({ lang, voice }) =>
       new Qwen3TTS({
         url: QWEN_URL,
         model: process.env.QWEN_MODEL,
-        voice: model,
+        voice,
         // The package reads the locale of the call, fr-FR included
         language: lang,
       }),
@@ -337,11 +387,13 @@ const text2speech: ProviderRegistry<TTS> = {
             text2speech.elevenlabs.create({
               ...context,
               model: text2speech.elevenlabs.defaultModel,
+              voice: undefined,
             }),
           () =>
             text2speech.cartesia.create({
               ...context,
               model: text2speech.cartesia.defaultModel,
+              voice: undefined,
             }),
         ],
       }),

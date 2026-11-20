@@ -118,8 +118,10 @@ the `voice` option of `GeminiTTS` takes one of the 30 prebuilt names.
 
 ## Voices
 
-Gemini TTS has 30 prebuilt voices. Pass the name as `voice`. Google describes
-each voice by its tone:
+Gemini TTS has 30 prebuilt voices. Pass the name as `voice`.
+`GeminiTTS.listVoices()` returns them with their tone, from a list written in
+the package since Gemini has no endpoint for it. Google describes each voice by
+its tone:
 
 | Voice      | Tone        | Voice      | Tone        | Voice         | Tone          |
 | ---------- | ----------- | ---------- | ----------- | ------------- | ------------- |

@@ -11,6 +11,7 @@ const AUTHORIZATION_KEY = '1234'
 const providerSelectionSchema = z.object({
   provider: z.string().optional(),
   model: z.string().optional(),
+  voice: z.string().optional(),
 })
 
 // Params schema for the call

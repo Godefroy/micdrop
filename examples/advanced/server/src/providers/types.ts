@@ -19,6 +19,20 @@ export interface ModelOption {
 }
 
 /**
+ * A voice of a text to speech, as `listVoices()` describes it. `language` is
+ * set only for a voice that speaks that language alone, which then becomes the
+ * language of the call. `languages` is only shown.
+ */
+export interface VoiceOption extends ModelOption {
+  languages?: string[]
+  gender?: 'female' | 'male' | 'neutral'
+  description?: string
+  previewUrl?: string
+  /** Made in the account, cloned or designed */
+  custom?: boolean
+}
+
+/**
  * The prompts Micdrop adds to every turn, each one costing a tool call the
  * model has to answer. A small model handles them less reliably than a hosted
  * one, so the demo lets them be turned off from the client to see the
@@ -39,6 +53,8 @@ export const DEFAULT_AUTO_OPTIONS: AutoOptions = {
 export interface ProviderContext {
   lang: string
   model?: string
+  /** Only read by the text to speech providers that offer voices. */
+  voice?: string
   /** Only read by the agents, the other registries ignore it. */
   auto: AutoOptions
   /** System prompt written in the client, absent when it kept the default. */
@@ -59,6 +75,17 @@ export interface ProviderDefinition<T> {
   models?: ModelOption[] | (() => ModelOption[] | Promise<ModelOption[]>)
   /** Model used when the client picked the provider but no model. */
   defaultModel?: string
+  /**
+   * Voices offered for this provider and model, looked up when the client
+   * asks for them rather than with the catalog, since a list can be long. A
+   * provider that can filter them keeps the ones speaking `lang`.
+   */
+  voices?: (
+    model?: string,
+    lang?: string
+  ) => VoiceOption[] | Promise<VoiceOption[]>
+  /** Voice used when the client picked none, or one the list lacks. */
+  defaultVoice?: string
   create: (context: ProviderContext) => T
 }
 
@@ -74,6 +101,9 @@ export interface ProviderInfo {
   missingEnv: string[]
   models: ModelOption[]
   defaultModel?: string
+  /** Offers voices, which the client asks for once a model is picked. */
+  hasVoices: boolean
+  defaultVoice?: string
 }
 
 /** What the client receives for one of the three parts of a call. */
@@ -101,6 +131,7 @@ export interface Catalog {
 export interface ProviderSelection {
   provider?: string
   model?: string
+  voice?: string
 }
 
 /** The automatic prompts as the client sends them, all of them optional. */

@@ -1,4 +1,9 @@
-import { Pcm16Aligner, SentenceSplitter, TTS } from '@micdrop/server'
+import {
+  MicdropVoice,
+  Pcm16Aligner,
+  SentenceSplitter,
+  TTS,
+} from '@micdrop/server'
 import OpenAI from 'openai'
 import { Readable } from 'stream'
 import { OpenaiOptions } from './OpenaiAgent'
@@ -67,7 +72,43 @@ interface PendingItem extends QueueItem {
   synthesis: Synthesis
 }
 
+// Voices of both APIs, then the ones only the speech endpoint has, then the
+// ones only the Realtime API has
+const SHARED_VOICES = [
+  'alloy',
+  'ash',
+  'ballad',
+  'coral',
+  'echo',
+  'sage',
+  'shimmer',
+  'verse',
+]
+const SPEECH_VOICES = ['fable', 'nova', 'onyx']
+const REALTIME_VOICES = ['marin', 'cedar']
+
 export class OpenaiTTS extends TTS {
+  /**
+   * Lists the voices of the model: the Realtime API has no fable, nova and
+   * onyx, and adds marin and cedar. OpenAI has no listing, so the list is
+   * written here. Every voice reads every language, so `language` keeps them
+   * all.
+   */
+  static async listVoices(
+    options: { model?: string; language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    const realtime = (options.model || DEFAULT_MODEL).startsWith('gpt-realtime')
+    const ids = [
+      ...(realtime ? REALTIME_VOICES : []),
+      ...SHARED_VOICES,
+      ...(realtime ? [] : SPEECH_VOICES),
+    ]
+    return ids.map((id) => ({
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1),
+    }))
+  }
+
   private openai?: OpenAI
   private realtime?: OpenaiRealtimeSpeech
   private counter = 0 // Identifies the current speak() call

@@ -1,4 +1,11 @@
-import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
+import {
+  cachedVoices,
+  float32ToPcm16,
+  MicdropVoice,
+  SentenceTTS,
+  voiceGender,
+  voicesForLanguage,
+} from '@micdrop/server'
 
 /**
  * Mistral text to speech (Voxtral Speech 3)
@@ -32,8 +39,43 @@ const DEFAULT_VOICE_ID = 'voice_3150' // James, American English
 const DEFAULT_BASE_URL = 'https://api.mistral.ai'
 const MISTRAL_SAMPLE_RATE = 24000 // Rate of the pcm output from Mistral, sent as is
 const FLOAT32_BYTES = 4 // The pcm output is mono float32 little-endian
+const PAGE_SIZE = 100 // Voices per page of the listing
+
+/** A voice as the Mistral API lists it, the fields read here */
+interface MistralVoice {
+  id: string
+  slug?: string | null
+  name: string
+  languages?: string[] | null
+  gender?: string | null
+  description?: string | null
+  type?: string
+}
 
 export class MistralTTS extends SentenceTTS {
+  /**
+   * Lists the voices the account can speak with, the presets and its own.
+   *
+   * `language`, such as `fr` or `fr-FR`, keeps the voices that speak it.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again, for a voice added a moment ago.
+   */
+  static listVoices(options: {
+    apiKey: string
+    baseUrl?: string
+    language?: string
+    refresh?: boolean
+  }): Promise<MicdropVoice[]> {
+    const baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
+    return cachedVoices(
+      ['mistral', baseUrl],
+      options.apiKey,
+      () => fetchVoices(options.apiKey, baseUrl),
+      options.refresh
+    ).then((voices) => voicesForLanguage(voices, options.language))
+  }
+
   constructor(private readonly options: MistralTTSOptions) {
     super()
   }
@@ -146,4 +188,42 @@ async function* readEvents(
     // Closing the body closes the connection, and the server stops generating
     reader.cancel().catch(() => {})
   }
+}
+
+/** Reads every page of the voices of the account */
+async function fetchVoices(
+  apiKey: string,
+  baseUrl: string
+): Promise<MicdropVoice[]> {
+  const voices: MicdropVoice[] = []
+  // The listing pages by offset, and ignores a page number
+  for (let offset = 0, total = 1; offset < total; offset += PAGE_SIZE) {
+    const response = await fetch(
+      `${baseUrl}/v1/audio/voices?offset=${offset}&limit=${PAGE_SIZE}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    )
+    if (!response.ok) throw new Error(`Mistral answered ${response.status}`)
+    const data = (await response.json()) as {
+      items: MistralVoice[]
+      total?: number
+    }
+    total = data.total ?? 0
+    if (data.items.length === 0) break
+    for (const voice of data.items) {
+      voices.push({
+        // A preset goes by its slug, a voice of the account by its id
+        id: voice.slug || voice.id,
+        name: voice.name,
+        // Mistral writes en_us where the other providers write en-US
+        languages: voice.languages?.map((code) => {
+          const [language, region] = code.split('_')
+          return region ? `${language}-${region.toUpperCase()}` : language
+        }),
+        gender: voiceGender(voice.gender),
+        description: voice.description || undefined,
+        custom: voice.type !== 'preset',
+      })
+    }
+  }
+  return voices
 }

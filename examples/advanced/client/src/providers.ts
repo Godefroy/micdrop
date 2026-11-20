@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 
 export const SERVER_URL = 'http://localhost:8081'
 
@@ -16,6 +16,16 @@ export interface ModelOption {
   language?: string
 }
 
+/** A voice of a text to speech, as the server lists it */
+export interface VoiceOption extends ModelOption {
+  languages?: string[]
+  gender?: 'female' | 'male' | 'neutral'
+  description?: string
+  previewUrl?: string
+  /** Made in the account, cloned or designed */
+  custom?: boolean
+}
+
 export interface ProviderInfo {
   id: string
   label: string
@@ -26,6 +36,9 @@ export interface ProviderInfo {
   missingEnv: string[]
   models: ModelOption[]
   defaultModel?: string
+  /** Offers voices, read from the server once a model is picked */
+  hasVoices: boolean
+  defaultVoice?: string
 }
 
 export interface PartCatalog {
@@ -41,6 +54,7 @@ export type Catalog = Record<PartName, PartCatalog> & {
 export interface Selection {
   provider?: string
   model?: string
+  voice?: string
 }
 
 export type Selections = Record<PartName, Selection>
@@ -51,9 +65,7 @@ export type Selections = Record<PartName, Selection>
  * handles and what it misses.
  */
 export type AutoName =
-  | 'autoEndCall'
-  | 'autoSemanticTurn'
-  | 'autoIgnoreUserNoise'
+  'autoEndCall' | 'autoSemanticTurn' | 'autoIgnoreUserNoise'
 
 export type AutoOptions = Record<AutoName, boolean>
 
@@ -356,7 +368,72 @@ function completeSelection(
     provider.models.find((option) => option.id === provider.defaultModel) ??
     provider.models[0]
 
-  return { provider: provider.id, model: model?.id }
+  // The voice is checked against its list once the list arrives, see useVoices
+  const voice = provider.id === selection.provider ? selection.voice : undefined
+  return { provider: provider.id, model: model?.id, voice }
+}
+
+// Voice lists already asked for, per provider, model and language. The server
+// keeps them for a day too, so a list read once comes back at once.
+const voiceLists = new Map<string, Promise<VoiceOption[]>>()
+
+function fetchVoices(
+  provider: string,
+  model: string | undefined,
+  lang: string
+): Promise<VoiceOption[]> {
+  const key = `${provider}|${model ?? ''}|${lang}`
+  let list = voiceLists.get(key)
+  if (!list) {
+    const params = new URLSearchParams({ lang })
+    if (model) params.set('model', model)
+    list = fetch(
+      `${SERVER_URL}/providers/tts/${provider}/voices?${params}`
+    ).then(async (response) => {
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${response.status}`)
+      }
+      return response.json() as Promise<VoiceOption[]>
+    })
+    // A failed list is asked again next time
+    list.catch(() => voiceLists.delete(key))
+    voiceLists.set(key, list)
+  }
+  return list
+}
+
+/**
+ * The voices of a provider and model that speak the language of the call, read
+ * from the server when one of them changes
+ */
+export function useVoices(
+  provider: ProviderInfo | undefined,
+  model: string | undefined,
+  lang: string
+) {
+  const [result, setResult] = useState<{
+    key: string
+    voices?: VoiceOption[]
+    error?: string
+  }>()
+  const key = provider?.hasVoices ? `${provider.id}|${model ?? ''}|${lang}` : ''
+
+  useEffect(() => {
+    if (!key || !provider) return
+    let current = true
+    fetchVoices(provider.id, model, lang).then(
+      (voices) => current && setResult({ key, voices }),
+      (error: Error) => current && setResult({ key, error: error.message })
+    )
+    return () => {
+      current = false
+    }
+  }, [key])
+
+  // What was read for another provider or model is not this list
+  if (!key || result?.key !== key) return { loading: !!key }
+  return { loading: false, voices: result.voices, error: result.error }
 }
 
 export function useProviders() {

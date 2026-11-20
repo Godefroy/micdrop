@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { SentenceTTS } from '@micdrop/server'
+import { MicdropVoice, SentenceTTS } from '@micdrop/server'
 import { GeminiOptions } from './GeminiAgent'
 
 /**
@@ -31,7 +31,58 @@ const DEFAULT_VOICE = 'Kore'
 const GEMINI_SAMPLE_RATE = 24000 // Rate of the audio Gemini returns, sent as is
 const DEFAULT_MAX_RETRY = 2
 
+// The prebuilt voices, with the tone Google gives each one. The genders come
+// from the Chirp 3 HD voices of Cloud Text-to-Speech, which carry the same names.
+const VOICES: Array<[string, string, 'female' | 'male']> = [
+  ['Zephyr', 'Bright', 'female'],
+  ['Puck', 'Upbeat', 'male'],
+  ['Charon', 'Informative', 'male'],
+  ['Kore', 'Firm', 'female'],
+  ['Fenrir', 'Excitable', 'male'],
+  ['Leda', 'Youthful', 'female'],
+  ['Orus', 'Firm', 'male'],
+  ['Aoede', 'Breezy', 'female'],
+  ['Callirrhoe', 'Easy-going', 'female'],
+  ['Laomedeia', 'Upbeat', 'female'],
+  ['Autonoe', 'Bright', 'female'],
+  ['Enceladus', 'Breathy', 'male'],
+  ['Iapetus', 'Clear', 'male'],
+  ['Umbriel', 'Easy-going', 'male'],
+  ['Algieba', 'Smooth', 'male'],
+  ['Despina', 'Smooth', 'female'],
+  ['Erinome', 'Clear', 'female'],
+  ['Algenib', 'Gravelly', 'male'],
+  ['Rasalgethi', 'Informative', 'male'],
+  ['Achernar', 'Soft', 'female'],
+  ['Alnilam', 'Firm', 'male'],
+  ['Schedar', 'Even', 'male'],
+  ['Gacrux', 'Mature', 'female'],
+  ['Pulcherrima', 'Forward', 'female'],
+  ['Achird', 'Friendly', 'male'],
+  ['Zubenelgenubi', 'Casual', 'male'],
+  ['Vindemiatrix', 'Gentle', 'female'],
+  ['Sadachbia', 'Lively', 'male'],
+  ['Sadaltager', 'Knowledgeable', 'male'],
+  ['Sulafat', 'Warm', 'female'],
+]
+
 export class GeminiTTS extends SentenceTTS {
+  /**
+   * Lists the prebuilt voices, which speak every language the model does, so
+   * `language` keeps them all. Gemini has no listing, so the list is written
+   * here.
+   */
+  static async listVoices(
+    options: { language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    return VOICES.map(([name, tone, gender]) => ({
+      id: name,
+      name,
+      gender,
+      description: tone,
+    }))
+  }
+
   private genai: GoogleGenAI
   // Read from the audio, which states its rate
   private rate = GEMINI_SAMPLE_RATE
