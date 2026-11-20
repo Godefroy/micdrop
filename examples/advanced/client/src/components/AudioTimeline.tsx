@@ -307,7 +307,7 @@ export default function AudioTimeline({
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label="The audio of the call as it goes, the caller above the line and the assistant below it, with the wait before each answer measured between the two"
+        aria-label="Live audio of the call. Your voice is above the line and the assistant's below it. A label between the two shows the wait before each answer."
         className="block h-20 w-full sm:h-24"
       />
     </div>

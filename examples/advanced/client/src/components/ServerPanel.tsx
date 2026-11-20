@@ -42,7 +42,7 @@ export default function ServerPanel() {
       <Group title="Turn detection" className="border-t border-line pt-4">
         <Switch
           label="Run Smart Turn on the server"
-          help="The same model as the Smart Turn detector, loaded by the server instead of the browser. Nothing to download on the device, at the cost of a round trip before each answer. The browser then leaves turns alone."
+          help="The server runs Smart Turn in place of the browser. That saves the browser a model download, but adds a round trip before each answer."
           checked={serverTurnDetection}
           disabled={isStarted}
           onChange={toggleServerTurnDetection}

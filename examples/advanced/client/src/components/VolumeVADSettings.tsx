@@ -21,7 +21,7 @@ export default function VolumeVADSettings({ vad }: { vad: VolumeVAD }) {
     <>
       <Slider
         label="History"
-        help="Level readings, one every 100 ms, that must all be quiet before the turn ends"
+        help="The detector reads the level every 100 ms and decides you stopped speaking after this many quiet readings in a row"
         value={options.history}
         min={1}
         max={20}
@@ -30,7 +30,7 @@ export default function VolumeVADSettings({ vad }: { vad: VolumeVAD }) {
       />
       <Slider
         label="Threshold"
-        help="Level above which the audio counts as speech"
+        help="Above this level, the audio counts as speech"
         value={options.threshold}
         min={-100}
         max={0}

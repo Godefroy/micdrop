@@ -19,17 +19,17 @@ export const VAD_INFO: {
   {
     name: 'volume',
     label: 'VolumeVAD',
-    help: 'Detects speech from the microphone level. Instant, but any loud noise counts as speech.',
+    help: 'Detects speech from the microphone level. It reacts at once, but counts any loud noise as speech.',
   },
   {
     name: 'silero',
     label: 'SileroVAD',
-    help: 'Detects speech with a small model. Tells a voice apart from background noise.',
+    help: 'Detects speech with a small model that tells a voice apart from background noise.',
   },
 ]
 
 export const SMART_TURN_HELP =
-  'Detects whether a sentence is finished, so a pause in the middle does not end the turn.'
+  'Detects whether a sentence is finished, so the assistant waits through a pause mid-sentence.'
 
 /**
  * One instance of each detector for the whole session.

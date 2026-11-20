@@ -86,17 +86,17 @@ export const AUTO_OPTIONS: { name: AutoName; label: string; help: string }[] = [
   {
     name: 'autoEndCall',
     label: 'Auto end call',
-    help: 'The assistant hangs up on its own once the user asks to end the call, instead of waiting to be disconnected.',
+    help: 'The assistant hangs up once you ask to end the call.',
   },
   {
     name: 'autoSemanticTurn',
     label: 'Semantic turn detection',
-    help: 'The assistant waits instead of answering when the transcript it just read sounds unfinished. Smart Turn does the same from the sound of the voice, without a round trip to the model, so turn it on here only to compare the two.',
+    help: 'The assistant waits when the transcript sounds unfinished. Smart Turn does the same job faster by listening to the voice, so turn this on mainly to compare the two.',
   },
   {
     name: 'autoIgnoreUserNoise',
     label: 'Noise filtering',
-    help: 'The assistant skips its answer when the transcript carries no real speech, such as a cough, a filler word or a passing noise.',
+    help: 'The assistant stays silent when the transcript holds only a cough, a filler word or a noise.',
   },
 ]
 
@@ -112,17 +112,17 @@ export const TOOL_OPTIONS: { name: ToolName; label: string; help: string }[] = [
   {
     name: 'get_time',
     label: 'Get time',
-    help: 'The assistant reads the clock of the server instead of guessing what time it is.',
+    help: 'The assistant reads the time on the server clock.',
   },
   {
     name: 'get_weather',
     label: 'Get weather',
-    help: 'The assistant looks up the temperature and the wind at a place, which also asks the model for its coordinates.',
+    help: 'The assistant works out the coordinates of a place, then looks up its temperature and wind.',
   },
   {
     name: 'say_something_later',
     label: 'Say something later',
-    help: 'The assistant sets a timer and speaks again once it fires, so it can act as a reminder or an alarm clock.',
+    help: 'The assistant sets a timer and speaks again when it ends, as a reminder or an alarm clock.',
   },
 ]
 
@@ -193,7 +193,7 @@ export const LANGUAGE_OPTIONS = LANGUAGES.some(
   : [{ id: BROWSER_LANGUAGE, label: BROWSER_LANGUAGE }, ...LANGUAGES]
 
 export const MODES: { id: CallMode; label: string }[] = [
-  { id: 'multi', label: 'Multi-providers' },
+  { id: 'multi', label: 'Multi-provider' },
   { id: 'realtime', label: 'Realtime' },
 ]
 
@@ -353,7 +353,7 @@ function loadCatalog() {
     })
     .catch((error: Error) => {
       loading = undefined
-      setState({ error: `Cannot read providers: ${error.message}` })
+      setState({ error: `Cannot load the providers: ${error.message}` })
     })
   return loading
 }

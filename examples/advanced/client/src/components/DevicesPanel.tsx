@@ -19,9 +19,11 @@ import Switch from './ui/Switch'
 import SpeakerTestButton from './SpeakerTestButton'
 
 const ECHO_LABELS = {
-  normal: 'Playing through the audio context',
-  fallback: 'Echo heard, playing through an audio element',
-  disabled: 'Echo heard again, interruptions are off for this call',
+  normal: 'The speaker plays through the audio context',
+  fallback:
+    'The microphone heard the assistant, so the speaker now plays through an audio element',
+  disabled:
+    'The microphone heard the assistant again, so interruptions are off until the call ends',
 }
 
 /**
@@ -127,9 +129,8 @@ export default function DevicesPanel() {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-xs leading-relaxed text-faint">
-            The browser names the devices only once it has been given the
-            microphone. Start it here to pick them and watch the level before
-            there is anyone on the line.
+            The browser lists the devices once you allow the microphone. Start
+            it here to pick them and check the level before a call.
           </p>
           <div className="flex justify-start">
             <Button
@@ -148,10 +149,10 @@ export default function DevicesPanel() {
       <div className="flex flex-col gap-3 border-t border-line pt-4">
         <Switch
           label="Interruptions"
-          help="Speak over the assistant to cut it off. If it keeps cutting itself off, the microphone is hearing its voice: turn this off and the microphone waits for the assistant to finish."
+          help="Speak over the assistant to cut it off. If it keeps cutting itself off, the microphone hears its voice. Turn this off so the microphone waits until the assistant finishes."
           checked={interruptions}
           disabled={isStarted}
-          reason={isStarted ? 'Applied on the next call' : undefined}
+          reason={isStarted ? 'Stop the call to change this' : undefined}
           onChange={setInterruptionsEnabled}
         />
         {echoLabel && (

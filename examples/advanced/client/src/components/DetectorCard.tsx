@@ -53,7 +53,7 @@ export default function DetectorCard({
             lockedOn
               ? 'Keep at least one voice detector on'
               : lockedOff
-                ? 'The server is doing this job'
+                ? `${name} runs on the server`
                 : undefined
           }
           onChange={onToggle}

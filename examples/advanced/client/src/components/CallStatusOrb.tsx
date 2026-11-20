@@ -70,7 +70,7 @@ export default function CallStatusOrb({ size = 44 }: Props) {
 function getShape(state: MicdropState): Shape {
   if (state.error) {
     return {
-      label: 'Call failed',
+      label: 'The call stopped on an error',
       ring: 'border-danger',
       disc: 'bg-danger',
       scale: 0.8,
@@ -78,7 +78,7 @@ function getShape(state: MicdropState): Shape {
   }
   if (state.isReconnecting) {
     return {
-      label: 'Reconnecting',
+      label: 'Connection lost, trying again',
       ring: 'border-warn',
       disc: 'bg-warn',
       scale: 0.7,
@@ -138,7 +138,7 @@ function getShape(state: MicdropState): Shape {
         }
   }
   return {
-    label: 'Not in a call',
+    label: 'Ready to call',
     ring: 'border-line-strong',
     disc: 'bg-line-strong',
     scale: 0.6,

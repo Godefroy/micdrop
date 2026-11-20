@@ -119,7 +119,7 @@ function EmptyTranscript({ isStarted }: { isStarted: boolean }) {
       <p className="max-w-xs text-sm leading-relaxed text-faint">
         {isStarted
           ? 'The call is up. Say something and the transcript starts here.'
-          : 'Start the call and everything said lands here, with the tools the agent reaches for along the way.'}
+          : 'Start the call to see the transcript here, with every tool the assistant calls.'}
       </p>
     </div>
   )
@@ -129,7 +129,7 @@ function EmptyTranscript({ isStarted }: { isStarted: boolean }) {
 function Thinking() {
   return (
     <div className="mr-auto flex w-48 max-w-[85%] flex-col gap-2 rounded-xl rounded-bl-lg border border-line bg-raised px-3.5 py-3">
-      <span className="sr-only">The assistant is answering</span>
+      <span className="sr-only">The assistant is thinking</span>
       <span
         aria-hidden="true"
         className="h-2 w-full animate-pulse rounded-full bg-inset"
@@ -191,7 +191,7 @@ function Line({ item, conversation, pending }: LineProps) {
           <Json label="Called with" value={item.parameters} />
           {result && (
             <Json
-              label="Answered"
+              label="Returned"
               value={result.output}
               icon={
                 <PiCheckBold

@@ -249,10 +249,10 @@ function statusLine(state: MicdropState): string {
   if (state.isUserSpeaking) return 'You are speaking'
   // A muted microphone hears nothing, whether or not there is a call for it
   // to hear, so it is read before the state of the line
-  if (state.isMuted) return 'Muted, nothing is being heard'
+  if (state.isMuted) return 'The microphone is muted'
   if (!state.isStarted) {
     return state.isMicStarted
-      ? 'The microphone is on, nobody is on the line'
+      ? 'The microphone is on, ready to call'
       : 'Ready to call'
   }
   return 'Listening'

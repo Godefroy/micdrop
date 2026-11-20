@@ -21,7 +21,7 @@ export default function AgentOptions() {
     <>
       <Group
         title="Agent behaviors"
-        description="Each one costs the model a tool call on every turn."
+        description="Each one adds a tool that the model receives on every turn."
         collapsible
         className="border-t border-line pt-4"
       >

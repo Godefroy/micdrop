@@ -69,7 +69,7 @@ export default function ProvidersFields() {
       )}
       {!error && !catalog && (
         <p className="text-xs text-faint">
-          Reading the catalog from the server…
+          Loading the providers from the server…
         </p>
       )}
 
@@ -88,8 +88,8 @@ export default function ProvidersFields() {
 
       {mode === 'realtime' && (
         <p className="text-xs leading-relaxed text-faint">
-          One model hears the user and answers with its own voice, in place of
-          an agent, a speech to text and a text to speech.
+          One model hears you and answers with its own voice, in place of the
+          agent, the speech to text and the text to speech.
         </p>
       )}
     </div>
@@ -287,7 +287,7 @@ function VoiceSelect({
 
   if (error) {
     return (
-      <p className="text-xs text-danger">Cannot read the voices: {error}</p>
+      <p className="text-xs text-danger">Cannot load the voices: {error}</p>
     )
   }
   if (loading || !voices) {
@@ -453,7 +453,7 @@ function describeModel(model: ModelOption): string | undefined {
     ? `Retiring${model.shutdownDate ? ` on ${model.shutdownDate}` : ''}`
     : undefined
   const aliases = model.aliases?.length
-    ? `Also ${model.aliases.join(', ')}`
+    ? `Also called ${model.aliases.join(', ')}`
     : undefined
   return (
     [

@@ -39,7 +39,7 @@ export default function SileroVADSettings({ vad }: { vad: SileroVAD }) {
       />
       <Slider
         label="Min speech frames"
-        help="Windows of speech needed before the turn opens"
+        help="After this many speech windows, the detector decides you are speaking"
         value={options.minSpeechFrames}
         min={1}
         max={40}
@@ -48,7 +48,7 @@ export default function SileroVADSettings({ vad }: { vad: SileroVAD }) {
       />
       <Slider
         label="Redemption frames"
-        help="Windows of silence tolerated before the turn closes"
+        help="After this many silent windows, the detector decides you stopped speaking"
         value={options.redemptionFrames}
         min={1}
         max={40}

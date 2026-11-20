@@ -37,7 +37,7 @@ export default function SmartTurnSettings() {
       />
       <Slider
         label="Max wait"
-        help="A held turn ends after this, so a wrong verdict never leaves the call hanging"
+        help="The assistant answers after this wait, even when the sentence sounds unfinished"
         value={maxWait}
         min={500}
         max={8000}
@@ -63,7 +63,7 @@ export default function SmartTurnSettings() {
             <span className="font-mono tabular-nums">
               {Math.round(lastResult.probability * 100)}%
             </span>{' '}
-            confidence, answered in{' '}
+            confidence. Smart Turn took{' '}
             <span className="font-mono tabular-nums">
               {lastResult.duration} ms
             </span>
@@ -71,7 +71,7 @@ export default function SmartTurnSettings() {
           </p>
           {!lastResult.complete && (
             <p className="text-xs leading-relaxed text-faint">
-              The agent answers anyway if nothing more comes within{' '}
+              The assistant answers anyway if you say nothing more within{' '}
               {(maxWait / 1000).toFixed(1)} s.
             </p>
           )}
