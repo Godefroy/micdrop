@@ -108,6 +108,13 @@ import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
 const tts = new KokoroTTS({ voice: 'am_michael' })
 ```
 
+`KokoroTTS.listVoices()` returns every voice with its accent and gender, and marks the best one of each. Pass `language` to keep the voices that speak it, none for another language than English:
+
+```typescript
+const voices = await KokoroTTS.listVoices()
+// [{ id: 'af_heart', name: 'Heart', languages: ['en-US'], gender: 'female', ... }, ...]
+```
+
 ## Kokoro speaks English only in Micdrop
 
 The upstream model also holds French, Italian, Japanese, Portuguese and Chinese

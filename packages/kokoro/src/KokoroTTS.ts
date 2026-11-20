@@ -1,4 +1,9 @@
-import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
+import {
+  float32ToPcm16,
+  MicdropVoice,
+  SentenceTTS,
+  voicesForLanguage,
+} from '@micdrop/server'
 import {
   KokoroDevice,
   KokoroDtype,
@@ -6,7 +11,12 @@ import {
   SynthesizerOptions,
   warmupSynthesizer,
 } from './synthesizer'
-import { KokoroVoiceName, resolveVoice } from './voices'
+import {
+  KOKORO_VOICE_IDS,
+  KOKORO_VOICES,
+  KokoroVoiceName,
+  resolveVoice,
+} from './voices'
 
 /**
  * Local Kokoro text to speech, running in the Node process through
@@ -47,6 +57,30 @@ const DEFAULT_DEVICE: KokoroDevice = 'cpu'
 const KOKORO_SAMPLE_RATE = 24000 // Rate of the audio Kokoro generates, sent as is
 
 export class KokoroTTS extends SentenceTTS {
+  /**
+   * Lists the voices of the model, English ones: American when the id starts
+   * with "a", British with "b", then female or male. `language` keeps the
+   * voices that speak it, none for another language than English.
+   */
+  static async listVoices(
+    options: { language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    const best = Object.values(KOKORO_VOICES) as string[]
+    const voices = KOKORO_VOICE_IDS.map((id) => ({
+      id,
+      // af_heart reads Heart
+      name: id.charAt(3).toUpperCase() + id.slice(4),
+      languages: [id.startsWith('b') ? 'en-GB' : 'en-US'],
+      gender: (id.charAt(1) === 'f'
+        ? 'female'
+        : 'male') as MicdropVoice['gender'],
+      description: best.includes(id)
+        ? 'The best voice of its accent and gender'
+        : undefined,
+    }))
+    return voicesForLanguage(voices, options.language)
+  }
+
   // Read from the audio, which states its rate
   private rate = KOKORO_SAMPLE_RATE
 

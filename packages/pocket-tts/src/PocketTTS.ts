@@ -1,4 +1,4 @@
-import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
+import { float32ToPcm16, MicdropVoice, SentenceTTS } from '@micdrop/server'
 import sherpa, { type GenerationConfig } from 'sherpa-onnx-node'
 import {
   PocketBundledVoice,
@@ -63,6 +63,38 @@ const DEFAULT_REFERENCE_LENGTH = 12
 const DEFAULT_SAMPLE_RATE = 24000
 
 export class PocketTTS extends SentenceTTS {
+  /**
+   * Lists the reference voices the archive ships. Pocket TTS speaks English
+   * alone and clones any recording given as `voice`, so `language` keeps
+   * them only for English.
+   */
+  static async listVoices(
+    options: { language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    if (options.language && !/^en\b/i.test(options.language)) return []
+    return [
+      {
+        id: 'bria',
+        name: 'Bria',
+        languages: ['en'],
+        gender: 'female',
+        description: 'A woman reading calmly',
+      },
+      {
+        id: 'loona',
+        name: 'Loona',
+        languages: ['en'],
+        description: 'Cloned from a one second clip',
+      },
+      {
+        id: 'frenchAccent',
+        name: 'French accent',
+        languages: ['en'],
+        description: 'A French speaker cloned into English words',
+      },
+    ]
+  }
+
   // The model states its rate once loaded, and the audio is sent at it
   private rate = DEFAULT_SAMPLE_RATE
 

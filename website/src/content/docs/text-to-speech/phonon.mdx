@@ -130,6 +130,13 @@ voice in Gradium Studio and download it the same way. Phonon runs the resulting
 voice file locally with any checkpoint. Get the speaker's consent before
 cloning their voice.
 
+`PhononTTS.listVoices()` returns the catalog, by the name `voice` takes, with the locale each voice was recorded in and its gender. Pass `language`, such as `fr` or `fr-FR`, to keep the voices recorded in it:
+
+```typescript
+const voices = await PhononTTS.listVoices({ language: 'fr' })
+// [{ id: 'Noémie', name: 'Noémie', languages: ['fr-FR'], gender: 'female' }, ...]
+```
+
 ## Numbers, dates and symbols
 
 Phonon normalizes the text before speaking it, with the rules of `language`,

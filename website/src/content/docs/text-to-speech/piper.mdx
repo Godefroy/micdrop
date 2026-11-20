@@ -147,6 +147,16 @@ speakers. Micdrop reads that file at startup and sends the audio to the
 client at that rate, without resampling it. For a voice with several speakers, pick one with the
 `speaker` option.
 
+`PiperTTS.listVoices()` returns the voices downloaded in a folder, by the path `modelPath` takes, with the language their configuration gives and their number of speakers. Pass `language` to keep the voices that speak it:
+
+```typescript
+const voices = await PiperTTS.listVoices({
+  voicesDir: './voices',
+  language: 'fr',
+})
+// [{ id: './voices/fr_FR-siwis-medium.onnx', name: 'fr_FR-siwis-medium', languages: ['fr-FR'] }]
+```
+
 ## What Piper TTS costs to run
 
 Piper costs nothing per minute, since it runs on your own machine. It uses time

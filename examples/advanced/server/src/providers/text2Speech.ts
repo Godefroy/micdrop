@@ -3,7 +3,7 @@ import { ElevenLabsTTS, ElevenLabsTTSOptions } from '@micdrop/elevenlabs'
 import { GeminiTTS } from '@micdrop/gemini'
 import { GradiumTTS } from '@micdrop/gradium'
 import { MistralTTS } from '@micdrop/mistral'
-import { KOKORO_VOICE_IDS, KokoroTTS } from '@micdrop/kokoro'
+import { KokoroTTS } from '@micdrop/kokoro'
 import { OpenaiTTS } from '@micdrop/openai'
 import {
   getHubToken,
@@ -13,10 +13,10 @@ import {
   PhononTTS,
 } from '@micdrop/phonon'
 import { PiperTTS } from '@micdrop/piper'
-import { BUNDLED_VOICES, PocketTTS } from '@micdrop/pocket-tts'
-import { QWEN_SPEAKERS, Qwen3TTS } from '@micdrop/qwen-tts'
+import { PocketTTS } from '@micdrop/pocket-tts'
+import { Qwen3TTS } from '@micdrop/qwen-tts'
 import { FallbackTTS, MicdropVoice, MockTTS, TTS } from '@micdrop/server'
-import { existsSync, readdirSync } from 'fs'
+import { existsSync } from 'fs'
 import path from 'path'
 import { listedModels } from './models'
 import { ProviderRegistry, VoiceOption } from './types'
@@ -79,20 +79,6 @@ function getPhononModel(voice?: string): string | undefined {
   ].model
 }
 
-function listPhononVoices(): VoiceOption[] {
-  const languages = getPhononLanguages()
-  return PHONON_VOICES.filter(({ language }) =>
-    languages.includes(language)
-  ).map(({ name, language, locale }) => {
-    // "characters" are English voices, without a region of their own
-    const region = locale.split('-')[1]
-    return {
-      id: name,
-      label: name,
-      language: region ? `${language}-${region.toUpperCase()}` : language,
-    }
-  })
-}
 
 // Where the Piper voices were downloaded, see the README of @micdrop/piper
 const PIPER_VOICES_DIR =
@@ -114,26 +100,6 @@ async function isQwenServerUp(): Promise<boolean> {
   }
 }
 
-/**
- * Piper voices found on disk.
- *
- * A voice is a pair of files named after its language and its speaker, such as
- * `fr_FR-siwis-medium.onnx`, so the locale comes straight from the file name.
- */
-function listPiperVoices(): VoiceOption[] {
-  if (!existsSync(PIPER_VOICES_DIR)) return []
-  return readdirSync(PIPER_VOICES_DIR)
-    .filter((file) => file.endsWith('.onnx'))
-    .map((file) => {
-      const name = file.replace(/\.onnx$/, '')
-      const [locale] = name.split('-')
-      return {
-        id: file,
-        label: name,
-        language: locale.replace('_', '-'),
-      }
-    })
-}
 
 const text2speech: ProviderRegistry<TTS> = {
   mock: {
@@ -296,12 +262,10 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Kokoro',
     description: 'English only',
     local: true,
-    voices: () =>
-      KOKORO_VOICE_IDS.map((id) => ({
-        id,
-        label: id,
-        language: id.startsWith('b') ? 'en-GB' : 'en-US',
-      })),
+    voices: async (_model, lang) =>
+      toVoiceOptions(await KokoroTTS.listVoices({ language: lang }), {
+        setsLanguage: true,
+      }),
     defaultVoice: 'af_heart',
     create: ({ voice }) => new KokoroTTS({ voice }),
   },
@@ -310,11 +274,20 @@ const text2speech: ProviderRegistry<TTS> = {
   piper: {
     label: 'Piper',
     local: true,
-    isAvailable: () => listPiperVoices().length > 0,
-    voices: listPiperVoices,
+    isAvailable: async () =>
+      (await PiperTTS.listVoices({ voicesDir: PIPER_VOICES_DIR })).length > 0,
+    voices: async (_model, lang) =>
+      toVoiceOptions(
+        await PiperTTS.listVoices({
+          voicesDir: PIPER_VOICES_DIR,
+          language: lang,
+        }),
+        { setsLanguage: true }
+      ),
     create: ({ voice }) =>
       new PiperTTS({
-        modelPath: path.join(PIPER_VOICES_DIR, voice || ''),
+        // The voice is the path of its model
+        modelPath: voice || '',
         binaryPath: process.env.PIPER_BINARY,
       }),
   },
@@ -325,12 +298,10 @@ const text2speech: ProviderRegistry<TTS> = {
     description: 'English only, clones a voice',
     local: true,
     isAvailable: () => existsSync(POCKET_MODEL_DIR),
-    voices: () =>
-      Object.keys(BUNDLED_VOICES).map((id) => ({
-        id,
-        label: id,
-        language: 'en-US',
-      })),
+    voices: async (_model, lang) =>
+      toVoiceOptions(await PocketTTS.listVoices({ language: lang }), {
+        setsLanguage: true,
+      }),
     defaultVoice: 'bria',
     create: ({ voice }) => new PocketTTS({ modelDir: POCKET_MODEL_DIR, voice }),
   },
@@ -340,7 +311,16 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Phonon',
     description: 'Gradium, on-device',
     local: true,
-    voices: listPhononVoices,
+    // The voices of the languages the demo can speak, see getPhononLanguages()
+    voices: async (_model, lang) => {
+      const languages = getPhononLanguages()
+      return toVoiceOptions(
+        (await PhononTTS.listVoices({ language: lang })).filter((voice) =>
+          voice.languages?.some((code) => languages.includes(code.split('-')[0]))
+        ),
+        { setsLanguage: true }
+      )
+    },
     defaultVoice: 'Easton',
     create: ({ lang, voice }) =>
       new PhononTTS({
@@ -360,11 +340,8 @@ const text2speech: ProviderRegistry<TTS> = {
     isAvailable: isQwenServerUp,
     // Every speaker reads the ten languages, so the select offers them all
     // whatever the language of the call
-    voices: () =>
-      Object.entries(QWEN_SPEAKERS).map(([id, origin]) => ({
-        id,
-        label: `${id} (${origin})`,
-      })),
+    voices: async (_model, lang) =>
+      toVoiceOptions(await Qwen3TTS.listVoices({ language: lang })),
     defaultVoice: 'Ryan',
     create: ({ lang, voice }) =>
       new Qwen3TTS({

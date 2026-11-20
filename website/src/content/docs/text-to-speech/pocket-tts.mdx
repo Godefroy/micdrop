@@ -86,6 +86,13 @@ the voice, which makes a clean recording worth more than a long one.
   condition of use, and impersonation is the main misuse of voice cloning.
 </Callout>
 
+`PocketTTS.listVoices()` returns the three reference voices of the archive. Pocket TTS speaks English alone, so `language` keeps them only for English:
+
+```typescript
+const voices = await PocketTTS.listVoices()
+// [{ id: 'bria', name: 'Bria', languages: ['en'], gender: 'female', ... }, ...]
+```
+
 ## Usage with MicdropServer
 
 ```typescript

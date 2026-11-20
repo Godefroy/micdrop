@@ -1,4 +1,12 @@
-import { Pcm16Aligner, SentenceSplitter, TTS } from '@micdrop/server'
+import {
+  MicdropVoice,
+  Pcm16Aligner,
+  SentenceSplitter,
+  TTS,
+  voicesForLanguage,
+} from '@micdrop/server'
+import { readdir } from 'fs/promises'
+import { join } from 'path'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
 import {
   DEFAULT_SAMPLE_RATE,
@@ -103,6 +111,50 @@ type ProcessState =
 const FATAL_SPAWN_ERRORS = ['ENOENT', 'EACCES', 'ENOTDIR']
 
 export class PiperTTS extends TTS {
+  /**
+   * Lists the voices downloaded in a folder, by the path `modelPath` takes.
+   *
+   * A voice is a pair of files, `fr_FR-siwis-medium.onnx` and its `.json`
+   * configuration, which gives its language and its number of speakers. The
+   * name of the file stands in for a configuration that cannot be read.
+   * `language` keeps the voices that speak it.
+   */
+  static async listVoices(options: {
+    voicesDir: string
+    language?: string
+  }): Promise<MicdropVoice[]> {
+    let files: string[]
+    try {
+      files = await readdir(options.voicesDir)
+    } catch {
+      return []
+    }
+    const voices = await Promise.all(
+      files
+        .filter((file) => file.endsWith('.onnx'))
+        .sort()
+        .map(async (file) => {
+          const modelPath = join(options.voicesDir, file)
+          const name = file.replace(/\.onnx$/, '')
+          const config = await readVoiceConfig(
+            defaultConfigPath(modelPath)
+          ).catch(() => undefined)
+          // fr_FR-siwis-medium speaks fr-FR
+          const code = config?.language ?? name.split('-')[0]
+          return {
+            id: modelPath,
+            name,
+            languages: code ? [code.replace('_', '-')] : undefined,
+            description:
+              config && config.speakerCount > 1
+                ? `${config.speakerCount} speakers, picked with \`speaker\``
+                : undefined,
+          }
+        })
+    )
+    return voicesForLanguage(voices, options.language)
+  }
+
   private config: Promise<PiperVoiceConfig>
   private splitter = new SentenceSplitter()
   private state: ProcessState = { status: 'none' }

@@ -1,5 +1,13 @@
-import { Pcm16Aligner, SentenceTTS, SharedInstances } from '@micdrop/server'
 import {
+  MicdropVoice,
+  Pcm16Aligner,
+  SentenceTTS,
+  SharedInstances,
+  voicesForLanguage,
+} from '@micdrop/server'
+import {
+  QWEN_LANGUAGES,
+  QWEN_SPEAKERS,
   QwenLanguage,
   QwenLanguageCode,
   QwenSpeaker,
@@ -75,6 +83,13 @@ export interface Qwen3TTSOptions {
 }
 
 const DEFAULT_URL = 'http://localhost:8000'
+// Language each speaker was recorded in, as the catalog names it
+const SPEAKER_LANGUAGES: Record<string, string> = {
+  English: 'en',
+  Chinese: 'zh',
+  Japanese: 'ja',
+  Korean: 'ko',
+}
 const DEFAULT_MODEL = 'mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit'
 const DEFAULT_VOICE: QwenSpeaker = 'Ryan'
 const DEFAULT_STREAMING_INTERVAL = 0.5 // Seconds of audio per chunk
@@ -103,6 +118,27 @@ const QWEN_SAMPLE_RATE = 24000 // Rate of the audio Qwen3-TTS generates, sent as
 const warmups = new SharedInstances<void>()
 
 export class Qwen3TTS extends SentenceTTS {
+  /**
+   * Lists the speakers of the CustomVoice checkpoints. Each one was recorded
+   * in one language, listed first, and reads the ten languages of the model.
+   * `language` keeps them all for one of those ten.
+   */
+  static async listVoices(
+    options: { language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    const codes = Object.keys(QWEN_LANGUAGES)
+    const voices = Object.entries(QWEN_SPEAKERS).map(([id, origin]) => {
+      const native = SPEAKER_LANGUAGES[origin.split(',')[0]] ?? 'en'
+      return {
+        id,
+        name: id.replace('_', ' '),
+        languages: [native, ...codes.filter((code) => code !== native)],
+        description: `Recorded in ${origin}`,
+      }
+    })
+    return voicesForLanguage(voices, options.language)
+  }
+
   constructor(private readonly options: Qwen3TTSOptions = {}) {
     super()
 

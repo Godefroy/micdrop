@@ -139,6 +139,13 @@ test of nine French sentences across four speakers, Whisper transcribed eight
 word for word, and one had `"quatorze"` mispronounced. Expect an occasional
 mispronounced word with any speaker.
 
+`Qwen3TTS.listVoices()` returns the nine speakers, with the language each one was recorded in first, then the others of the model. Pass `language` to keep them for one of the ten languages:
+
+```typescript
+const voices = await Qwen3TTS.listVoices({ language: 'fr' })
+// [{ id: 'Ryan', name: 'Ryan', languages: ['en', 'de', 'es', 'fr', ...], ... }, ...]
+```
+
 ## Reading with an intention
 
 `instruct` describes how to read each sentence:

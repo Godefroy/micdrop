@@ -1,4 +1,9 @@
-import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
+import {
+  float32ToPcm16,
+  MicdropVoice,
+  SentenceTTS,
+  voicesForLanguage,
+} from '@micdrop/server'
 import { existsSync } from 'fs'
 import { downloadCatalogVoice, getHubToken, HubOptions } from './hub'
 import { VOICE_EXTENSION } from './modelFiles'
@@ -113,6 +118,34 @@ const LANGUAGES: PhononLanguage[] = ['en', 'fr', 'de', 'es', 'pt', 'none']
 const DEFAULT_SAMPLE_RATE = 24000
 
 export class PhononTTS extends SentenceTTS {
+  /**
+   * Lists the voices of the Phonon catalog, by the name the `voice` option
+   * takes, with the locale each one was recorded in. Every voice works with
+   * every model, which decides the languages it reads. `language` keeps the
+   * voices recorded in it.
+   */
+  static async listVoices(
+    options: { language?: string } = {}
+  ): Promise<MicdropVoice[]> {
+    const voices = (PHONON_VOICES as readonly PhononVoice[]).map((voice) => {
+      // "characters" are English voices without a region of their own
+      const [language, region] = voice.locale.split('-')
+      const locale =
+        voice.locale === 'characters'
+          ? voice.language
+          : region
+            ? `${language}-${region.toUpperCase()}`
+            : language
+      return {
+        id: voice.name,
+        name: voice.name,
+        languages: [locale],
+        gender: voice.gender,
+      }
+    })
+    return voicesForLanguage(voices, options.language)
+  }
+
   private readonly catalogVoice?: PhononVoice
   private voicePath?: Promise<string>
   // The language is checked once, not again on each retry of a failed voice
