@@ -64,7 +64,6 @@ export default function DevicesPanel() {
     <Panel
       title="Devices"
       icon={<PiSpeakerHighBold className="h-4 w-4" />}
-      description="The microphone and the speaker this call runs on."
     >
       {isMicStarted ? (
         <>

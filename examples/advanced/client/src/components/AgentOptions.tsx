@@ -4,8 +4,9 @@ import Group from './ui/Group'
 import Switch from './ui/Switch'
 
 /**
- * The prompts the agent runs on every turn and the tools it is given, set for
- * the next call.
+ * The behaviors the agent runs on every turn and the tools it is given, set
+ * for the next call. Both fold away, since they are tuned far less often than
+ * the providers and the prompt above them.
  *
  * They live here rather than in the server code because their reliability is
  * what changes most between a hosted model and a small local one, and turning
@@ -19,8 +20,10 @@ export default function AgentOptions() {
   return (
     <>
       <Group
-        title="Agent prompts"
+        title="Agent behaviors"
         description="Each one costs the model a tool call on every turn."
+        collapsible
+        className="border-t border-line pt-4"
       >
         <div className="flex flex-col gap-3">
           {AUTO_OPTIONS.map((option) => (
@@ -38,7 +41,7 @@ export default function AgentOptions() {
 
       <Group
         title="Agent tools"
-        description="What the assistant can reach for while it answers."
+        collapsible
         className="border-t border-line pt-4"
       >
         <div className="flex flex-col gap-3">

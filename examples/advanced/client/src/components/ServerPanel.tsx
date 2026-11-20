@@ -31,17 +31,13 @@ export default function ServerPanel() {
   }
 
   return (
-    <Panel
-      title="Call setup"
-      icon={<PiCpuBold className="h-4 w-4" />}
-      description="Sent with the connection, so a change applies to the next call."
-    >
-      <Group title="Providers">
-        <ProvidersFields />
-      </Group>
+    <Panel title="Call setup" icon={<PiCpuBold className="h-4 w-4" />}>
+      {/* The language and the providers open the panel under its own title,
+          the language being no provider */}
+      <ProvidersFields />
 
-      <AgentOptions />
       <PromptSettings />
+      <AgentOptions />
 
       <Group title="Turn detection" className="border-t border-line pt-4">
         <Switch

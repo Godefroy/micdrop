@@ -29,8 +29,10 @@ export default function Switch({
   onChange,
 }: SwitchProps) {
   return (
+    // Positioned, so the hidden checkbox stays inside the column that scrolls
+    // rather than stretching the page under it
     <label
-      className={`flex items-start ${hideLabel && !help ? '' : 'gap-3'} ${
+      className={`relative flex items-start ${hideLabel && !help ? '' : 'gap-3'} ${
         disabled ? 'cursor-not-allowed' : 'cursor-pointer'
       }`}
       title={reason}

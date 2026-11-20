@@ -84,7 +84,7 @@ export function TranscriptView({
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className={`overflow-y-auto rounded-xl border border-line bg-panel p-4 ${className}`}
+      className={`relative overflow-y-auto rounded-xl border border-line bg-panel p-4 ${className}`}
     >
       {lines.length === 0 ? (
         <EmptyTranscript isStarted={isStarted} />

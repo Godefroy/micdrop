@@ -213,7 +213,7 @@ const DEFAULT_SELECTIONS: Selections = {
 }
 
 export const PART_LABELS: Record<PartName, string> = {
-  agent: 'Agent',
+  agent: 'Agent (LLM)',
   stt: 'Speech to text',
   tts: 'Text to speech',
   realtime: 'Model',

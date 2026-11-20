@@ -8,13 +8,14 @@ interface FieldProps {
 }
 
 /**
- * One labelled setting. The label holds its own column so a stack of them
- * reads down the left edge, and folds above the control on a narrow screen.
+ * One labelled setting, the label above its control. A stack of them reads as
+ * a short form rather than as a table of selects, and the control keeps the
+ * full width of the panel.
  */
 export default function Field({ label, htmlFor, children }: FieldProps) {
   return (
-    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start sm:gap-x-3">
-      <label htmlFor={htmlFor} className="text-sm text-dim sm:py-2">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={htmlFor} className="text-xs text-dim">
         {label}
       </label>
       <div className="flex min-w-0 flex-wrap items-center gap-2">

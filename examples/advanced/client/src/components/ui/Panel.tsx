@@ -30,6 +30,9 @@ interface PanelProps {
  *
  * A collapsible header keeps its switch outside the fold button rather than
  * inside it, so neither control swallows the other's clicks or its keyboard.
+ *
+ * The box is positioned, so the text kept for screen readers stays inside the
+ * column that scrolls rather than stretching the page under it.
  */
 export default function Panel({
   title,
@@ -72,7 +75,7 @@ export default function Panel({
 
   return (
     <section
-      className={`rounded-xl border border-line bg-panel shadow-(--shadow-panel)
+      className={`relative rounded-xl border border-line bg-panel shadow-(--shadow-panel)
         transition-opacity duration-150 ease-rise ${muted ? 'opacity-60' : ''} ${className}`}
     >
       <div className="flex items-start gap-3 p-4">
@@ -80,7 +83,7 @@ export default function Panel({
         {collapsible ? (
           <button
             type="button"
-            className="flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left"
+            className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-lg text-left"
             aria-expanded={isOpen}
             onClick={() => setIsOpen((open) => !open)}
           >

@@ -20,7 +20,6 @@ export default function PromptSettings() {
   return (
     <Group
       title="System prompt"
-      description="What the assistant is told before the first word is said."
       className="border-t border-line pt-4"
     >
       <textarea

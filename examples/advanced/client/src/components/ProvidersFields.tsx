@@ -41,19 +41,6 @@ export default function ProvidersFields() {
 
   return (
     <div className="flex flex-col gap-3">
-      <ModeTabs mode={mode} disabled={isStarted} onChange={selectMode} />
-
-      {error && (
-        <p className="rounded-lg bg-danger-soft px-3 py-2 text-xs leading-relaxed text-danger">
-          {error}
-        </p>
-      )}
-      {!error && !catalog && (
-        <p className="text-xs text-faint">
-          Reading the catalog from the server…
-        </p>
-      )}
-
       <Field label="Language">
         <Select
           className="w-full"
@@ -69,6 +56,22 @@ export default function ProvidersFields() {
           ))}
         </Select>
       </Field>
+
+      {/* The language holds for the whole call, the providers below it */}
+      <hr className="my-1 border-line" />
+
+      <ModeTabs mode={mode} disabled={isStarted} onChange={selectMode} />
+
+      {error && (
+        <p className="rounded-lg bg-danger-soft px-3 py-2 text-xs leading-relaxed text-danger">
+          {error}
+        </p>
+      )}
+      {!error && !catalog && (
+        <p className="text-xs text-faint">
+          Reading the catalog from the server…
+        </p>
+      )}
 
       {catalog &&
         MODE_PARTS[mode].map((part) => (
@@ -186,50 +189,53 @@ function PartRow({
 
   return (
     <Field label={label}>
-      <Select
-        className="w-full"
-        value={selection.provider ?? ''}
-        disabled={disabled}
-        aria-label={label}
-        onChange={handleProvider}
-      >
-        {providers.map((item) => (
-          <option
-            key={item.id}
-            value={item.id}
-            disabled={!item.available}
-            title={
-              item.available
-                ? item.description
-                : `Missing ${item.missingEnv.join(', ') || 'setup'}`
-            }
-          >
-            {item.label}
-            {item.local ? ' (local)' : ''}
-            {item.available ? '' : ' (unavailable)'}
-          </option>
-        ))}
-      </Select>
-
-      {hasModels && (
+      {/* The provider and its model read as one choice, so they share a line */}
+      <div className="flex w-full min-w-0 gap-2">
         <Select
-          className="w-full"
-          value={selection.model ?? ''}
+          className="min-w-0 flex-1"
+          value={selection.provider ?? ''}
           disabled={disabled}
-          aria-label={`${label} model`}
-          onChange={handleModel}
+          aria-label={label}
+          onChange={handleProvider}
         >
-          {provider.models.map((model) => (
+          {providers.map((item) => (
             <option
-              key={model.id}
-              value={model.id}
-              title={describeModel(model)}
+              key={item.id}
+              value={item.id}
+              disabled={!item.available}
+              title={
+                item.available
+                  ? item.description
+                  : `Missing ${item.missingEnv.join(', ') || 'setup'}`
+              }
             >
-              {model.label}
+              {item.label}
+              {item.local ? ' (local)' : ''}
+              {item.available ? '' : ' (unavailable)'}
             </option>
           ))}
         </Select>
-      )}
+
+        {hasModels && (
+          <Select
+            className="min-w-0 flex-1"
+            value={selection.model ?? ''}
+            disabled={disabled}
+            aria-label={`${label} model`}
+            onChange={handleModel}
+          >
+            {provider.models.map((model) => (
+              <option
+                key={model.id}
+                value={model.id}
+                title={describeModel(model)}
+              >
+                {model.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </div>
 
       {provider?.hasVoices && (
         <VoiceSelect
@@ -295,9 +301,9 @@ function VoiceSelect({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full min-w-0 items-center gap-2">
       <Select
-        className="w-full"
+        className="min-w-0 flex-1"
         value={voice ?? ''}
         disabled={disabled}
         aria-label={`${label} voice`}
