@@ -1,7 +1,11 @@
 import { PassThrough, Readable } from 'stream'
 import type { z } from 'zod'
 import { Agent, AgentEvents, AgentOptions, Tool } from '../agent'
-import { MicdropAnswerMetadata, MicdropConversationToolCall } from '../types'
+import {
+  DEFAULT_SAMPLE_RATE,
+  MicdropAnswerMetadata,
+  MicdropConversationToolCall,
+} from '../types'
 
 export type RealtimeOptions = Pick<
   AgentOptions,
@@ -9,7 +13,7 @@ export type RealtimeOptions = Pick<
 >
 
 export interface RealtimeEvents extends AgentEvents {
-  /** Voice of the assistant, in PCM16 at 16 kHz */
+  /** Voice of the assistant, in PCM16 mono at `sampleRate` */
   Audio: [Buffer]
   /** What the assistant has said so far in the answer it is giving */
   PartialMessage: [string]
@@ -225,7 +229,15 @@ export abstract class Realtime<
     return this.turn === 'none' && !this.currentAnswer
   }
 
-  /** Voice of the answer, PCM16 at 16 kHz */
+  /**
+   * Rate of the audio emitted, in Hz, the one the model speaks at. The server
+   * passes it on to the client, which plays the audio as it comes.
+   */
+  get sampleRate(): number {
+    return DEFAULT_SAMPLE_RATE
+  }
+
+  /** Voice of the answer, PCM16 at `sampleRate` */
   protected emitAudio(chunk: Buffer) {
     const answer = this.activeAnswer()
     if (!answer) return

@@ -30,6 +30,7 @@ const tts = new ElevenLabsTTS({
   voiceId: '21m00Tcm4TlvDq8ikWAM', // ElevenLabs voice ID
   modelId: 'eleven_v4_turbo', // Optional: model to use
   language: 'en', // Optional: language code
+  sampleRate: 24000, // Optional: 48000 by default
   voiceSettings: {
     stability: 0.5,
   },
@@ -53,7 +54,7 @@ const tts = new ElevenLabsTTS({
   voiceId: '21m00Tcm4TlvDq8ikWAM',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -62,10 +63,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.  |
+| Event    | Payload    | Description                                                                                                                |
+| -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played. |
+| `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.                                                    |
 
 See the [TTS interface](./custom) for the full contract.
 
@@ -133,7 +134,8 @@ When a connection drops in the middle of an answer, `ElevenLabsTTS` reconnects a
 | `voiceId`           | `string`                                | Required              | ElevenLabs voice ID                                                                 |
 | `modelId`           | `ElevenLabsModelId`                     | `'eleven_turbo_v2_5'` | Model to use for speech synthesis, one of the [supported models](#choosing-a-model) |
 | `language`          | `string`                                | Optional              | Language code (e.g., 'en', 'fr')                                                    |
-| `outputFormat`      | `TextToSpeechStreamRequestOutputFormat` | `'pcm_16000'`         | Audio output format                                                                 |
+| `sampleRate`        | `ElevenLabsSampleRate`                  | `48000`               | Rate of the audio in Hz: 8000, 16000, 22050, 24000, 32000, 44100 (Pro plan) or 48000 |
+| `outputFormat`      | `TextToSpeechStreamRequestOutputFormat` | Optional              | Deprecated, use `sampleRate`. Only the `pcm_*` formats play in the client           |
 | `voiceSettings`     | `VoiceSettings`                         | Optional              | Voice customization settings. Eleven v3 and v4 only read `stability`                |
 | `connectionTimeout` | `number`                                | `5000`                | Timeout in milliseconds for WebSocket connection                                    |
 | `retryDelay`        | `number`                                | `1000`                | Delay in milliseconds between reconnection attempts                                 |

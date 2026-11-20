@@ -1,4 +1,4 @@
-import { Pcm16Resampler, SentenceSplitter, TTS } from '@micdrop/server'
+import { Pcm16Aligner, SentenceSplitter, TTS } from '@micdrop/server'
 import OpenAI from 'openai'
 import { Readable } from 'stream'
 import { OpenaiOptions } from './OpenaiAgent'
@@ -44,11 +44,10 @@ export type OpenaiTTSOptions = OpenaiOptions & {
 const DEFAULT_MODEL = 'gpt-4o-mini-tts'
 const DEFAULT_VOICE = 'alloy'
 const DEFAULT_REALTIME_VOICE = 'marin'
-const OPENAI_SAMPLE_RATE = 24000 // Rate of the pcm output from OpenAI
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const OPENAI_SAMPLE_RATE = 24000 // Rate of the pcm output from OpenAI, sent as is
 const MAX_IN_FLIGHT = 2 // Requests asked for at once, current one included
 // Audio held back at the start of an utterance, in bytes of the output format
-// (16 bits, 16 kHz, so 32 bytes per millisecond).
+// (16 bits, 24 kHz, so 48 bytes per millisecond).
 //
 // The speech endpoint answers with a burst of a hundred milliseconds or so,
 // then goes quiet while it generates the rest. Forwarding that burst as it
@@ -56,7 +55,7 @@ const MAX_IN_FLIGHT = 2 // Requests asked for at once, current one included
 // the hole lands inside the first word. Holding the opening back until there
 // is enough of it to cover the pause costs the same time either way, and
 // spends it before the first syllable rather than inside it.
-const OPENING_CUSHION = 300 * 32
+const OPENING_CUSHION = (300 * OPENAI_SAMPLE_RATE * 2) / 1000
 
 interface QueueItem {
   counter: number
@@ -86,6 +85,10 @@ export class OpenaiTTS extends TTS {
   // More than one request is in flight at a time, so they are stopped as a set.
   private syntheses = new Set<Synthesis>()
 
+  get sampleRate() {
+    return OPENAI_SAMPLE_RATE
+  }
+
   constructor(private readonly options: OpenaiTTSOptions) {
     super()
     const model = options.model || DEFAULT_MODEL
@@ -93,7 +96,8 @@ export class OpenaiTTS extends TTS {
       this.realtime = new OpenaiRealtimeSpeech(
         {
           apiKey:
-            ('openai' in options ? options.openai.apiKey : options.apiKey) ?? '',
+            ('openai' in options ? options.openai.apiKey : options.apiKey) ??
+            '',
           model,
           voice: options.voice || DEFAULT_REALTIME_VOICE,
           instructions: options.instructions,
@@ -257,16 +261,14 @@ export class OpenaiTTS extends TTS {
     async function* read() {
       const { body } = await response
       if (!body) return
-      const resampler = new Pcm16Resampler(
-        OPENAI_SAMPLE_RATE,
-        OUTPUT_SAMPLE_RATE
-      )
+      // A network chunk can end in the middle of a sample
+      const aligner = new Pcm16Aligner()
       const reader = body.getReader()
       try {
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          const output = resampler.process(Buffer.from(value))
+          const output = aligner.process(Buffer.from(value))
           if (output.length > 0) yield output
         }
       } finally {

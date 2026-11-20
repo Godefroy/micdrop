@@ -40,7 +40,8 @@ Each `AudioMessage` contains:
 
 ```typescript
 interface AudioMessage {
-  buffer: Buffer // Raw audio data
+  buffer: Buffer // Raw audio data, PCM 16 bits mono
+  sampleRate: number // Rate of buffer in Hz: 16000 for the user, the voice's for the assistant
   messageIndex: number // Index in agent.conversation
   message: string // The message content
   role: 'user' | 'assistant' // Speaker role
@@ -82,11 +83,11 @@ The recorder emits the following events:
 
 `MicdropRecorder` relies on events from `MicdropServer`:
 
-| Event            | Payload              | Description                  |
-| ---------------- | -------------------- | ---------------------------- |
-| `UserAudio`      | `Buffer`             | Raw audio chunk from user    |
-| `AssistantAudio` | `Buffer`             | Raw audio chunk from TTS     |
-| `End`            | `MicdropCallSummary` | Call ended                   |
+| Event            | Payload              | Description                                         |
+| ---------------- | -------------------- | --------------------------------------------------- |
+| `UserAudio`      | `Buffer`             | Raw audio chunk from user                           |
+| `AssistantAudio` | `Buffer, number`     | Raw audio chunk from TTS, and its sample rate in Hz |
+| `End`            | `MicdropCallSummary` | Call ended                                          |
 
 You can also listen to these events directly on `MicdropServer`:
 
@@ -95,8 +96,14 @@ server.on('UserAudio', (chunk) => {
   console.log('User audio chunk:', chunk.length, 'bytes')
 })
 
-server.on('AssistantAudio', (chunk) => {
-  console.log('Assistant audio chunk:', chunk.length, 'bytes')
+server.on('AssistantAudio', (chunk, sampleRate) => {
+  console.log(
+    'Assistant audio chunk:',
+    chunk.length,
+    'bytes at',
+    sampleRate,
+    'Hz'
+  )
 })
 
 server.on('End', (summary) => {
@@ -117,4 +124,5 @@ recorder.destroy()
 - User audio chunks arrive **before** the user message is added to the conversation
 - The recorder buffers chunks and associates them with messages when available
 - Assistant audio is finalized when the next user speech begins or when the call ends
-- Audio is stored as raw PCM buffers (16kHz, 16-bit, mono)
+- Audio is stored as raw PCM buffers, 16-bit and mono. The user speaks at 16 kHz, the assistant at the rate of its voice, given in `sampleRate`
+- When a `FallbackTTS` switches to a voice at another rate in the middle of a message, the rest of the message is resampled to the rate it started at, so each buffer holds a single rate

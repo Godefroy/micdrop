@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { Pcm16Resampler, SentenceTTS } from '@micdrop/server'
+import { SentenceTTS } from '@micdrop/server'
 import { GeminiOptions } from './GeminiAgent'
 
 /**
@@ -25,12 +25,17 @@ export type GeminiTTSOptions = GeminiOptions & {
 // slower than it is spoken and leaves gaps in it
 const DEFAULT_MODEL = 'gemini-2.5-flash-preview-tts'
 const DEFAULT_VOICE = 'Kore'
-const GEMINI_SAMPLE_RATE = 24000 // Rate of the audio Gemini returns
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const GEMINI_SAMPLE_RATE = 24000 // Rate of the audio Gemini returns, sent as is
 const DEFAULT_MAX_RETRY = 2
 
 export class GeminiTTS extends SentenceTTS {
   private genai: GoogleGenAI
+  // Read from the audio, which states its rate
+  private rate = GEMINI_SAMPLE_RATE
+
+  get sampleRate() {
+    return this.rate
+  }
 
   constructor(private readonly options: GeminiTTSOptions) {
     super()
@@ -84,7 +89,6 @@ export class GeminiTTS extends SentenceTTS {
       { fetchOptions: { signal } }
     )
 
-    let resampler: Pcm16Resampler | undefined
     for await (const event of stream) {
       if (signal.aborted) break
       if (event.event_type === 'error') {
@@ -102,11 +106,8 @@ export class GeminiTTS extends SentenceTTS {
         sample_rate?: number
       }
       if (!data) continue
-      resampler ??= new Pcm16Resampler(
-        sample_rate || GEMINI_SAMPLE_RATE,
-        OUTPUT_SAMPLE_RATE
-      )
-      const audio = resampler.process(Buffer.from(data, 'base64'))
+      this.rate = sample_rate || GEMINI_SAMPLE_RATE
+      const audio = Buffer.from(data, 'base64')
       if (audio.length > 0) progress.emitted = true
       // Cancelled or replaced, the rest is not wanted
       if (!this.emitAudio(audio)) break

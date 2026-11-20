@@ -36,7 +36,7 @@ export interface OpenaiRealtimeOptions extends RealtimeOptions {
 const DEFAULT_MODEL = 'gpt-realtime-2.1'
 const DEFAULT_VOICE = 'marin'
 const DEFAULT_TRANSCRIPTION_MODEL = 'gpt-4o-transcribe'
-const SAMPLE_RATE = 16000 // Rate of the Micdrop client, both ways
+const SAMPLE_RATE = 16000 // Rate of the Micdrop client
 const OPENAI_SAMPLE_RATE = 24000 // The only rate of the Realtime API
 const OPENAI_BYTES_PER_MS = (OPENAI_SAMPLE_RATE * 2) / 1000
 // Events held while the connection opens. The retry budget bounds how long
@@ -71,7 +71,6 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
   private requestCount = 0
 
   private inputResampler = new Pcm16Resampler(SAMPLE_RATE, OPENAI_SAMPLE_RATE)
-  private outputResampler = new Pcm16Resampler(OPENAI_SAMPLE_RATE, SAMPLE_RATE)
 
   // Bumped by every interruption, so late responses can tell they are stale
   private generation = 0
@@ -156,9 +155,12 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
     })
   }
 
+  get sampleRate() {
+    return OPENAI_SAMPLE_RATE
+  }
+
   protected cancelAnswer() {
     this.generation++
-    this.outputResampler.reset()
     const response = this.response
     if (!response) return
     this.response = undefined
@@ -320,7 +322,6 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
     this.ignoredResponses.clear()
     this.audioItemId = undefined
     this.audioBytes = 0
-    this.outputResampler.reset()
     // Tools still running answer a call the next session does not know, the
     // conversation sent again holding only messages
     this.generation++
@@ -354,7 +355,6 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
         this.response = { id, ...requested }
         this.audioItemId = undefined
         this.audioBytes = 0
-        this.outputResampler.reset()
         break
       }
 
@@ -367,8 +367,7 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
           this.audioBytes = 0
         }
         this.audioBytes += audio.length
-        const output = this.outputResampler.process(audio)
-        if (output.length > 0) this.emitAudio(output)
+        if (audio.length > 0) this.emitAudio(audio)
         break
       }
 

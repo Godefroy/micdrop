@@ -60,6 +60,20 @@ sends `SkipAnswer` right after the transcribed user message.
 
 See [Dictation and text-only calls](./dictation).
 
+## Audio format
+
+Audio travels as binary messages of raw PCM, 16 bits, mono. The client sends
+the microphone at 16 kHz. The server sends the assistant voice at the rate its
+text to speech or realtime model produces it, and announces that rate with a
+`SampleRate` command before the first chunk at a rate other than 16 kHz. A
+`FallbackTTS` switching to a provider at another rate sends a new one in the
+middle of the call. Each connection starts again at 16 kHz.
+
+The client resamples the voice once, to the rate of its audio output, so a
+provider at 24 kHz reaches the speaker without a detour through 16 kHz. Use a
+client at least as recent as the server, since an older one ignores
+`SampleRate` and plays a 24 kHz voice too slow.
+
 ## Client Commands
 
 The client can send the following commands to the server:
@@ -78,4 +92,5 @@ The server can send the following commands to the client:
 - `MicdropServerCommands.SkipAnswer` - Notify that the last generated answer was ignored, it's listening again.
 - `MicdropServerCommands.EndCall` - End the call.
 - `MicdropServerCommands.ToolCall` - A tool the agent called, with its result.
+- `MicdropServerCommands.SampleRate` - Rate in Hz of the audio chunks that follow, sent when it changes, for instance `SampleRate 24000`.
 - `MicdropServerCommands.Classification` - What the [classifier](../classifiers) made of the user turn, as JSON. Sent when the server has a classifier and `classifierOptions.sendToClient` is on.

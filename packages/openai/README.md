@@ -171,7 +171,7 @@ const tts = new OpenaiTTS({
   voice: 'alloy',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -180,10 +180,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                            |
+| -------- | ---------- | -------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (24 kHz), ready to be played. |
+| `Failed` | `string[]` | Synthesis gave up after its retries, with the text that stayed unspoken.               |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 
@@ -213,7 +213,7 @@ new MicdropServer(socket, {
 })
 ```
 
-It emits the events of an agent, plus `Audio` (the voice of the model, PCM 16 bits, 16 kHz, mono) and `PartialMessage` (the transcript of the answer so far).
+It emits the events of an agent, plus `Audio` (the voice of the model, PCM 16 bits, 24 kHz, mono) and `PartialMessage` (the transcript of the answer so far).
 
 ## OpenAI Classifier
 

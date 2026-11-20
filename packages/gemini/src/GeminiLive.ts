@@ -1,6 +1,5 @@
 import {
   MicdropConversationToolCall,
-  Pcm16Resampler,
   Realtime,
   RealtimeOptions,
 } from '@micdrop/server'
@@ -32,7 +31,7 @@ export interface GeminiLiveOptions extends RealtimeOptions {
 
 const DEFAULT_MODEL = 'gemini-3.8-live'
 const SAMPLE_RATE = 16000 // Rate of the Micdrop client, taken as is by Gemini
-const GEMINI_OUTPUT_SAMPLE_RATE = 24000
+const GEMINI_OUTPUT_SAMPLE_RATE = 24000 // Rate Gemini speaks at, sent as is
 // How long the model gets to speak about the result of a tool
 const TOOL_FOLLOW_UP_TIMEOUT = 10000 // ms
 
@@ -72,10 +71,6 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
   private resumptionHandle?: string
   private goingAway = false
 
-  private outputResampler = new Pcm16Resampler(
-    GEMINI_OUTPUT_SAMPLE_RATE,
-    SAMPLE_RATE
-  )
   private hasTranscribedTurn = false
   // Transcript of a dropped turn, which the conversation should not show
   private ignoreUserTranscript = false
@@ -153,10 +148,13 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
     )
   }
 
+  get sampleRate() {
+    return GEMINI_OUTPUT_SAMPLE_RATE
+  }
+
   protected cancelAnswer() {
     // The activityStart of the next turn is what stops Gemini, and the output
     // still on its way is dropped until the model acknowledges it
-    this.outputResampler.reset()
   }
 
   protected get isIdle() {
@@ -355,7 +353,7 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
       const data = part.inlineData?.data
       if (!data) continue
       this.onModelOutput()
-      const output = this.outputResampler.process(Buffer.from(data, 'base64'))
+      const output = Buffer.from(data, 'base64')
       if (output.length > 0) this.emitAudio(output)
     }
 
@@ -366,7 +364,6 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
 
     if (content.interrupted) {
       this.log('Interrupted')
-      this.outputResampler.reset()
     }
 
     if (content.generationComplete) {
@@ -375,7 +372,6 @@ export class GeminiLive extends Realtime<GeminiLiveOptions> {
 
     if (content.turnComplete) {
       this.commitTurnTranscript()
-      this.outputResampler.reset()
       if (this.toolRound.running > 0 || this.toolRound.followUp) {
         this.toolRound.answerEndDeferred = true
       } else {

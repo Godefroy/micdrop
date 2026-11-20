@@ -21,10 +21,22 @@ export type GradiumInputFormat =
 
 export type GradiumRegion = 'eu' | 'us'
 
+/** Rates Gradium streams raw PCM at */
+export type GradiumSampleRate = 8000 | 16000 | 24000 | 48000
+
 export interface GradiumTTSOptions {
   apiKey: string
   voiceId: string
   modelName?: string
+  /**
+   * Rate of the audio, in Hz, 48000 by default, the highest one offered. It
+   * goes to the client as is, so the voice is never resampled on the server.
+   */
+  sampleRate?: GradiumSampleRate
+  /**
+   * @deprecated Use `sampleRate`. The client only plays raw PCM, so only `pcm`
+   * and the `pcm_*` formats work.
+   */
   outputFormat?: GradiumOutputFormat
   region?: GradiumRegion
   jsonConfig?: GradiumJsonConfig
@@ -40,11 +52,36 @@ export interface GradiumJsonConfig {
 }
 
 export const DEFAULT_MODEL_NAME = 'default'
-export const DEFAULT_OUTPUT_FORMAT: GradiumOutputFormat = 'pcm_16000'
+export const DEFAULT_SAMPLE_RATE: GradiumSampleRate = 48000
+/** @deprecated Use `DEFAULT_SAMPLE_RATE` */
+export const DEFAULT_OUTPUT_FORMAT: GradiumOutputFormat = 'pcm'
 export const DEFAULT_INPUT_FORMAT: GradiumInputFormat = 'pcm_16000'
 export const DEFAULT_REGION: GradiumRegion = 'eu'
 // Gradium refuses a transcription without a language, "any" detects it
 export const DEFAULT_LANGUAGE = 'any'
+
+const PCM_FORMATS: Record<GradiumSampleRate, GradiumOutputFormat> = {
+  8000: 'pcm_8000',
+  16000: 'pcm_16000',
+  24000: 'pcm_24000',
+  48000: 'pcm', // Gradium names its 48 kHz format without a rate
+}
+
+/** The `output_format` asked of Gradium */
+export function getOutputFormat(
+  options: GradiumTTSOptions
+): GradiumOutputFormat {
+  if (options.sampleRate) return PCM_FORMATS[options.sampleRate]
+  return options.outputFormat ?? PCM_FORMATS[DEFAULT_SAMPLE_RATE]
+}
+
+/** Rate of the audio Gradium sends, read from its `output_format` */
+export function getSampleRate(options: GradiumTTSOptions): number {
+  const format = getOutputFormat(options)
+  if (format === 'pcm') return 48000
+  const match = /^pcm_(\d+)$/.exec(format)
+  return match ? Number(match[1]) : DEFAULT_SAMPLE_RATE
+}
 
 // Speech-to-text (ASR) types
 

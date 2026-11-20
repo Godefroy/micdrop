@@ -17,7 +17,7 @@ It talks to the same [@micdrop/server](https://micdrop.dev/docs/server) as the b
 - 🔊 Loudspeaker or earpiece, and the input devices the OS offers
 - ⚛️ React hooks for the whole call state
 - 🔌 Reconnection, mute, pause and interruption handled for you
-- 🌐 WebSocket audio streaming, 16 kHz PCM both ways
+- 🌐 WebSocket audio streaming, 16 kHz PCM from the microphone, the voice at the rate of its provider
 
 ## Installation
 
@@ -178,7 +178,7 @@ Mic.setDriver(myMicDriver)
 Speaker.setDriver(mySpeakerDriver)
 ```
 
-A `MicDriver` emits `Frames` with mono float samples, a `SpeakerDriver` plays 16 kHz PCM16. Everything above them, from the voice activity detection to the protocol, stays the same.
+A `MicDriver` emits `Frames` with mono float samples, a `SpeakerDriver` plays PCM16 at the sample rate it is given. Everything above them, from the voice activity detection to the protocol, stays the same.
 
 ## Documentation
 

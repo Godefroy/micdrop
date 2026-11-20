@@ -72,7 +72,7 @@ The Micdrop client detects when the user speaks, so the automatic activity detec
 
 | Event                   | Payload                   | Description                                                            |
 | ----------------------- | ------------------------- | ---------------------------------------------------------------------- |
-| `Audio`                 | `Buffer`                  | A chunk of the voice of the model, PCM 16 bits, 16 kHz, mono.          |
+| `Audio`                 | `Buffer`                  | A chunk of the voice of the model, PCM 16 bits, 24 kHz, mono.          |
 | `PartialMessage`        | `string`                  | The transcript of the answer so far.                                   |
 | `Message`               | `MicdropConversationItem` | A message, a tool call or a tool result was added to the conversation. |
 | `ToolCall`              | `MicdropToolCall`         | A tool declared with `emitOutput` ran, with its parameters and output. |

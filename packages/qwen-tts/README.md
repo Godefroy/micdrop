@@ -68,7 +68,7 @@ import { Readable } from 'stream'
 
 const tts = new Qwen3TTS({ voice: 'Ryan' })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -77,10 +77,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ## Events
 
-| Event    | Payload    | Description                                                            |
-| -------- | ---------- | ---------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.       |
-| `Failed` | `string[]` | The server answered with an error, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                            |
+| -------- | ---------- | -------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (24 kHz), ready to be played. |
+| `Failed` | `string[]` | The server answered with an error, with the text that stayed unspoken.                 |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 

@@ -17,6 +17,7 @@ export function record(server: MicdropServer) {
       message: audioMessage.message,
       role: audioMessage.role,
       buffer: audioMessage.buffer.toString('base64'),
+      sampleRate: audioMessage.sampleRate,
       timestamp: new Date().toISOString(),
     }
     audioMessages.push(data)

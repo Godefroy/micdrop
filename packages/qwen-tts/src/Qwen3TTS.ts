@@ -1,4 +1,4 @@
-import { Pcm16Resampler, SentenceTTS, SharedInstances } from '@micdrop/server'
+import { Pcm16Aligner, SentenceTTS, SharedInstances } from '@micdrop/server'
 import {
   QwenLanguage,
   QwenLanguageCode,
@@ -90,8 +90,7 @@ const DEFAULT_REPETITION_PENALTY = 1.05
 // still stops a generation that does not end.
 const DEFAULT_MAX_TOKENS = 500
 
-const QWEN_SAMPLE_RATE = 24000 // Rate of the audio Qwen3-TTS generates
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const QWEN_SAMPLE_RATE = 24000 // Rate of the audio Qwen3-TTS generates, sent as is
 
 /**
  * Server and checkpoint pairs already warmed up in this process.
@@ -127,6 +126,10 @@ export class Qwen3TTS extends SentenceTTS {
     }
   }
 
+  get sampleRate() {
+    return QWEN_SAMPLE_RATE
+  }
+
   protected async synthesize(
     text: string,
     signal: AbortSignal
@@ -135,10 +138,9 @@ export class Qwen3TTS extends SentenceTTS {
     const body = response.body
     if (!body) throw new Error('Qwen3-TTS server answered without a body')
 
-    // One resampler per sentence. The chunks of a sentence form one continuous
-    // stream, but two sentences are independent, so the fractional position
-    // must not carry over from one to the next.
-    const resampler = new Pcm16Resampler(QWEN_SAMPLE_RATE, OUTPUT_SAMPLE_RATE)
+    // A network chunk can end in the middle of a sample. One aligner per
+    // sentence, since a byte held back belongs to that sentence only.
+    const aligner = new Pcm16Aligner()
     const reader = body.getReader()
 
     while (true) {
@@ -146,7 +148,7 @@ export class Qwen3TTS extends SentenceTTS {
       if (done) break
       // Chunks are emitted as they arrive, so playback starts before the
       // sentence is fully generated
-      if (!this.emitAudio(resampler.process(Buffer.from(value)))) {
+      if (!this.emitAudio(aligner.process(Buffer.from(value)))) {
         // The utterance was cancelled or replaced. Closing the body closes the
         // connection, and the server stops generating.
         await reader.cancel()

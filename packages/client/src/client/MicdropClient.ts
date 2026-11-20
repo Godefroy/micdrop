@@ -5,6 +5,7 @@ import { MicdropDevice } from '../audio/types'
 import { MicdropStorageKeys, storage } from '../storage'
 import {
   MicdropClassification,
+  DEFAULT_SAMPLE_RATE,
   MicdropClientCommands,
   MicdropConversation,
   MicdropConversationItem,
@@ -135,6 +136,8 @@ export class MicdropClient
   private startTime = 0
   private lastNotifiedState = this.state
   private _isProcessing = false
+  // Rate of the assistant voice, announced by the server whenever it changes
+  private assistantSampleRate = DEFAULT_SAMPLE_RATE
   private _isMuted = false
   private _isPaused = false
   // The call as start() and the connection leave it. The public status also
@@ -618,6 +621,8 @@ export class MicdropClient
     const ws = new WebSocket(this.options.url)
     ws.binaryType = 'arraybuffer'
     this.ws = ws
+    // A new connection is a new server, which starts from the default rate
+    this.assistantSampleRate = DEFAULT_SAMPLE_RATE
     this.notifyStateChange()
 
     const isCurrent = () => this.ws === ws
@@ -665,7 +670,7 @@ export class MicdropClient
       // Received assistant speech
       this.log('Received audio', data.byteLength)
       if (this.isPaused || this.isUserSpeaking) return
-      Speaker.playAudio(new Int16Array(data))
+      Speaker.playAudio(new Int16Array(data), this.assistantSampleRate)
       this._isProcessing = false
       this.notifyStateChange()
       return
@@ -677,6 +682,19 @@ export class MicdropClient
     }
 
     this.log('Received message:', data)
+
+    if (data.startsWith(MicdropServerCommands.SampleRate)) {
+      // The audio that follows comes at another rate
+      const sampleRate = Number(
+        data.substring(MicdropServerCommands.SampleRate.length + 1)
+      )
+      if (Number.isFinite(sampleRate) && sampleRate > 0) {
+        this.assistantSampleRate = sampleRate
+      } else {
+        console.error('[MicdropClient] Invalid sample rate:', data)
+      }
+      return
+    }
 
     if (data.startsWith(MicdropServerCommands.Message)) {
       // Received user/assistant message

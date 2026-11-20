@@ -1,4 +1,4 @@
-import { float32ToPcm16, Pcm16Resampler, SentenceTTS } from '@micdrop/server'
+import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
 import { existsSync } from 'fs'
 import { downloadCatalogVoice, getHubToken, HubOptions } from './hub'
 import { VOICE_EXTENSION } from './modelFiles'
@@ -109,13 +109,16 @@ const DEFAULT_MODEL =
 const DEFAULT_LANGUAGE: PhononLanguage = 'en'
 const DEFAULT_TEMPERATURE = 0.3
 const LANGUAGES: PhononLanguage[] = ['en', 'fr', 'de', 'es', 'pt', 'none']
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+// Rate of the model, until it is loaded and states its own
+const DEFAULT_SAMPLE_RATE = 24000
 
 export class PhononTTS extends SentenceTTS {
   private readonly catalogVoice?: PhononVoice
   private voicePath?: Promise<string>
   // The language is checked once, not again on each retry of a failed voice
   private languageChecked = false
+  // The model states its rate once loaded, and the audio is sent at it
+  private rate = DEFAULT_SAMPLE_RATE
 
   constructor(private readonly options: PhononTTSOptions = {}) {
     super()
@@ -134,6 +137,10 @@ export class PhononTTS extends SentenceTTS {
     }
   }
 
+  get sampleRate() {
+    return this.rate
+  }
+
   protected async synthesize(
     text: string,
     signal: AbortSignal
@@ -142,12 +149,7 @@ export class PhononTTS extends SentenceTTS {
     // The utterance may have been cancelled while the model was loading
     if (signal.aborted) return
 
-    // One resampler for the whole sentence: its frames are a single continuous
-    // stream, and the resampler carries its fractional position across them
-    const resampler = new Pcm16Resampler(
-      synthesizer.sampleRate,
-      OUTPUT_SAMPLE_RATE
-    )
+    this.rate = synthesizer.sampleRate
 
     await synthesizer.generate({
       voicePath,
@@ -156,8 +158,7 @@ export class PhononTTS extends SentenceTTS {
       seed: this.getSeed(),
       signal,
       // Stop generating what nobody is going to hear
-      onAudio: (samples) =>
-        this.emitAudio(resampler.process(float32ToPcm16(samples))),
+      onAudio: (samples) => this.emitAudio(float32ToPcm16(samples)),
     })
   }
 

@@ -71,7 +71,7 @@ export function describeRealtime(
       expect('content' in user && user.content).toMatch(/capital|france/i)
       expect('content' in assistant && assistant.content).toMatch(/paris/i)
       await meter.untilQuiet()
-      saveAudio(name, meter.audio)
+      saveAudio(name, meter.audio, meter.sampleRate)
       expect(meter.seconds).toBeGreaterThan(0.3)
     })
 

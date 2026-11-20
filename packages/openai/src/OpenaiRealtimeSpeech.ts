@@ -1,4 +1,4 @@
-import { Pcm16Resampler, ReconnectingSocket } from '@micdrop/server'
+import { ReconnectingSocket } from '@micdrop/server'
 import { parseMessage, sessionHandshake } from './session'
 
 /**
@@ -33,8 +33,7 @@ export interface Synthesis {
 const DEFAULT_REASONING_EFFORT = 'minimal'
 const MIN_SPEED = 0.25
 const MAX_SPEED = 1.5
-const OPENAI_SAMPLE_RATE = 24000 // The only rate of the Realtime API
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const OPENAI_SAMPLE_RATE = 24000 // The only rate of the Realtime API, sent as is
 
 // The model is told what it is for once per session, so that each sentence
 // only carries its text. The JSON envelope with a verbatim flag is the format
@@ -61,7 +60,6 @@ interface Item {
   text: string
   status: ItemStatus
   responseId?: string
-  resampler: Pcm16Resampler
   audio: Buffer[] // Received and not yet read
   error?: Error
   wake?: () => void // Resolves the wait of the reader for more audio
@@ -119,7 +117,6 @@ export class OpenaiRealtimeSpeech {
       id: `micdrop-tts-${++this.itemCount}`,
       text,
       status: 'waiting',
-      resampler: new Pcm16Resampler(OPENAI_SAMPLE_RATE, OUTPUT_SAMPLE_RATE),
       audio: [],
     }
     this.items.set(item.id, item)
@@ -280,9 +277,7 @@ export class OpenaiRealtimeSpeech {
       case 'response.output_audio.delta': {
         const item = this.responses.get(message.response_id)
         if (!item) break
-        const audio = item.resampler.process(
-          Buffer.from(message.delta, 'base64')
-        )
+        const audio = Buffer.from(message.delta, 'base64')
         if (audio.length === 0) break
         item.audio.push(audio)
         const wake = item.wake

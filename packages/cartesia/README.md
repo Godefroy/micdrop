@@ -23,6 +23,7 @@ const tts = new CartesiaTTS({
   modelId: 'sonic-3.6', // Cartesia model ID
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091', // Voice ID
   language: 'en', // Optional: specify language
+  sampleRate: 24000, // Optional: 48000 by default
   generationConfig: { speed: 1.1 }, // Optional: speed, volume and emotion
 })
 
@@ -45,7 +46,7 @@ const tts = new CartesiaTTS({
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -54,10 +55,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                                                               |
-| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
-| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
+| Event    | Payload    | Description                                                                                                                |
+| -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played. |
+| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again.                  |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 

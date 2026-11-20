@@ -85,7 +85,7 @@ const tts = new PiperTTS({
   modelPath: './voices/fr_FR-siwis-medium.onnx',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -94,10 +94,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ## Events
 
-| Event    | Payload    | Description                                                                                                   |
-| -------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                              |
-| `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty. |
+| Event    | Payload    | Description                                                                                                            |
+| -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the rate of the voice, 16 or 22.05 kHz), ready to be played. |
+| `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty.          |
 
 See the [TTS interface](./custom) for the full contract.
 
@@ -143,8 +143,8 @@ installation commands at that folder.
 
 `PiperTTS` needs both `<name>.onnx` and `<name>.onnx.json`. The JSON file
 gives the sample rate the model generates at, 16 kHz for the `low` voices and 22.05 kHz for the others, along with the number of
-speakers. Micdrop reads that file at startup and resamples the audio to the
-16 kHz the client plays. For a voice with several speakers, pick one with the
+speakers. Micdrop reads that file at startup and sends the audio to the
+client at that rate, without resampling it. For a voice with several speakers, pick one with the
 `speaker` option.
 
 ## What Piper TTS costs to run

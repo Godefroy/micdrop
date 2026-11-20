@@ -81,7 +81,7 @@ Converts a streaming text input into audio, emitted as `Audio` events.
 **Implementation Requirements:**
 
 - Accept a `Readable` stream containing text chunks
-- Emit each audio chunk with `this.emit('Audio', chunk)`, in PCM 16 bits at 16 kHz
+- Emit each audio chunk with `this.emit('Audio', chunk)`, in PCM 16 bits mono, at the rate `sampleRate` returns
 - A new `speak()` replaces the utterance still being spoken
 - Handle real-time streaming for optimal latency
 - Support cancellation via the `cancel()` method
@@ -96,6 +96,20 @@ Cancels the current speech generation process. Should:
 - Stop audio stream generation
 - Clean up resources (WebSocket connections, timers, etc.)
 - End audio output stream gracefully
+
+## Sample rate
+
+The `sampleRate` getter gives the rate of the audio emitted, in Hz. It returns 16000 unless a subclass overrides it:
+
+```typescript
+get sampleRate() {
+  return 24000
+}
+```
+
+Emit the audio at the rate the provider produces it and return that rate. The server reads `sampleRate` with every chunk and tells the client when it changes, so the voice is resampled only once, by the client, to the rate of its output. A provider that offers several rates can take the one chosen in its options, and a `FallbackTTS` moving on to a provider at another rate changes it in the middle of a call.
+
+A network chunk can end in the middle of a 16-bit sample. `Pcm16Aligner` from `@micdrop/server` holds the odd byte back until the next chunk, so every chunk emitted holds whole samples.
 
 ## Public Methods
 
@@ -152,7 +166,7 @@ export class CustomStreamingTTS extends TTS {
               type: 'config',
               voice_id: options.voiceId,
               language: options.language || 'en',
-              output_format: { encoding: 'pcm_s16le', sample_rate: 16000 },
+              output_format: { encoding: 'pcm_s16le', sample_rate: 24000 },
             })
           ),
       },
@@ -169,6 +183,11 @@ export class CustomStreamingTTS extends TTS {
       this.emit('Failed', text ? [text] : [])
     })
     this.socket.connect()
+  }
+
+  // The rate asked for in the config, which the audio reaches the client at
+  get sampleRate() {
+    return 24000
   }
 
   speak(textStream: Readable) {
@@ -295,7 +314,7 @@ export class CustomFetchTTS extends TTS {
           voice_id: this.options.voiceId,
           model: this.options.model || 'neural-v1',
           language: this.options.language || 'en',
-          output_format: 'pcm_s16le', // 16-bit signed little-endian PCM at 16kHz
+          output_format: 'pcm_s16le', // 16-bit signed little-endian PCM at 16 kHz, the default sampleRate
         }),
         signal: request.signal,
       })
@@ -432,7 +451,7 @@ TTS implementations should output audio in PCM format (specifically `pcm_s16le` 
 The recommended audio specifications are:
 
 - **Format**: PCM (pcm_s16le)
-- **Sample Rate**: 16000 Hz
+- **Sample Rate**: the one the provider produces, returned by `sampleRate`
 - **Channels**: 1 (mono)
 - **Bit Depth**: 16-bit signed integers
 

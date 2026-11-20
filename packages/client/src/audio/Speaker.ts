@@ -1,5 +1,6 @@
 import { EventEmitter } from 'eventemitter3'
 import { storage, MicdropStorageKeys } from '../storage'
+import { DEFAULT_SAMPLE_RATE } from '../types'
 import { MicdropDevice, SpeakerDriver } from './types'
 
 export interface SpeakerEvents {
@@ -12,8 +13,8 @@ export interface SpeakerEvents {
 /**
  * The speaker, as a single object shared by the whole app.
  *
- * It wraps a {@link SpeakerDriver} and plays the 16 kHz PCM sent by the server
- * as it arrives.
+ * It wraps a {@link SpeakerDriver} and plays the PCM sent by the server as it
+ * arrives, at the rate the server announces.
  */
 export class SpeakerController extends EventEmitter<SpeakerEvents> {
   private driver: SpeakerDriver | undefined
@@ -76,7 +77,7 @@ export class SpeakerController extends EventEmitter<SpeakerEvents> {
    * @param pcm - Mono samples as 16 bits integers, or the bytes holding them
    * @param sampleRate - Sample rate of `pcm`, in Hz
    */
-  playAudio(pcm: Int16Array | ArrayBuffer, sampleRate = 16000) {
+  playAudio(pcm: Int16Array | ArrayBuffer, sampleRate = DEFAULT_SAMPLE_RATE) {
     try {
       const samples = pcm instanceof Int16Array ? pcm : new Int16Array(pcm)
       this.getDriver().play(samples, sampleRate)

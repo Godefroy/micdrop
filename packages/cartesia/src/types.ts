@@ -106,6 +106,9 @@ export type CartesiaEmotion =
   | 'contemplative'
   | 'determined'
 
+/** Rates Cartesia streams raw PCM at */
+export type CartesiaSampleRate = 8000 | 16000 | 22050 | 24000 | 44100 | 48000
+
 export interface CartesiaGenerationConfig {
   speed?: number // 0.6 to 1.5, default 1
   volume?: number // 0.5 to 2.0, default 1

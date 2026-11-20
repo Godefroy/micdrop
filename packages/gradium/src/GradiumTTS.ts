@@ -3,7 +3,6 @@ import { Readable } from 'stream'
 import { RawData } from 'ws'
 import {
   DEFAULT_MODEL_NAME,
-  DEFAULT_OUTPUT_FORMAT,
   DEFAULT_REGION,
   GradiumAudioResponse,
   GradiumEosMessage,
@@ -11,6 +10,8 @@ import {
   GradiumSetupMessage,
   GradiumTextMessage,
   GradiumTTSOptions,
+  getOutputFormat,
+  getSampleRate,
 } from './types'
 
 // API Reference: https://gradium.ai/api_docs.html
@@ -39,6 +40,10 @@ export class GradiumTTS extends TTS {
   // tell whether it is still the one that should be heard
   private generation = 0
   private request?: GradiumRequest
+
+  get sampleRate() {
+    return getSampleRate(this.options)
+  }
 
   constructor(private readonly options: GradiumTTSOptions) {
     super()
@@ -157,7 +162,7 @@ export class GradiumTTS extends TTS {
         type: 'setup',
         voice_id: this.options.voiceId,
         model_name: this.options.modelName ?? DEFAULT_MODEL_NAME,
-        output_format: this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT,
+        output_format: getOutputFormat(this.options),
         close_ws_on_eos: false,
         json_config: this.options.jsonConfig,
         client_req_id: clientReqId,

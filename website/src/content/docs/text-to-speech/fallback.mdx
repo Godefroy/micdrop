@@ -19,6 +19,7 @@ When the main voice performs audio tags such as `[laughs]` and the backup would 
 - **Text buffering**: Retains text chunks during failures and replays them to the next provider
 - **Circular rotation**: Cycles through providers indefinitely until speech synthesis succeeds
 - **Zero configuration**: Works with any TTS implementation
+- **Sample rate follows the provider**: Each provider keeps its own rate, and the client is told when the voice switches to another one
 - **Cancellation support**: Properly forwards cancel() calls to the active provider
 
 ## Usage

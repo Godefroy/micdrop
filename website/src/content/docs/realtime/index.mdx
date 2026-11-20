@@ -169,14 +169,14 @@ implements the calls to its API.
 
 The provider reports what the model does with these protected methods:
 
-| Method                      | Call it when                                            |
-| --------------------------- | ------------------------------------------------------- |
-| `emitAudio(chunk)`          | Audio of the answer arrives, PCM 16 bits, 16 kHz, mono. |
-| `addAnswerTranscript(text)` | A piece of the transcript of the answer arrives.        |
-| `endAnswer()`               | The model finished its answer.                          |
-| `addUserTranscript(text)`   | A piece of the transcript of the user arrives.          |
-| `commitUserTranscript()`    | The transcript of the user is complete.                 |
-| `runTool(toolCall)`         | The model calls a tool, to run it and record it.        |
+| Method                      | Call it when                                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `emitAudio(chunk)`          | Audio of the answer arrives, PCM 16 bits mono, at the rate `sampleRate` returns (16 kHz unless the provider overrides it). |
+| `addAnswerTranscript(text)` | A piece of the transcript of the answer arrives.                                                                           |
+| `endAnswer()`               | The model finished its answer.                                                                                             |
+| `addUserTranscript(text)`   | A piece of the transcript of the user arrives.                                                                             |
+| `commitUserTranscript()`    | The transcript of the user is complete.                                                                                    |
+| `runTool(toolCall)`         | The model calls a tool, to run it and record it.                                                                           |
 
 The sources of [`GeminiLive`](https://github.com/Godefroy/micdrop/blob/main/packages/gemini/src/GeminiLive.ts)
 and [`OpenaiRealtime`](https://github.com/Godefroy/micdrop/blob/main/packages/openai/src/OpenaiRealtime.ts)

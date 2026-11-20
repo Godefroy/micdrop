@@ -7,7 +7,10 @@ import {
   CartesiaLanguage,
   CartesiaPayload,
   CartesiaResponse,
+  CartesiaSampleRate,
 } from './types'
+
+const DEFAULT_SAMPLE_RATE: CartesiaSampleRate = 48000
 
 export interface CartesiaTTSOptions {
   apiKey: string
@@ -17,6 +20,11 @@ export interface CartesiaTTSOptions {
   /** @deprecated Sonic 3 models read `generationConfig.speed` instead */
   speed?: 'fast' | 'normal' | 'slow'
   generationConfig?: CartesiaGenerationConfig
+  /**
+   * Rate of the audio, in Hz, 48000 by default, the highest one offered. It
+   * goes to the client as is, so the voice is never resampled on the server.
+   */
+  sampleRate?: CartesiaSampleRate
   /** How long a connection attempt may take, 5000 ms by default */
   connectionTimeout?: number
   /** How long to wait before a new attempt, 1000 ms by default */
@@ -50,6 +58,10 @@ export class CartesiaTTS extends TTS {
   // tell whether it is still the one that should be heard
   private generation = 0
   private context?: CartesiaContext
+
+  get sampleRate() {
+    return this.options.sampleRate ?? DEFAULT_SAMPLE_RATE
+  }
 
   constructor(private readonly options: CartesiaTTSOptions) {
     super()
@@ -160,7 +172,7 @@ export class CartesiaTTS extends TTS {
       output_format: {
         container: 'raw',
         encoding: 'pcm_s16le',
-        sample_rate: 16000,
+        sample_rate: this.sampleRate,
       },
       language: this.options.language,
       speed: this.options.speed,

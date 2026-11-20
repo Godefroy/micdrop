@@ -63,7 +63,7 @@ const tts = new PiperTTS({
   modelPath: './voices/fr_FR-siwis-medium.onnx',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -72,10 +72,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ## Events
 
-| Event    | Payload    | Description                                                                                                   |
-| -------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                              |
-| `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty. |
+| Event    | Payload    | Description                                                                                                            |
+| -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the rate of the voice, 16 or 22.05 kHz), ready to be played. |
+| `Failed` | `string[]` | The Piper process exited with an error, or the binary cannot be run (reported once). The payload stays empty.          |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 

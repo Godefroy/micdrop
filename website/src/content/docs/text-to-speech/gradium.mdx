@@ -27,7 +27,7 @@ const tts = new GradiumTTS({
   apiKey: process.env.GRADIUM_API_KEY || '',
   voiceId: 'Bla6SbVMczYnOhfK', // Gradium voice ID
   modelName: 'default', // Optional: model name
-  outputFormat: 'pcm_16000', // Optional: audio format
+  sampleRate: 24000, // Optional: 8000, 16000, 24000 or 48000 (default)
   region: 'eu', // Optional: 'eu' or 'us'
 })
 
@@ -49,7 +49,7 @@ const tts = new GradiumTTS({
   voiceId: 'Bla6SbVMczYnOhfK',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -60,7 +60,7 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 | Event    | Payload    | Description                                                                                                                               |
 | -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                                                          |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played.                |
 | `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](./custom) for the full contract.
@@ -72,7 +72,8 @@ See the [TTS interface](./custom) for the full contract.
 | `apiKey`            | `string`              | Required      | Your Gradium API key                                                   |
 | `voiceId`           | `string`              | Required      | Gradium voice ID                                                       |
 | `modelName`         | `string`              | `'default'`   | Model name to use for speech synthesis                                 |
-| `outputFormat`      | `GradiumOutputFormat` | `'pcm_16000'` | Audio output format                                                    |
+| `sampleRate`        | `GradiumSampleRate`   | `48000`       | Rate of the audio in Hz: 8000, 16000, 24000 or 48000                   |
+| `outputFormat`      | `GradiumOutputFormat` | Optional      | Deprecated, use `sampleRate`                                           |
 | `region`            | `'eu' \| 'us'`        | `'eu'`        | API region (EU or US endpoint)                                         |
 | `jsonConfig`        | `GradiumJsonConfig`   | Optional      | Advanced voice configuration                                           |
 | `connectionTimeout` | `number`              | `5000`        | Timeout in milliseconds for WebSocket connection                       |
@@ -83,18 +84,11 @@ See the [TTS interface](./custom) for the full contract.
 
 Gradium stops a synthesis when its connection closes, so an interruption closes the connection and opens a new one right away, without counting as a failed attempt. A connection that drops on its own, a graceful close included, opens again and receives the sentence under way.
 
-## Output Formats
+## Sample rate
 
-| Format      | Description                            |
-| ----------- | -------------------------------------- |
-| `pcm`       | PCM 48kHz, 16-bit signed integer mono  |
-| `pcm_16000` | PCM 16kHz, 16-bit signed integer mono  |
-| `pcm_24000` | PCM 24kHz, 16-bit signed integer mono  |
-| `pcm_8000`  | PCM 8kHz, 16-bit signed integer mono   |
-| `wav`       | WAV format                             |
-| `opus`      | Opus codec wrapped in an Ogg container |
-| `ulaw_8000` | u-law 8kHz                             |
-| `alaw_8000` | A-law 8kHz                             |
+Gradium streams raw PCM at 8, 16, 24 or 48 kHz, picked with `sampleRate`, 48 kHz by default. The audio reaches the client at that rate without being resampled on the server, so a higher rate sounds clearer and weighs more on the connection: 32 kB per second at 16 kHz, 96 kB at 48 kHz.
+
+`outputFormat` still works for the PCM formats (`pcm` for 48 kHz, `pcm_8000`, `pcm_16000`, `pcm_24000`). The client plays raw PCM only, so `wav`, `opus`, `ulaw_8000` and `alaw_8000` stay out of a call.
 
 ## Advanced Voice Configuration
 
@@ -139,7 +133,7 @@ const tts = new GradiumTTS({
   apiKey: 'your-gradium-api-key',
   voiceId: 'your-voice-id',
   region: 'eu', // Use 'us' for US endpoint
-  outputFormat: 'pcm_16000',
+  sampleRate: 16000,
 })
 
 // Use with MicdropServer

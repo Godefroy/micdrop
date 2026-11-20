@@ -46,7 +46,7 @@ Samples may arrive at any rate, the recorder resamples them.
 
 ## Playback
 
-A speaker driver receives the 16 kHz PCM16 the server sends, and says when it is playing so the call knows the assistant has the floor.
+A speaker driver receives the PCM16 the server sends, along with its sample rate, and says when it is playing so the call knows the assistant has the floor.
 
 ```ts
 import { Speaker, SpeakerDriver } from '@micdrop/react-native'

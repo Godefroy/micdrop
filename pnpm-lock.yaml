@@ -843,7 +843,7 @@ importers:
   packages/cartesia:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       ws:
         specifier: ^8.19.0
@@ -893,7 +893,7 @@ importers:
         specifier: ^2.74.0
         version: 2.76.0
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       ws:
         specifier: ^8.19.0
@@ -918,7 +918,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(@modelcontextprotocol/sdk@1.32.2(zod@4.6.7))
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       eventemitter3:
         specifier: ^5
@@ -968,7 +968,7 @@ importers:
   packages/gradium:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       ws:
         specifier: ^8.19.0
@@ -987,7 +987,7 @@ importers:
   packages/kokoro:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.7.0'
+        specifier: '>=2.11.0'
         version: link:../server
       kokoro-js:
         specifier: ^1.2.1
@@ -1006,7 +1006,7 @@ importers:
   packages/mistral:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       '@mistralai/mistralai':
         specifier: ^1.14.1
@@ -1034,7 +1034,7 @@ importers:
   packages/openai:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       openai:
         specifier: ^7.45.0
@@ -1065,7 +1065,7 @@ importers:
         specifier: ^2.17.9
         version: 2.17.10
       '@micdrop/server':
-        specifier: '>=2.10.0'
+        specifier: '>=2.11.0'
         version: link:../server
       phonon-tts:
         specifier: ^0.5.0
@@ -1084,7 +1084,7 @@ importers:
   packages/piper:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.3.0'
+        specifier: '>=2.11.0'
         version: link:../server
     devDependencies:
       '@types/node':
@@ -1100,7 +1100,7 @@ importers:
   packages/pocket-tts:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.7.0'
+        specifier: '>=2.11.0'
         version: link:../server
       sherpa-onnx-node:
         specifier: ^1.13.6
@@ -1119,7 +1119,7 @@ importers:
   packages/qwen-tts:
     dependencies:
       '@micdrop/server':
-        specifier: '>=2.7.0'
+        specifier: '>=2.11.0'
         version: link:../server
     devDependencies:
       '@types/node':

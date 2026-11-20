@@ -12,7 +12,14 @@ export enum MicdropServerCommands {
   EndCall = 'EndCall',
   ToolCall = 'ToolCall',
   Classification = 'Classification',
+  SampleRate = 'SampleRate',
 }
+
+/**
+ * Rate of the audio the client records, and of the assistant voice until the
+ * server announces another one with a `SampleRate` command.
+ */
+export const DEFAULT_SAMPLE_RATE = 16000
 
 /**
  * Hears whether a sentence has landed, where voice activity detection only

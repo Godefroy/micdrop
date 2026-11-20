@@ -77,7 +77,7 @@ import { Readable } from 'stream'
 
 const tts = new Qwen3TTS({ voice: 'Ryan' })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -86,10 +86,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ## Events
 
-| Event    | Payload    | Description                                                            |
-| -------- | ---------- | ---------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.       |
-| `Failed` | `string[]` | The server answered with an error, with the text that stayed unspoken. |
+| Event    | Payload    | Description                                                                            |
+| -------- | ---------- | -------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (24 kHz), ready to be played. |
+| `Failed` | `string[]` | The server answered with an error, with the text that stayed unspoken.                 |
 
 See the [TTS interface](./custom) for the full contract.
 
@@ -242,7 +242,7 @@ waiting for the load.
 The package sends `POST /v1/audio/speech` with the OpenAI fields (`model`,
 `input`, `voice`) plus the Qwen ones (`instruct`, `lang_code`, `ref_audio`,
 `ref_text`), sets `stream`, and reads raw PCM at 24 kHz with `response_format:
-"pcm"`, then resamples it to the 16 kHz the browser client plays. Any server
+"pcm"`, which goes to the client at that rate. Any server
 that implements this route can replace mlx-audio, for instance one running the
 weights on an NVIDIA card.
 

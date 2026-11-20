@@ -466,3 +466,44 @@ describe('a call where the speaker never finishes their sentence', () => {
     )
   })
 })
+
+describe('a call whose voice speaks at its own rate', () => {
+  /** The same tone, announced at 24 kHz */
+  class Tone24kTTS extends ToneTTS {
+    get sampleRate() {
+      return 24000
+    }
+  }
+
+  let wss: WebSocketServer
+  let speaker: FakeSpeakerDriver
+  let client: MicdropClient
+
+  after(async () => {
+    await client.stop()
+    wss.close()
+  })
+
+  it('plays the audio at the rate the server announces', async () => {
+    wss = new WebSocketServer({ port: 0 })
+    await new Promise((resolve) => wss.once('listening', resolve))
+    const url = `ws://localhost:${(wss.address() as AddressInfo).port}`
+    wss.on('connection', (socket) => {
+      new MicdropServer(socket, {
+        firstMessage: 'Hello there',
+        agent: new MockAgent(),
+        stt: new CountingSTT(),
+        tts: new Tone24kTTS(),
+      })
+    })
+
+    Mic.setDriver(new FakeMicDriver())
+    speaker = new FakeSpeakerDriver()
+    Speaker.setDriver(speaker)
+    client = new MicdropClient()
+    await client.start({ url })
+
+    await waitFor(() => speaker.played.length > 0, 'the first message')
+    assert.deepEqual([...new Set(speaker.rates)], [24000])
+  })
+})

@@ -9,7 +9,7 @@ import { TTS } from './TTS'
  * be fed the agent's answer token by token. This class buffers the answer into
  * sentences, hands them over one at a time, and emits the audio in the order
  * they were written. Subclasses only have to turn one sentence into PCM16 at
- * the rate the Micdrop client expects.
+ * the rate they announce in `sampleRate`.
  *
  * Sentences are synthesized one after the other rather than at once: a local
  * model is single threaded, so racing two sentences through it slows both down
@@ -27,7 +27,7 @@ export abstract class SentenceTTS extends TTS {
   private synthesizing = 0 // Stamp of the sentence being synthesized
 
   /**
-   * Turns one sentence into PCM16 audio at the client's sample rate.
+   * Turns one sentence into PCM16 audio at `sampleRate`.
    *
    * The signal is aborted when the utterance is cancelled, which is the moment
    * to stop a subprocess or an inference that is no longer needed. Returning

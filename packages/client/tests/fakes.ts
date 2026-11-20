@@ -48,6 +48,8 @@ export class FakeMicDriver extends MicDriver {
 /** A speaker that remembers what it was asked to play */
 export class FakeSpeakerDriver extends SpeakerDriver {
   public played: Int16Array[] = []
+  /** Rate of each chunk in `played`, in Hz */
+  public rates: number[] = []
   public devices: MicdropDevice[] = [
     { id: 'speaker', label: 'Speaker', kind: 'audiooutput' },
     { id: 'headphones', label: 'Headphones', kind: 'audiooutput' },
@@ -73,8 +75,9 @@ export class FakeSpeakerDriver extends SpeakerDriver {
 
   async start() {}
 
-  play(pcm: Int16Array) {
+  play(pcm: Int16Array, sampleRate: number) {
     this.played.push(pcm)
+    this.rates.push(sampleRate)
     this.setPlaying(true)
   }
 
@@ -229,7 +232,9 @@ export class FakeTurnDetector implements TurnDetector {
 
   /** How much audio it was given since the last reset, in seconds */
   get seconds() {
-    return this.heard.reduce((total, frames) => total + frames.length, 0) / 16000
+    return (
+      this.heard.reduce((total, frames) => total + frames.length, 0) / 16000
+    )
   }
 
   push(samples: Float32Array) {

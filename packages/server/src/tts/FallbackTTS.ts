@@ -25,6 +25,11 @@ export class FallbackTTS extends TTS {
     this.startNextTTS()
   }
 
+  /** Rate of the TTS in use, which changes when it falls back to the next */
+  get sampleRate(): number {
+    return this.tts?.sampleRate ?? super.sampleRate
+  }
+
   speak(textStream: Readable) {
     const utterance: CurrentUtterance = {
       ended: false,

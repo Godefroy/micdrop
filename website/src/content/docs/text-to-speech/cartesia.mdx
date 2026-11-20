@@ -28,6 +28,7 @@ const tts = new CartesiaTTS({
   modelId: 'sonic-3.6', // Cartesia model ID
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091', // Voice ID
   language: 'en', // Optional: specify language
+  sampleRate: 24000, // Optional: 48000 by default
   generationConfig: { speed: 1.1 }, // Optional: speed, volume and emotion
 })
 
@@ -50,7 +51,7 @@ const tts = new CartesiaTTS({
   voiceId: 'a0e99841-438c-4a64-b679-ae501e7d6091',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -59,10 +60,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                                                               |
-| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
-| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
+| Event    | Payload    | Description                                                                                                                |
+| -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played. |
+| `Failed` | `string[]` | Every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again.                  |
 
 See the [TTS interface](./custom) for the full contract.
 
@@ -76,6 +77,7 @@ See the [TTS interface](./custom) for the full contract.
 | `language`          | `CartesiaLanguage`             | Optional | Language code for speech                                               |
 | `generationConfig`  | `CartesiaGenerationConfig`     | Optional | Speed, volume and emotion of the voice, see below                      |
 | `speed`             | `'fast' \| 'normal' \| 'slow'` | Optional | Deprecated, Sonic 3 models read `generationConfig.speed`               |
+| `sampleRate`        | `CartesiaSampleRate`           | `48000`  | Rate of the audio in Hz: 8000, 16000, 22050, 24000, 44100 or 48000     |
 | `connectionTimeout` | `number`                       | `5000`   | Timeout in milliseconds for WebSocket connection                       |
 | `retryDelay`        | `number`                       | `1000`   | Delay in milliseconds between reconnection attempts                    |
 | `maxRetry`          | `number`                       | `3`      | Number of failed connection attempts in a row before emitting `Failed` |

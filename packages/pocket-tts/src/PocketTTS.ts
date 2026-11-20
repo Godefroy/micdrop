@@ -1,4 +1,4 @@
-import { float32ToPcm16, Pcm16Resampler, SentenceTTS } from '@micdrop/server'
+import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
 import sherpa, { type GenerationConfig } from 'sherpa-onnx-node'
 import {
   PocketBundledVoice,
@@ -59,9 +59,13 @@ export interface PocketTTSOptions {
 const DEFAULT_VOICE: PocketBundledVoice = 'bria'
 const DEFAULT_NUM_STEPS = 2
 const DEFAULT_REFERENCE_LENGTH = 12
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+// Rate of the model, until it is loaded and states its own
+const DEFAULT_SAMPLE_RATE = 24000
 
 export class PocketTTS extends SentenceTTS {
+  // The model states its rate once loaded, and the audio is sent at it
+  private rate = DEFAULT_SAMPLE_RATE
+
   constructor(private readonly options: PocketTTSOptions) {
     super()
 
@@ -79,6 +83,10 @@ export class PocketTTS extends SentenceTTS {
     }
   }
 
+  get sampleRate() {
+    return this.rate
+  }
+
   protected async synthesize(
     text: string,
     signal: AbortSignal
@@ -87,12 +95,7 @@ export class PocketTTS extends SentenceTTS {
     // The utterance may have been cancelled while the model was loading
     if (signal.aborted) return
 
-    // One resampler for the whole sentence: its chunks are a single continuous
-    // stream, and the resampler carries its fractional position across them
-    const resampler = new Pcm16Resampler(
-      synthesizer.sampleRate,
-      OUTPUT_SAMPLE_RATE
-    )
+    this.rate = synthesizer.sampleRate
 
     await synthesizer.generateAsync({
       text,
@@ -101,7 +104,7 @@ export class PocketTTS extends SentenceTTS {
       enableExternalBuffer: true,
       generationConfig: this.getGenerationConfig(),
       onProgress: ({ samples }) => {
-        const audio = resampler.process(float32ToPcm16(samples))
+        const audio = float32ToPcm16(samples)
         // Stop generating what nobody is going to hear
         return this.emitAudio(audio) ? 1 : 0
       },

@@ -6,6 +6,7 @@ import type { WebSocket } from 'ws'
 import { Agent, AgentOptions } from '../src/agent'
 import {
   Classifier,
+  FallbackTTS,
   getTurnClassification,
   MicdropCallSummary,
   MicdropClientCommands,
@@ -787,5 +788,90 @@ describe('MicdropServer with a classifier', () => {
     socket.close()
 
     assert.equal(classifier.destroyed, true)
+  })
+})
+
+describe('MicdropServer sample rate', () => {
+  /** Speaks at a rate a test sets, and fails over to the next one on demand */
+  class RateTTS extends TTS {
+    constructor(private readonly rate: number) {
+      super()
+    }
+
+    get sampleRate() {
+      return this.rate
+    }
+
+    speak(textStream: Readable) {
+      textStream.on('data', () => this.emit('Audio', Buffer.alloc(64)))
+    }
+
+    cancel() {}
+
+    fail(texts: string[]) {
+      this.emit('Failed', texts)
+    }
+  }
+
+  const sampleRates = (socket: FakeSocket) =>
+    socket.commands
+      .filter((data) => data.startsWith(`${MicdropServerCommands.SampleRate} `))
+      .map((data) => Number(data.split(' ')[1]))
+
+  it('announces nothing for a voice at the default rate', async () => {
+    const { socket } = startCall({
+      stt: new TestSTT(),
+      tts: new RateTTS(16000),
+      firstMessage: 'Hi',
+    })
+    await waitFor(() => socket.audioChunks.length > 0, 'the first chunk')
+
+    assert.deepEqual(sampleRates(socket), [])
+  })
+
+  it('announces the rate of the voice before its first chunk', async () => {
+    const { socket, server } = startCall({
+      stt: new TestSTT(),
+      tts: new RateTTS(24000),
+      firstMessage: 'Hi',
+    })
+    const rates: number[] = []
+    server.on('AssistantAudio', (_audio, sampleRate) => rates.push(sampleRate))
+    await waitFor(() => socket.audioChunks.length > 0, 'the first chunk')
+    server.speak('Again')
+    await waitFor(() => socket.audioChunks.length > 1, 'the second chunk')
+
+    // Announced once, right before the audio it applies to
+    assert.deepEqual(sampleRates(socket), [24000])
+    const announce = socket.sent.indexOf(
+      `${MicdropServerCommands.SampleRate} 24000`
+    )
+    assert.ok(Buffer.isBuffer(socket.sent[announce + 1]))
+    assert.deepEqual(rates, [24000, 24000])
+  })
+
+  it('announces the new rate when the fallback changes voice', async () => {
+    const ttss: RateTTS[] = []
+    const rates = [24000, 44100]
+    const tts = new FallbackTTS({
+      factories: rates.map(
+        (rate) => () => ttss[ttss.push(new RateTTS(rate)) - 1]
+      ),
+    })
+    const { socket, server } = startCall({
+      stt: new TestSTT(),
+      tts,
+      firstMessage: 'Hi',
+    })
+    await waitFor(() => socket.audioChunks.length > 0, 'the first chunk')
+
+    ttss[0].fail(['Again'])
+    await waitFor(() => socket.audioChunks.length > 1, 'the fallback chunk')
+
+    assert.equal(tts.sampleRate, 44100)
+    assert.deepEqual(sampleRates(socket), [24000, 44100])
+    server.speak('More')
+    await waitFor(() => socket.audioChunks.length > 2, 'the next chunk')
+    assert.deepEqual(sampleRates(socket), [24000, 44100])
   })
 })

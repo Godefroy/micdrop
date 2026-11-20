@@ -22,7 +22,7 @@ const tts = new GradiumTTS({
   apiKey: process.env.GRADIUM_API_KEY || '',
   voiceId: 'Bla6SbVMczYnOhfK', // Gradium voice ID
   modelName: 'default', // Optional: model name
-  outputFormat: 'pcm_16000', // Optional: audio format
+  sampleRate: 24000, // Optional: 8000, 16000, 24000 or 48000 (default)
   region: 'eu', // Optional: 'eu' or 'us'
   jsonConfig: {
     // Optional: advanced voice settings
@@ -50,7 +50,7 @@ const tts = new GradiumTTS({
   voiceId: 'Bla6SbVMczYnOhfK',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -59,9 +59,9 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                                                               |
-| -------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.                                          |
+| Event    | Payload    | Description                                                                                                                               |
+| -------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played.                |
 | `Failed` | `string[]` | Gradium refused the request, or every reconnection attempt failed, with the text that stayed unspoken. The next utterance connects again. |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.

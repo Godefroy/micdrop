@@ -6,6 +6,7 @@ import { SpeechWebSocket } from './SpeechWebSocket'
 import {
   DEFAULT_MODEL_ID,
   ElevenLabsTTSOptions,
+  getSampleRate,
   isDialogueModel,
 } from './types'
 
@@ -18,9 +19,11 @@ import {
  */
 export class ElevenLabsTTS extends TTS {
   private readonly webSocket: ElevenLabsWebSocket
+  private readonly rate: number
 
   constructor(options: ElevenLabsTTSOptions) {
     super()
+    this.rate = getSampleRate(options)
     const host = {
       audio: (chunk: Buffer) => this.emit('Audio', chunk),
       failed: (texts: string[]) => this.emit('Failed', texts),
@@ -29,6 +32,10 @@ export class ElevenLabsTTS extends TTS {
     this.webSocket = isDialogueModel(options.modelId ?? DEFAULT_MODEL_ID)
       ? new DialogueWebSocket(options, host)
       : new SpeechWebSocket(options, host)
+  }
+
+  get sampleRate() {
+    return this.rate
   }
 
   speak(textStream: Readable) {

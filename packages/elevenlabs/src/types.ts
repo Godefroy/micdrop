@@ -14,11 +14,24 @@ export type ElevenLabsModelId =
   | 'eleven_multilingual_v2'
   | 'eleven_turbo_v2_5'
 
+/** Rates ElevenLabs streams raw PCM at. 44100 needs a Pro plan or above. */
+export type ElevenLabsSampleRate =
+  8000 | 16000 | 22050 | 24000 | 32000 | 44100 | 48000
+
 export interface ElevenLabsTTSOptions {
   apiKey: string
   voiceId: string
   modelId?: ElevenLabsModelId
   language?: string
+  /**
+   * Rate of the audio, in Hz, 48000 by default, the highest one offered. It
+   * goes to the client as is, so the voice is never resampled on the server.
+   */
+  sampleRate?: ElevenLabsSampleRate
+  /**
+   * @deprecated Use `sampleRate`. The client only plays raw PCM, so only the
+   * `pcm_*` formats work.
+   */
   outputFormat?: TextToSpeechStreamRequestOutputFormat
   voiceSettings?: VoiceSettings
   connectionTimeout?: number
@@ -27,7 +40,23 @@ export interface ElevenLabsTTSOptions {
 }
 
 export const DEFAULT_MODEL_ID = 'eleven_turbo_v2_5'
-export const DEFAULT_OUTPUT_FORMAT = 'pcm_16000'
+export const DEFAULT_SAMPLE_RATE: ElevenLabsSampleRate = 48000
+/** @deprecated Use `DEFAULT_SAMPLE_RATE` */
+export const DEFAULT_OUTPUT_FORMAT = 'pcm_48000'
+
+/** The `output_format` asked of ElevenLabs */
+export function getOutputFormat(
+  options: ElevenLabsTTSOptions
+): TextToSpeechStreamRequestOutputFormat {
+  if (options.sampleRate) return `pcm_${options.sampleRate}`
+  return options.outputFormat ?? `pcm_${DEFAULT_SAMPLE_RATE}`
+}
+
+/** Rate of the audio ElevenLabs sends, read from its `output_format` */
+export function getSampleRate(options: ElevenLabsTTSOptions): number {
+  const match = /^pcm_(\d+)$/.exec(getOutputFormat(options))
+  return match ? Number(match[1]) : DEFAULT_SAMPLE_RATE
+}
 
 /** Eleven v3 and v4 only run on the Text to Dialogue WebSocket */
 export function isDialogueModel(modelId: string): boolean {

@@ -1,7 +1,7 @@
 import type { TTS } from '@micdrop/server'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it } from 'vitest'
-import { AudioMeter, BYTES_PER_SECOND, saveAudio } from '../audio.js'
+import { AudioMeter, saveAudio } from '../audio.js'
 import { hasKeys } from '../env.js'
 import { captureLogs } from '../logs.js'
 import { sleep, waitFor } from '../wait.js'
@@ -58,7 +58,7 @@ export function describeTTS(name: string, options: TTSScenarioOptions) {
 
       speak(tts, SHORT)
       await meter.untilQuiet()
-      saveAudio(name, meter.audio)
+      saveAudio(name, meter.audio, meter.sampleRate)
 
       expect(failures).toEqual([])
       // Around two seconds of speech, whatever the voice
@@ -88,11 +88,11 @@ export function describeTTS(name: string, options: TTSScenarioOptions) {
       await waitFor(() => meter.chunks > 0, 'the first audio chunk')
       tts.cancel()
       await sleep(500)
-      const atCancel = meter.bytes
+      const atCancel = meter.seconds
 
       speak(tts, SHORT)
       await waitFor(
-        () => meter.bytes - atCancel > BYTES_PER_SECOND / 2,
+        () => meter.seconds - atCancel > 0.5,
         'the audio of the next answer'
       )
     })
@@ -103,17 +103,17 @@ export function describeTTS(name: string, options: TTSScenarioOptions) {
 
       speak(tts, LONG)
       await waitFor(() => meter.chunks > 0, 'the first audio chunk')
-      const atTakeOver = meter.bytes
+      const atTakeOver = meter.seconds
       speak(tts, SHORT)
       // The first audio of the second answer, then its end
       await waitFor(
-        () => meter.bytes - atTakeOver > BYTES_PER_SECOND / 2,
+        () => meter.seconds - atTakeOver > 0.5,
         'the audio of the second answer'
       )
       await meter.untilQuiet()
 
       // The short sentence alone, the rest of the long one is dropped
-      const after = (meter.bytes - atTakeOver) / BYTES_PER_SECOND
+      const after = meter.seconds - atTakeOver
       expect(after).toBeGreaterThan(1)
       expect(after).toBeLessThan(6)
     })

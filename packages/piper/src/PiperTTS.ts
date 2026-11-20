@@ -1,6 +1,11 @@
-import { Pcm16Resampler, SentenceSplitter, TTS } from '@micdrop/server'
+import { Pcm16Aligner, SentenceSplitter, TTS } from '@micdrop/server'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
-import { defaultConfigPath, PiperVoiceConfig, readVoiceConfig } from './config'
+import {
+  DEFAULT_SAMPLE_RATE,
+  defaultConfigPath,
+  PiperVoiceConfig,
+  readVoiceConfig,
+} from './config'
 
 /**
  * Local Piper text to speech, driving the piper binary as a subprocess.
@@ -54,7 +59,6 @@ export interface PiperTTSOptions {
 }
 
 const DEFAULT_BINARY = 'piper'
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
 // Piper marks neither the end of an utterance nor of its queue on standard
 // output. Once it has written some audio after the last sentence it was given
 // and then stayed silent this long, it is taken to have said everything. It
@@ -106,6 +110,12 @@ export class PiperTTS extends TTS {
   // whether it is still the one that should be heard
   private generation = 0
   private counter = 0 // Identifies the current speak() call
+  // Rate of the voice, read from its config, which the audio is sent at
+  private rate = DEFAULT_SAMPLE_RATE
+
+  get sampleRate() {
+    return this.rate
+  }
 
   constructor(private readonly options: PiperTTSOptions) {
     super()
@@ -119,7 +129,8 @@ export class PiperTTS extends TTS {
     // sentence arriving before the config is read spawns the process itself,
     // hence the guard: replacing it here would orphan the text it was given.
     this.config
-      .then(() => {
+      .then(({ sampleRate }) => {
+        this.rate = sampleRate
         if (this.state.status === 'none') this.spawnChild()
       })
       .catch(() => {})
@@ -219,11 +230,13 @@ export class PiperTTS extends TTS {
 
     this.state = { status: 'clean', child }
 
-    // One resampler per process: its audio is a single continuous stream, and
-    // a new process starts a new one
-    const resampler = this.config.then(
-      ({ sampleRate }) => new Pcm16Resampler(sampleRate, OUTPUT_SAMPLE_RATE)
-    )
+    // One aligner per process: a chunk can end in the middle of a sample, and
+    // the byte held back belongs to the audio of this process only. The audio
+    // waits for the config, which gives its rate.
+    const aligner = new Pcm16Aligner()
+    const ready = this.config.then(({ sampleRate }) => {
+      this.rate = sampleRate
+    })
 
     let pending: Promise<void> = Promise.resolve()
     child.stdout.on('data', (chunk: Buffer) => {
@@ -233,10 +246,11 @@ export class PiperTTS extends TTS {
         return
       }
       this.handleOutput(child)
-      // Chunks are resampled in the order they arrive, the resampler carries
-      // its fractional position from one to the next
+      // Chunks are aligned in the order they arrive, the aligner carries a
+      // split sample from one to the next
       pending = pending.then(async () => {
-        const output = (await resampler).process(chunk)
+        await ready
+        const output = aligner.process(chunk)
         // The process may have been replaced, or muted by a cancel, while
         // this chunk was waiting
         if (!this.isCurrent(child) || output.length === 0) return

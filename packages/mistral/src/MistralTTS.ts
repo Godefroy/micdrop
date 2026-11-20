@@ -1,4 +1,4 @@
-import { float32ToPcm16, Pcm16Resampler, SentenceTTS } from '@micdrop/server'
+import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
 
 /**
  * Mistral text to speech (Voxtral Speech 3)
@@ -30,13 +30,16 @@ export interface MistralTTSOptions {
 const DEFAULT_MODEL = 'voxtral-mini-tts-3-0'
 const DEFAULT_VOICE_ID = 'voice_3150' // James, American English
 const DEFAULT_BASE_URL = 'https://api.mistral.ai'
-const MISTRAL_SAMPLE_RATE = 24000 // Rate of the pcm output from Mistral
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const MISTRAL_SAMPLE_RATE = 24000 // Rate of the pcm output from Mistral, sent as is
 const FLOAT32_BYTES = 4 // The pcm output is mono float32 little-endian
 
 export class MistralTTS extends SentenceTTS {
   constructor(private readonly options: MistralTTSOptions) {
     super()
+  }
+
+  get sampleRate() {
+    return MISTRAL_SAMPLE_RATE
   }
 
   protected async synthesize(
@@ -46,12 +49,6 @@ export class MistralTTS extends SentenceTTS {
     const response = await this.request(text, signal)
     if (!response.body) throw new Error('Mistral answered without a body')
 
-    // One resampler per sentence: two sentences are independent streams, so
-    // the fractional position must not carry over from one to the next
-    const resampler = new Pcm16Resampler(
-      MISTRAL_SAMPLE_RATE,
-      OUTPUT_SAMPLE_RATE
-    )
     // Half of a float32 sample split between two events
     let leftover = Buffer.alloc(0)
 
@@ -75,7 +72,7 @@ export class MistralTTS extends SentenceTTS {
       }
 
       // Cancelled or replaced, the rest is not wanted
-      if (!this.emitAudio(resampler.process(float32ToPcm16(samples)))) break
+      if (!this.emitAudio(float32ToPcm16(samples))) break
     }
 
     return undefined

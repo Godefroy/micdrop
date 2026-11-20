@@ -6,10 +6,10 @@ import {
 } from './ElevenLabsWebSocket'
 import {
   DEFAULT_MODEL_ID,
-  DEFAULT_OUTPUT_FORMAT,
   ElevenLabsDialogueClientMessage,
   ElevenLabsDialogueMessage,
   ElevenLabsTTSOptions,
+  getOutputFormat,
 } from './types'
 
 // API Reference: https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket
@@ -63,10 +63,7 @@ export class DialogueWebSocket implements ElevenLabsWebSocket {
   ) {
     const params = new URLSearchParams()
     params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
-    params.append(
-      'output_format',
-      this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
-    )
+    params.append('output_format', getOutputFormat(this.options))
     if (this.options.language) {
       params.append('language_code', this.options.language)
     }

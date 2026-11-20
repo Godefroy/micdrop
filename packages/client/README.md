@@ -36,7 +36,7 @@ class MyMic extends MicDriver {
 }
 
 class MySpeaker extends SpeakerDriver {
-  // play() queues 16 kHz PCM16
+  // play() queues PCM16 at the sample rate it is given
 }
 
 Mic.setDriver(new MyMic())

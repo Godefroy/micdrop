@@ -1,4 +1,4 @@
-import { float32ToPcm16, Pcm16Resampler, SentenceTTS } from '@micdrop/server'
+import { float32ToPcm16, SentenceTTS } from '@micdrop/server'
 import {
   KokoroDevice,
   KokoroDtype,
@@ -44,10 +44,16 @@ const DEFAULT_MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX'
 const DEFAULT_VOICE: KokoroVoiceName = 'americanFemale'
 const DEFAULT_DTYPE: KokoroDtype = 'q8'
 const DEFAULT_DEVICE: KokoroDevice = 'cpu'
-const KOKORO_SAMPLE_RATE = 24000 // Rate of the audio Kokoro generates
-const OUTPUT_SAMPLE_RATE = 16000 // Rate expected by the Micdrop client
+const KOKORO_SAMPLE_RATE = 24000 // Rate of the audio Kokoro generates, sent as is
 
 export class KokoroTTS extends SentenceTTS {
+  // Read from the audio, which states its rate
+  private rate = KOKORO_SAMPLE_RATE
+
+  get sampleRate() {
+    return this.rate
+  }
+
   constructor(private readonly options: KokoroTTSOptions = {}) {
     super()
 
@@ -77,13 +83,8 @@ export class KokoroTTS extends SentenceTTS {
     })
     if (signal.aborted) return
 
-    // A fresh resampler per sentence: they are independent utterances, and
-    // carrying a fractional position across them would smear their edges.
-    const resampler = new Pcm16Resampler(
-      audio.sampling_rate || KOKORO_SAMPLE_RATE,
-      OUTPUT_SAMPLE_RATE
-    )
-    return resampler.process(float32ToPcm16(audio.audio))
+    this.rate = audio.sampling_rate || KOKORO_SAMPLE_RATE
+    return float32ToPcm16(audio.audio)
   }
 
   private getVoice(): string {

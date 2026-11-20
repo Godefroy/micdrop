@@ -1,18 +1,27 @@
 import * as fs from 'fs'
 import { Readable } from 'stream'
+import { DEFAULT_SAMPLE_RATE } from '../types'
 import { TTS } from './TTS'
 
 /**
  * Plays the same recorded chunks for any answer, to run a call without a
- * voice provider. The files hold raw PCM 16 bits at 16 kHz.
+ * voice provider. The files hold raw PCM 16 bits, at 16 kHz unless another
+ * rate is given.
  */
 export class MockTTS extends TTS {
   // Bumped by every answer and every cancel, so the chunks of an answer that
   // is no longer wanted stop there
   private generation = 0
 
-  constructor(private audioFilePaths: string[]) {
+  constructor(
+    private audioFilePaths: string[],
+    private readonly rate = DEFAULT_SAMPLE_RATE
+  ) {
     super()
+  }
+
+  get sampleRate() {
+    return this.rate
   }
 
   speak(textStream: Readable) {

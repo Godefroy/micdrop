@@ -23,6 +23,7 @@ const tts = new ElevenLabsTTS({
   voiceId: '21m00Tcm4TlvDq8ikWAM', // ElevenLabs voice ID
   modelId: 'eleven_v4_turbo', // Optional: model to use
   language: 'en', // Optional: language code
+  sampleRate: 24000, // Optional: 48000 by default
   voiceSettings: {
     stability: 0.5,
   },
@@ -46,7 +47,7 @@ const tts = new ElevenLabsTTS({
   voiceId: '21m00Tcm4TlvDq8ikWAM',
 })
 
-// Audio is raw PCM, 16 bits, 16 kHz, mono
+// Audio is raw PCM, 16 bits, mono, at tts.sampleRate
 tts.on('Audio', (chunk) => console.log('Audio:', chunk.length, 'bytes'))
 tts.on('Failed', (texts) => console.error('Failed:', texts))
 
@@ -55,10 +56,10 @@ tts.speak(Readable.from(['Hello! ', 'What can I do for you?']))
 
 ### Events
 
-| Event    | Payload    | Description                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, 16 kHz, mono, ready to be played.         |
-| `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.  |
+| Event    | Payload    | Description                                                                                                                |
+| -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`  | `Buffer`   | A chunk of audio, PCM 16 bits, mono, at `tts.sampleRate` (the `sampleRate` option, 48 kHz by default), ready to be played. |
+| `Failed` | `string[]` | The text left unspoken when `ElevenLabsTTS` gives up after its retries.                                                    |
 
 See the [TTS interface](https://micdrop.dev/docs/text-to-speech/custom) for the full contract.
 

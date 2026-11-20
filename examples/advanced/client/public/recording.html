@@ -228,7 +228,7 @@
       currentPlayingIndex = index
       const msg = messages[index]
       const pcmData = base64ToBytes(msg.buffer)
-      const blob = createWavBlob(pcmData)
+      const blob = createWavBlob(pcmData, msg.sampleRate)
       const url = URL.createObjectURL(blob)
 
       currentAudio = new Audio(url)

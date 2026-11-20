@@ -7,8 +7,8 @@ import {
 } from './ElevenLabsWebSocket'
 import {
   DEFAULT_MODEL_ID,
-  DEFAULT_OUTPUT_FORMAT,
   ElevenLabsTTSOptions,
+  getOutputFormat,
   ElevenLabsWebSocketAudioOutputMessage,
   ElevenLabsWebSocketMessage,
 } from './types'
@@ -54,10 +54,7 @@ export class SpeechWebSocket implements ElevenLabsWebSocket {
     // Build query params
     const params = new URLSearchParams()
     params.append('model_id', this.options.modelId ?? DEFAULT_MODEL_ID)
-    params.append(
-      'output_format',
-      this.options.outputFormat ?? DEFAULT_OUTPUT_FORMAT
-    )
+    params.append('output_format', getOutputFormat(this.options))
     params.append('inactivity_timeout', WS_INACTIVITY_TIMEOUT.toString())
     const voiceSettings = toWireVoiceSettings(this.options.voiceSettings)
     if (voiceSettings) {

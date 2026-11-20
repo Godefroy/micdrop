@@ -14,7 +14,7 @@ export interface PiperVoiceConfig {
   language?: string
 }
 
-const DEFAULT_SAMPLE_RATE = 22050
+export const DEFAULT_SAMPLE_RATE = 22050
 
 export async function readVoiceConfig(
   configPath: string

@@ -9,6 +9,7 @@ import type { Realtime } from './realtime'
 import type { STT } from './stt'
 import type { TTS } from './tts'
 import {
+  DEFAULT_SAMPLE_RATE,
   MicdropAnswerMetadata,
   MicdropCallSummary,
   MicdropClientCommands,
@@ -18,9 +19,6 @@ import {
   MicdropServerCommands,
   TurnDetector,
 } from './types'
-
-/** Rate the client records at, and sends its chunks in */
-const USER_SAMPLE_RATE = 16000
 
 /**
  * How long an answer waits once the detector asked for the rest of a sentence.
@@ -37,8 +35,10 @@ export interface MicdropServerEvents {
   End: [MicdropCallSummary]
   /** A message was added to the conversation, by the agent or by the server */
   Message: [MicdropConversationItem]
+  /** Audio of the user, in PCM16 mono at 16 kHz */
   UserAudio: [Buffer]
-  AssistantAudio: [Buffer]
+  /** Voice of the assistant, in PCM16 mono at the rate given with it, in Hz */
+  AssistantAudio: [Buffer, number]
 }
 
 export interface MicdropConfig {
@@ -174,6 +174,9 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
   // Counts the assistant messages sent, so the partial answer of one already
   // settled is not sent after it
   private assistantMessages = 0
+  // Rate the client plays the assistant voice at, which it takes as the
+  // default until told otherwise
+  private assistantSampleRate = DEFAULT_SAMPLE_RATE
 
   // Holds the conversation when no agent does, and keeps it readable once the
   // call is over and the config is gone
@@ -372,7 +375,7 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
     this.log(`Received chunk (${chunk.byteLength} bytes)`)
     this.currentUserStream?.write(chunk)
     this.userSpeechChunks++
-    this.config?.turnDetector?.push(pcm16ToFloat32(chunk), USER_SAMPLE_RATE)
+    this.config?.turnDetector?.push(pcm16ToFloat32(chunk), DEFAULT_SAMPLE_RATE)
     this.emit('UserAudio', chunk)
   }
 
@@ -525,9 +528,22 @@ export class MicdropServer extends EventEmitter<MicdropServerEvents> {
 
   private onAssistantAudio = (audio: Buffer) => {
     if (!this.socket) return
+
+    // Audio goes out at the rate it was produced, the client resamples it
+    // once to its own output. The rate can change during a call, when a
+    // FallbackTTS moves on to a provider speaking at another one, so it is
+    // read with every chunk and announced before the first chunk at a new one.
+    const source = this.config?.realtime ?? this.config?.tts
+    const sampleRate = source?.sampleRate ?? DEFAULT_SAMPLE_RATE
+    if (sampleRate !== this.assistantSampleRate) {
+      this.log(`Assistant voice now at ${sampleRate} Hz`)
+      this.assistantSampleRate = sampleRate
+      this.socket.send(`${MicdropServerCommands.SampleRate} ${sampleRate}`)
+    }
+
     this.log(`Send audio chunk (${audio.byteLength} bytes)`)
     this.socket.send(audio)
-    this.emit('AssistantAudio', audio)
+    this.emit('AssistantAudio', audio, sampleRate)
   }
 
   private onMessageAgent = (message: MicdropConversationItem) => {

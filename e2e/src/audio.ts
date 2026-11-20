@@ -1,4 +1,5 @@
 import { OpenaiTTS } from '@micdrop/openai'
+import { Pcm16Resampler } from '@micdrop/server'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { key } from './env.js'
 import { sleep } from './wait.js'
 
-/** Rate of the audio the Micdrop client sends and plays, PCM 16 bits mono */
+/** Rate of the audio the Micdrop client sends, PCM 16 bits mono */
 export const SAMPLE_RATE = 16_000
 export const BYTES_PER_SECOND = SAMPLE_RATE * 2
 /** The client sends its audio in chunks of 100 ms */
@@ -24,7 +25,8 @@ export const SPEECH = {
 
 /**
  * Speech for a sentence, synthesized once by OpenAI and kept in `e2e/.cache`,
- * so the tests that only hear it cost nothing after the first run
+ * so the tests that only hear it cost nothing after the first run. It is
+ * resampled to the rate the client sends, the one the speech to text hears.
  */
 export async function speech(text: string): Promise<Buffer> {
   const hash = createHash('sha1').update(text).digest('hex').slice(0, 12)
@@ -32,8 +34,9 @@ export async function speech(text: string): Promise<Buffer> {
   if (existsSync(path)) return readFileSync(path)
 
   const tts = new OpenaiTTS({ apiKey: key('OPENAI_API_KEY'), voice: 'marin' })
+  const resampler = new Pcm16Resampler(tts.sampleRate, SAMPLE_RATE)
   const chunks: Buffer[] = []
-  tts.on('Audio', (chunk) => chunks.push(chunk))
+  tts.on('Audio', (chunk) => chunks.push(resampler.process(chunk)))
   const textStream = new PassThrough()
   tts.speak(textStream)
   textStream.end(text)
@@ -81,7 +84,11 @@ export async function speakInto(
  * Writes audio to `e2e/.cache/audio/<name>.wav` when `E2E_SAVE_AUDIO=1`, to
  * listen to what a voice sounded like
  */
-export function saveAudio(name: string, chunks: Buffer[]) {
+export function saveAudio(
+  name: string,
+  chunks: Buffer[],
+  sampleRate = SAMPLE_RATE
+) {
   if (process.env.E2E_SAVE_AUDIO !== '1') return
   const pcm = Buffer.concat(chunks)
   const header = Buffer.alloc(44)
@@ -92,8 +99,8 @@ export function saveAudio(name: string, chunks: Buffer[]) {
   header.writeUInt32LE(16, 16)
   header.writeUInt16LE(1, 20) // PCM
   header.writeUInt16LE(1, 22) // Mono
-  header.writeUInt32LE(SAMPLE_RATE, 24)
-  header.writeUInt32LE(BYTES_PER_SECOND, 28)
+  header.writeUInt32LE(sampleRate, 24)
+  header.writeUInt32LE(sampleRate * 2, 28)
   header.writeUInt16LE(2, 32)
   header.writeUInt16LE(16, 34)
   header.write('data', 36)
@@ -109,24 +116,27 @@ export class AudioMeter {
   public audio: Buffer[] = []
   public bytes = 0
   public chunks = 0
+  /** Duration of the audio received so far */
+  public seconds = 0
+  /** Rate of the last chunk, the one the emitter announces */
+  public sampleRate = SAMPLE_RATE
   // When the audio received so far stops playing, heard in real time as the
   // client plays it
   public playedUntil = 0
 
   constructor(emitter: {
+    readonly sampleRate: number
     on(event: 'Audio', listener: (chunk: Buffer) => void): unknown
   }) {
     emitter.on('Audio', (chunk: Buffer) => {
+      this.sampleRate = emitter.sampleRate
       this.audio.push(chunk)
       this.bytes += chunk.length
       this.chunks++
-      const duration = (chunk.length / BYTES_PER_SECOND) * 1000
-      this.playedUntil = Math.max(this.playedUntil, Date.now()) + duration
+      const seconds = chunk.length / 2 / this.sampleRate
+      this.seconds += seconds
+      this.playedUntil = Math.max(this.playedUntil, Date.now()) + seconds * 1000
     })
-  }
-
-  get seconds(): number {
-    return this.bytes / BYTES_PER_SECOND
   }
 
   /**
