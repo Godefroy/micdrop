@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { PassThrough } from 'node:stream'
 import { describe, it } from 'node:test'
-import { Agent } from '../src/index'
+import { Agent, AgentOptions, MicdropConversationMessage } from '../src/index'
 
 /** Writes a word, then waits for the test to let it finish */
 class SlowAgent extends Agent {
@@ -83,5 +83,55 @@ describe('Agent', () => {
     await tick()
     await tick()
     assert.equal(agent.signals.length, 0)
+  })
+})
+
+describe('Agent extract', () => {
+  /** Writes its answer in the pieces given, then records it whole */
+  class PiecesAgent extends Agent {
+    constructor(
+      private pieces: string[],
+      extract?: AgentOptions['extract']
+    ) {
+      super({ systemPrompt: '', extract })
+    }
+
+    protected async generateAnswer(stream: PassThrough) {
+      const write = this.answerWriter(stream)
+      for (const piece of this.pieces) write(piece)
+      const { message, metadata } = this.extract(this.pieces.join(''))
+      this.addAssistantMessage(message, metadata)
+    }
+  }
+
+  async function answer(agent: Agent) {
+    let spoken = ''
+    const stream = agent.answer()
+    stream.on('data', (chunk: Buffer) => (spoken += chunk.toString()))
+    await new Promise((resolve) => stream.on('end', resolve))
+    const last = agent.conversation[agent.conversation.length - 1]
+    return { spoken, last: last as MicdropConversationMessage }
+  }
+
+  it('speaks the answer up to the JSON, once', async () => {
+    const values: any[] = []
+    const { spoken, last } = await answer(
+      new PiecesAgent(['Hello', ' there. ', 'Bye {"mood":', '"happy"}'], {
+        callback: (value) => values.push(value),
+        saveInMetadata: true,
+      })
+    )
+    assert.equal(spoken, 'Hello there. Bye')
+    assert.equal(last.content, 'Hello there. Bye')
+    assert.deepEqual(last.metadata, { extracted: { mood: 'happy' } })
+    assert.deepEqual(values, [{ mood: 'happy' }])
+  })
+
+  it('leaves the answer whole without extract', async () => {
+    const { spoken, last } = await answer(
+      new PiecesAgent(['Use {braces}', ' freely'])
+    )
+    assert.equal(spoken, 'Use {braces} freely')
+    assert.equal(last.content, 'Use {braces} freely')
   })
 })

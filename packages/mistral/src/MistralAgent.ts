@@ -117,9 +117,7 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
       })
     }
 
-    // Prepare extracting
-    let extracting = false
-    const extractOptions = this.getExtractOptions()
+    const write = this.answerWriter(stream)
     const outcome: StepOutcome = { fullAnswer: '', skipAnswer: false }
     let produced = false
 
@@ -147,27 +145,7 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
           this.log(`Answer chunk: "${chunk}"`)
           outcome.fullAnswer += chunk
           produced = true
-
-          // Extracting value?
-          if (extractOptions) {
-            if (!extracting) {
-              const startTagIndex = outcome.fullAnswer.indexOf(
-                extractOptions.startTag
-              )
-              if (startTagIndex !== -1) {
-                extracting = true
-                const messagePart = outcome.fullAnswer
-                  .slice(0, startTagIndex)
-                  .trimEnd()
-                stream.write(messagePart)
-                continue
-              }
-            } else {
-              // Extracting, don't write to stream
-              continue
-            }
-          }
-          stream.write(chunk)
+          write(chunk)
         } else if (toolCalls?.length) {
           for (const toolCall of toolCalls) {
             if (signal.aborted) return outcome

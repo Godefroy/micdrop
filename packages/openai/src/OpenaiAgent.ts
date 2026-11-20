@@ -123,9 +123,7 @@ export class OpenaiAgent extends Agent<OpenaiAgentOptions> {
     }
     let produced = false
 
-    // Prepare extracting
-    let extracting = false
-    const extractOptions = this.getExtractOptions()
+    const write = this.answerWriter(stream)
 
     try {
       // Generate answer
@@ -151,29 +149,7 @@ export class OpenaiAgent extends Agent<OpenaiAgentOptions> {
             this.log(`Answer chunk: "${event.delta}"`)
             outcome.text += event.delta
             produced = true
-
-            // Extracting value?
-            if (extractOptions) {
-              if (!extracting) {
-                const startTagIndex = event.delta.indexOf(
-                  extractOptions.startTag
-                )
-                if (startTagIndex !== -1) {
-                  extracting = true
-                  const messagePart = event.delta
-                    .slice(0, startTagIndex)
-                    .trimEnd()
-                  stream.write(messagePart)
-                  break
-                }
-              } else {
-                // Extracting, don't write to stream
-                break
-              }
-            }
-
-            // Send chunk
-            stream.write(event.delta)
+            write(event.delta)
             break
 
           case 'response.output_text.done': {

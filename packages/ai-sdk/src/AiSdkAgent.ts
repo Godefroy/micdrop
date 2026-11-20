@@ -35,9 +35,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
   ): Promise<void> {
     let skipAnswer = false
 
-    // Prepare extracting
-    let extracting = false
-    const extractOptions = this.getExtractOptions()
+    const write = this.answerWriter(stream)
 
     try {
       // Generate response using AI SDK
@@ -64,25 +62,7 @@ export class AiSdkAgent extends Agent<AiSdkAgentOptions> {
       for await (const textPart of result.textStream) {
         if (skipAnswer || signal.aborted) return
         this.log(`Answer chunk: "${textPart}"`)
-
-        // Extracting value?
-        if (extractOptions) {
-          if (!extracting) {
-            const startTagIndex = textPart.indexOf(extractOptions.startTag)
-            if (startTagIndex !== -1) {
-              extracting = true
-              const messagePart = textPart.slice(0, startTagIndex).trimEnd()
-              stream.write(messagePart)
-              continue
-            }
-          } else {
-            // Extracting, don't write to stream
-            continue
-          }
-        }
-
-        // Send chunk
-        stream.write(textPart)
+        write(textPart)
       }
       if (skipAnswer || signal.aborted) return
 

@@ -36,9 +36,9 @@ export interface AgentOptions {
   // You can provide a custom prompt to use instead of the default one by passing a string
   autoIgnoreUserNoise?: boolean | string
 
-  // Extract a value from the answer
-  // Value must be at the end of the answer, in JSON or between tags
-  extract?: ExtractJsonOptions | ExtractTagOptions
+  // Extract a JSON value from the answer
+  // The value must be at the end of the answer, from its first `{`
+  extract?: ExtractOptions
 
   // Function called before any answer is generated
   // Return true to skip generation, or a text to answer it instead
@@ -60,19 +60,16 @@ export interface AgentEvents {
 }
 
 export interface ExtractOptions {
-  callback?: (value: string) => void
-  saveInMetadata?: boolean
-}
-
-export interface ExtractJsonOptions extends ExtractOptions {
-  json: true
+  /** Called with the parsed value */
   callback?: (value: any) => void
+  /** Keeps the parsed value in the metadata of the message, as `extracted` */
+  saveInMetadata?: boolean
+  /** @deprecated JSON is the only format, this flag changes nothing */
+  json?: true
 }
 
-export interface ExtractTagOptions extends ExtractOptions {
-  startTag: string
-  endTag: string
-}
+/** @deprecated Use `ExtractOptions` */
+export type ExtractJsonOptions = ExtractOptions
 
 export abstract class Agent<
   Options extends AgentOptions = AgentOptions,
@@ -337,60 +334,55 @@ export abstract class Agent<
     }
   }
 
-  protected getExtractOptions(): ExtractTagOptions | undefined {
-    const extract = this.options.extract
-    if (!extract) return undefined
-    if ('json' in extract && extract.json) {
-      return { ...extract, startTag: '{', endTag: '}' }
+  /**
+   * Writes the answer to the stream as it is generated, leaving out the JSON
+   * value to extract: the voice stops at its first `{`.
+   *
+   * The value is cut from the message once the answer is complete, by
+   * `extract()`. Only the speech has to be cut while streaming.
+   */
+  protected answerWriter(stream: Writable): (text: string) => void {
+    let extracting = false
+    return (text) => {
+      if (extracting || !text) return
+      if (this.options.extract) {
+        const start = text.indexOf('{')
+        if (start !== -1) {
+          extracting = true
+          text = text.slice(0, start).trimEnd()
+          if (!text) return
+        }
+      }
+      stream.write(text)
     }
-    if ('startTag' in extract && 'endTag' in extract) {
-      return extract
-    }
-    return undefined
   }
 
+  /** Cuts the JSON value to extract from a complete answer, and parses it */
   public extract(message: string) {
-    const extractOptions = this.getExtractOptions()
+    const options = this.options.extract
     let metadata: MicdropAnswerMetadata | undefined = undefined
+    if (!options) return { message, metadata }
 
-    // Extract value?
-    if (extractOptions) {
-      const startTagIndex = message.indexOf(extractOptions.startTag)
-      if (startTagIndex !== -1) {
-        // Find end tag
-        let endTagIndex = message.lastIndexOf(extractOptions.endTag)
-        if (endTagIndex === -1) endTagIndex = message.length + 1
-        else endTagIndex += extractOptions.endTag.length
-        const extractedText = message.slice(startTagIndex, endTagIndex).trim()
+    const start = message.indexOf('{')
+    if (start === -1) return { message, metadata }
+    const end = message.lastIndexOf('}')
+    const extractedText = message
+      .slice(start, end === -1 ? undefined : end + 1)
+      .trim()
 
-        // Parse extracted value
-        try {
-          const extractedValue =
-            'json' in extractOptions && extractOptions.json
-              ? JSON.parse(extractedText)
-              : extractedText
-
-          // Call callback
-          if (extractOptions.callback) {
-            extractOptions.callback(extractedValue)
-          }
-
-          // Save in metadata
-          if (extractOptions.saveInMetadata) {
-            metadata = { extracted: extractedValue }
-          }
-        } catch (error) {
-          console.error(
-            `[OpenaiAgent] Error parsing extracted value (${extractedText}):`,
-            error
-          )
-        }
-
-        // Remove extracted value from message
-        message = message.slice(0, startTagIndex).trimEnd()
-      }
+    try {
+      const value = JSON.parse(extractedText)
+      options.callback?.(value)
+      if (options.saveInMetadata) metadata = { extracted: value }
+    } catch (error) {
+      console.error(
+        `[Agent] Error parsing extracted value (${extractedText}):`,
+        error
+      )
     }
-    return { message, metadata }
+
+    // Remove extracted value from message
+    return { message: message.slice(0, start).trimEnd(), metadata }
   }
 
   /**

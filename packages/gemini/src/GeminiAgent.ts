@@ -125,8 +125,7 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
     progress: { answer: string }
   ) {
     // Prepare extracting
-    let extracting = false
-    const extractOptions = this.getExtractOptions()
+    const write = this.answerWriter(stream)
 
     // Typed loosely: the conversation is built as plain JSON steps
     const response = (await this.genai.interactions.create(
@@ -162,18 +161,7 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
       if (!text) return
       this.log(`Answer chunk: "${text}"`)
       progress.answer += text
-
-      // Extracting value?
-      if (extractOptions) {
-        if (extracting) return
-        const startTagIndex = text.indexOf(extractOptions.startTag)
-        if (startTagIndex !== -1) {
-          extracting = true
-          stream.write(text.slice(0, startTagIndex).trimEnd())
-          return
-        }
-      }
-      stream.write(text)
+      write(text)
     }
 
     for await (const event of response) {

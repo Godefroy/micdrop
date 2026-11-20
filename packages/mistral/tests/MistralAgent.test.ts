@@ -56,3 +56,28 @@ describe('MistralAgent', () => {
     assert.equal(message, 'Bonjour ! Ça va bien.')
   })
 })
+
+describe('MistralAgent extract', () => {
+  it('speaks the text before the JSON once', async () => {
+    const agent = new MistralAgent({
+      apiKey: 'test',
+      systemPrompt: 'Be brief',
+      extract: { saveInMetadata: true },
+    })
+    agent.addUserMessage('Hi')
+    stubStream(agent, [
+      { content: 'Hello' },
+      { content: ' there. {"mood":' },
+      { content: '"happy"}' },
+    ])
+    let spoken = ''
+    const stream = agent.answer()
+    stream.on('data', (chunk: Buffer) => (spoken += chunk.toString()))
+    await new Promise((resolve) => stream.on('end', resolve))
+    const last = agent.conversation[agent.conversation.length - 1] as any
+
+    assert.equal(spoken, 'Hello there.')
+    assert.equal(last.content, 'Hello there.')
+    assert.deepEqual(last.metadata, { extracted: { mood: 'happy' } })
+  })
+})

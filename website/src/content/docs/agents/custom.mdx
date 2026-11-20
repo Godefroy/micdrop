@@ -71,9 +71,9 @@ export interface AgentOptions {
   // You can provide a custom prompt to use instead of the default one by passing a string
   autoIgnoreUserNoise?: boolean | string
 
-  // Extract a value from the answer
-  // Value must be at the end of the answer, in JSON or between tags
-  extract?: ExtractJsonOptions | ExtractTagOptions
+  // Extract a JSON value from the answer
+  // The value must be at the end of the answer, from its first `{`
+  extract?: ExtractOptions
 
   // Function called before any answer is generated
   // Return true to skip generation, or a text to answer it instead
@@ -105,18 +105,8 @@ export interface MicdropToolCall {
 }
 
 export interface ExtractOptions {
-  callback?: (value: string) => void
-  saveInMetadata?: boolean
-}
-
-export interface ExtractJsonOptions extends ExtractOptions {
-  json: true
   callback?: (value: any) => void
-}
-
-export interface ExtractTagOptions extends ExtractOptions {
-  startTag: string
-  endTag: string
+  saveInMetadata?: boolean
 }
 ```
 
@@ -274,16 +264,11 @@ agent.addToolMessage({
 
 ### `extract(message: string): { message: string; metadata?: MicdropAnswerMetadata }`
 
-Extracts structured data from a message based on the configured extraction options. Returns the cleaned message and any extracted metadata.
+Cuts the JSON object from the end of a complete answer and parses it, according to the `extract` option. Returns the cleaned message, and the object in `metadata.extracted` when `saveInMetadata` is on.
 
 ```typescript
-// With JSON extraction
 const result = agent.extract('The answer is 42. {"score":42}')
 // Returns: { message: 'The answer is 42.', metadata: { extracted: { score: 42 } } }
-
-// With tag extraction
-const result = agent.extract('The answer is 42. <score>42</score>')
-// Returns: { message: 'The answer is 42.', metadata: { extracted: '42' } }
 ```
 
 It is called automatically when the `extract` option is provided. It is public so that you can use it to extract data from the answer before adding it to the conversation, if you really need to.
@@ -329,9 +314,9 @@ Executes a tool call and handles the result. This method:
 - Emits a `ToolCall` event if the tool has `emitOutput: true`
 - Returns the output and whether to skip the answer
 
-### `getExtractOptions(): ExtractTagOptions | undefined`
+### `answerWriter(stream: Writable): (text: string) => void`
 
-Returns the extraction options configured for the agent, converting JSON extraction to tag-based extraction.
+Returns a function that writes the answer to the stream as it is generated. With `extract` set, it stops writing at the first `{`, so the JSON to extract is never spoken. Call it once per answer and pass it every piece of text.
 
 ### `log(...message: any[])`
 
