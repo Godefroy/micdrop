@@ -57,6 +57,12 @@ Providers live in `server/src/providers`, one file per part of a call. Adding
 one means adding one entry to the matching registry, and it shows up in the
 client on the next page load.
 
+The agent select offers each LLM twice, through its own Micdrop package and
+through the Vercel AI SDK (`@micdrop/ai-sdk`), for OpenAI, Mistral and Gemini.
+OpenRouter goes through the AI SDK only and lists every model of its catalog
+able to call tools, so a single `OPENROUTER_API_KEY` is enough to try the
+models of Anthropic, Meta, DeepSeek and the other labs.
+
 The tabs above the selects switch between two ways of running a call.
 Multi-providers picks the agent, the transcription and the voice apart.
 Realtime picks a single model, OpenAI Realtime or Gemini Live, that hears the

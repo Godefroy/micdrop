@@ -14,7 +14,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.108",
+    "@ai-sdk/google": "^4.0.123",
+    "@ai-sdk/mistral": "^4.0.89",
+    "@ai-sdk/openai": "^4.0.122",
     "@fastify/cors": "^11.3.1",
     "@fastify/websocket": "^11.3.4",
     "@micdrop/ai-sdk": "*",
@@ -35,6 +37,7 @@
     "@micdrop/smart-turn": "*",
     "@micdrop/web": "*",
     "@micdrop/whisper": "*",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "dotenv": "^17.0.0",
     "fastify": "^5.12.7",
     "onnxruntime-node": "^1.31.1",

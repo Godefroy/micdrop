@@ -1,9 +1,18 @@
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { mistral } from '@ai-sdk/mistral'
 import { createOpenAI, openai } from '@ai-sdk/openai'
 import { AiSdkAgent } from '@micdrop/ai-sdk'
 import { GeminiAgent } from '@micdrop/gemini'
 import { MistralAgent } from '@micdrop/mistral'
 import { OpenaiAgent } from '@micdrop/openai'
-import { Agent, FallbackAgent, MockAgent } from '@micdrop/server'
+import { openrouter } from '@openrouter/ai-sdk-provider'
+import {
+  Agent,
+  cachedModels,
+  FallbackAgent,
+  MicdropModel,
+  MockAgent,
+} from '@micdrop/server'
 import { listedModels } from './models'
 import { ModelOption, ProviderRegistry } from './types'
 
@@ -84,6 +93,14 @@ function openaiReasoningEffort(model = 'gpt-5.2') {
   return undefined
 }
 
+/** The Mistral chat models, the ones answering soonest first. */
+const MISTRAL_MODELS = listedModels(
+  () => MistralAgent.listModels({ apiKey: process.env.MISTRAL_API_KEY || '' }),
+  // Answers in a few hundred milliseconds, where Mistral Large 4 reasons
+  // before every answer
+  ['mistral-medium-latest', 'mistral-small-latest', 'mistral-large-latest']
+)
+
 /**
  * The least reasoning a Mistral model accepts: Mistral Medium and Small can
  * skip it, Mistral Large 4 and GLM always reason. The others do not reason.
@@ -96,6 +113,12 @@ function mistralReasoningEffort(model = 'mistral-medium-latest') {
   return undefined
 }
 
+/** The Gemini models, the one answering soonest first. */
+const GEMINI_MODELS = listedModels(
+  () => GeminiAgent.listModels({ apiKey: process.env.GEMINI_API_KEY || '' }),
+  ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
+)
+
 /**
  * The least thinking a Gemini model accepts: low for 3.8 Flash, the Pro
  * models and Gemini 4, minimal for 3.6 Flash and 3 Flash. The Flash-Lite
@@ -106,6 +129,57 @@ function geminiThinkingLevel(model = 'gemini-3.5-flash-lite') {
   if (/^gemini-(3\.6-flash|3-flash)/.test(model)) return 'minimal'
   return undefined
 }
+
+/**
+ * The OpenRouter models able to call tools, which the automatic prompts of
+ * Micdrop need. The catalog is public, so it opens before any key is used.
+ * The batch variants answer within hours and stay out of a voice call.
+ */
+async function loadOpenrouterModels(): Promise<MicdropModel[]> {
+  const response = await fetch('https://openrouter.ai/api/v1/models')
+  if (!response.ok) throw new Error(`OpenRouter answered ${response.status}`)
+  const { data } = (await response.json()) as {
+    data: {
+      id: string
+      name: string
+      supported_parameters?: string[]
+      expiration_date?: string | null
+    }[]
+  }
+  return data
+    .filter(
+      (model) =>
+        model.supported_parameters?.includes('tools') &&
+        !model.id.endsWith(':batch')
+    )
+    .map((model) => ({
+      id: model.id,
+      description: model.name,
+      reasoning: model.supported_parameters?.includes('reasoning'),
+      deprecated: !!model.expiration_date,
+      shutdownDate: model.expiration_date ?? undefined,
+    }))
+}
+
+/**
+ * The models of every lab behind one key, small and quick ones first since
+ * the call waits on their first word.
+ */
+const OPENROUTER_MODELS = listedModels(
+  () =>
+    cachedModels(
+      ['openrouter'],
+      process.env.OPENROUTER_API_KEY || '',
+      loadOpenrouterModels
+    ),
+  [
+    'google/gemini-3.5-flash-lite',
+    'openai/gpt-5.4-mini',
+    'anthropic/claude-haiku-5.5',
+    'mistralai/mistral-medium-3-5',
+    'meta-llama/llama-4-maverick',
+  ]
+)
 
 const agents: ProviderRegistry<Agent> = {
   mock: {
@@ -131,8 +205,41 @@ const agents: ProviderRegistry<Agent> = {
       }),
   },
 
+  mistral: {
+    label: 'Mistral',
+    requiredEnv: ['MISTRAL_API_KEY'],
+    models: MISTRAL_MODELS,
+    defaultModel: 'mistral-medium-latest',
+    create: ({ lang, model, auto, prompt }) =>
+      new MistralAgent({
+        apiKey: process.env.MISTRAL_API_KEY || '',
+        model,
+        settings: { reasoningEffort: mistralReasoningEffort(model) },
+        systemPrompt: getSystemPrompt(lang, prompt),
+        ...auto,
+      }),
+  },
+
+  gemini: {
+    label: 'Gemini',
+    requiredEnv: ['GEMINI_API_KEY'],
+    models: GEMINI_MODELS,
+    // Answers in about a second, where gemini-3.8-flash takes four
+    defaultModel: 'gemini-3.5-flash-lite',
+    create: ({ lang, model, auto, prompt }) =>
+      new GeminiAgent({
+        apiKey: process.env.GEMINI_API_KEY || '',
+        model,
+        thinkingLevel: geminiThinkingLevel(model),
+        systemPrompt: getSystemPrompt(lang, prompt),
+        ...auto,
+      }),
+  },
+
+  // The Vercel AI SDK, with each provider whose key the environment holds.
+  // `aiSdk` keeps its id so a selection saved in the browser still opens.
   aiSdk: {
-    label: 'AI SDK',
+    label: 'AI SDK · OpenAI',
     description: 'OpenAI through the Vercel AI SDK',
     requiredEnv: ['OPENAI_API_KEY'],
     models: OPENAI_MODELS,
@@ -148,41 +255,60 @@ const agents: ProviderRegistry<Agent> = {
       }),
   },
 
-  mistral: {
-    label: 'Mistral',
-    requiredEnv: ['MISTRAL_API_KEY'],
-    // Answers in a few hundred milliseconds, where Mistral Large 4 reasons
-    // before every answer
-    models: listedModels(
-      () =>
-        MistralAgent.listModels({ apiKey: process.env.MISTRAL_API_KEY || '' }),
-      ['mistral-medium-latest', 'mistral-small-latest', 'mistral-large-latest']
-    ),
-    defaultModel: 'mistral-medium-latest',
+  aiSdkOpenrouter: {
+    label: 'AI SDK · OpenRouter',
+    description: 'Models of every lab through OpenRouter and the Vercel AI SDK',
+    requiredEnv: ['OPENROUTER_API_KEY'],
+    models: OPENROUTER_MODELS,
+    defaultModel: 'google/gemini-3.5-flash-lite',
     create: ({ lang, model, auto, prompt }) =>
-      new MistralAgent({
-        apiKey: process.env.MISTRAL_API_KEY || '',
-        model,
-        settings: { reasoningEffort: mistralReasoningEffort(model) },
+      new AiSdkAgent({
+        // Reads OPENROUTER_API_KEY from the environment
+        model: openrouter(model || 'google/gemini-3.5-flash-lite'),
+        // OpenRouter translates the effort for each lab, down to the least a
+        // model accepts. A model without reasoning ignores it.
+        providerOptions: {
+          openrouter: { reasoning: { effort: 'none', exclude: true } },
+        },
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
   },
 
-  gemini: {
-    label: 'Gemini',
+  aiSdkMistral: {
+    label: 'AI SDK · Mistral',
+    description: 'Mistral through the Vercel AI SDK',
+    requiredEnv: ['MISTRAL_API_KEY'],
+    models: MISTRAL_MODELS,
+    defaultModel: 'mistral-medium-latest',
+    create: ({ lang, model, auto, prompt }) =>
+      new AiSdkAgent({
+        // Reads MISTRAL_API_KEY from the environment
+        model: mistral(model || 'mistral-medium-latest'),
+        providerOptions: {
+          mistral: { reasoningEffort: mistralReasoningEffort(model) },
+        },
+        systemPrompt: getSystemPrompt(lang, prompt),
+        ...auto,
+      }),
+  },
+
+  aiSdkGemini: {
+    label: 'AI SDK · Gemini',
+    description: 'Gemini through the Vercel AI SDK',
     requiredEnv: ['GEMINI_API_KEY'],
-    models: listedModels(
-      () => GeminiAgent.listModels({ apiKey: process.env.GEMINI_API_KEY || '' }),
-      ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
-    ),
-    // Answers in about a second, where gemini-3.8-flash takes four
+    models: GEMINI_MODELS,
     defaultModel: 'gemini-3.5-flash-lite',
     create: ({ lang, model, auto, prompt }) =>
-      new GeminiAgent({
-        apiKey: process.env.GEMINI_API_KEY || '',
-        model,
-        thinkingLevel: geminiThinkingLevel(model),
+      new AiSdkAgent({
+        model: createGoogleGenerativeAI({
+          apiKey: process.env.GEMINI_API_KEY,
+        })(model || 'gemini-3.5-flash-lite'),
+        providerOptions: {
+          google: {
+            thinkingConfig: { thinkingLevel: geminiThinkingLevel(model) },
+          },
+        },
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
