@@ -162,13 +162,12 @@ const text2speech: ProviderRegistry<TTS> = {
     label: 'Gemini',
     requiredEnv: ['GEMINI_API_KEY'],
     models: [
+      { id: 'gemini-3.8-flash-tts', label: 'gemini-3.8-flash-tts' },
+      { id: 'gemini-3.8-flash-lite-tts', label: 'gemini-3.8-flash-lite-tts' },
+      // Sends each sentence whole, after a few seconds
       { id: 'gemini-2.5-flash-preview-tts', label: 'gemini-2.5-flash-tts' },
-      // Starts sooner, then streams slower than it is spoken, so the audio
-      // comes in pieces
-      { id: 'gemini-3.1-flash-tts-preview', label: 'gemini-3.1-flash-tts' },
-      { id: 'gemini-2.5-pro-preview-tts', label: 'gemini-2.5-pro-tts' },
     ],
-    defaultModel: 'gemini-2.5-flash-preview-tts',
+    defaultModel: 'gemini-3.8-flash-tts',
     create: ({ model }) =>
       new GeminiTTS({
         apiKey: process.env.GEMINI_API_KEY || '',

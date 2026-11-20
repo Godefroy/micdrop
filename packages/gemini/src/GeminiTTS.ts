@@ -21,9 +21,12 @@ export type GeminiTTSOptions = GeminiOptions & {
   maxRetry?: number
 }
 
-// Sends each sentence whole, where gemini-3.1-flash-tts-preview streams it
-// slower than it is spoken and leaves gaps in it
-const DEFAULT_MODEL = 'gemini-2.5-flash-preview-tts'
+// Streams each sentence several times faster than it is spoken, its first
+// sound in under a second
+const DEFAULT_MODEL = 'gemini-3.8-flash-tts'
+// The Interactions API only serves speech on its beta version: the default
+// one answers that the model is not found
+const API_VERSION = 'v1beta'
 const DEFAULT_VOICE = 'Kore'
 const GEMINI_SAMPLE_RATE = 24000 // Rate of the audio Gemini returns, sent as is
 const DEFAULT_MAX_RETRY = 2
@@ -85,6 +88,7 @@ export class GeminiTTS extends SentenceTTS {
         generation_config: {
           speech_config: [{ voice: this.options.voice || DEFAULT_VOICE }],
         },
+        api_version: API_VERSION,
       },
       { fetchOptions: { signal } }
     )

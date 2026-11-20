@@ -34,7 +34,7 @@ new MicdropServer(socket, {
   }),
   tts: new GeminiTTS({
     apiKey,
-    model: 'gemini-2.5-flash-preview-tts', // Default model
+    model: 'gemini-3.8-flash-tts', // Default model
     voice: 'Kore', // Default voice
   }),
 })

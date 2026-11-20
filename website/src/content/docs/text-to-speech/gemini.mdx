@@ -35,7 +35,7 @@ import { MicdropServer } from '@micdrop/server'
 
 const tts = new GeminiTTS({
   apiKey: process.env.GEMINI_API_KEY || '',
-  model: 'gemini-2.5-flash-preview-tts', // Default model
+  model: 'gemini-3.8-flash-tts', // Default model
   voice: 'Kore', // Default voice
 
   // Direction put before each sentence (optional)
@@ -78,7 +78,7 @@ See the [TTS interface](./custom) for the full contract.
 | -------------- | ------------- | -------------------------------- | -------------------------------------------------------- |
 | `apiKey`       | `string`      | Required\*                       | Your Gemini API key (required if `genai` not provided)   |
 | `genai`        | `GoogleGenAI` | Optional                         | Client of `@google/genai` (alternative to `apiKey`)      |
-| `model`        | `string`      | `'gemini-2.5-flash-preview-tts'` | Speech model to use                                      |
+| `model`        | `string`      | `'gemini-3.8-flash-tts'`         | Speech model to use                                      |
 | `voice`        | `string`      | `'Kore'`                         | One of the 30 prebuilt voices, such as `Puck` or `Aoede` |
 | `instructions` | `string`      | `undefined`                      | How to say the text, such as `Say cheerfully`            |
 | `maxRetry`     | `number`      | `2`                              | Attempts after Gemini blocked a sentence by mistake      |
@@ -99,17 +99,17 @@ Both prices of the 3.8 models double on January 1, 2027.
 
 | Model                          | First audio of a sentence | Free tier | Paid, text / audio |
 | ------------------------------ | ------------------------- | --------- | ------------------ |
-| `gemini-3.8-flash-tts`         | Not measured              | Yes       | $0.50 / $9         |
-| `gemini-3.8-flash-lite-tts`    | Not measured              | Yes       | $0.50 / $6         |
+| `gemini-3.8-flash-tts`         | About 850 ms              | Yes       | $0.50 / $9         |
+| `gemini-3.8-flash-lite-tts`    | About 700 ms              | Yes       | $0.50 / $6         |
+| `gemini-3.1-flash-tts-preview` | About one second          | Yes       | $1 / $20           |
 | `gemini-2.5-flash-preview-tts` | About three seconds       | Yes       | $0.50 / $10        |
 | `gemini-2.5-pro-preview-tts`   | Not measured              | No        | $1 / $20           |
-| `gemini-3.1-flash-tts-preview` | About one second          | Yes       | $1 / $20           |
 
-`gemini-2.5-flash-preview-tts` is the default, because it sends each sentence
-whole and the call plays without a gap. `gemini-3.1-flash-tts-preview` starts
-speaking sooner, then streams the rest slower than it is spoken, which leaves
-gaps in a long sentence. `gemini-2.5-pro-preview-tts`, the larger model, is
-open to paid accounts only.
+`gemini-3.8-flash-tts` is the default. Like `gemini-3.8-flash-lite-tts`, it
+streams a sentence two to three times faster than it is spoken, so the call
+plays without a gap. The 2.5 preview models send each sentence whole, after a
+few seconds. `gemini-2.5-pro-preview-tts`, the larger model, is open to paid
+accounts only.
 
 Google may shut the 2.5 and 3.1 preview models down from November 17, 2026.
 It names `gemini-3.8-flash-tts` and `gemini-3.8-flash-lite-tts` to replace
