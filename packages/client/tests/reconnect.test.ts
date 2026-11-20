@@ -40,10 +40,13 @@ describe('when the connection goes wrong', () => {
 
   after(() => wss.close())
 
-  it('comes back after the server drops the call', async () => {
+  it('comes back after the server drops the call', async (t) => {
     sockets = []
     onConnection = () => {}
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     await client.start({ url, reconnect: { delayMs: 20 } })
     await waitFor(() => client.isStarted, 'the call to start')
 
@@ -51,15 +54,20 @@ describe('when the connection goes wrong', () => {
     sockets[0].close(1011, 'Something broke')
 
     await waitFor(() => sockets.length === 2, 'the client to come back')
-    await waitFor(() => client.isStarted, 'the call to resume')
+    // isStarted holds during the reconnection too, and the server sees the new
+    // socket before the client has opened it, so wait for the status itself
+    await waitFor(() => client.status === 'started', 'the call to resume')
     assert.equal(client.isReconnecting, false)
     await client.stop()
   })
 
-  it('reports an unauthorized call and gives up', async () => {
+  it('reports an unauthorized call and gives up', async (t) => {
     sockets = []
     onConnection = (socket) => socket.close(4401, 'Bad token')
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     const errors: MicdropClientErrorCode[] = []
     client.on('Error', (error) => errors.push(error.code))
 
@@ -76,10 +84,13 @@ describe('when the connection goes wrong', () => {
     await client.stop()
   })
 
-  it('walks through each status of the call', async () => {
+  it('walks through each status of the call', async (t) => {
     sockets = []
     onConnection = () => {}
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     const statuses: string[] = []
     client.on('StateChange', (state) => {
       if (statuses.at(-1) !== state.status) statuses.push(state.status)
@@ -102,10 +113,13 @@ describe('when the connection goes wrong', () => {
     ])
   })
 
-  it('stays on a call started again right after a stop', async () => {
+  it('stays on a call started again right after a stop', async (t) => {
     sockets = []
     onConnection = () => {}
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     await client.start({ url })
     await waitFor(() => client.isStarted, 'the first call to start')
 
@@ -120,10 +134,13 @@ describe('when the connection goes wrong', () => {
     await client.stop()
   })
 
-  it('never reconnects once stopped', async () => {
+  it('never reconnects once stopped', async (t) => {
     sockets = []
     onConnection = () => {}
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     await client.start({ url, reconnect: { delayMs: 50 } })
     await waitFor(() => client.isStarted, 'the call to start')
 
@@ -136,13 +153,16 @@ describe('when the connection goes wrong', () => {
     assert.equal(client.status, 'stopped')
   })
 
-  it('refuses to start without a server address', async () => {
+  it('refuses to start without a server address', async (t) => {
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     await assert.rejects(() => client.start({}))
     assert.equal(client.error?.code, MicdropClientErrorCode.MissingUrl)
   })
 
-  it('reports a microphone that will not start', async () => {
+  it('reports a microphone that will not start', async (t) => {
     const mic = new FakeMicDriver()
     mic.start = async () => {
       throw new Error('Microphone permission denied')
@@ -150,6 +170,9 @@ describe('when the connection goes wrong', () => {
     Mic.setDriver(mic)
 
     const client = new MicdropClient()
+    // Stopped even when an assertion fails, or its reconnection keeps the
+    // test file running
+    t.after(() => client.stop())
     await assert.rejects(() => client.start({ url }))
     assert.equal(client.error?.code, MicdropClientErrorCode.Mic)
     assert.equal(client.error?.message, 'Microphone permission denied')
