@@ -29,7 +29,7 @@
     "dev:twenty-questions": "pnpm --filter @micdrop/demo-twenty-questions dev",
     "dev:storyteller": "pnpm --filter @micdrop/demo-storyteller dev",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "test": "pnpm --filter @micdrop/client --filter @micdrop/server --filter @micdrop/smart-turn test",
+    "test": "pnpm --filter @micdrop/client --filter @micdrop/mistral --filter @micdrop/server --filter @micdrop/smart-turn test",
     "test:e2e": "pnpm --filter @micdrop/e2e test"
   },
   "devDependencies": {

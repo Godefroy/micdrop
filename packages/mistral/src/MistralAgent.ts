@@ -6,6 +6,7 @@ import {
 } from '@mistralai/mistralai/models/components'
 import { Writable } from 'stream'
 import z, { toJSONSchema } from 'zod'
+import { textOf } from './deltaText'
 
 export interface MistralAgentOptions extends AgentOptions {
   apiKey: string
@@ -137,11 +138,11 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
       for await (const event of result) {
         if (signal.aborted) return outcome
         const delta = event.data.choices[0]?.delta
-        const chunk = delta?.content
+        const chunk = textOf(delta?.content)
         const toolCalls = delta?.toolCalls
 
         // Text chunk
-        if (typeof chunk === 'string') {
+        if (chunk !== undefined) {
           if (chunk === '') continue
           this.log(`Answer chunk: "${chunk}"`)
           outcome.fullAnswer += chunk
