@@ -7,7 +7,47 @@ order: 39
 
 # Voice Agent Tool Calling on the Server
 
-The Agent system supports adding and removing custom tools to extend its capabilities.
+A Micdrop voice agent calls the functions of your app through tools. You add each tool to the agent on your Node server with a name, a description and a Zod schema. When the model decides to use a tool during the conversation, your server runs it. The browser receives the tool call and its result over the WebSocket, so your interface can show them. The tool code and the provider API key stay on the server.
+
+## How a tool call runs during a live call
+
+1. You add the tool with `addTool()`. The agent sends the tool's name, description and schema, converted to JSON Schema, to the model along with the conversation.
+2. The user speaks. The model receives the transcribed turn and answers with a tool call and its arguments.
+3. The agent runs `execute` on your server with the parsed arguments. It adds the call and its result to the conversation. The client receives them as `tool_call` and `tool_result` items.
+4. The agent sends the result back to the model. The text to speech then reads the model's answer to the user.
+
+With `OpenaiAgent`, when the model answers with a tool call alone, the user hears silence while the tool runs. Once the result is in, the agent sends a new request to the model and speaks the answer that uses the result. When the model writes a sentence along with the tool call, the user hears that sentence first, then the tool runs. The model reads the result on the next turn. A tool declared with `skipAnswer` ends the turn silently.
+
+When the user interrupts, the answer stops. A tool already running still finishes. Its call and result stay in the conversation, so the model knows the outcome on the next turn.
+
+| Side    | What it does with a tool                                                                                           | Where it is documented                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Server  | Declares the tool, runs `execute`, sends the result to the model                                                   | This page                                                  |
+| Browser | Receives the `ToolCall` event (tools with `emitOutput`) and the conversation items, shows the action or its result | [Tool calls in the browser](../client/handling-tool-calls) |
+
+The server declares and runs the tool:
+
+```typescript
+agent.addTool({
+  name: 'book_meeting',
+  description: 'Book a meeting in the calendar of the user',
+  inputSchema: z.object({ date: z.string(), time: z.string() }),
+  execute: async ({ date, time }) => bookMeeting(date, time),
+  emitOutput: true, // Send the call and its output to the client
+})
+```
+
+The browser reacts to the tool call:
+
+```typescript
+import { Micdrop } from '@micdrop/web'
+
+Micdrop.on('ToolCall', (toolCall) => {
+  if (toolCall.name === 'book_meeting') showBooking(toolCall.output)
+})
+```
+
+The same tools work when the conversation runs on a speech to speech model such as the OpenAI Realtime API or the Gemini Live API. When you call `addTool()` on the [realtime model](../realtime), the tool still runs on your server and the model speaks about the result in its own voice.
 
 ## Adding Tools
 
@@ -53,7 +93,7 @@ agent.addTool({
 agent.addTool({
   name: 'search_database',
   description: 'Search for items in the database',
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe('Search query'),
     limit: z.number().default(10).describe('Maximum number of results'),
   }),
@@ -93,7 +133,7 @@ function addTools(server: MicdropServer, agent: OpenaiAgent) {
 | `name`        | `string`                         | Required | Unique name for the tool                |
 | `description` | `string`                         | Required | Description of what the tool does       |
 | `inputSchema` | `z.ZodObject`                    | Optional | Zod schema for parameter validation     |
-| `execute`     | `(input, agent) => any \| Promise<any>` | Required | Function to execute when tool is called |
+| `execute`     | `(input, agent) => any \| Promise<any>` | Optional | Function to execute when tool is called |
 | `skipAnswer`  | `boolean`                        | `false`  | Skip assistant response after tool call |
 | `emitOutput`  | `boolean`                        | `false`  | Emit ToolCall events for monitoring     |
 
@@ -115,7 +155,7 @@ agent.addTool({
 })
 ```
 
-The first `input` argument is always present; the `agent` argument is optional, so simple tools can keep ignoring it. The built-in `autoEndCall`, `autoSemanticTurn` and `autoIgnoreUserNoise` tools use this same mechanism internally.
+The first `input` argument is always present. The `agent` argument is optional, so simple tools can keep ignoring it. The built-in `autoEndCall`, `autoSemanticTurn` and `autoIgnoreUserNoise` tools use this same mechanism internally.
 
 ## Removing Tools
 
