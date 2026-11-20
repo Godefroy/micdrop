@@ -17,8 +17,10 @@ export const WEBGPU_MODEL_URL = `${BASE_URL}/smart-turn-v3.2-gpu.onnx`
 export const WASM_MODEL_URL = `${BASE_URL}/smart-turn-v3.2-cpu.onnx`
 
 // onnxruntime-web is not hosted on jsdelivr (its dist exceeds the CDN size
-// limit), so the WebAssembly backend comes from unpkg instead.
-const DEFAULT_WASM_PATH = 'https://unpkg.com/onnxruntime-web@1.23.2/dist/'
+// limit), so the WebAssembly backend comes from unpkg instead, at the version
+// of the installed runtime: its JavaScript only loads the WebAssembly files of
+// the same release.
+const DEFAULT_WASM_PATH = `https://unpkg.com/onnxruntime-web@${ort.env.versions.web}/dist/`
 
 export interface OnnxSmartTurnOptions {
   /** Address of the checkpoint, or the bytes of it */

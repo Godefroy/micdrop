@@ -11,10 +11,11 @@ import { queueOnnxRun } from './onnxQueue'
 export const DEFAULT_SILERO_MODEL_URL =
   'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.30/dist/silero_vad_v5.onnx'
 
-// onnxruntime-web@1.23 is not hosted on jsdelivr (its dist exceeds the CDN size
+// onnxruntime-web is not hosted on jsdelivr (its dist exceeds the CDN size
 // limit, so every file 404s). unpkg serves it, so the wasm backend comes from
-// there instead.
-const DEFAULT_WASM_PATH = 'https://unpkg.com/onnxruntime-web@1.23.2/dist/'
+// there instead, at the version of the installed runtime: its JavaScript only
+// loads the WebAssembly files of the same release.
+const DEFAULT_WASM_PATH = `https://unpkg.com/onnxruntime-web@${ort.env.versions.web}/dist/`
 
 export interface OnnxSileroOptions {
   /** Address of the Silero v5 model, or the bytes of it */
