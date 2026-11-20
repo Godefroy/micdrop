@@ -1,22 +1,24 @@
 ---
-title: 'Classify User Turns with Jev (TypeSafe)'
+title: 'TypeSafe AI (Jev) Classifier for Voice Agents'
 sidebarLabel: 'Jev (TypeSafe)'
-description: 'Classify each turn of the user with Jev, the System One model of TypeSafe: typed questions (choice, score, yes or no) answered with calibrated probabilities in a few hundred ms, to route the answer before the LLM.'
+description: 'Route each turn of a call before the LLM answers. Jev picks a label, gives a score or answers yes or no, with calibrated probabilities, in a few hundred ms.'
 order: 50.1
 ---
 
-# Classify User Turns with Jev (TypeSafe)
+# TypeSafe AI (Jev) Classifier for Voice Agents
 
-Jev implementation of the [classifier](.) for
-[@micdrop/server](../server).
-
-[Jev](https://docs.typesafe.ai) is the "System One" model of TypeSafe AI. Where
-an LLM writes an answer token by token, Jev answers a set of typed questions at
-once: pick a label, give a score, say yes or no. Each answer comes with
-calibrated probabilities, in a few hundred ms, which is fast enough to route the
-answer before the LLM starts. Check
+[TypeSafe AI](https://typesafe.ai) is an AI lab based in San Francisco. Its
+first public model, [Jev](https://docs.typesafe.ai), answers a set of typed
+questions about a text or a JSON object: pick a label, give a score,
+say yes or no. TypeSafe calls it a "System One" model. Where an LLM writes an
+answer token by token, Jev returns every answer at once, each with calibrated
+probabilities, in a few hundred ms. That is fast enough to decide how the agent
+replies before the LLM starts. Check
 [how much faster Jev is than an LLM and what it gets wrong](/blog/what-is-jev)
 before you pick it for a task.
+
+The `@micdrop/typesafe` package runs Jev as the [classifier](.) of
+[@micdrop/server](../server).
 
 ## Installation
 
@@ -193,8 +195,8 @@ usage.input_tokens // 412
 The probabilities are calibrated, so a threshold means what it says: route on
 `noul > 0.8` or `confidence > 0.6`, and let the LLM handle the turns below it.
 A `score` is an expectation over the rubric, so it can fall between two levels.
-On a rubric of four levels from calm to angry, `score > 2.5` reads as "closer to
-angry than to frustrated".
+On a rubric of four levels, calm, annoyed, frustrated and angry, `score > 2.5`
+reads as "closer to angry than to frustrated".
 
 ## Options
 
@@ -231,10 +233,27 @@ stays well under a cent.
 ## Limitations
 
 - Jev understands English best. Other languages work, with less accurate answers.
-- It reads text only, so the tone of the voice reaches it through the words alone.
-- The state and the longest question share a budget of 32k tokens.
-- It picks, scores and answers yes or no. Counting, extracting a value or writing
-  text stays with the LLM, or with [extraction](../server/extract).
+- Through `@micdrop/typesafe`, Jev reads text only and takes no audio, so the
+  tone of the voice reaches it only through the words of the transcript.
+  TypeSafe keeps images off by default as not ready for production yet, and
+  accepts PNG or JPEG only when a request carries the
+  `TypeSafe-Danger-Zone-Images: true` header. The package never sends it.
+- A request holds up to 64k tokens, the state and every question included. The
+  state with any one question has to fit in 32k.
+- It picks, scores and answers yes or no. Leave counting, extracting a value or
+  writing text to the LLM, or to [extraction](../server/extract).
+
+## When to use Jev rather than an LLM
+
+Use Jev for the decisions a voice agent makes on every turn and acts on right
+away: the caller's intent, a request for a human, the level of frustration, a
+wish to cancel. Jev answers them all in one request, within a few hundred ms and
+for a fraction of a cent. Since the probabilities are calibrated, you can set a
+threshold for each action. Keep the LLM for the reply itself and for the tasks
+outside Jev's three kinds of question: extracting a value, counting, writing a
+sentence. Before you move a decision from the
+LLM to Jev, compare
+[the latency and the accuracy of Jev and an LLM on the same questions](/blog/what-is-jev).
 
 ## Demos
 
