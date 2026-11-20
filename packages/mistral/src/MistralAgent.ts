@@ -33,6 +33,7 @@ const DEFAULT_RETRY_DELAY = 500
 interface StepOutcome {
   fullAnswer: string
   skipAnswer: boolean
+  ranTools: boolean
 }
 
 /** A request that failed after writing text or running tools */
@@ -118,6 +119,11 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
         })
         return
       }
+      // An empty answer would come back the same on every step
+      if (!outcome.ranTools) {
+        this.log('Empty answer')
+        return
+      }
       // Query again in case of tool call
     }
     console.error('[MistralAgent] Max steps reached')
@@ -143,7 +149,11 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
     }
 
     const write = this.answerWriter(stream)
-    const outcome: StepOutcome = { fullAnswer: '', skipAnswer: false }
+    const outcome: StepOutcome = {
+      fullAnswer: '',
+      skipAnswer: false,
+      ranTools: false,
+    }
     let produced = false
 
     try {
@@ -157,38 +167,59 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
         { signal }
       )
 
+      // A model may stream a tool call in fragments, the arguments split over
+      // several deltas sharing its index, so tools run once the stream ends
+      const toolCalls: { id: string; name: string; arguments: string }[] = []
+      const toolCallsByIndex = new Map<number, (typeof toolCalls)[number]>()
+
       // Handle response events
       for await (const event of result) {
         if (signal.aborted) return outcome
         const delta = event.data.choices[0]?.delta
-        const chunk = textOf(delta?.content)
-        const toolCalls = delta?.toolCalls
 
-        // Text chunk
-        if (chunk !== undefined) {
-          if (chunk === '') continue
+        // Text chunk. A delta can carry an empty content next to its tool
+        // calls, so both are read.
+        const chunk = textOf(delta?.content)
+        if (chunk) {
           this.log(`Answer chunk: "${chunk}"`)
           outcome.fullAnswer += chunk
           produced = true
           write(chunk)
-        } else if (toolCalls?.length) {
-          for (const toolCall of toolCalls) {
-            if (signal.aborted) return outcome
-            produced = true
-            const result = await this.executeTool({
-              role: 'tool_call',
-              toolCallId: toolCall.id || '',
-              toolName: toolCall.function.name,
-              // The SDK hands the arguments over parsed or as JSON
-              parameters:
-                typeof toolCall.function.arguments === 'string'
-                  ? toolCall.function.arguments
-                  : JSON.stringify(toolCall.function.arguments),
-            })
-            if (result.skipAnswer) {
-              outcome.skipAnswer = true
-            }
+        }
+
+        for (const [position, fragment] of (delta?.toolCalls ?? []).entries()) {
+          const index = fragment.index ?? position
+          let toolCall = toolCallsByIndex.get(index)
+          // Another id at the same index opens another call
+          if (
+            !toolCall ||
+            (fragment.id && toolCall.id && fragment.id !== toolCall.id)
+          ) {
+            toolCall = { id: '', name: '', arguments: '' }
+            toolCalls.push(toolCall)
+            toolCallsByIndex.set(index, toolCall)
           }
+          if (fragment.id) toolCall.id = fragment.id
+          if (fragment.function.name) toolCall.name = fragment.function.name
+          // The SDK hands the arguments over parsed or as JSON
+          const args = fragment.function.arguments
+          toolCall.arguments +=
+            typeof args === 'string' ? args : JSON.stringify(args)
+        }
+      }
+
+      for (const toolCall of toolCalls) {
+        if (signal.aborted) return outcome
+        produced = true
+        outcome.ranTools = true
+        const result = await this.executeTool({
+          role: 'tool_call',
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          parameters: toolCall.arguments || '{}',
+        })
+        if (result.skipAnswer) {
+          outcome.skipAnswer = true
         }
       }
     } catch (error) {
