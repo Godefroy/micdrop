@@ -59,6 +59,8 @@ server.on('connection', async (socket) => {
       agent: new OpenaiAgent({
         apiKey: openaiKey,
         model: 'gpt-5.2',
+        // No reasoning, so the answer starts sooner
+        settings: { reasoning: { effort: 'none' } },
         systemPrompt: `${CHARACTER}\n\n${model.tags ? WITH_TAGS : WITHOUT_TAGS}`,
       }),
 

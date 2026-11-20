@@ -31,6 +31,7 @@ const realtime = new OpenaiRealtime({
   voice: 'marin', // Default voice
   systemPrompt: 'You are a helpful assistant',
   language: 'en', // Optional, helps the transcription of the user
+  reasoningEffort: 'minimal', // Optional, the lowest answers soonest
 
   // Advanced features (optional)
   autoEndCall: true, // Automatically end call when user requests
@@ -71,11 +72,16 @@ When the user interrupts, the answer is cancelled and the conversation of the mo
 | `voice`               | `string`            | `'marin'`             | Voice of the model                                                                                                                      |
 | `language`            | `string`            | `undefined`           | Language of the user, as an ISO 639-1 code, for the transcription                                                                       |
 | `transcriptionModel`  | `string`            | `'gpt-4o-transcribe'` | Model transcribing the user: `gpt-live-transcribe` or `gpt-transcribe` recommended, `gpt-4o-transcribe` shuts down on February 26, 2027 |
+| `reasoningEffort`     | `string`            | `undefined`           | How long a model that reasons thinks before speaking, `minimal` for the soonest answer |
 | `autoEndCall`         | `boolean \| string` | `false`               | Ends the call when the user asks for it                                                                                                 |
 | `autoSemanticTurn`    | `boolean \| string` | `false`               | Lets the model wait silently when the user did not finish their sentence                                                                |
 | `autoIgnoreUserNoise` | `boolean \| string` | `false`               | Drops the turn when it carries no meaning                                                                                               |
 | `connectionTimeout`   | `number`            | `5000`                | Time to open the connection, in milliseconds                                                                                            |
 | `retryDelay`          | `number`            | `1000`                | Delay before reconnecting, in milliseconds                                                                                              |
 | `maxRetry`            | `number`            | `3`                   | Reconnection attempts before giving up                                                                                                  |
+
+## Reasoning
+
+`gpt-realtime-2` and its versions, the default `gpt-realtime-2.1` included, reason before they speak. `OpenaiRealtime` leaves the level to the model, so set `reasoningEffort: 'minimal'` for the soonest answer. The first generation, `gpt-realtime` and `gpt-realtime-mini`, does not reason and refuses the setting.
 
 A Realtime session lasts sixty minutes at most. When the connection closes, `OpenaiRealtime` reconnects and sends the conversation written so far to the new session. The answer in progress ends with the old session, and a tool still running records its result in the conversation without answering on the new one. What the call sends while the connection opens, a greeting or a turn of the user, waits for it and goes out once it is back. After `maxRetry` failed attempts, `Failed` is emitted and every later answer ends right away.

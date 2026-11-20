@@ -64,7 +64,7 @@ new MicdropServer(socket, {
   }),
   agent: new MistralAgent({
     apiKey: process.env.MISTRAL_API_KEY,
-    model: 'mistral-large-latest',
+    model: 'mistral-medium-latest',
   }),
   tts: new CartesiaTTS({
     apiKey: process.env.CARTESIA_API_KEY,

@@ -18,6 +18,8 @@ export function createAgent(lang: Lang, onBeforeAnswer: () => void) {
   return new OpenaiAgent({
     apiKey: process.env.OPENAI_API_KEY || '',
     model: 'gpt-5.2',
+    // No reasoning, so the answer starts sooner
+    settings: { reasoning: { effort: 'none' } },
     systemPrompt: systemPrompt(lang),
     // Talking over her is a move here, and the gesture is called off from the
     // raw audio rather than from a transcript, so a "non attends !" filtered

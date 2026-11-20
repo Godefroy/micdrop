@@ -93,6 +93,19 @@ See the [Agent interface](./custom) for the full contract.
 
 A request that fails before writing anything is retried, up to `maxRetry` times. Once text reached the stream or a tool ran, the answer keeps what it got: the text already said goes in the conversation as the answer, so a retry never says it twice. Cancelling the answer also stops the retries.
 
+## Reasoning
+
+A model that reasons thinks before its first word, which delays every answer. `OpenaiAgent` leaves the level to the model, and for a voice call the lowest level it accepts is usually the right one: `none` for GPT-5.1 and later, `minimal` for the first GPT-5 models, `low` for the o series and the Codex models. The default `gpt-4o` does not reason, and refuses the setting.
+
+```typescript
+const agent = new OpenaiAgent({
+  apiKey: process.env.OPENAI_API_KEY || '',
+  model: 'gpt-5.2',
+  systemPrompt: 'You are a helpful assistant',
+  settings: { reasoning: { effort: 'none' } },
+})
+```
+
 The OpenAI Agent supports adding and removing custom tools to extend its capabilities. For detailed information about tool management, see the [Tools documentation](../server/tools).
 
 ## Advanced Features

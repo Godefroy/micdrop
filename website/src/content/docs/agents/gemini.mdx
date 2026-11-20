@@ -80,7 +80,7 @@ See the [Agent interface](./custom) for the full contract.
 | `apiKey`        | `string`                  | Required\*           | Your Gemini API key (required if `genai` not provided)        |
 | `genai`         | `GoogleGenAI`             | Optional             | Client of `@google/genai` (alternative to `apiKey`)           |
 | `model`         | `string`                  | `'gemini-3.8-flash'` | Model to use (`gemini-3.8-flash`, `gemini-3.5-flash-lite`...) |
-| `thinkingLevel` | `string`                  | Model default        | How long the model thinks (`low`, `medium`, `high`)           |
+| `thinkingLevel` | `string`                  | Model default        | How long the model thinks (`minimal`, `low`, `medium`, `high`) |
 | `settings`      | `Record<string, unknown>` | `undefined`          | Other generation settings, such as `temperature`              |
 | `maxRetry`      | `number`                  | `3`                  | Attempts after a failed request                               |
 | `retryDelay`    | `number`                  | `1000`               | Delay between two attempts, in milliseconds                   |
@@ -94,3 +94,7 @@ answer also stops the attempts waiting for their delay.
 For a voice call, the delay before the first word matters most.
 `gemini-3.5-flash-lite` answers in about a second, while `gemini-3.8-flash`,
 more capable, takes several seconds even with `thinkingLevel: 'low'`.
+
+## Reasoning
+
+A model that thinks before its first word delays every answer. `GeminiAgent` leaves the level to the model, and `gemini-3.8-flash` thinks at `medium` when nothing is set. For a voice call, set the lowest level the model accepts: `low` for `gemini-3.8-flash`, the Pro models and Gemini 4, `minimal` for `gemini-3.6-flash`. The Flash-Lite models already think at `minimal` by default. Gemini 2.5 models read a thinking budget instead, `thinking_budget` in `settings`.

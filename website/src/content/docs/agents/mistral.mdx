@@ -27,8 +27,9 @@ import { MicdropServer } from '@micdrop/server'
 
 const agent = new MistralAgent({
   apiKey: process.env.MISTRAL_API_KEY || '',
-  model: 'mistral-large-latest',
+  model: 'mistral-medium-latest', // Default model
   systemPrompt: 'You are a helpful assistant',
+  settings: { reasoningEffort: 'none' }, // Optional, the lowest answers soonest
 })
 
 // Use with MicdropServer
@@ -74,7 +75,7 @@ See the [Agent interface](./custom) for the full contract.
 | Option                | Type                                                                                                                              | Default                  | Description                                                              |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------ |
 | `apiKey`              | `string`                                                                                                                          | Required                 | Your Mistral AI API key                                                  |
-| `model`               | `string`                                                                                                                          | `'mistral-large-latest'` | Mistral AI model to use                                                  |
+| `model`               | `string`                                                                                                                          | `'mistral-medium-latest'` | Mistral AI model to use                                                 |
 | `systemPrompt`        | `string`                                                                                                                          | Required                 | System prompt for the agent                                              |
 | `maxRetry`            | `number`                                                                                                                          | `3`                      | Maximum number of retries on API failures                                |
 | `retryDelay`          | `number`                                                                                                                          | `500`                    | Delay in milliseconds between retries                                    |
@@ -94,10 +95,25 @@ When the user interrupts, the request to Mistral is aborted and the unfinished a
 
 Mistral AI offers several models you can choose from:
 
-- **`ministral-8b-latest`** - Fast and efficient 8B parameter model (default)
-- **`mistral-large-latest`** - Most capable model for complex tasks
-- **`mistral-small-latest`** - Balanced performance and cost
-- **`codestral-latest`** - Specialized for code generation
+- **`mistral-medium-latest`** - Answers straight away, the default and the one for a voice call
+- **`mistral-small-latest`** - Faster and cheaper, also answers straight away
+- **`mistral-large-latest`** - Most capable, but reasons before every answer
+- **`ministral-8b-latest`** - Small and fast, for simple conversations
+
+## Reasoning
+
+A model that reasons thinks before its first word, which delays every answer. `MistralAgent` leaves the level to the model, and sets it with `settings.reasoningEffort`.
+
+For a voice call, use Mistral Medium or Mistral Small. They answer without reasoning when nothing is set, in a few hundred milliseconds, and `none` makes sure of it. Mistral Large 4 always reasons, even at `low`, its lowest level: it thinks for over a hundred tokens before the first word of a one sentence answer, which a caller hears as a long silence.
+
+```typescript
+const agent = new MistralAgent({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+  model: 'mistral-medium-latest',
+  systemPrompt: 'You are a helpful assistant',
+  settings: { reasoningEffort: 'none' },
+})
+```
 
 ## Settings Object
 

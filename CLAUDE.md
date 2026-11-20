@@ -38,6 +38,9 @@ Follow this Prettierformatting for all Typescript code.
 
 This is a pnpm monorepo with packages in `packages/`, examples in `examples/`, the public site in `website/`, and the end-to-end tests of the integrations in `e2e/` (`pnpm test:e2e`, real paid APIs). Each package can be developed independently by running `pnpm dev` in the package directory.
 
+In `examples/`, every agent and realtime model runs with reasoning off, or at
+the lowest level its model accepts. The packages leave that level to the model.
+
 ### Core Architecture
 
 - **@micdrop/client**: Browser library handling microphone input, audio playback, and WebSocket communication with the server

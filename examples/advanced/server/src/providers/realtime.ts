@@ -26,6 +26,9 @@ const realtime: ProviderRegistry<Realtime> = {
         model,
         // Transcription takes the language alone, not the locale
         language: lang.split('-')[0],
+        // gpt-realtime-2.1 reasons, as little as possible here so it answers
+        // sooner. gpt-realtime-mini does not reason and refuses the setting.
+        reasoningEffort: model === 'gpt-realtime-mini' ? undefined : 'minimal',
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),

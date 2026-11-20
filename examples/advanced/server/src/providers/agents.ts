@@ -72,6 +72,21 @@ const OPENAI_MODELS: ModelOption[] = [
   { id: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
 ]
 
+/**
+ * The least reasoning each model accepts, which brings its first word
+ * forward. The GPT-5 models can skip it, gpt-4.1-mini does not reason and
+ * refuses the setting.
+ */
+function openaiReasoningEffort(model = 'gpt-5.2') {
+  return model.startsWith('gpt-5') ? ('none' as const) : undefined
+}
+
+/** Mistral Medium answers straight away, Mistral Large 4 always reasons */
+const MISTRAL_REASONING_EFFORTS: Record<string, 'none' | 'low'> = {
+  'mistral-large-latest': 'low',
+  'mistral-medium-latest': 'none',
+}
+
 const agents: ProviderRegistry<Agent> = {
   mock: {
     label: 'Mock',
@@ -88,6 +103,9 @@ const agents: ProviderRegistry<Agent> = {
       new OpenaiAgent({
         apiKey: process.env.OPENAI_API_KEY || '',
         model,
+        settings: openaiReasoningEffort(model)
+          ? { reasoning: { effort: openaiReasoningEffort(model) } }
+          : undefined,
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
@@ -102,6 +120,9 @@ const agents: ProviderRegistry<Agent> = {
     create: ({ lang, model, auto, prompt }) =>
       new AiSdkAgent({
         model: openai(model || 'gpt-5.2'),
+        providerOptions: {
+          openai: { reasoningEffort: openaiReasoningEffort(model) },
+        },
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
@@ -111,15 +132,21 @@ const agents: ProviderRegistry<Agent> = {
     label: 'Mistral',
     requiredEnv: ['MISTRAL_API_KEY'],
     models: [
-      { id: 'mistral-large-latest', label: 'mistral-large-latest' },
       { id: 'mistral-medium-latest', label: 'mistral-medium-latest' },
+      { id: 'mistral-large-latest', label: 'mistral-large-latest' },
       { id: 'ministral-8b-latest', label: 'ministral-8b-latest' },
     ],
-    defaultModel: 'mistral-large-latest',
+    // Answers in a few hundred milliseconds, where Mistral Large 4 reasons
+    // before every answer
+    defaultModel: 'mistral-medium-latest',
     create: ({ lang, model, auto, prompt }) =>
       new MistralAgent({
         apiKey: process.env.MISTRAL_API_KEY || '',
         model,
+        settings: {
+          reasoningEffort:
+            MISTRAL_REASONING_EFFORTS[model || 'mistral-medium-latest'],
+        },
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
@@ -139,7 +166,8 @@ const agents: ProviderRegistry<Agent> = {
       new GeminiAgent({
         apiKey: process.env.GEMINI_API_KEY || '',
         model,
-        // The least thinking gemini-3.8-flash accepts, for its first word
+        // The least thinking gemini-3.8-flash accepts, for its first word.
+        // The Flash-Lite models already think at their minimum by default.
         thinkingLevel: model === 'gemini-3.8-flash' ? 'low' : undefined,
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,

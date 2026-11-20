@@ -98,15 +98,19 @@ The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 - **OpenAI**: `openai('gpt-4o')`, `openai('gpt-5.6-luna')`
 - **Anthropic**: `anthropic('claude-3-5-sonnet-20241022')`
 - **Google**: `google('gemini-1.5-pro')`, `google('gemini-1.5-flash')`
-- **Mistral**: `mistral('mistral-large-latest')`
+- **Mistral**: `mistral('mistral-medium-latest')`
 - **And many more**: See [AI SDK Providers](https://sdk.vercel.ai/providers/ai-sdk-providers)
+
+### Reasoning
+
+A model that reasons thinks before its first token, which delays every answer. `AiSdkAgent` leaves the level to the model, so set the lowest one it accepts in `providerOptions`, under the name of its provider, as shown below.
 
 ### Provider specific options
 
 `settings` carries the parameters every provider understands, such as the
 temperature. Parameters read by a single provider go in `providerOptions`,
-under the name of that provider. Turning reasoning off is the common case in a
-call, since reasoning delays the first token:
+under the name of that provider. Turning reasoning down is the common case in
+a call:
 
 ```typescript
 const agent = new AiSdkAgent({

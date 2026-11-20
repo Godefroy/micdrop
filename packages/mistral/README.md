@@ -20,8 +20,9 @@ import { MicdropServer } from '@micdrop/server'
 
 const agent = new MistralAgent({
   apiKey: process.env.MISTRAL_API_KEY || '',
-  model: 'ministral-8b-latest', // Default model
+  model: 'mistral-medium-latest', // Default model
   systemPrompt: 'You are a helpful assistant',
+  settings: { reasoningEffort: 'none' }, // Optional, the lowest answers soonest
 })
 
 // Use with MicdropServer

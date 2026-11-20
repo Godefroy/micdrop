@@ -205,6 +205,7 @@ const realtime = new OpenaiRealtime({
   voice: 'marin', // Default voice
   systemPrompt: 'You are a helpful assistant',
   language: 'en', // Optional, helps the transcription of the user
+  reasoningEffort: 'minimal', // Optional, the lowest answers soonest
 })
 
 new MicdropServer(socket, {

@@ -97,11 +97,13 @@ Those three are where a local setup spends its second, and the [local models pag
 
 The structural one is transcription. A batch model such as Whisper only starts once the turn closes, so its time lands entirely on the critical path, around 440 ms for a three second sentence. A streaming speech to text such as [Gladia](/docs/speech-to-text/gladia) transcribes while the person is still talking, so the transcript is all but ready when the turn ends and that time mostly disappears. It is the largest single saving available to a local setup, ahead of any model swap.
 
-Three habits then matter more than which model you pick:
+Four habits then matter more than which model you pick:
 
 Keep the models loaded between calls, and run a warm-up at startup so the first inference happens while the call is being set up rather than while a user waits.
 
 Speak the first sentence as soon as it exists rather than the whole answer once it is finished. The `SentenceTTS` base class does this, so the voice starts while the agent is still writing.
+
+Turn the reasoning of the model down. A model that reasons thinks before its first word, and the default level of most recent models costs one to several seconds per answer. Micdrop leaves the level to the model, so set the lowest one it accepts: `settings.reasoning` for [OpenAI](/docs/agents/openai#reasoning), `thinkingLevel` for [Gemini](/docs/agents/gemini#reasoning), `settings.reasoningEffort` for [Mistral](/docs/agents/mistral#reasoning), `providerOptions` for the [AI SDK](/docs/agents/ai-sdk#reasoning), `reasoningEffort` for [OpenAI Realtime](/docs/realtime/openai-realtime#reasoning).
 
 Count the automatic prompts. Each of `autoEndCall`, `autoSemanticTurn` and `autoIgnoreUserNoise` can cost the agent a tool call, and a second pass through the model costs more than the transcription and the voice put together. `autoSemanticTurn` in particular has no reason to be on when turn detection runs in the browser.
 

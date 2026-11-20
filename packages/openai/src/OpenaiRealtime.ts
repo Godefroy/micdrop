@@ -28,6 +28,10 @@ export interface OpenaiRealtimeOptions extends RealtimeOptions {
   // gpt-4o-transcribe (default) shuts down on February 26, 2027, replaced by
   // gpt-live-transcribe and gpt-transcribe
   transcriptionModel?: string
+  // How long a model that reasons, such as gpt-realtime-2.1, thinks before
+  // speaking. "minimal" brings the first word forward. Left to the model when
+  // unset, and refused by the models that do not reason.
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
   connectionTimeout?: number
   retryDelay?: number
   maxRetry?: number
@@ -263,6 +267,9 @@ export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
           type: 'realtime',
           model: this.options.model || DEFAULT_MODEL,
           instructions: this.options.systemPrompt,
+          ...(this.options.reasoningEffort
+            ? { reasoning: { effort: this.options.reasoningEffort } }
+            : {}),
           output_modalities: ['audio'],
           audio: {
             input: {

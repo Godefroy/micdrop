@@ -44,6 +44,8 @@ export default async (app: FastifyInstance) => {
       const agent = new OpenaiAgent({
         apiKey,
         model: 'gpt-5.2',
+        // No reasoning, so the answer starts sooner
+        settings: { reasoning: { effort: 'none' } },
         systemPrompt: SYSTEM_PROMPT,
 
         // Tells the LLM the deck as numbered on screen, and what Jev read

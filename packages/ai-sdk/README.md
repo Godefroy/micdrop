@@ -96,7 +96,7 @@ The AI SDK Agent supports any provider compatible with the Vercel AI SDK:
 - **OpenAI**: `openai('gpt-4o')`, `openai('gpt-5.6-luna')`
 - **Anthropic**: `anthropic('claude-3-5-sonnet-20241022')`
 - **Google**: `google('gemini-1.5-pro')`, `google('gemini-1.5-flash')`
-- **Mistral**: `mistral('mistral-large-latest')`
+- **Mistral**: `mistral('mistral-medium-latest')`
 - **And many more**: See [AI SDK Providers](https://sdk.vercel.ai/providers/ai-sdk-providers)
 
 ## Documentation
