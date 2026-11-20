@@ -1,8 +1,8 @@
 import { Agent, AgentOptions } from '@micdrop/server'
-import { HTTPClient, Mistral } from '@mistralai/mistralai'
-import {
+import { Mistral } from '@mistralai/mistralai'
+import type {
   ChatCompletionStreamRequest,
-  ChatCompletionStreamRequestMessages,
+  ChatCompletionStreamRequestMessage,
 } from '@mistralai/mistralai/models/components'
 import { Writable } from 'stream'
 import z, { toJSONSchema } from 'zod'
@@ -11,12 +11,11 @@ import { textOf } from './deltaText'
 export interface MistralAgentOptions extends AgentOptions {
   apiKey: string
   model?: string
-  settings?: Omit<ChatCompletionStreamRequest, 'messages' | 'model'> & {
-    // How long the model reasons before answering. The lowest level the model
-    // accepts brings the first word forward: "none" for Mistral Medium 3.5
-    // and Small 4, "low" for Mistral Large 4.
-    reasoningEffort?: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
-  }
+  // Other parameters of the request. `reasoningEffort` sets how long the
+  // model reasons before answering: the lowest level the model accepts brings
+  // the first word forward, "none" for Mistral Medium 3.5 and Small 4, "low"
+  // for Mistral Large 4.
+  settings?: Omit<ChatCompletionStreamRequest, 'messages' | 'model'>
   maxRetry?: number
   retryDelay?: number
   maxSteps?: number
@@ -46,31 +45,7 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
 
   constructor(options: MistralAgentOptions) {
     super(options)
-    const httpClient = new HTTPClient()
-    httpClient.addHook('beforeRequest', (request) =>
-      this.withReasoningEffort(request)
-    )
-    this.mistral = new Mistral({ apiKey: options.apiKey, httpClient })
-  }
-
-  /**
-   * Adds the `reasoning_effort` of the settings to a chat request.
-   *
-   * This version of the SDK drops the fields it does not know from a request,
-   * `reasoning_effort` among them, so it goes in on the way out.
-   */
-  private async withReasoningEffort(request: Request): Promise<Request | void> {
-    const effort = this.options.settings?.reasoningEffort
-    if (!effort || request.method !== 'POST') return
-    if (!new URL(request.url).pathname.endsWith('/chat/completions')) return
-
-    const body = JSON.parse(await request.clone().text())
-    const headers = new Headers(request.headers)
-    headers.delete('content-length')
-    return new Request(request, {
-      headers,
-      body: JSON.stringify({ ...body, reasoning_effort: effort }),
-    })
+    this.mistral = new Mistral({ apiKey: options.apiKey })
   }
 
   protected async generateAnswer(stream: Writable, signal: AbortSignal) {
@@ -204,9 +179,9 @@ export class MistralAgent extends Agent<MistralAgentOptions> {
     return outcome
   }
 
-  private buildMessages(): ChatCompletionStreamRequestMessages[] {
+  private buildMessages(): ChatCompletionStreamRequestMessage[] {
     return this.conversation.map(
-      (message): ChatCompletionStreamRequestMessages => {
+      (message): ChatCompletionStreamRequestMessage => {
         switch (message.role) {
           case 'user':
           case 'assistant':
