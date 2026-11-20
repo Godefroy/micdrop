@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai'
-import { MicdropVoice, SentenceTTS } from '@micdrop/server'
+import { MicdropModel, MicdropVoice, SentenceTTS } from '@micdrop/server'
+import { listGeminiModels } from './models'
 import { GeminiOptions } from './GeminiAgent'
 
 /**
@@ -67,6 +68,19 @@ const VOICES: Array<[string, string, 'female' | 'male']> = [
 ]
 
 export class GeminiTTS extends SentenceTTS {
+  /**
+   * Lists the models that speak.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listGeminiModels('tts', options)
+  }
+
   /**
    * Lists the prebuilt voices, which speak every language the model does, so
    * `language` keeps them all. Gemini has no listing, so the list is written

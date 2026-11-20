@@ -1,4 +1,5 @@
-import { STT } from '@micdrop/server'
+import { MicdropModel, STT } from '@micdrop/server'
+import { listGeminiModels } from './models'
 import { Readable } from 'stream'
 import { LiveSocket } from './LiveSocket'
 
@@ -53,6 +54,19 @@ interface Utterance {
 }
 
 export class GeminiSTT extends STT {
+  /**
+   * Lists the models that transcribe a Live session.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listGeminiModels('stt', options)
+  }
+
   private socket: LiveSocket
   // Gemini closes the session soon, and it is renewed once nothing waits
   private goingAway = false

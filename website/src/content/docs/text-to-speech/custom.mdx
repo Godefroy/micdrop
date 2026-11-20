@@ -136,6 +136,30 @@ export class CustomStreamingTTS extends TTS {
 }
 ```
 
+## Listing models
+
+An implementation can offer a static `listModels()` method, so an application can show the models it runs. The built-in ones do, and return `MicdropModel` objects from `@micdrop/server`: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` and `deprecated` with its `shutdownDate`.
+
+`cachedModels()` keeps a list fetched from an API for a day, shared by every call of the process and kept apart per account:
+
+```typescript
+import { cachedModels, MicdropModel } from '@micdrop/server'
+
+export class CustomStreamingTTS extends TTS {
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return cachedModels(
+      ['my-provider'],
+      options.apiKey,
+      () => fetchModelsFromApi(options.apiKey),
+      options.refresh
+    )
+  }
+}
+```
+
 ## Public Methods
 
 ### `destroy()`

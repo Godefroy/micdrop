@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai'
-import { Agent, AgentOptions } from '@micdrop/server'
+import { Agent, AgentOptions, MicdropModel } from '@micdrop/server'
+import { listGeminiModels } from './models'
 import { PassThrough } from 'stream'
 import z, { toJSONSchema } from 'zod'
 
@@ -28,6 +29,9 @@ export type GeminiAgentOptions = AgentOptions &
 export type GeminiOptions = { apiKey: string } | { genai: GoogleGenAI }
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
+// The beta version serves every model, the preview ones included, where the
+// default one answers that they are not found
+const API_VERSION = 'v1beta'
 const DEFAULT_MAX_STEPS = 5
 const DEFAULT_MAX_RETRIES = 3
 const DEFAULT_RETRY_DELAY = 1000
@@ -46,6 +50,19 @@ interface StreamedStep {
 }
 
 export class GeminiAgent extends Agent<GeminiAgentOptions> {
+  /**
+   * Lists the models that can answer a call. `reasoning` marks the ones that think, see `thinkingLevel`.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listGeminiModels('agent', options)
+  }
+
   private genai: GoogleGenAI
   // Gemini asks for the signature of the thought behind a tool call when the
   // call is sent back, and the conversation has no room for it
@@ -131,6 +148,7 @@ export class GeminiAgent extends Agent<GeminiAgentOptions> {
     const response = (await this.genai.interactions.create(
       {
         model: this.options.model || DEFAULT_MODEL,
+        api_version: API_VERSION,
         store: false,
         stream: true,
         system_instruction: this.buildSystemInstruction(),

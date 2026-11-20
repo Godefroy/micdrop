@@ -1,5 +1,6 @@
 import { Agent, Realtime, STT, TTS } from '@micdrop/server'
 import agents, { DEFAULT_SYSTEM_PROMPT } from './agents'
+import { isModel } from './models'
 import realtime from './realtime'
 import speech2Text from './speech2Text'
 import text2Speech from './text2Speech'
@@ -192,8 +193,8 @@ async function resolve<T>(
     // Keep the requested model only if it belongs to the provider we resolved
     const wanted = id === requested ? selection?.model : undefined
     const model =
-      models.find((option) => option.id === wanted) ??
-      models.find((option) => option.id === definition.defaultModel) ??
+      models.find((option) => isModel(option, wanted)) ??
+      models.find((option) => isModel(option, definition.defaultModel)) ??
       models[0]
 
     const voice = await resolveVoice(

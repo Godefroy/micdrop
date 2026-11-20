@@ -5,6 +5,7 @@ import { MistralSTT } from '@micdrop/mistral'
 import { OpenaiSTT } from '@micdrop/openai'
 import { FallbackSTT, MockSTT, STT } from '@micdrop/server'
 import { WHISPER_MODEL_INFO, WhisperSTT } from '@micdrop/whisper'
+import { listedModels } from './models'
 import { ProviderRegistry } from './types'
 
 const speech2Text: ProviderRegistry<STT> = {
@@ -34,12 +35,10 @@ const speech2Text: ProviderRegistry<STT> = {
   openai: {
     label: 'OpenAI',
     requiredEnv: ['OPENAI_API_KEY'],
-    models: [
-      { id: 'gpt-4o-transcribe', label: 'gpt-4o-transcribe' },
-      { id: 'gpt-4o-mini-transcribe', label: 'gpt-4o-mini-transcribe' },
-      { id: 'gpt-live-transcribe', label: 'gpt-live-transcribe' },
-      { id: 'gpt-transcribe', label: 'gpt-transcribe' },
-    ],
+    models: listedModels(
+      () => OpenaiSTT.listModels({ apiKey: process.env.OPENAI_API_KEY || '' }),
+      ['gpt-live-transcribe', 'gpt-transcribe']
+    ),
     defaultModel: 'gpt-live-transcribe',
     create: ({ model }) =>
       new OpenaiSTT({
@@ -52,16 +51,10 @@ const speech2Text: ProviderRegistry<STT> = {
     label: 'Mistral',
     requiredEnv: ['MISTRAL_API_KEY'],
     // Only the realtime Voxtral models answer on the streaming endpoint
-    models: [
-      {
-        id: 'voxtral-mini-transcribe-realtime-3-0',
-        label: 'voxtral-mini-transcribe-realtime-3',
-      },
-      {
-        id: 'voxtral-mini-transcribe-realtime-2602',
-        label: 'voxtral-mini-transcribe-realtime-2602',
-      },
-    ],
+    models: listedModels(
+      () => MistralSTT.listModels({ apiKey: process.env.MISTRAL_API_KEY || '' }),
+      ['voxtral-mini-transcribe-realtime-3-0']
+    ),
     defaultModel: 'voxtral-mini-transcribe-realtime-3-0',
     create: ({ model }) =>
       new MistralSTT({
@@ -73,9 +66,15 @@ const speech2Text: ProviderRegistry<STT> = {
   gemini: {
     label: 'Gemini',
     requiredEnv: ['GEMINI_API_KEY'],
-    create: ({ lang }) =>
+    models: listedModels(
+      () => GeminiSTT.listModels({ apiKey: process.env.GEMINI_API_KEY || '' }),
+      ['gemini-3.5-transcribe-live']
+    ),
+    defaultModel: 'gemini-3.5-transcribe-live',
+    create: ({ lang, model }) =>
       new GeminiSTT({
         apiKey: process.env.GEMINI_API_KEY || '',
+        model,
         language: lang,
         vocabulary: ['Micdrop'],
       }),

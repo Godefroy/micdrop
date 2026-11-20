@@ -1,8 +1,10 @@
 import {
   MicdropConversationToolCall,
+  MicdropModel,
   Realtime,
   RealtimeOptions,
 } from '@micdrop/server'
+import { listGeminiModels } from './models'
 import { toJSONSchema } from 'zod'
 import { LiveSocket } from './LiveSocket'
 
@@ -63,6 +65,19 @@ const FIRST_MESSAGE_PROMPT =
   'The call starts now. Speak first, as your instructions say.'
 
 export class GeminiLive extends Realtime<GeminiLiveOptions> {
+  /**
+   * Lists the Live models, which hear and speak.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listGeminiModels('live', options)
+  }
+
   private socket: LiveSocket
   private everConnected = false
 

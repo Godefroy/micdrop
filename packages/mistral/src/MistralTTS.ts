@@ -1,11 +1,13 @@
 import {
   cachedVoices,
   float32ToPcm16,
+  MicdropModel,
   MicdropVoice,
   SentenceTTS,
   voiceGender,
   voicesForLanguage,
 } from '@micdrop/server'
+import { DEFAULT_BASE_URL, listMistralModels } from './models'
 
 /**
  * Mistral text to speech (Voxtral Speech 3)
@@ -36,7 +38,6 @@ export interface MistralTTSOptions {
 
 const DEFAULT_MODEL = 'voxtral-mini-tts-3-0'
 const DEFAULT_VOICE_ID = 'voice_3150' // James, American English
-const DEFAULT_BASE_URL = 'https://api.mistral.ai'
 const MISTRAL_SAMPLE_RATE = 24000 // Rate of the pcm output from Mistral, sent as is
 const FLOAT32_BYTES = 4 // The pcm output is mono float32 little-endian
 const PAGE_SIZE = 100 // Voices per page of the listing
@@ -53,6 +54,24 @@ interface MistralVoice {
 }
 
 export class MistralTTS extends SentenceTTS {
+  /**
+   * Lists the models that speak, each one once with its aliases.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    baseUrl?: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listMistralModels(
+      'tts',
+      ({ capabilities }) => capabilities.audio_speech,
+      options
+    )
+  }
+
   /**
    * Lists the voices the account can speak with, the presets and its own.
    *

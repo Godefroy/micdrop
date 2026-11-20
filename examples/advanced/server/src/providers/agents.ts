@@ -4,6 +4,7 @@ import { GeminiAgent } from '@micdrop/gemini'
 import { MistralAgent } from '@micdrop/mistral'
 import { OpenaiAgent } from '@micdrop/openai'
 import { Agent, FallbackAgent, MockAgent } from '@micdrop/server'
+import { listedModels } from './models'
 import { ModelOption, ProviderRegistry } from './types'
 
 /**
@@ -61,30 +62,49 @@ async function isOllamaRunning(): Promise<boolean> {
 }
 
 /**
- * Conversational models, from the most capable to the fastest.
+ * The OpenAI chat models, the ones answering soonest first.
  *
- * A voice call is judged on how quickly it answers, so the list stays on the
- * models answering straight away rather than the ones reasoning first.
+ * A voice call is judged on how quickly it answers, so the recommended models
+ * answer without reasoning once told to.
  */
-const OPENAI_MODELS: ModelOption[] = [
-  { id: 'gpt-5.2', label: 'gpt-5.2' },
-  { id: 'gpt-5.4-mini', label: 'gpt-5.4-mini' },
-  { id: 'gpt-4.1-mini', label: 'gpt-4.1-mini' },
-]
+const OPENAI_MODELS = listedModels(
+  () => OpenaiAgent.listModels({ apiKey: process.env.OPENAI_API_KEY || '' }),
+  ['gpt-5.2', 'gpt-5.4-mini', 'gpt-4.1-mini']
+)
 
 /**
- * The least reasoning each model accepts, which brings its first word
- * forward. The GPT-5 models can skip it, gpt-4.1-mini does not reason and
- * refuses the setting.
+ * The least reasoning an OpenAI model accepts, which brings its first word
+ * forward: none from GPT-5.1 on, minimal for the first GPT-5 models, low for
+ * the o series. The GPT-4 models do not reason and refuse the setting.
  */
 function openaiReasoningEffort(model = 'gpt-5.2') {
-  return model.startsWith('gpt-5') ? ('none' as const) : undefined
+  if (/^gpt-5(-mini|-nano)?$/.test(model)) return 'minimal' as const
+  if (/^gpt-(5\.|[6-9])/.test(model)) return 'none' as const
+  if (/^o\d/.test(model)) return 'low' as const
+  return undefined
 }
 
-/** Mistral Medium answers straight away, Mistral Large 4 always reasons */
-const MISTRAL_REASONING_EFFORTS: Record<string, 'none' | 'low'> = {
-  'mistral-large-latest': 'low',
-  'mistral-medium-latest': 'none',
+/**
+ * The least reasoning a Mistral model accepts: Mistral Medium and Small can
+ * skip it, Mistral Large 4 and GLM always reason. The others do not reason.
+ */
+function mistralReasoningEffort(model = 'mistral-medium-latest') {
+  if (/^mistral-(medium|small)/.test(model)) return 'none' as const
+  if (/^(mistral-large-latest|mistral-large-4|zai-glm|glm)/.test(model)) {
+    return 'low' as const
+  }
+  return undefined
+}
+
+/**
+ * The least thinking a Gemini model accepts: low for 3.8 Flash, the Pro
+ * models and Gemini 4, minimal for 3.6 Flash and 3 Flash. The Flash-Lite
+ * models already think at their minimum, and 2.5 reads a budget instead.
+ */
+function geminiThinkingLevel(model = 'gemini-3.5-flash-lite') {
+  if (/^gemini-(3\.8-flash$|4-|.*-pro)/.test(model)) return 'low'
+  if (/^gemini-(3\.6-flash|3-flash)/.test(model)) return 'minimal'
+  return undefined
 }
 
 const agents: ProviderRegistry<Agent> = {
@@ -131,22 +151,19 @@ const agents: ProviderRegistry<Agent> = {
   mistral: {
     label: 'Mistral',
     requiredEnv: ['MISTRAL_API_KEY'],
-    models: [
-      { id: 'mistral-medium-latest', label: 'mistral-medium-latest' },
-      { id: 'mistral-large-latest', label: 'mistral-large-latest' },
-      { id: 'ministral-8b-latest', label: 'ministral-8b-latest' },
-    ],
     // Answers in a few hundred milliseconds, where Mistral Large 4 reasons
     // before every answer
+    models: listedModels(
+      () =>
+        MistralAgent.listModels({ apiKey: process.env.MISTRAL_API_KEY || '' }),
+      ['mistral-medium-latest', 'mistral-small-latest', 'mistral-large-latest']
+    ),
     defaultModel: 'mistral-medium-latest',
     create: ({ lang, model, auto, prompt }) =>
       new MistralAgent({
         apiKey: process.env.MISTRAL_API_KEY || '',
         model,
-        settings: {
-          reasoningEffort:
-            MISTRAL_REASONING_EFFORTS[model || 'mistral-medium-latest'],
-        },
+        settings: { reasoningEffort: mistralReasoningEffort(model) },
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),
@@ -155,20 +172,17 @@ const agents: ProviderRegistry<Agent> = {
   gemini: {
     label: 'Gemini',
     requiredEnv: ['GEMINI_API_KEY'],
-    models: [
-      { id: 'gemini-3.5-flash-lite', label: 'gemini-3.5-flash-lite' },
-      { id: 'gemini-3.8-flash', label: 'gemini-3.8-flash' },
-      { id: 'gemini-3.1-flash-lite', label: 'gemini-3.1-flash-lite' },
-    ],
+    models: listedModels(
+      () => GeminiAgent.listModels({ apiKey: process.env.GEMINI_API_KEY || '' }),
+      ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-flash-lite']
+    ),
     // Answers in about a second, where gemini-3.8-flash takes four
     defaultModel: 'gemini-3.5-flash-lite',
     create: ({ lang, model, auto, prompt }) =>
       new GeminiAgent({
         apiKey: process.env.GEMINI_API_KEY || '',
         model,
-        // The least thinking gemini-3.8-flash accepts, for its first word.
-        // The Flash-Lite models already think at their minimum by default.
-        thinkingLevel: model === 'gemini-3.8-flash' ? 'low' : undefined,
+        thinkingLevel: geminiThinkingLevel(model),
         systemPrompt: getSystemPrompt(lang, prompt),
         ...auto,
       }),

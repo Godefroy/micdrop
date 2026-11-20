@@ -1,5 +1,7 @@
 import {
+  cachedModels,
   cachedVoices,
+  MicdropModel,
   MicdropVoice,
   ReconnectingSocket,
   TTS,
@@ -73,6 +75,47 @@ interface CartesiaVoice {
 }
 
 export class CartesiaTTS extends TTS {
+  /**
+   * Lists the models that speak, with the languages each one reads.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return cachedModels(
+      ['cartesia'],
+      options.apiKey,
+      async () => {
+        const response = await fetch('https://api.cartesia.ai/models', {
+          headers: {
+            'X-API-Key': options.apiKey,
+            'Cartesia-Version': CARTESIA_VERSION,
+          },
+        })
+        if (!response.ok) {
+          throw new Error(`Cartesia answered ${response.status}`)
+        }
+        const { data } = (await response.json()) as {
+          data: Array<{
+            id: string
+            capability?: string
+            supported_languages?: string[]
+          }>
+        }
+        return data
+          .filter((model) => model.capability === 'tts')
+          .map((model) => ({
+            id: model.id,
+            languages: model.supported_languages,
+          }))
+      },
+      options.refresh
+    )
+  }
+
   /**
    * Lists the voices the account can speak with, its own and the public ones.
    *

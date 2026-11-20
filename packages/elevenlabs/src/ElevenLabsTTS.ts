@@ -1,5 +1,7 @@
 import {
+  cachedModels,
   cachedVoices,
+  MicdropModel,
   MicdropVoice,
   TTS,
   voiceGender,
@@ -38,6 +40,46 @@ const CUSTOM_CATEGORIES = ['cloned', 'generated', 'professional']
  * so the model picks the one this class drives.
  */
 export class ElevenLabsTTS extends TTS {
+  /**
+   * Lists the models that speak, with the languages each one reads.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return cachedModels(
+      ['elevenlabs'],
+      options.apiKey,
+      async () => {
+        const response = await fetch('https://api.elevenlabs.io/v1/models', {
+          headers: { 'xi-api-key': options.apiKey },
+        })
+        if (!response.ok) {
+          throw new Error(`ElevenLabs answered ${response.status}`)
+        }
+        const models = (await response.json()) as Array<{
+          model_id: string
+          name?: string
+          description?: string
+          can_do_text_to_speech?: boolean
+          languages?: Array<{ language_id: string }>
+        }>
+        return models
+          .filter((model) => model.can_do_text_to_speech)
+          .map((model) => ({
+            id: model.model_id,
+            name: model.name,
+            description: model.description,
+            languages: model.languages?.map(({ language_id }) => language_id),
+          }))
+      },
+      options.refresh
+    )
+  }
+
   /**
    * Lists the voices the account can speak with: the premade ones, and the
    * ones cloned, designed or added from the library.

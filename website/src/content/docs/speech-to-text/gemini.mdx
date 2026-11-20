@@ -78,3 +78,15 @@ of the next one waits for the transcript of the previous.
 | `connectionTimeout`    | `number`                | `5000`                         | Time to open the connection, in milliseconds        |
 | `retryDelay`           | `number`                | `1000`                         | Delay before reconnecting, in milliseconds          |
 | `maxRetry`             | `number`                | `3`                            | Reconnection attempts before giving up              |
+
+## Listing models
+
+`GeminiSTT.listModels()` returns the models that transcribe a Live session.
+
+```typescript
+const models = await GeminiSTT.listModels({
+  apiKey: process.env.GEMINI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

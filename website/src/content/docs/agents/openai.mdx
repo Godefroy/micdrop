@@ -155,3 +155,15 @@ const agent = new OpenaiAgent({
 ```
 
 This integration will automatically track all OpenAI API calls, token usage, and conversation flows in your Langfuse dashboard with session and user context.
+
+## Listing models
+
+`OpenaiAgent.listModels()` returns the chat models that can answer a call. OpenAI only gives the ids of its models, so the list is sorted from their names.
+
+```typescript
+const models = await OpenaiAgent.listModels({
+  apiKey: process.env.OPENAI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

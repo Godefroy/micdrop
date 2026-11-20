@@ -10,6 +10,14 @@
 export interface ModelOption {
   id: string
   label: string
+  /** Other names of the same model, a saved selection may use one */
+  aliases?: string[]
+  description?: string
+  /** Can reason before answering, which the demo turns down */
+  reasoning?: boolean
+  /** The provider announced its end, on `shutdownDate` when known */
+  deprecated?: boolean
+  shutdownDate?: string
   /**
    * Language this model or voice speaks, when it only speaks one. The call
    * uses it as the language of the conversation, so picking a French voice

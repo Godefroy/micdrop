@@ -1,9 +1,11 @@
 import {
+  MicdropModel,
   MicdropVoice,
   Pcm16Aligner,
   SentenceSplitter,
   TTS,
 } from '@micdrop/server'
+import { listOpenaiModels } from './models'
 import OpenAI from 'openai'
 import { Readable } from 'stream'
 import { OpenaiOptions } from './OpenaiAgent'
@@ -88,6 +90,20 @@ const SPEECH_VOICES = ['fable', 'nova', 'onyx']
 const REALTIME_VOICES = ['marin', 'cedar']
 
 export class OpenaiTTS extends TTS {
+  /**
+   * Lists the models that speak: the speech endpoint ones and the gpt-realtime ones, sorted from their names since OpenAI says nothing
+   * else about them.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listOpenaiModels('tts', options)
+  }
+
   /**
    * Lists the voices of the model: the Realtime API has no fable, nova and
    * onyx, and adds marin and cedar. OpenAI has no listing, so the list is

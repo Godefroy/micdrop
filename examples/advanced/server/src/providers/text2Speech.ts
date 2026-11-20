@@ -18,6 +18,7 @@ import { QWEN_SPEAKERS, Qwen3TTS } from '@micdrop/qwen-tts'
 import { FallbackTTS, MicdropVoice, MockTTS, TTS } from '@micdrop/server'
 import { existsSync, readdirSync } from 'fs'
 import path from 'path'
+import { listedModels } from './models'
 import { ProviderRegistry, VoiceOption } from './types'
 
 /**
@@ -151,13 +152,13 @@ const text2speech: ProviderRegistry<TTS> = {
   elevenlabs: {
     label: 'ElevenLabs',
     requiredEnv: ['ELEVENLABS_API_KEY'],
-    models: [
-      { id: 'eleven_v4_turbo', label: 'eleven_v4_turbo' },
-      { id: 'eleven_v4', label: 'eleven_v4' },
-      { id: 'eleven_flash_v2_5', label: 'eleven_flash_v2_5' },
-      { id: 'eleven_turbo_v2_5', label: 'eleven_turbo_v2_5' },
-      { id: 'eleven_multilingual_v2', label: 'eleven_multilingual_v2' },
-    ],
+    models: listedModels(
+      () =>
+        ElevenLabsTTS.listModels({
+          apiKey: process.env.ELEVENLABS_API_KEY || '',
+        }),
+      ['eleven_v4_turbo', 'eleven_v4', 'eleven_flash_v2_5']
+    ),
     defaultModel: 'eleven_v4_turbo',
     voices: async (_model, lang) =>
       toVoiceOptions(
@@ -180,10 +181,11 @@ const text2speech: ProviderRegistry<TTS> = {
   cartesia: {
     label: 'Cartesia',
     requiredEnv: ['CARTESIA_API_KEY'],
-    models: [
-      { id: 'sonic-3.6', label: 'sonic-3.6' },
-      { id: 'sonic-3.5', label: 'sonic-3.5' },
-    ],
+    models: listedModels(
+      () =>
+        CartesiaTTS.listModels({ apiKey: process.env.CARTESIA_API_KEY || '' }),
+      ['sonic-3.6']
+    ),
     defaultModel: 'sonic-3.6',
     voices: async (_model, lang) =>
       toVoiceOptions(
@@ -205,12 +207,11 @@ const text2speech: ProviderRegistry<TTS> = {
   gemini: {
     label: 'Gemini',
     requiredEnv: ['GEMINI_API_KEY'],
-    models: [
-      { id: 'gemini-3.8-flash-tts', label: 'gemini-3.8-flash-tts' },
-      { id: 'gemini-3.8-flash-lite-tts', label: 'gemini-3.8-flash-lite-tts' },
-      // Sends each sentence whole, after a few seconds
-      { id: 'gemini-2.5-flash-preview-tts', label: 'gemini-2.5-flash-tts' },
-    ],
+    // The 2.5 models send each sentence whole, after a few seconds
+    models: listedModels(
+      () => GeminiTTS.listModels({ apiKey: process.env.GEMINI_API_KEY || '' }),
+      ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts']
+    ),
     defaultModel: 'gemini-3.8-flash-tts',
     voices: async (_model, lang) =>
       toVoiceOptions(await GeminiTTS.listVoices({ language: lang })),
@@ -248,6 +249,11 @@ const text2speech: ProviderRegistry<TTS> = {
   mistral: {
     label: 'Mistral',
     requiredEnv: ['MISTRAL_API_KEY'],
+    models: listedModels(
+      () => MistralTTS.listModels({ apiKey: process.env.MISTRAL_API_KEY || '' }),
+      ['voxtral-mini-tts-3-0']
+    ),
+    defaultModel: 'voxtral-mini-tts-3-0',
     voices: async (_model, lang) =>
       toVoiceOptions(
         await MistralTTS.listVoices({
@@ -256,9 +262,10 @@ const text2speech: ProviderRegistry<TTS> = {
         })
       ),
     defaultVoice: 'voice_3150',
-    create: ({ voice }) =>
+    create: ({ model, voice }) =>
       new MistralTTS({
         apiKey: process.env.MISTRAL_API_KEY || '',
+        model,
         voiceId: voice,
       }),
   },
@@ -268,10 +275,10 @@ const text2speech: ProviderRegistry<TTS> = {
   openai: {
     label: 'OpenAI',
     requiredEnv: ['OPENAI_API_KEY'],
-    models: [
-      { id: 'gpt-realtime-2.1-mini', label: 'gpt-realtime-2.1-mini' },
-      { id: 'gpt-4o-mini-tts', label: 'gpt-4o-mini-tts' },
-    ],
+    models: listedModels(
+      () => OpenaiTTS.listModels({ apiKey: process.env.OPENAI_API_KEY || '' }),
+      ['gpt-realtime-2.1-mini', 'gpt-4o-mini-tts']
+    ),
     defaultModel: 'gpt-realtime-2.1-mini',
     voices: async (model, lang) =>
       toVoiceOptions(await OpenaiTTS.listVoices({ model, language: lang })),

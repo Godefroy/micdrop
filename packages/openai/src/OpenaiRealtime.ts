@@ -1,10 +1,12 @@
 import {
   MicdropConversationToolCall,
+  MicdropModel,
   Pcm16Resampler,
   Realtime,
   RealtimeOptions,
   ReconnectingSocket,
 } from '@micdrop/server'
+import { listOpenaiModels } from './models'
 import z, { toJSONSchema } from 'zod'
 import { parseMessage, sessionHandshake } from './session'
 import { transcriptionLanguage } from './transcription'
@@ -68,6 +70,20 @@ interface RequestedResponse {
 }
 
 export class OpenaiRealtime extends Realtime<OpenaiRealtimeOptions> {
+  /**
+   * Lists the Realtime models, sorted from their names since OpenAI says nothing
+   * else about them.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listOpenaiModels('realtime', options)
+  }
+
   private socket: ReconnectingSocket
   private connection: ConnectionState = 'connecting'
   // Events sent while the connection opens

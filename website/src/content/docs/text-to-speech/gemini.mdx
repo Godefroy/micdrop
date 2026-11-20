@@ -148,6 +148,18 @@ Gemini TTS is one of the
 [ElevenLabs alternatives for a TypeScript voice agent](/blog/elevenlabs-alternatives-typescript),
 next to Cartesia, OpenAI and the models that run locally.
 
+## Listing models
+
+`GeminiTTS.listModels()` returns the models that speak.
+
+```typescript
+const models = await GeminiTTS.listModels({
+  apiKey: process.env.GEMINI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.
+
 ## FAQ
 
 <FaqList>

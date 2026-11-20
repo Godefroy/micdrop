@@ -98,3 +98,15 @@ more capable, takes several seconds even with `thinkingLevel: 'low'`.
 ## Reasoning
 
 A model that thinks before its first word delays every answer. `GeminiAgent` leaves the level to the model, and `gemini-3.8-flash` thinks at `medium` when nothing is set. For a voice call, set the lowest level the model accepts: `low` for `gemini-3.8-flash`, the Pro models and Gemini 4, `minimal` for `gemini-3.6-flash`. The Flash-Lite models already think at `minimal` by default. Gemini 2.5 models read a thinking budget instead, `thinking_budget` in `settings`.
+
+## Listing models
+
+`GeminiAgent.listModels()` returns the models that can answer a call. Gemini only says which methods a model supports, so the list is also sorted from their names.
+
+```typescript
+const models = await GeminiAgent.listModels({
+  apiKey: process.env.GEMINI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

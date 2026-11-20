@@ -103,3 +103,15 @@ Pass `language`, such as `fr` or `fr-FR`, to keep the voices that speak it, ever
 Mistral also offers voices in Arabic, Catalan, Hindi, Japanese, Korean, Dutch, Polish, Russian, Chinese and more. The Voxtral 2 voices, such as `gb_jane_neutral` or `fr_marie_happy`, still work.
 
 The text can carry emotion and pace tags such as `[emotion=...]`, which Voxtral Speech 3 performs rather than reads out. Ask your agent to write them in its system prompt.
+
+## Listing models
+
+`MistralTTS.listModels()` returns the models that speak.
+
+```typescript
+const models = await MistralTTS.listModels({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

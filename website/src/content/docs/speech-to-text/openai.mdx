@@ -83,3 +83,15 @@ See the [STT interface](./custom) for the full contract.
 | `maxRetry`             | `number` | `3`                                             | Maximum number of reconnection attempts before failing                                                                                                 |
 
 The connection opens again whenever it closes, a graceful close included. Each utterance keeps its audio until its transcript arrives, and a new connection receives the audio of every utterance still waiting, so none is lost in between. Once `maxRetry` attempts in a row failed, `Failed` hands that audio back, and the next utterance starts the connection over.
+
+## Listing models
+
+`OpenaiSTT.listModels()` returns the transcription models.
+
+```typescript
+const models = await OpenaiSTT.listModels({
+  apiKey: process.env.OPENAI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

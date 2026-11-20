@@ -1,4 +1,5 @@
-import { Agent, AgentOptions } from '@micdrop/server'
+import { Agent, AgentOptions, MicdropModel } from '@micdrop/server'
+import { listOpenaiModels } from './models'
 import OpenAI from 'openai'
 import { PassThrough } from 'stream'
 import z, { toJSONSchema } from 'zod'
@@ -42,6 +43,20 @@ class StepInterruptedError extends Error {
 }
 
 export class OpenaiAgent extends Agent<OpenaiAgentOptions> {
+  /**
+   * Lists the chat models that can answer a call. `reasoning` marks the ones that reason, see `settings.reasoning`, sorted from their names since OpenAI says nothing
+   * else about them.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listOpenaiModels('agent', options)
+  }
+
   private openai: OpenAI
 
   constructor(options: OpenaiAgentOptions) {

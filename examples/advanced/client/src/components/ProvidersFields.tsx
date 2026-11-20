@@ -10,6 +10,7 @@ import {
   ProviderInfo,
   Selection,
   useProviders,
+  ModelOption,
   useVoices,
   VoiceOption,
 } from '../providers'
@@ -219,9 +220,12 @@ function PartRow({
           onChange={handleModel}
         >
           {provider.models.map((model) => (
-            <option key={model.id} value={model.id}>
+            <option
+              key={model.id}
+              value={model.id}
+              title={describeModel(model)}
+            >
               {model.label}
-              {model.language ? ` (${model.language})` : ''}
             </option>
           ))}
         </Select>
@@ -432,6 +436,30 @@ function groupVoices(voices: VoiceOption[]): Array<[string, VoiceOption[]]> {
     if (b === 'Your voices') return 1
     return a.localeCompare(b)
   })
+}
+
+/**
+ * What the tooltip of a model says, the select itself showing its name alone:
+ * its description, whether it reasons, its retirement, its aliases
+ */
+function describeModel(model: ModelOption): string | undefined {
+  const retiring = model.deprecated
+    ? `Retiring${model.shutdownDate ? ` on ${model.shutdownDate}` : ''}`
+    : undefined
+  const aliases = model.aliases?.length
+    ? `Also ${model.aliases.join(', ')}`
+    : undefined
+  return (
+    [
+      model.description,
+      model.language && `Speaks ${model.language}`,
+      model.reasoning && 'Can reason before answering',
+      retiring,
+      aliases,
+    ]
+      .filter(Boolean)
+      .join('. ') || undefined
+  )
 }
 
 /** What the tooltip of a voice says: its description and its languages */

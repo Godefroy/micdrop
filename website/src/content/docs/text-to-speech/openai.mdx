@@ -95,3 +95,15 @@ With `gpt-realtime-*`, the connection opens again on its own when it closes. A s
 **Language**: neither the speech endpoint nor the Realtime API has a language parameter, the voice follows the language of the input text. To influence the accent, use `instructions` (e.g. `'Speak with a Parisian accent'`) with `gpt-realtime-*` or `gpt-4o-mini-tts`.
 
 :::
+
+## Listing models
+
+`OpenaiTTS.listModels()` returns the models that speak, the speech endpoint ones and the gpt-realtime ones.
+
+```typescript
+const models = await OpenaiTTS.listModels({
+  apiKey: process.env.OPENAI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

@@ -82,3 +82,15 @@ A connection that drops, even a clean close by Mistral, is opened again within a
 The Micdrop client streams 16kHz PCM16 mono audio, which matches Voxtral's default input format, so no resampling is required.
 
 The previous model, `voxtral-mini-transcribe-realtime-2602`, still works through the `model` option.
+
+## Listing models
+
+`MistralSTT.listModels()` returns the realtime transcription models, with the languages each one transcribes.
+
+```typescript
+const models = await MistralSTT.listModels({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

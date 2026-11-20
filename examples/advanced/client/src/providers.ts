@@ -14,6 +14,19 @@ export interface ModelOption {
   id: string
   label: string
   language?: string
+  /** Other names of the same model, a saved selection may use one */
+  aliases?: string[]
+  description?: string
+  /** Can reason before answering, which the demo turns down */
+  reasoning?: boolean
+  /** The provider announced its end, on `shutdownDate` when known */
+  deprecated?: boolean
+  shutdownDate?: string
+}
+
+/** Whether an option is the model asked for, under its id or an alias */
+function isModel(option: ModelOption, id: string | undefined): boolean {
+  return !!id && (option.id === id || !!option.aliases?.includes(id))
 }
 
 /** A voice of a text to speech, as the server lists it */
@@ -364,8 +377,8 @@ function completeSelection(
   if (!provider) return {}
 
   const model =
-    provider.models.find((option) => option.id === selection.model) ??
-    provider.models.find((option) => option.id === provider.defaultModel) ??
+    provider.models.find((option) => isModel(option, selection.model)) ??
+    provider.models.find((option) => isModel(option, provider.defaultModel)) ??
     provider.models[0]
 
   // The voice is checked against its list once the list arrives, see useVoices

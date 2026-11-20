@@ -143,3 +143,15 @@ The Mistral Agent supports advanced features for improved conversation handling:
 - **[User Noise Filtering](../server/noise-filtering)**: Filter out meaningless sounds and filler words
 - **[Extract Value from Answer](../server/extract)**: Extract structured data from responses
 - **[Tools](../server/tools)**: Add custom tools to the agent
+
+## Listing models
+
+`MistralAgent.listModels()` returns the chat models that call tools, each one once with its aliases.
+
+```typescript
+const models = await MistralAgent.listModels({
+  apiKey: process.env.MISTRAL_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.

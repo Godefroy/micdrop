@@ -1,6 +1,7 @@
-import { ReconnectingSocket, STT } from '@micdrop/server'
+import { MicdropModel, ReconnectingSocket, STT } from '@micdrop/server'
 import { Readable } from 'stream'
 import type { RawData } from 'ws'
+import { listMistralModels } from './models'
 
 /**
  * Mistral Real-time STT (Voxtral)
@@ -61,6 +62,23 @@ const DEFAULT_RETRY_DELAY = 1000
 const DEFAULT_MAX_RETRY = 3
 
 export class MistralSTT extends STT {
+  /**
+   * Lists the models that transcribe as the user speaks, the realtime ones `MistralSTT` streams to, each one once with its aliases.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listMistralModels(
+      'stt',
+      ({ capabilities }) => capabilities.audio_transcription_realtime,
+      options
+    )
+  }
+
   private socket: ReconnectingSocket
   // Utterances not done yet, oldest first. The server answers them in the
   // order their audio went out, so the transcript in progress is the oldest's.

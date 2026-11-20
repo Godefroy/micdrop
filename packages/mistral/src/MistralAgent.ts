@@ -1,4 +1,5 @@
 import { Agent, AgentOptions } from '@micdrop/server'
+import { MicdropModel } from '@micdrop/server'
 import { Mistral } from '@mistralai/mistralai'
 import type {
   ChatCompletionStreamRequest,
@@ -7,6 +8,7 @@ import type {
 import { Writable } from 'stream'
 import z, { toJSONSchema } from 'zod'
 import { textOf } from './deltaText'
+import { listMistralModels } from './models'
 
 export interface MistralAgentOptions extends AgentOptions {
   apiKey: string
@@ -41,6 +43,24 @@ class StepInterruptedError extends Error {
 }
 
 export class MistralAgent extends Agent<MistralAgentOptions> {
+  /**
+   * Lists the models that can answer a call: chat models that call tools. `reasoning` marks the ones that can reason, slower to answer when they do, each one once with its aliases.
+   *
+   * The list is fetched once and shared by every call of the process for a
+   * day. `refresh` fetches it again.
+   */
+  static listModels(options: {
+    apiKey: string
+    refresh?: boolean
+  }): Promise<MicdropModel[]> {
+    return listMistralModels(
+      'agent',
+      ({ capabilities }) =>
+        capabilities.completion_chat && capabilities.function_calling,
+      options
+    )
+  }
+
   private mistral: Mistral
 
   constructor(options: MistralAgentOptions) {

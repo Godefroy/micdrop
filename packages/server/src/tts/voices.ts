@@ -1,5 +1,4 @@
-import { createHash } from 'crypto'
-import { SharedInstances } from '../SharedInstances'
+import { cachedList } from '../lists'
 
 /**
  * A voice a text to speech can speak with, as its `listVoices()` describes it.
@@ -45,23 +44,9 @@ export function voiceGender(
   return undefined
 }
 
-// A voice list changes rarely: a day keeps every call fast, and `refresh`
-// is there for a voice added a moment ago
-const VOICE_LIST_TTL = 24 * 60 * 60 * 1000 // ms
-
-const voiceLists = new SharedInstances<MicdropVoice[]>({
-  ttl: VOICE_LIST_TTL,
-})
-
 /**
  * Lists voices once per provider, account and options, then shares the list
- * with every caller of the process for a day. Calls asking at the same
- * time share one request, and a failed one is not kept.
- *
- * @param key - The provider, then what changes the list besides the account
- * @param apiKey - The account, kept only as a hash
- * @param load - Fetches the list
- * @param refresh - Fetches it again, for a voice added a moment ago
+ * with every caller of the process for a day. See `cachedList()`.
  */
 export function cachedVoices(
   key: unknown[],
@@ -69,10 +54,7 @@ export function cachedVoices(
   load: () => Promise<MicdropVoice[]>,
   refresh = false
 ): Promise<MicdropVoice[]> {
-  const account = createHash('sha256').update(apiKey).digest('hex')
-  const id = [...key, account]
-  if (refresh) voiceLists.delete(id)
-  return voiceLists.load(id, load)
+  return cachedList(['voices', ...key], apiKey, load, refresh)
 }
 
 /**

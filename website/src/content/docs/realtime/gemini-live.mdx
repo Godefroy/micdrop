@@ -118,3 +118,15 @@ sends to resume the session, and moves to a new connection at the first silence
 once Gemini announces the end of the current one. `GeminiLive` also turns on
 context window compression, which lifts the fifteen minute limit of an audio
 session.
+
+## Listing models
+
+`GeminiLive.listModels()` returns the Live models.
+
+```typescript
+const models = await GeminiLive.listModels({
+  apiKey: process.env.GEMINI_API_KEY || '',
+})
+```
+
+It returns `MicdropModel` objects: `id`, the value the `model` option takes, then when the provider says it `name`, `description`, `aliases`, `languages`, `reasoning` for a model that can reason, and `deprecated` with its `shutdownDate`. The list is fetched once, then shared by every call of the process for a day. Pass `refresh: true` to fetch it again.
