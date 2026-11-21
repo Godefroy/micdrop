@@ -57,6 +57,12 @@ jobs:
 
       - name: Install
         if: steps.pending.outputs.dirs != ''
+        # onnxruntime-node downloads its CUDA binaries on Linux, which nothing
+        # here uses and whose release URL can disappear. Its CPU binaries ship
+        # in the package itself.
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
         run: pnpm install --frozen-lockfile --filter "./packages/**"
 
       # Other packages only declare server and client as peers, which pnpm
