@@ -22,7 +22,7 @@
     "@docsearch/css": "^3.9.0",
     "@docsearch/js": "^3.9.0",
     "@tailwindcss/vite": "^4.2.2",
-    "astro": "^7.4.2",
+    "astro": "^7.4.7",
     "astro-expressive-code": "^0.44.3",
     "astrocms": "^0.4.1",
     "glob": "^14.0.3",
