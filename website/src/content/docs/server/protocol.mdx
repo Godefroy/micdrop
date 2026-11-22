@@ -51,6 +51,8 @@ sequenceDiagram
 
 Micdrop talks to its server over a WebSocket because a browser calling your own backend needs just the server you already deploy. The browser [detects speech](../client/vad) and sends audio only while someone speaks, which keeps bandwidth low. [WebRTC is worth its extra servers](/blog/websocket-or-webrtc-voice-agent) for group calls, video, phone lines and users on weak mobile networks.
 
+A text answer that only travels from the server to the browser can stream over a plain HTTP response, while a voice call also sends microphone audio upstream. [SSE and WebSocket have different trade-offs](/blog/sse-vs-websocket-ai-streaming) that follow from this direction of travel.
+
 ## Calls without a voice
 
 A call configured without a text to speech carries no audio chunk back. The
