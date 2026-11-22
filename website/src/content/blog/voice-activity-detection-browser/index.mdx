@@ -77,7 +77,7 @@ Silero separates a human voice from a television, a fan or a passing truck, whic
 
 ### Running Silero VAD in the browser
 
-In the browser, the model runs on [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web) with its WebAssembly backend. Microphone audio is resampled to 16 kHz, sliced into 512-sample frames and scored one frame at a time. The model and the runtime download on the first call and stay in the browser cache afterwards.
+In the browser, the model runs on [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) with its WebAssembly backend. Microphone audio is resampled to 16 kHz, sliced into 512-sample frames and scored one frame at a time. The model and the runtime download on the first call and stay in the browser cache afterwards.
 
 Silero reached JavaScript through [ricky0123/vad](https://github.com/ricky0123/vad), the open source project that packages the model for the browser as `@ricky0123/vad-web`. Its `MicVAD` class opens the microphone, calls `onSpeechStart` when the user starts talking, and passes the recorded speech to `onSpeechEnd` as 16 kHz samples. It loads the original Silero model by default and offers versions 5 and 6 as options. Micdrop follows [its algorithm](https://docs.vad.ricky0123.com/user-guide/algorithm/), which rests on two probability thresholds and two frame counts. By default, Micdrop also fetches its Silero model file, version 5, from that package.
 
