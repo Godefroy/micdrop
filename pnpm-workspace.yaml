@@ -6,6 +6,8 @@ packages:
 linkWorkspacePackages: true
 onlyBuiltDependencies:
   - esbuild
+  - sharp
+  - workerd
   - onnxruntime-node
   - protobufjs
 ignoredBuiltDependencies:

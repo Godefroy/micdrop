@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "micdrop-website",
+  // Godefroy account, so a deploy never lands on another account.
+  "account_id": "95951ec04e3eb15e1a6902bf93b0e14e",
+  "compatibility_date": "2026-11-01",
+  // No Worker: Cloudflare serves the build as is, redirects and headers included.
+  "assets": {
+    "directory": "./dist",
+    // `build.format: "file"` emits `page.html`, served at `/page`.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": { "enabled": true }
+}

@@ -1,7 +1,6 @@
 import { defineConfig } from 'astro/config'
 import { unified } from '@astrojs/markdown-remark'
 import mdx, { type MdxOptions } from '@astrojs/mdx'
-import netlify from '@astrojs/netlify'
 import sitemap from '@astrojs/sitemap'
 import tailwindcss from '@tailwindcss/vite'
 import expressiveCode from 'astro-expressive-code'
@@ -15,6 +14,7 @@ import remarkAdmonitions from './src/utils/remark-admonitions'
 import remarkDocLinks from './src/utils/remark-doc-links'
 import remarkStripTitle from './src/utils/remark-strip-title'
 import enrichMd from './src/integrations/enrich-md'
+import cloudflareRedirects from './src/integrations/cloudflare-redirects'
 import config from './website.config'
 
 const { site } = config
@@ -35,12 +35,7 @@ const processor = unified({
 
 export default defineConfig({
   site,
-  adapter: netlify({
-    // Netlify's on-demand image service only exists on their production
-    // runtime, so `pnpm dev` would otherwise get broken image URLs.
-    imageCDN: process.env.NODE_ENV === 'production',
-    edgeMiddleware: false,
-  }),
+  // Served by Cloudflare as is (wrangler.jsonc), images are optimized by sharp at build time.
   output: 'static',
   trailingSlash: 'never',
   build: { format: 'file' },
@@ -76,6 +71,7 @@ export default defineConfig({
       },
     }),
     enrichMd(),
+    cloudflareRedirects(),
   ],
   vite: {
     plugins: [tailwindcss()],

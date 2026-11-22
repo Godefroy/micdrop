@@ -1,7 +1,7 @@
 # Micdrop website
 
 Marketing site and documentation for [Micdrop](https://micdrop.dev), built with
-**Astro 6**, **MDX** and **Tailwind CSS v4**, deployed on Netlify. Content lives
+**Astro 6**, **MDX** and **Tailwind CSS v4**, deployed on Cloudflare by GitHub Actions (`.github/workflows/deploy-website.yml`). Content lives
 in Git as markdown; there is no database, no server and no CMS backend.
 
 Started from the [lonestone/astro-template](https://github.com/lonestone/astro-template)
@@ -91,6 +91,10 @@ The crawler runs on Algolia's side; nothing here feeds it.
 
 ## Deployment
 
-Netlify: build command `pnpm --filter @micdrop/website build`, publish directory
-`website/dist`. The adapter emits `_redirects` and the `_headers` file that
-advertises the `.md` twin of every page.
+Cloudflare: a push to `main` touching `website/` builds the site in GitHub
+Actions (`.github/workflows/deploy-website.yml`) and deploys `website/dist` with
+`wrangler deploy` (`wrangler.jsonc`). The build writes `_redirects` (exact
+redirects of `src/redirects.ts`, then `public/_redirects`) and the `_headers`
+file that advertises the `.md` twin of every page. `pnpm build` then
+`pnpm exec wrangler dev` serves `dist/` the way Cloudflare does. The Umami
+variables are repository variables passed to the build.

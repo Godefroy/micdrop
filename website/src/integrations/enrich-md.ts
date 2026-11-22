@@ -83,7 +83,7 @@ function decodeHtmlEntities(str: string): string {
  * page. Title and description come from <head>, body from <main>.
  *
  * Why: LLM crawlers and "view as markdown" clients can fetch the `.md`
- * URL directly. A Netlify `_headers` file is also written with a
+ * URL directly. A `_headers` file is also written with a
  * RFC 8288 Link header pointing each HTML page to its markdown alternate.
  */
 export default function enrichMd(): AstroIntegration {
@@ -149,20 +149,34 @@ export default function enrichMd(): AstroIntegration {
           mdPages.push({ urlPath, mdUrlPath })
         }
 
-        // _headers: advertise the .md alternate for each HTML page and
-        // serve .md files with the correct content type.
-        const sections: string[] = [
-          '/*.md\n  Content-Type: text/markdown; charset=utf-8',
-        ]
+        // _headers: advertise the .md alternate for each HTML page, serve .md
+        // files with the correct content type and cache hashed assets for good.
+        // Cloudflare reads at most 100 rules, so the pages of a folder share one
+        // splat rule (every page there has its .md, only redirect stubs don't
+        // and they never render).
+        const alternate = (path: string) =>
+          `  Link: <${path}>; rel="alternate"; type="text/markdown"`
+        const sections: string[] = []
+        const folders = new Set<string>()
         for (const { urlPath, mdUrlPath } of mdPages) {
-          sections.push(
-            `${urlPath}\n  Link: <${mdUrlPath}>; rel="alternate"; type="text/markdown"`
-          )
+          const folder = urlPath.match(/^\/([^/]+)\/./)?.[1]
+          if (folder) folders.add(folder)
+          else sections.push(`${urlPath}\n${alternate(mdUrlPath)}`)
         }
+        for (const folder of [...folders].sort()) {
+          sections.push(`/${folder}/*\n${alternate(`/${folder}/:splat.md`)}`)
+        }
+        sections.push(
+          '/_astro/*\n  Cache-Control: public, max-age=31536000, immutable'
+        )
+        // Last, so it also strips the Link a folder rule gives its .md files.
+        sections.push(
+          '/*.md\n  ! Link\n  Content-Type: text/markdown; charset=utf-8'
+        )
         writeFileSync(join(distDir, '_headers'), sections.join('\n\n') + '\n')
 
         console.log(
-          `Generated ${generated} .md files and _headers with ${mdPages.length} entries`
+          `Generated ${generated} .md files and _headers with ${sections.length} rules`
         )
       },
     },

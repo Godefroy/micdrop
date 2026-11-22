@@ -166,8 +166,7 @@ over Fragment slots for simple strings; reserve slots for rich content.
 ### Maintenance reflexes
 
 - Renaming or deleting a page: add a redirect. One-to-one redirects go in
-  `src/redirects.ts`; patterns Astro cannot emit go in `public/_redirects`
-  (Netlify syntax).
+  `src/redirects.ts`; patterns Astro cannot emit go in `public/_redirects`.
 - The published URL set must stay a superset of the one the previous Docusaurus
   site served. Check `dist/sitemap-0.xml` after a build.
 - Clearing the Astro cache means `node_modules/.astro` too, not only `.astro`.

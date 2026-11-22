@@ -1,5 +1,5 @@
-# Netlify redirects. One-to-one rules live in src/redirects.ts; this file is
-# for the ones Astro cannot emit as a static HTML page.
+# Wildcard redirects, read by Cloudflare after the exact redirects of
+# src/redirects.ts (src/integrations/cloudflare-redirects.ts).
 
 # Astro splits the sitemap into an index plus one file; the previous site
 # served a single sitemap.xml.

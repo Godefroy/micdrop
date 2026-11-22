@@ -1,7 +1,8 @@
 # Build output
 dist/
 .astro/
-.netlify/
+.wrangler/
+.dev.vars
 
 # Dependencies
 node_modules/

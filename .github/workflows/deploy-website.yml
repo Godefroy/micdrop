@@ -1,0 +1,58 @@
+# Builds the website and deploys it to Cloudflare (website/wrangler.jsonc).
+# Needs the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets, and the
+# PUBLIC_UMAMI_* repository variables.
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - website/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-website.yml
+  workflow_dispatch:
+
+# A newer push replaces a deploy still running.
+concurrency:
+  group: deploy-website
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The sitemap reads each page's last commit date (src/utils/content-lastmod.ts).
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter @micdrop/website...
+
+      # Images optimized by sharp, reused from the previous build. A cache entry
+      # can't be overwritten, so each run saves a new one and restores the latest.
+      - uses: actions/cache@v4
+        with:
+          path: website/node_modules/.astro
+          key: astro-${{ github.run_id }}
+          restore-keys: astro-
+
+      - run: pnpm build
+        env:
+          PUBLIC_UMAMI_SCRIPT_URL: ${{ vars.PUBLIC_UMAMI_SCRIPT_URL }}
+          PUBLIC_UMAMI_WEBSITE_ID: ${{ vars.PUBLIC_UMAMI_WEBSITE_ID }}
+
+      - run: pnpm exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
