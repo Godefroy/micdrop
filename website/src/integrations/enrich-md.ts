@@ -170,9 +170,15 @@ export default function enrichMd(): AstroIntegration {
           '/_astro/*\n  Cache-Control: public, max-age=31536000, immutable'
         )
         // Last, so it also strips the Link a folder rule gives its .md files.
+        // Each twin names its HTML page as canonical, so Google indexes the
+        // page rather than its duplicate.
+        const canonical = (path: string) =>
+          `  Link: <${siteUrl}${path}>; rel="canonical"`
         sections.push(
-          '/*.md\n  ! Link\n  Content-Type: text/markdown; charset=utf-8'
+          `/*.md\n  ! Link\n${canonical('/:splat')}\n  Content-Type: text/markdown; charset=utf-8`
         )
+        // The home page twin is /index.md, whose splat is not its path.
+        sections.push(`/index.md\n  ! Link\n${canonical('/')}`)
         writeFileSync(join(distDir, '_headers'), sections.join('\n\n') + '\n')
 
         console.log(
