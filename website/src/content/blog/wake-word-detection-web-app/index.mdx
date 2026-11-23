@@ -74,7 +74,7 @@ The detector runs on the device because streaming a room's audio to a server all
 
 [openWakeWord](https://github.com/dscripka/openWakeWord) is the open source wake word project most developers start with. Its code is under the Apache 2.0 license, its models run on ONNX Runtime, and its last release (v0.6.0) dates from February 2024. Home Assistant uses it for its voice assistants.
 
-The project itself targets Python. Its FAQ says a JavaScript port is not on the roadmap, so the browser ports come from the community, on top of [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/main/js/web), the same runtime that runs Silero VAD in a page:
+The project itself targets Python. Its FAQ says a JavaScript port is not on the roadmap, so the browser ports come from the community, on top of [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/), the same runtime that runs Silero VAD in a page:
 
 - [openwakeword-wasm-browser](https://github.com/dnavarrom/openwakeword_wasm) (MIT, version 0.1.1 on npm) wraps the models in a `WakeWordEngine` class with a `detect` event, a threshold and a cooldown between detections.
 - [openwakeword-web](https://www.npmjs.com/package/openwakeword-web) (Apache 2.0, version 0.1.0) comes from a fork of the main repository, proposed upstream as a pull request.
