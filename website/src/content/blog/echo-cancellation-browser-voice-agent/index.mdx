@@ -3,6 +3,7 @@ title: 'Acoustic Echo Cancellation in the Browser'
 h1: 'Acoustic Echo Cancellation for Browser Voice Agents'
 summary: 'Browser echo cancellation reduces speaker audio in microphone input. Learn how getUserMedia requests it, check settings and handle remaining echo.'
 date: 2026-10-31
+update: 2026-11-24
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -24,13 +25,32 @@ takeaways:
 
 Your voice agent reads an answer aloud, then its own voice comes back through the microphone and cuts it off. That loop can happen even when speech detection works as intended: the detector hears speech, but it cannot tell whether the speaker was you or the assistant coming through a loudspeaker. Browser acoustic echo cancellation asks the microphone system to reduce that playback before your app processes the audio. It helps with ordinary laptop and phone setups, while the result still varies with the device, output route and room.
 
+## What is acoustic echo cancellation?
+
+Acoustic echo cancellation (AEC) reduces the sound that a device’s own loudspeaker sends back into its microphone. It works because the device knows what it played: the echo canceller compares that audio with what the microphone hears, estimates the echo and subtracts it, so the voice of the person at the microphone remains.
+
+An echo canceller works in four steps:
+
+1. It keeps a copy of the audio sent to the loudspeaker, which in a voice agent is the assistant’s voice.
+2. An adaptive filter estimates the echo path, meaning how the loudspeaker, the room and the microphone delay and alter that sound, and subtracts the estimated echo from the microphone signal. The echo path changes whenever someone moves or a door opens, so the filter keeps updating its estimate during the call, as [Aalto University’s speech processing course explains](https://speechprocessingbook.aalto.fi/enhancement/echo-cancellation).
+3. Double-talk detection stops that update while the person talks over the assistant’s playback. A filter that keeps adapting during double-talk is likely to lose track of the echo path and distort the person’s speech.
+4. Residual echo suppression turns down the frequencies where echo remains after the subtraction.
+
+AEC can run at three levels, sometimes at several in the same call:
+
+- In the browser, Chrome uses the WebRTC echo canceller, AEC3, whose [source code](https://webrtc.googlesource.com/src/+/refs/heads/main/modules/audio_processing/aec3/) splits the work into a buffer of the played audio, a delay estimator, adaptive filters and a residual echo suppressor. A page requests it with `echoCancellation: true`. Per [MDN’s `echoCancellation` reference](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/echoCancellation), the browser must then cancel at least the audio coming from remote WebRTC peers, and should cancel all the audio the system plays.
+- In the operating system, Android gives apps access to the device’s echo canceller through [`AcousticEchoCanceler`](https://developer.android.com/reference/android/media/audiofx/AcousticEchoCanceler). Some devices apply it to microphone capture by default.
+- In the audio hardware, a conference speakerphone can cancel the echo of its own speaker inside the device. Jabra lists acoustic echo cancellation in the [Speak2 40 datasheet](https://www.jabra.com/_/media/Jabra_VXi_Product-Documentation/Jabra-Speak2-40/Datasheets/RevC/EN-US--Speak2-40-Datasheet-20260714.pdf), for example.
+
+Each level cancels only the audio it holds a copy of.
+
 ## Why does a voice agent hear itself?
 
 A voice agent playing through speakers creates an acoustic path from the speaker to the microphone. The microphone captures both the person speaking and some of the assistant’s output. If the app sends that mixed signal to voice activity detection (VAD), VAD can classify the assistant’s voice as new speech. The agent may then stop its own answer, transcribe its own words or start another turn.
 
 Headphones change the path. They keep most of the assistant’s sound close to the ears instead of sending it into the room, so less playback reaches the microphone. That makes headphones a useful diagnostic: if the loop stops when you plug them in, playback echo is probably involved. They do not explain every false interruption, since VAD can also react to a cough, another speaker or a sharp sound.
 
-Echo cancellation tries to estimate the sound from the output and reduce it in the microphone signal. The browser or audio system can use a reference to what it played, then adapt as the room, speaker and microphone change. The result depends on the hardware and software path. A loud external speaker, a microphone far from the speaker or a new audio route can leave audible echo behind.
+Echo cancellation reduces the assistant’s playback in the microphone signal. A loud external speaker, a microphone far from the speaker or a new audio route can still leave audible echo behind.
 
 The browser’s `echoCancellation` audio constraint asks for this processing on a microphone track. The [Media Capture and Streams specification](https://www.w3.org/TR/mediacapture-streams/#dom-mediatrackconstraintset-echocancellation) defines it as a request to attempt cancellation. With the Boolean value `true`, the browser decides what audio to remove.
 
@@ -157,6 +177,9 @@ Test the chosen microphone and output route before enabling interruptions for ev
   </FaqItem>
   <FaqItem question="How do I turn on echo cancellation in a browser?">
     Set `echoCancellation: true` in the audio constraints passed to `navigator.mediaDevices.getUserMedia()`. The browser treats this as a request, so check the resulting track settings and test the captured audio.
+  </FaqItem>
+  <FaqItem question="What is the difference between acoustic echo cancellation software and hardware?">
+    Software AEC runs on the processor of the computer or phone, in the browser’s WebRTC stack or in the operating system. Hardware AEC runs inside the audio device, such as a conference speakerphone, which cancels the echo of its own speaker before the audio reaches the computer. A browser voice agent requests the browser’s AEC with `echoCancellation: true`. In both cases, record the audio captured with the device and room you plan to support, then listen to it.
   </FaqItem>
   <FaqItem question="What does noise suppression do?">
     Noise suppression reduces background sounds in microphone audio. Echo cancellation targets sound played by the device that returns through the microphone, so the two settings address different problems.
