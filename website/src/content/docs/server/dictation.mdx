@@ -1,14 +1,17 @@
 ---
-title: 'Dictation and Text-Only Calls'
-description: 'Leave out the agent, the voice, or both, to build a dictation tool, a text-only assistant, or a call your own code drives.'
+title: 'Real-Time Speech to Text in Node.js and TypeScript'
+sidebarLabel: 'Dictation and Text-Only Calls'
+description: 'Transcribe what users say in a web app with the open source Micdrop server, then build a dictation tool, a text-only assistant, or a call your code drives.'
 order: 33
 ---
 
-# Dictation and Text-Only Calls
+# Real-Time Speech to Text in Node.js and TypeScript
 
-`agent` and `tts` are optional. Leaving one of them out changes what a call
-does, while the microphone, the voice activity detection and the transport keep
-working the same way.
+To transcribe what a user says in a web app, without a voice agent, give the
+Micdrop server a speech to text and nothing else. Each sentence then reaches the
+browser as text, over the same WebSocket a voice call uses. `agent` and `tts`
+are both optional. Each combination gives a different kind of call, with the same
+microphone, [voice activity detection](../client/vad) and transport underneath.
 
 | Configuration       | What the user gets                                            |
 | ------------------- | ------------------------------------------------------------- |
@@ -32,7 +35,12 @@ new MicdropServer(socket, {
 })
 ```
 
-The client displays them from `conversation`, like any other message:
+Any [speech to text provider Micdrop supports](../providers) fits in place of
+Gladia, hosted or running in your own Node process. To set up the server and the
+client from scratch, [start a first Micdrop call](../getting-started), then
+leave out its agent and its voice.
+
+The client displays each sentence from `conversation`, like any other message:
 
 ```typescript
 Micdrop.on('StateChange', (state) => {
@@ -44,23 +52,24 @@ Micdrop.on('StateChange', (state) => {
 })
 ```
 
-Each sentence lands once the speech to text has settled it, so the text grows
-sentence by sentence, at the pauses. Each provider needs its own signal to close
-a sentence, and the path from the microphone to the text is detailed in
-[real-time transcription over a WebSocket](/blog/real-time-transcription-websocket-typescript).
+Each sentence appears once the speech to text has finalized it, so the text grows
+sentence by sentence, at the pauses. Each provider uses its own signal to end a
+sentence. You can follow how
+[real-time transcription travels over a WebSocket](/blog/real-time-transcription-websocket-typescript),
+from the microphone to the text.
 
-The [dictation example](https://github.com/Godefroy/micdrop/tree/main/examples/dictation)
-does exactly this, in a page with a microphone button, a language picker and a
-text area.
+You can run this
+[dictation in a complete page](https://github.com/Godefroy/micdrop/tree/main/examples/dictation),
+with a microphone button, a language picker and a text area.
 
-Chrome and Safari each ship a recogniser of their own. Read
-[speech to text in JavaScript](/blog/web-speech-api) to see how they compare
-with a dictation server like this one.
+Chrome and Safari each ship a recogniser of their own. You can
+[compare their speech to text in JavaScript](/blog/web-speech-api) with a
+dictation server like this one.
 
 ## An assistant that writes instead of speaking
 
-Without a text to speech, the agent still answers, and its answer reaches the
-client as a message. Nothing is synthesized, so nothing plays.
+Without a text to speech, the agent still answers, as a message sent to the
+client. Nothing is synthesized, so nothing plays.
 
 ```typescript
 new MicdropServer(socket, {
@@ -80,8 +89,8 @@ written, which is what makes a text answer feel as immediate as a spoken one.
 
 ## Driving the conversation yourself
 
-A call with a voice and no agent speaks only when your code asks it to. This is
-the shape to reach for when the answers come from a state machine, a workflow
+A call with a voice and no agent speaks only when your code asks it to. Use this
+setup when the answers come from a state machine, a workflow
 engine, or an orchestration framework you already run.
 
 ```typescript
@@ -110,12 +119,12 @@ server.on('End', ({ conversation, duration }) => {
 })
 ```
 
-The `Message` event fires for every message added on either side. See
-[Save Messages](./save-messages) for storing them as they arrive.
+The `Message` event fires for every message added on either side, so you can
+[save the messages](./save-messages) as they arrive.
 
 <Callout type="info">
   With an agent, the conversation opens with the system message that carries the
-  prompt. Without one, it holds nothing but what was said.
+  prompt. Without one, it holds only what was said.
 </Callout>
 
 ## What still needs an agent
@@ -127,3 +136,29 @@ to speech is configured.
 Tools, [automatic call ending](./auto-end-call),
 [extraction](./extract) and [semantic turn detection](./semantic-turn-detection)
 are agent features, and are out of reach in a call that has no agent.
+
+## FAQ
+
+<FaqList>
+  <FaqItem question="What does the client receive during dictation?">
+    Each sentence the speech to text finalizes arrives as a message with the
+    `user` role in `conversation`, the same list a full conversation fills. The
+    text grows sentence by sentence, whenever the speaker pauses. The server
+    sends back text only.
+  </FaqItem>
+  <FaqItem question="Do I need an AI agent to transcribe speech?">
+    A speech to text is all the server requires. With `stt` alone, the server
+    transcribes and stays quiet. An agent becomes necessary for tools,
+    `generateFirstMessage`, extraction, automatic call ending and semantic turn
+    detection.
+  </FaqItem>
+  <FaqItem question="How much does real-time transcription cost?">
+    Micdrop itself is open source under the MIT license, so you pay only the
+    speech to text provider. An hour of audio costs $0.36 with OpenAI, $0.62
+    with Gradium and $0.75 with Gladia, at the list prices of their entry paid
+    plans in August 2026. Mistral Voxtral charges $0.008 a minute, or $0.48 an
+    hour. [Whisper running in your Node process](../speech-to-text/whisper) is
+    free and keeps the audio on your own server. Providers also differ on
+    [latency and languages](../speech-to-text).
+  </FaqItem>
+</FaqList>
