@@ -3,7 +3,7 @@ title: 'OpenAI Decisions vs Jev: gpt-6-luna Benchmark'
 h1: 'OpenAI Decisions API (gpt-6-luna) vs Jev on the same 90 voice commands'
 summary: 'gpt-6-luna, Jev and Claude Haiku 4.5 read the same 90 voice commands. Compare their latency, the commands they got right and the price of 1,000 turns.'
 date: 2026-10-13
-update: 2026-11-19
+update: 2026-11-24
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
@@ -18,16 +18,17 @@ similarPosts:
   - 'what-is-jev'
   - 'intent-classification-voice-agent'
 takeaways:
-  - 'Jev answered a request of 21 questions in 274 ms at the median, gpt-6-luna in 416 ms and Claude Haiku 4.5 with structured output in 1,513 ms.'
-  - 'Claude Haiku 4.5 read all 90 spoken commands right, Jev 75 and gpt-6-luna 60, on questions first written for Jev.'
-  - 'Classifying 1,000 turns with 21 questions each cost $0.16 with Jev, $0.43 with gpt-6-luna and $4.40 with Claude Haiku 4.5.'
+  - 'On October 13, 2026, Jev answered a request of 21 questions in 274 ms at the median, gpt-6-luna in 416 ms and Claude Haiku 4.5 with structured output in 1,513 ms.'
+  - 'On October 13, 2026, Claude Haiku 4.5 read all 90 spoken commands right, Jev 75 and gpt-6-luna 60, on questions first written for Jev.'
+  - 'Classifying 1,000 turns with 21 questions each cost $0.16 with Jev, $0.43 with gpt-6-luna and $4.40 with Claude Haiku 4.5, in the runs of October 13 and November 12, 2026.'
+  - 'In a rerun on November 12, 2026, Gemini Decision 1 read 81 of 90 spoken commands right against 78 for Jev, but took 337 ms at the median against 164 ms and cost $0.29 per 1,000 turns against $0.16.'
   - 'Jev and gpt-6-luna both misread commands that hold several steps or a count, so send the turns they answer with a low confidence to an LLM.'
   - 'OpenAI documents Zero Data Retention, HIPAA use and European data residency for the Decisions API. TypeSafe offers zero data retention to enterprise customers and names no hosting region in its documentation.'
 ---
 
-Jev, the System One model of [TypeSafe](https://typesafe.ai), and `gpt-6-luna`, the model behind the [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), do the same job: they answer typed questions about a text with probabilities, in a few hundred milliseconds, and write no text. We sent the same 90 spoken commands to both on October 13, 2026, and to Claude Haiku 4.5 with structured output as the LLM baseline. Jev answered in 274 ms at the median and read 75 commands right, for $0.16 per 1,000 turns. `gpt-6-luna` took 416 ms, read 60 right and cost $0.43. Claude Haiku 4.5 read all 90 right, in 1,513 ms and for $4.40.
+Jev, the System One model of [TypeSafe](https://typesafe.ai), and `gpt-6-luna`, the model behind the [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), do the same job: they answer typed questions about a text with probabilities, in a few hundred milliseconds, and write no text. We sent the same 90 spoken commands to both on October 13, 2026, and to Claude Haiku 4.5 with structured output as the LLM baseline. Jev answered in 274 ms at the median and read 75 commands right, for $0.16 per 1,000 turns. `gpt-6-luna` took 416 ms, read 60 right and cost $0.43. Claude Haiku 4.5 read all 90 right, in 1,513 ms and for $4.40. In a rerun on November 12, Gemini Decision 1 read 81 commands right against 78 for Jev, in 337 ms at the median against 164 ms, for $0.29 per 1,000 turns.
 
-Jev is the fastest and the cheapest of the three, the Decisions API comes with the compliance options of OpenAI, and the LLM is the one to trust with a command of several steps. We detail the method, the commands each model misread, the prices and the data terms, so you can pick the classifier for your own voice agent. The benchmark runs on [Micdrop](/), an open source TypeScript library for real-time voice conversations, where the three models are called through the same classifier interface.
+Jev is the fastest and the cheapest in both runs, the Decisions API comes with the compliance options of OpenAI, and the LLM is the one to trust with a command of several steps. We detail the method, the commands each model misread, the prices and the data terms, so you can pick the classifier for your own voice agent. The benchmark runs on [Micdrop](/), an open source TypeScript library for real-time voice conversations, where the models are called through the same classifier interface.
 
 ## Jev and the Decisions API answer the same three kinds of questions
 
@@ -60,7 +61,7 @@ Each sentence goes to the three models at the same moment:
 - `gpt-6-luna`, through `OpenaiClassifier` of `@micdrop/openai`. It gets the questions of Jev unchanged, each `noul` sent as a `predicate`.
 - Claude Haiku 4.5, through the Messages API of Anthropic with structured outputs, so the answer follows a JSON schema with one property per question.
 
-We measure the time your server would wait, from the request to the parsed answer, over the public APIs, from one machine and its network. The first request of the process is kept apart as the cold start. Speech to text is left out, so the three models read the same text.
+We measure the time your server would wait, from the request to the parsed answer, over the public APIs, from one machine and its network. The first request of the process is kept apart as the cold start. Speech to text is left out, so the three models read the same text. Unless a passage names the rerun of November 12, 2026, the figures come from the run of October 13, 2026.
 
 To count the commands a model got right, we labelled the 30 sentences by hand with the commands a person would accept. For "Go switch on the lamp", we accept the switch alone, or a walk to the lamp then the switch. The robot starts each sentence with empty hands, so "Bring the ball to the dog" needs two steps, pick up the ball then give it to the dog. The labels, the script and [the raw file of this run](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot/measurements) are in the repository. Run `pnpm measure:classifiers` to repeat the benchmark on your network with your keys.
 
@@ -139,6 +140,35 @@ The cost is rarely a reason to pick one classifier over the other at these price
     Infographic: regenerate if examples/demo-robot/measurements gets a newer three-way file or if a price changes. Last data sync: 2026-10-13. */}
 ![Scorecard of the three classifiers on 90 voice commands: Jev 274 ms, 75 right, $0.16 per 1,000 turns. gpt-6-luna 416 ms, 60 right, $0.43. Claude Haiku 4.5 1,513 ms, 90 right, $4.40](./decisions-vs-jev-scorecard.jpg)
 
+## Gemini Decisions read 81 commands right in a rerun on November 12
+
+Gemini Decision 1, the model behind the [Decisions API of Gemini](https://aistudio.google.com/docs/decisions-api), answers the same three kinds of questions as Jev, in the same format, so code that reads `answers.wantsHuman.noul` works with both. It reads text, images, audio, video and PDF, and costs $0.10 per million input tokens, like `gpt-6-luna`. Gemini Decision 1 answers every question of a request, and fails the whole request with an error when its safety filters block the input. The model runs on the `v1beta` version of the Gemini Developer API only. Its `noul` probability stays between 0.01 and 0.99, so a threshold above 0.99 never matches. In Micdrop, you can [classify each turn with Gemini Decisions](/docs/classifiers/gemini-decisions) through `GeminiClassifier` of `@micdrop/gemini`, with the questions of Jev unchanged.
+
+We ran the benchmark again on November 12, 2026, with the same 30 commands, three rounds and 21 questions, and sent each sentence to the four models at the same moment. [The raw file of the rerun](https://github.com/Godefroy/micdrop/tree/main/examples/demo-robot/measurements) is in the same folder as the first one.
+
+| | Jev | `gpt-6-luna` | `gemini-decision-1` | Claude Haiku 4.5 |
+| --- | --- | --- | --- | --- |
+| Median | 164 ms | 244 ms | 337 ms | 1,876 ms |
+| 95th percentile | 207 ms | 686 ms | 485 ms | 1,977 ms |
+| First request of the process | 263 ms | 1,733 ms | 320 ms | 2,554 ms |
+| Commands read right, out of 90 | 78 | 60 | 81 | 89 |
+| Questions refused, out of 1,890 | 0 | 3 | 0 | 0 |
+| Wrong commands with a count confidence under 0.6 | 3 | 12 | 0 | No confidence returned |
+| Input tokens per request | 3,732 | 4,306 | 2,887 | 3,872 |
+| Price of 1,000 turns | $0.16 | $0.43 | $0.29 | $4.40 |
+
+Gemini read more commands right than the two other classifiers, and fewer than the LLM. It misread three sentences, the same way on each round:
+
+- "Bring the ball to the dog" became two gifts to the dog, without picking up the ball.
+- "Could you please take the wood to the house?" stopped after picking up the wood.
+- "Go right four times" became three moves of four steps to the right.
+
+Gemini answered the count question with a confidence above 0.6 on all nine of its wrong commands, so a threshold of 0.6 that sends the unsure turns to an LLM catches none of them. Jev was under it on 3 of its 12 wrong commands, and `gpt-6-luna` on 12 of its 30.
+
+Gemini took more time than Jev and `gpt-6-luna` at the median, and varied less than `gpt-6-luna` at the 95th percentile. Every one of its requests came back within the 1,000 ms that the Micdrop server waits by default. It gave the same command, tone included, as Jev on 74 of the 90 requests, as Claude Haiku 4.5 on 72 and as `gpt-6-luna` on 60. Google counts the same 21 questions as 2,887 input tokens, where OpenAI counts 4,306, so at the same price per token, Gemini Decision 1 costs two thirds of the price of `gpt-6-luna`.
+
+The two runs give different times for the same models. Jev answered in 164 ms at the median in November against 274 ms in October, and `gpt-6-luna` in 244 ms against 416 ms. Latency over public APIs changes from one day to the next and with the network, so compare models within one run. Jev also read 78 commands right in November against 75 in October, because it read "Go switch on the lamp, please" right this time. Claude Haiku 4.5 read 89, because it once delivered the wood to the house without picking it up.
+
 ## OpenAI documents more data protection and compliance options than TypeSafe
 
 A classifier reads every turn of every call, so its data terms matter as much as those of your LLM.
@@ -161,15 +191,18 @@ Micdrop is a library that runs in your own server with your own keys. So the com
 graph TD
   A[What does the classifier decide?] --> B{Commands with several steps or counts?}
   B -->|Yes| C[LLM with structured output, or a classifier first and the LLM under a confidence threshold]
-  B -->|No, routing and yes or no questions| D{HIPAA, EU residency or images needed?}
+  B -->|No, routing and yes or no questions| D{HIPAA or EU residency needed?}
   D -->|Yes| E[OpenAI Decisions API]
-  D -->|No| F{Already on OpenAI and one vendor preferred?}
+  D -->|No| H{Audio, video or PDF input, or accuracy first?}
+  H -->|Yes| I[Gemini Decisions]
+  H -->|No| F{Already on OpenAI and one vendor preferred?}
   F -->|Yes| E
   F -->|No| G[Jev]
 ```
 
-- Pick Jev when latency comes first and your calls are in English. It was the fastest, the most regular and the cheapest in this run, and it always answers. English is its main training language, so test other languages on your own turns.
+- Pick Jev when latency comes first and your calls are in English. It was the fastest, the most regular and the cheapest in both runs, and it always answers. English is its main training language, so test other languages on your own turns.
 - Pick the Decisions API when you need documented data residency in Europe, HIPAA eligibility or image inputs, or when your agent already runs on OpenAI and one vendor is enough. Plan for refusals in your code. The API left its public beta on 22 October 2026 and is now generally available.
+- Pick Gemini Decisions when your input holds audio, video or PDF, or when fewer misread commands matter more than speed. It read 81 commands right against 78 for Jev in the November run, at about twice the median latency of Jev and 1.8 times its price. Its confidence flagged none of its mistakes, so check it on your own labelled turns before you route on a threshold. The API is still in `v1beta`.
 - Keep an LLM for commands with several steps or a count, when a wrong action is worse for you than an extra second of waiting. You can also classify first and call the LLM only when the confidence is low.
 
 Whichever classifier you start with, a second one is a good fallback. When your LLM and your classifier both run on OpenAI, an OpenAI outage takes the routing down with the answers.
@@ -230,28 +263,31 @@ new MicdropServer(socket, {
 })
 ```
 
-Swapping takes a few lines, so you can run both on a day of real calls and compare their answers before you choose. Each class has its own options, listed for [the Jev classifier](/docs/classifiers/jev) and for [the OpenAI classifier](/docs/classifiers/openai-decisions). Keywords and embeddings are two other [ways to detect the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
+Swapping takes a few lines, so you can run both on a day of real calls and compare their answers before you choose. Each class has its own options, listed for [the Jev classifier](/docs/classifiers/jev), for [the OpenAI classifier](/docs/classifiers/openai-decisions) and for [the Gemini classifier](/docs/classifiers/gemini-decisions), which takes the questions of Jev with the same `choice` and `noul` helpers. Keywords and embeddings are two other [ways to detect the intent of a turn](/blog/intent-classification-voice-agent), each with its own latency.
 
 ## Frequently asked questions
 
 <FaqList>
   <FaqItem question="Is Jev faster than gpt-6-luna?">
-    Yes, Jev was faster in our run of October 13, 2026. On 90 requests of 21 questions each, Jev answered in 274 ms at the median and 312 ms at the 95th percentile, against 416 ms and 508 ms for `gpt-6-luna`. `gpt-6-luna` had the fastest single request, at 176 ms, but its times varied more.
+    Yes, Jev was faster in our run of October 13, 2026. On 90 requests of 21 questions each, Jev answered in 274 ms at the median and 312 ms at the 95th percentile, against 416 ms and 508 ms for `gpt-6-luna`. `gpt-6-luna` had the fastest single request, at 176 ms, but its times varied more. In the rerun of November 12, Jev answered in 164 ms at the median, `gpt-6-luna` in 244 ms and Gemini Decision 1 in 337 ms.
   </FaqItem>
   <FaqItem question="Which is more accurate, Jev or the OpenAI Decisions API?">
-    On 90 spoken commands for a robot, Jev read 75 right and `gpt-6-luna` 60, while Claude Haiku 4.5 read all 90 right. The questions were first written for Jev, which may favour it. Both models misread commands that hold several steps or a count.
+    On October 13, 2026, Jev read 75 of 90 spoken robot commands right and `gpt-6-luna` 60, while Claude Haiku 4.5 read all 90 right. In the rerun of November 12, Gemini Decision 1 read 81 right, Jev 78, `gpt-6-luna` 60 and Claude Haiku 4.5 89. The questions were first written for Jev, which may favour it. Every classifier misread commands that hold several steps or a count.
   </FaqItem>
   <FaqItem question="Which is cheaper, Jev or gpt-6-luna?">
-    Jev costs $0.042 per million input tokens and `gpt-6-luna` $0.10, and output is free on both. For the same 21 questions, 1,000 requests cost $0.16 with Jev and $0.43 with `gpt-6-luna`, because OpenAI also counted more tokens.
+    Jev costs $0.042 per million input tokens and `gpt-6-luna` $0.10, and output is free on both. For the same 21 questions, 1,000 requests cost $0.16 with Jev and $0.43 with `gpt-6-luna` in both runs, because OpenAI also counted more tokens.
   </FaqItem>
   <FaqItem question="Can gpt-6-luna or Jev replace an LLM in a voice agent?">
     They replace the LLM for decisions, such as routing a turn, detecting a request for a human or reading a simple voice command. Neither writes text, so the LLM keeps the answers that need writing. The LLM also read commands of several steps better in our benchmark.
   </FaqItem>
   <FaqItem question="Is the OpenAI Decisions API an alternative to Jev?">
-    Yes, both answer choice, score and yes or no questions with probabilities in a single request. The Decisions API adds image inputs, refusals and documented data residency in the United States and Europe. Jev was faster and cheaper in our run and always answers.
+    Yes, both answer choice, score and yes or no questions with probabilities in a single request. The Decisions API adds image inputs, refusals and documented data residency in the United States and Europe. Jev was faster and cheaper in both runs and always answers.
+  </FaqItem>
+  <FaqItem question="Is Gemini Decisions an alternative to Jev?">
+    Yes, Gemini Decision 1 answers the same three kinds of questions as Jev, in the same format, and also reads images, audio, video and PDF. In our rerun of November 12, 2026, it read 81 of 90 commands right against 78 for Jev, in 337 ms at the median against 164 ms, and cost $0.29 per 1,000 turns against $0.16. It runs on the `v1beta` Gemini Developer API only.
   </FaqItem>
   <FaqItem question="Does the benchmark include speech to text?">
-    No, the benchmark leaves speech to text out. The three models receive the same text at the same moment, and the time runs from the request to the parsed answer. In a call, your speech to text adds its transcription time before the classifier starts.
+    No, the benchmark leaves speech to text out. Every model receives the same text at the same moment, and the time runs from the request to the parsed answer. In a call, your speech to text adds its transcription time before the classifier starts.
   </FaqItem>
 </FaqList>
 
