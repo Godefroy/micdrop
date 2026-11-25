@@ -7,11 +7,26 @@ order: 35
 
 # Save Conversation Messages on the Server
 
-Capture and store conversation messages by listening to the Agent "Message" event for analytics, logging, and conversation history.
+Micdrop leaves the transcript to your code: the server emits a `Message` event each time a message is added to the conversation, and an `End` event with the whole conversation when the call closes. Save each message as it arrives when every message has to reach your database, even if the process crashes. Save the conversation once on `End` when one row per call is enough.
+
+## What a Message Contains
+
+The fields of each conversation item depend on its `role`. The type is `MicdropConversationItem`, exported by `@micdrop/server`.
+
+| `role`        | Fields                                                 | Added when                                                   |
+| ------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| `user`        | `content`, optional `metadata`                         | The speech to text returns a transcript                      |
+| `assistant`   | `content`, optional `metadata`                         | The agent finishes an answer, or the first message is spoken |
+| `tool_call`   | `toolCallId`, `toolName`, `parameters` as a JSON string | The agent calls one of its [tools](./tools)                  |
+| `tool_result` | `toolCallId`, `toolName`, `output` as a JSON string    | The tool returns                                             |
+
+A `system` message with the system prompt opens the conversation. The agent adds it when you create the agent, so it never goes through the `Message` event. You still find it as the first item of the conversation that `End` gives you. The agent skips messages with no text, such as an answer made of a tool call only, so every `content` you receive holds text.
+
+`metadata` holds what Micdrop adds to a message. The JSON object an agent appends to its answer goes under `extracted` when you [extract structured data](./extract) with `saveInMetadata`.
 
 ## Basic Message Logging
 
-Listen for conversation messages:
+Listen for conversation messages on the agent:
 
 ```typescript
 const agent = new OpenaiAgent({
@@ -22,8 +37,8 @@ const agent = new OpenaiAgent({
 // Listen for all conversation messages
 agent.on('Message', (message) => {
   console.log('New message:', {
-    role: message.role, // 'user' or 'assistant'
-    content: message.content, // The message text
+    role: message.role, // 'user', 'assistant', 'tool_call' or 'tool_result'
+    content: 'content' in message ? message.content : undefined,
     timestamp: new Date().toISOString(),
   })
 })
@@ -33,32 +48,35 @@ new MicdropServer(socket, { agent, tts })
 
 ## Listening on the Server
 
-`MicdropServer` emits the same event, for every message added on either side.
-This is the one to use in a call that has no agent, since nothing else keeps the
-conversation:
+`MicdropServer` emits the same event for every message added to the conversation, whether the agent or the server adds it. Listen on the server in a call that has no agent, since the server then keeps the conversation itself. The server event also works with a [realtime model](../realtime), which holds the conversation in place of the agent:
 
 ```typescript
 const server = new MicdropServer(socket, { stt })
 
 server.on('Message', (message) => {
-  console.log(message.role, message.content)
+  if (message.role === 'user' || message.role === 'assistant') {
+    console.log(message.role, message.content)
+  }
 })
 ```
 
+The server listens to the agent from the moment you create the server. Messages you add to the agent earlier, such as the history you replay to [resume a conversation](./resume-conversation), reach the agent's listeners only. The server adds the assistant's first message on the next microtask, so a listener added right after `new MicdropServer()` still receives it.
+
 ## Save Messages to Database
 
-Store messages in your database:
+Store each message as it arrives, with a column for its role and the whole item as JSON, so that tool calls and metadata keep their own fields:
 
 ```typescript
 import { db } from './database' // Your database connection
 
 agent.on('Message', async (message) => {
   try {
-    await db.conversations.create({
+    await db.messages.create({
       userId: currentUserId,
       sessionId: currentSessionId,
       role: message.role,
-      content: message.content,
+      content: 'content' in message ? message.content : null,
+      data: message, // tool fields and metadata
       timestamp: new Date(),
     })
   } catch (error) {
@@ -67,9 +85,31 @@ agent.on('Message', async (message) => {
 })
 ```
 
-## Save Conversation when Call ends
+## Remove Cancelled User Messages
 
-Save the complete conversation when the call ends by listening to the `End` event:
+With [noise filtering](./noise-filtering) on, the agent drops a user message it already added when that message carried no intent, such as a cough or a lone "uh". It removes the message from its conversation and emits `CancelLastUserMessage`, with no argument. The event carries no id, so keep the id of the last user message you store and delete that row when the event fires:
+
+```typescript
+let lastUserMessageId: string | undefined
+
+agent.on('Message', async (message) => {
+  const row = await db.messages.create({
+    sessionId: currentSessionId,
+    role: message.role,
+    data: message,
+  })
+  if (message.role === 'user') lastUserMessageId = row.id
+})
+
+agent.on('CancelLastUserMessage', async () => {
+  if (lastUserMessageId) await db.messages.delete(lastUserMessageId)
+  lastUserMessageId = undefined
+})
+```
+
+The conversation given by `End` already leaves the cancelled messages out.
+
+## Save the Conversation When the Call Ends
 
 ```typescript
 import { MicdropServer } from '@micdrop/server'
@@ -93,4 +133,18 @@ server.on('End', async (call) => {
 })
 ```
 
-> ⚠️ **Warning**: In case of server errors or crashes, the conversation may not be saved using this approach. For critical applications, it's recommended to save messages individually as they arrive (see [Save to Database](#save-messages-to-database) section above) to ensure no messages are lost.
+The server emits `End` when the WebSocket closes, whichever side closed it: the client stopped the call, the user left the page, or the network dropped. `duration` counts the seconds since the server was created. `call.conversation` includes the `system` message. `server.conversation` stays readable once the call is over.
+
+A [classifier](../classifiers) writes its result under `classification` in the metadata of the user's last message. The classification usually finishes after the `Message` event of that message, so the row you save on `Message` lacks it, while the conversation given by `End` holds it. When you save each message as it arrives, update the user rows from that conversation on `End`.
+
+<Callout type="warning">
+When the server process crashes, `End` never fires, so a conversation saved only on `End` is lost. For critical applications, [save each message as it arrives](#save-messages-to-database) and use `End` to mark the call as finished.
+</Callout>
+
+## Partial Answers Stay Out of the Conversation
+
+With [partial messages](./partial-messages) on, the client receives the answer in pieces while the agent writes it. The pieces go to the client only. The server emits a single `Message` per answer, once the answer is complete, so what you save is the final text.
+
+## Load a Saved Conversation Back
+
+To continue a call later, replay the stored messages into a new agent before the call starts, the way you [resume a conversation](./resume-conversation). `agent.addMessage()` takes the `user`, `assistant` and `system` roles. The `tool_call` and `tool_result` items go through `agent.addToolMessage()`. To keep the audio of each message as well, [record the call](./recording-audio).
