@@ -1,24 +1,28 @@
 ---
-title: 'Extract Value from Answer'
-description: 'The Agent system can extract a JSON object from the end of assistant responses, keeping it out of the voice and of the message.'
+title: 'Extract Structured Data from Voice Agent Answers'
+sidebarLabel: 'Extract Value from Answer'
+description: 'Have the agent end each answer with a JSON object that Micdrop parses, saves in the message metadata and keeps out of the voice, with no extra model call.'
 order: 40
 ---
 
-# Extract Value from Answer
+# Extract Structured Data from Voice Agent Answers
 
-The Agent system can extract a JSON object from the end of assistant responses. The extracted data can be processed via callbacks and saved to message metadata.
+A Micdrop agent can end its answer with a JSON object. The user hears the sentence while your server receives the parsed object. Use it to fill a form while the user talks, to score a candidate during an interview, or to tag each turn with an intent your app reacts to.
 
-By outputting message first and then the data to extract, you can maintain a low latency. Micdrop streams immediately the answer and stops streaming at the first `{`, where the data to extract starts.
+The model writes the object in the same answer as the speech, so one request still covers the whole turn and the user hears the reply as fast as a plain answer. Micdrop streams the answer to the text to speech as the model generates it and stops at the first `{`, where the object starts. The [partial messages](./partial-messages) sent to the client stop at the same place.
 
-## JSON Extraction
+## Turn it on
 
-Extract JSON objects from the end of assistant responses:
+Add the `extract` option to the agent, and tell the model in the system prompt which object to write and where:
 
 ```typescript
 const agent = new OpenaiAgent({
   apiKey: process.env.OPENAI_API_KEY || '',
-  systemPrompt: `You are a helpful assistant that extracts user information.
-  When collecting user details, append them as JSON at the end of your response.`,
+  systemPrompt: `You collect the name, age and city of the user.
+Answer in one or two short sentences, with no braces in them.
+When you learn something new about the user, end your answer with
+a JSON object holding everything known so far, for example:
+{"name": "John", "age": 25, "city": "Paris"}`,
   extract: {
     callback: (data) => {
       console.log('Extracted data:', data)
@@ -28,26 +32,81 @@ const agent = new OpenaiAgent({
 })
 ```
 
-Example conversation:
+For the user turn `"I'm John, 25 years old, living in Paris"`, the model writes:
 
-- **Input**: `"I'm John, 25 years old, living in Paris"`
-- **Received output**: `"Nice to meet you John! I've noted your information. {"name": "John", "age": 25, "city": "Paris"}"`
-- **Message**: `{"role": "assistant", "content": "Nice to meet you John! I've noted your information.", "metadata": {"extracted": {"name": "John", "age": 25, "city": "Paris"}}}`
-- **Callback**: `{"name": "John", "age": 25, "city": "Paris"}`
+```text
+Nice to meet you John! I've noted your information. {"name": "John", "age": 25, "city": "Paris"}
+```
 
-## Extract Options
+The text to speech reads `Nice to meet you John! I've noted your information.` The callback receives the parsed object, and the conversation gets this message:
 
-| Option           | Type                   | Description                                 |
-| ---------------- | ---------------------- | ------------------------------------------- |
-| `callback`       | `(value: any) => void` | Function called with the parsed JSON object |
-| `saveInMetadata` | `boolean`              | Save the parsed object to message metadata  |
+```json
+{
+  "role": "assistant",
+  "content": "Nice to meet you John! I've noted your information.",
+  "metadata": {
+    "extracted": { "name": "John", "age": 25, "city": "Paris" }
+  }
+}
+```
 
-The object runs from the first `{` of the answer to its last `}`, so the
-answer itself must hold no brace before it. `json: true`, which earlier
-versions required, is still accepted and changes nothing.
+`OpenaiAgent`, `MistralAgent`, `GeminiAgent` and `AiSdkAgent` all take the option. A [`FallbackAgent`](../agents/fallback) leaves extraction to whichever child agent answers, so set `extract` in each child's factory. In a [custom agent](../agents/custom), write the answer through `answerWriter()` and pass the complete answer to `extract()` to get the same behaviour.
 
-## Best Practices
+## Extract options
 
-- Provide clear system prompts about where and how to include extractable data
-- Extracted content must be at the end of responses
-- Keep in mind metadata is also passed to the client, so be aware that the user can access it
+| Option           | Type                   | Description                                                   |
+| ---------------- | ---------------------- | ------------------------------------------------------------- |
+| `callback`       | `(value: any) => void` | Called with the parsed object, once the answer is complete    |
+| `saveInMetadata` | `boolean`              | Keeps the parsed object in the message metadata, as `extracted` |
+
+Micdrop still accepts `json: true`, which earlier versions required, and ignores it.
+
+## How the answer is cut
+
+The object runs from the first `{` of the answer to its last `}`. Everything before it is the message, trimmed of trailing spaces. Three cases follow from that rule:
+
+- An answer with no `{` stays whole. Micdrop calls the callback only on answers that carry an object, so the model can leave the object out on turns where it has nothing new.
+- Micdrop cuts the answer at the first brace, even one inside a sentence. Ask the model in the prompt to keep braces out of its sentences.
+- When the text from the first `{` to the last `}` is invalid JSON, the agent logs the error and skips the callback. The message still ends before the first `{`, so the user hears only what comes before it.
+
+Ask the model for an object. The cut starts at a `{`, so the user would hear an array or a plain value written at the end of the answer, at least in part.
+
+## Read the value
+
+On the server, the callback is the simplest place to act on the object, since it runs as soon as the answer is complete. With `saveInMetadata` on, the `Message` event also carries the object with the rest of the message. Listen there when your code already [saves the conversation](./save-messages):
+
+```typescript
+agent.on('Message', async (message) => {
+  if (message.role !== 'assistant') return
+  const extracted = message.metadata?.extracted
+  if (extracted) await db.leads.update(sessionId, extracted)
+})
+```
+
+The server sends every message to the client with its metadata, so the browser can [display the conversation](../client/display-conversation-messages) and the object together:
+
+```typescript
+import { Micdrop } from '@micdrop/web'
+
+Micdrop.on('Message', (message) => {
+  if (message.role === 'assistant' && message.metadata?.extracted) {
+    updateForm(message.metadata.extracted)
+  }
+})
+```
+
+The user can read that metadata in their browser. Keep a value meant only for your server in the callback, and leave `saveInMetadata` off.
+
+## Extraction or a tool call
+
+[Tools](./tools) and extraction both turn the conversation into data for your app. They answer different needs:
+
+| Need                                                       | Use        |
+| ---------------------------------------------------------- | ---------- |
+| Record what the user said, after every answer              | Extraction |
+| Keep the answer as fast as a plain answer                  | Extraction |
+| Fetch data the model needs before it answers               | Tool       |
+| Validate the arguments against a schema before running code | Tool       |
+| Trigger an action that returns a result to the model        | Tool       |
+
+Extraction costs a few more tokens at the end of the answer. A tool call runs `execute` on your server. When the model answers with the call alone, the user waits for a second request to hear a reply.
