@@ -1,20 +1,15 @@
 ---
-title: 'Start/Stop Call'
-description: 'Manage voice conversations by starting and stopping the Micdrop client connection and microphone.'
+title: 'Start and Stop a Voice Call in the Browser'
+sidebarLabel: 'Start/Stop Call'
+description: 'Open the microphone and the WebSocket with Micdrop.start(), know when the call is really connected, recover from network drops and hang up cleanly.'
 order: 5
 ---
 
-# Start/Stop Call
+# Start and Stop a Voice Call in the Browser
 
-Manage voice conversations by starting and stopping the Micdrop client connection and microphone.
+`Micdrop.start()` opens the microphone, then the WebSocket to your server, and `Micdrop.stop()` closes both. The promise of `start()` resolves once the microphone is open and the WebSocket has started connecting, so wait for `state.isStarted` to turn `true` before you treat the call as connected.
 
-## Starting a Call
-
-Begin a voice conversation by starting the Micdrop client connection and microphone.
-
-### Basic Usage
-
-Start a call with minimal configuration:
+## Start a call
 
 ```typescript
 import { Micdrop } from '@micdrop/web'
@@ -24,45 +19,70 @@ await Micdrop.start({
 })
 ```
 
-A call can also start hands-free, when a [wake word detector running in the page](/blog/wake-word-detection-web-app) hears its phrase.
+Call it from a click or a tap handler. Browsers keep audio locked until the user interacts with the page. Safari plays no audio at all until then. A call can also start hands-free, when a [wake word detector running in the page](/blog/wake-word-detection-web-app) hears its phrase.
 
-### Start Options
+### What `start()` does
 
-Configure the call with various options:
+1. It cancels a `stopAfterAnswer()` still waiting for the end of an answer, clears the last error and empties the conversation of the previous call.
+2. It opens the microphone, unless `startMic()` already did. The browser asks for permission on the first call.
+3. It opens the WebSocket to `url`. Once the socket is open, the client sends `params` to the server as its first message, in JSON.
+4. The user can speak as soon as `state.isStarted` turns `true`.
+
+`await Micdrop.start()` returns as soon as the socket starts opening, before the server answers. Listen to `StateChange` to know when the call is connected:
+
+```typescript
+Micdrop.on('StateChange', (state, prevState) => {
+  if (state.isStarting && !prevState.isStarting) {
+    console.log('Opening the microphone and the connection...')
+  }
+
+  if (state.isStarted && !prevState.isStarted) {
+    console.log('Connected, the user can speak')
+  }
+})
+```
+
+`state.status` gives the same information in one field: `stopped`, `starting`, `started` or `reconnecting`.
+
+### Start options
 
 ```typescript
 await Micdrop.start({
-  // Required: WebSocket server URL
+  // WebSocket server URL, required on the first start
   url: 'ws://localhost:8081/',
 
-  // Optional: Authentication and parameters
+  // Sent to the server as the first message of each connection
   params: {
     // You can put anything you want here and validate it on the server side
     language: 'en-US',
     userId: '123',
   },
 
-  // Optional: Voice Activity Detection configuration
+  // Voice Activity Detection configuration
   vad: ['volume', 'silero'],
 
-  // Optional: Disable interruption when assistant speaks
+  // Keeps the user from interrupting the assistant
   disableInterruption: false,
 
-  // Optional: Enable debug logging
+  // Logs every step of the call in the console
   debugLog: true,
 
-  // Optional: Automatic reconnection configuration
+  // Automatic reconnection
   reconnect: {
-    maxAttempts: 10, // Maximum reconnection attempts (default: Infinity)
-    delayMs: 500, // Delay between reconnection attempts in ms (default: 1000)
-    connectionTimeout: 5000, // Timeout for WebSocket connection in ms (default: 5000)
+    maxAttempts: 10, // Attempts before giving up (default: Infinity, 0 turns it off)
+    delayMs: 500, // Delay between attempts in ms (default: 1000)
+    connectionTimeout: 5000, // Time allowed to open the WebSocket in ms (default: 5000)
   },
 })
 ```
 
-### Starting Microphone First
+The client keeps these options for the next call and merges the new ones into them. A second `start()` can pass only what changes, or nothing at all with `Micdrop.start({})`.
 
-You can start the microphone before the call to ensure permissions and test audio:
+The `vad` option sets how the client [detects that the user is speaking](./vad). A `turnDetector` option can also [hold the turn open while the user hesitates](./turn-detection).
+
+### Open the microphone before the call
+
+Open the microphone first to ask for the permission early, or to let the user test their input:
 
 ```typescript
 // Start microphone first
@@ -76,11 +96,9 @@ await Micdrop.start({
 })
 ```
 
-Starting the microphone first is not mandatory - calling `start()` will automatically start the microphone if it's not already running.
+`start()` then reuses the open microphone. Without a `deviceId`, the microphone opens on the input the user picked last time, since the client [saves the selected devices](./devices-management).
 
-### Authentication
-
-Pass authentication parameters to your server:
+### Send authentication and parameters
 
 ```typescript
 await Micdrop.start({
@@ -91,178 +109,146 @@ await Micdrop.start({
 })
 ```
 
-The server receives these parameters and can validate them before accepting the connection.
+The client sends `params` again after each reconnection, so the server can check them on every connection it accepts. On the server, read and [validate the parameters before the call starts](../server/auth-and-parameters).
 
-Learn more about [Auth and parameters](../server/auth-and-parameters) on the server side.
+### Handle a failed start
 
-### Start State Monitoring
+How you get the error depends on whether the start fails before or during the connection.
 
-Listen for state changes during startup:
+A missing URL (`MissingUrl`) or a refused microphone (`Mic`) stops the call before any connection and makes `start()` reject. For a refused microphone, the promise rejects with the browser's own error (`NotAllowedError`, `NotFoundError`), so read the Micdrop code from `Micdrop.error`.
+
+`start()` has already resolved by the time the server answers, so a refused or lost connection reaches you through the `Error` event and `state.error`. Its code depends on how the socket closed:
+
+| Server close code | Error code | What the client does |
+|---|---|---|
+| 4401 | `Unauthorized` | Stops the call |
+| 4404 | `NotFound` | Stops the call |
+| 4400 | `BadRequest` | Stops the call |
+| 1011 | `InternalServer` | Reconnects |
+| 1001 to 1010 except 1005, or a dropped network | `Connection` | Reconnects |
+| Any other code from 4000 | `Unknown` | Reconnects |
+| 1000, or any other code below 4000 | No error | Stops the call |
+
+```typescript
+try {
+  await Micdrop.start({ url: 'ws://localhost:8081' })
+} catch {
+  // Missing URL or refused microphone
+  showStartError(Micdrop.error?.code)
+}
+
+// Errors from the connection
+Micdrop.on('Error', (error) => {
+  if (error.code === 'Unauthorized') {
+    showLoginDialog()
+  }
+})
+```
+
+You can [show the user a message for each error code](./error-handling).
+
+### When the connection drops
+
+When a call loses its connection, `state.status` becomes `reconnecting` and `state.isStarted` stays `true`. The VAD pauses meanwhile, so the client records nothing the user says while no server can receive it. The client tries again every `delayMs` up to `maxAttempts` times, then stops the call with a `Connection` error.
 
 ```typescript
 Micdrop.on('StateChange', (state, prevState) => {
-  if (state.isStarting && !prevState.isStarting) {
-    console.log('Starting call...')
-  }
-
-  if (state.isStarted && !prevState.isStarted) {
-    console.log('Call started! Ready for conversation.')
-  }
-
   if (state.isReconnecting && !prevState.isReconnecting) {
     console.log('Connection lost. Attempting to reconnect...')
   }
 })
 ```
 
-### Start Error Handling
+The conversation stays on the client, but each reconnection opens a new session on the server. To give the agent its context back, [resume the conversation on the server](../server/resume-conversation).
 
-Handle connection and startup errors:
-
-```typescript
-try {
-  await Micdrop.start({
-    url: 'ws://localhost:8081',
-  })
-  console.log('Call started successfully!')
-} catch (error) {
-  console.error('Failed to start call:', error.code, error.message)
-
-  // Handle specific error types
-  switch (error.code) {
-    case 'Unauthorized':
-      // Show login dialog
-      break
-    case 'Mic':
-      // Show microphone permission help
-      break
-    case 'MissingUrl':
-      // Show help to set the url
-      break
-    case 'Connection':
-      // Show help to check the connection
-      break
-    case 'InternalServer':
-      // Show help to check the server
-      break
-    case 'BadRequest':
-      // Show help to check the request
-      break
-    case 'NotFound':
-      // Show help to check the server
-      break
-    case 'Unknown':
-      // Show help to check the request
-      break
-    default:
-      break
-  }
-}
-```
-
-Learn more about [Error Handling](./error-handling).
-
-## Stopping a Call
-
-End the voice conversation by stopping the microphone, closing the WebSocket connection, and cleaning up resources.
-
-### Basic Usage
-
-Stop the current call and clean up all resources:
+## Stop a call
 
 ```typescript
-import { Micdrop } from '@micdrop/web'
-
-// Stop the call
 await Micdrop.stop()
 
 console.log('Call stopped:', !Micdrop.isStarted) // true
 ```
 
-When stopped:
+`stop()` closes the WebSocket and cuts the assistant's audio, then releases the microphone, so the browser's recording indicator goes off. It also cancels a pending reconnection.
 
-- 🛑 Microphone recording ends
-- 🛑 WebSocket connection closes
-- 🛑 Audio processing stops
-- 🛑 All event listeners are cleaned up
-- 🛑 VAD algorithms are stopped
+Your event listeners stay registered for the next call. The conversation also stays readable in `Micdrop.conversation` until the next `start()`, and so does the last error in `Micdrop.error`.
 
-### Graceful Stop
+```typescript
+Micdrop.on('StateChange', (state) => {
+  if (state.status === 'stopped') {
+    // Update UI to show stopped state
+    updateCallButton('Start Call')
+  }
+})
+```
 
-`stopAfterAnswer()` lets the assistant finish its answer before the call stops,
-the one it is still preparing included. With no answer under way, it stops
-right away.
+### Let the assistant finish first
+
+`stopAfterAnswer()` waits until the assistant has finished its answer, even one
+it is still preparing, then stops the call. With no answer under way, it stops
+the call right away.
 
 ```typescript
 await Micdrop.stopAfterAnswer()
 console.log('Call stopped once the assistant was done')
 ```
 
-A `start()` or a `stop()` while it waits cancels it, so a call started again
-right after is never stopped by the previous one.
+Calling `start()` or `stop()` during the wait cancels it, so a call you start
+again right after keeps running.
 
-### Stop State Monitoring
+### Let the assistant end the call
 
-Monitor the stop process:
-
-```typescript
-Micdrop.on('StateChange', (state) => {
-  if (!state.isStarted && !state.isStarting) {
-    console.log('✅ Call fully stopped')
-    // Update UI to show stopped state
-    updateCallButton('Start Call', 'green')
-  }
-})
-
-await Micdrop.stop()
-```
-
-### Auto-stop on EndCall event
-
-You may want the assistant to be able to end the call, for example when the user says "Bye bye".
-
-The [agent](../agents/custom) can send an `EndCall` that can be listened to by the client.
+The assistant can hang up, for example when the user says "Bye bye". When the [agent](../agents/custom) ends the call, the client receives an `EndCall` event:
 
 ```typescript
 Micdrop.on('EndCall', () => {
   console.log('🔚 Call ended by assistant')
-  // The goodbye that follows is heard before the line goes quiet
+  // The user hears the goodbye before the call stops
   Micdrop.stopAfterAnswer()
 })
 ```
 
-## UI Integration
+In React, the [`useMicdropEndCall` hook](./react-hooks) does the same.
 
-Create start/stop controls in your interface:
+## Start and stop buttons
+
+Base the toggle on the client's state rather than on a flag of your own, so the button also resets when the server or the assistant ends the call. `isStarting` is `true` while the user answers the permission prompt, so a click at that moment cancels the start:
 
 ```typescript
-// Button handler for start/stop toggle
-function toggleStartStop() {
-  if (Micdrop.isStarted) {
+const button = document.getElementById('startStopBtn')
+
+function handleToggleCall() {
+  if (Micdrop.isStarted || Micdrop.isStarting) {
     Micdrop.stop()
-    document.getElementById('startStopBtn').textContent = 'Start'
   } else {
-    Micdrop.start()
-    document.getElementById('startStopBtn').textContent = 'Stop'
+    Micdrop.start({ url: 'ws://localhost:8081' })
   }
 }
+
+Micdrop.on('StateChange', (state) => {
+  button.textContent = state.status === 'stopped' ? 'Start' : 'Stop'
+})
+
+button.addEventListener('click', handleToggleCall)
 ```
 
-React example:
+In React, `useMicdropState` gives you the same state:
 
 ```tsx
+import { Micdrop } from '@micdrop/web'
 import { useMicdropState } from '@micdrop/react'
 
 function CallControls() {
   const state = useMicdropState()
+  const isOn = state.status !== 'stopped'
 
-  const handleStart = () => Micdrop.start({ url: 'ws://localhost:8081/' })
-  const handleStop = () => Micdrop.stop()
+  const handleClick = () =>
+    isOn ? Micdrop.stop() : Micdrop.start({ url: 'ws://localhost:8081/' })
 
   return (
-    <button onClick={state.isStarted ? handleStop : handleStart}>
-      {state.isStarted ? '⏸️ Stop' : '▶️ Start'}
-    </button>
+    <button onClick={handleClick}>{isOn ? '⏸️ Stop' : '▶️ Start'}</button>
   )
 }
 ```
+
+The same calls work on a phone, [in a React Native app](../react-native) with `@micdrop/react-native`.
