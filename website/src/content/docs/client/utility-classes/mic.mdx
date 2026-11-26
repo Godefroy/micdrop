@@ -1,7 +1,7 @@
 ---
 title: 'Microphone Capture with the Mic Object'
 sidebarLabel: 'Mic'
-description: 'The Mic object manages microphone capture, the input device in use, and the level the voice activity detection reads.'
+description: 'How Micdrop records the microphone in a browser or on a phone: the track Mic asks for, how it measures the level, and how it handles device switches.'
 order: 16
 ---
 
@@ -12,7 +12,7 @@ audio, reports how loud the room is, and lists the inputs the system offers.
 
 The recording itself is done by a driver: the Web Audio API in a browser, the
 native audio engine on a phone. Importing `@micdrop/web` or
-`@micdrop/react-native` installs the right one, so there is nothing to wire.
+`@micdrop/react-native` installs the right one for you.
 
 ## Usage Example
 
@@ -34,9 +34,113 @@ Mic.on('Volume', (volume: number) => {
 await Mic.stop()
 ```
 
-Starting and stopping a call already does this for you, see
-[Start/Stop Call](../start-stop-call). Reach for `Mic` when you need the
-microphone on its own, for a level meter before the call begins for instance.
+[Starting and stopping a call](../start-stop-call) already opens and releases
+the microphone for you. Reach for `Mic` when you need the microphone on its
+own, for a level meter before the call begins for instance.
+A call started on the same input keeps the microphone that is already running.
+
+## What the browser is asked for
+
+In a browser, `Mic.start()` requests a mono track with echo cancellation and
+noise suppression on. It also asks for 16 kHz, which browsers ignore: the track
+comes at the rate of the audio context, usually 44.1 or 48 kHz. An audio
+worklet then hands the samples over in batches of about 20 ms.
+
+So `Frames` carries the real rate as its second argument. Code that processes
+the raw samples has to read it rather than assume 16 kHz. Micdrop resamples to
+16 kHz itself before sending speech to the server.
+
+## Echo cancellation
+
+Some browsers and devices run without echo cancellation even when asked for it.
+`Mic.echoCancellation` reads the settings of the running track and gives one of
+three answers:
+
+- `true` when the browser reports it on
+- `false` when it is known to be off
+- `undefined` when the microphone is stopped or the system says nothing
+
+When it is `false`, Micdrop turns interruptions off for the call, since the
+microphone would hear the assistant and the assistant would cut itself off. A
+browser can also report echo cancellation on while the microphone still hears
+the speaker. Micdrop then
+[detects the echo during the first answer](../vad#echo-and-interruptions) and
+switches the playback route or turns interruptions off.
+
+## How the level is measured
+
+Every 100 ms, `Mic` takes the last 512 samples at 16 kHz (32 ms of sound) and
+runs them through a Fourier transform, the way a browser `AnalyserNode` does.
+The level is the strength of the loudest frequency above about 125 Hz, smoothed
+with the previous measurement.
+
+The loudest frequency separates speech from room noise much better than the
+overall energy. A voice puts its power into a few frequencies while a fan
+spreads it over all of them, so this measure puts about 25 dB between a voice
+and a fan, where an RMS of the overall energy puts 7 dB. The same calculation
+runs in a browser and on a phone, which keeps the [VAD](../vad) thresholds valid on both.
+
+`Mic.volume` goes back to `-Infinity` at each start and stop.
+
+## Starting and stopping in quick succession
+
+Calls to `start()` and `stop()` take turns, so the microphone is never opened
+twice. The last call sets the final state:
+
+- `start()` with the device already recording keeps recording.
+- `start()` with another device closes the current input and opens the new one.
+- `stop()` while the permission prompt is still open releases whatever the
+  browser hands back afterwards.
+
+When a user hangs up during the permission prompt, the tab therefore releases
+the microphone as soon as the browser grants it.
+
+### On Firefox, an input reopens 15 seconds after its release
+
+Firefox needs time to release a microphone. A device requested again too soon
+comes back without echo cancellation or noise suppression and with a gain some
+30 dB higher, while its settings still report both on. The room then
+sounds like speech and the assistant hears its own voice.
+
+No event announces when the device is free, so on Firefox `Mic.start()` waits
+until 15 seconds have passed since the same input was released. Expect that
+delay when a user ends a call and starts another right away. Opening a
+different input skips the wait.
+
+## Sample rate warning
+
+Two seconds after capture starts, `Mic` compares the number of samples received
+with the rate the driver announced. When they differ by more than 15%, it
+prints this warning once:
+
+```text
+[Micdrop] The microphone announces 16000 Hz but delivers about 48000 Hz. Speech is being sent at the wrong speed, so transcription will be poor.
+```
+
+Speech sent three times too slow, as in this example, comes back from the server as a short
+transcript in a random language. This warning usually points to a
+[custom driver](../../react-native/custom-audio) that reports the wrong rate.
+
+## Listing inputs
+
+`Mic.getDevices()` puts the system default input first. Browsers list that
+input twice, once under the id `default` and once under its real id. `Mic`
+keeps only the real one. An input without a name gets the label `Microphone`.
+
+Browsers reveal input labels only once a stream is running. Before that,
+Firefox goes further and lists no input at all. Call `getDevices()` after
+`Mic.start()` to build a picker, and listen to `DeviceChange` to refresh it when
+a headset is plugged in. You can start from a
+[complete microphone and speaker picker](../devices-management).
+
+## Errors
+
+Without `@micdrop/web` or `@micdrop/react-native` imported, `Mic.start()`
+throws `No microphone driver`. Import one of them, or call `Mic.setDriver()`.
+
+A refused permission or a missing microphone makes `Mic.start()` reject with
+the browser's error. Inside a call, the client reports it as
+[a `Mic` error](../error-handling#microphone-error).
 
 ## API Reference
 
@@ -58,8 +162,8 @@ Lists the inputs the system offers, each with an `id`, a `label` to show and its
 
 #### `setDriver(driver: MicDriver): void`
 
-Records with another library. See
-[Using another audio library](../../react-native/custom-audio).
+Records through
+[another audio library](../../react-native/custom-audio).
 
 ### Properties
 
@@ -71,6 +175,11 @@ Whether the microphone is capturing.
 
 The input in use, when the system reports one.
 
+#### `echoCancellation: boolean | undefined`
+
+Whether the system removes the speaker from what the microphone hears,
+`undefined` when the microphone is stopped or the system does not say.
+
 #### `volume: number`
 
 The last level measured, in decibels between -Infinity and 0.
@@ -79,9 +188,9 @@ The last level measured, in decibels between -Infinity and 0.
 
 #### `Volume: [number]`
 
-The level of the captured audio, about ten times a second. It is the loudest
-frequency rather than the overall energy, which is what separates a voice from a
-room, see [Voice Activity Detection](../vad).
+The level of the captured audio, about ten times a second. It measures the
+loudest frequency rather than the overall energy, which lets
+[voice activity detection](../vad) tell a voice from room noise.
 
 #### `Frames: [Float32Array, number]`
 
