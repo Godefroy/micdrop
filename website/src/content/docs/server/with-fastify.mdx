@@ -1,13 +1,13 @@
 ---
 title: 'Fastify WebSocket Server for Voice AI'
 sidebarLabel: 'With Fastify'
-description: 'Integrate Micdrop server with Fastify for robust web applications with voice capabilities.'
+description: 'Run Micdrop voice calls on a Fastify route with @fastify/websocket, then add authentication, a logger per call and a shutdown that lets clients reconnect.'
 order: 29
 ---
 
 # Fastify WebSocket Server for Voice AI
 
-A Fastify server runs Micdrop voice calls with the `@fastify/websocket` plugin: register the plugin, declare a route with `{ websocket: true }`, and hand the socket it receives to `MicdropServer`. The route runs on the port of your Fastify application and uses its logger and hooks. That socket comes from the `ws` library, which is the type `MicdropServer` expects.
+A Fastify server runs Micdrop voice calls with the `@fastify/websocket` plugin: register the plugin, declare a route with `{ websocket: true }`, and hand the socket it receives to `MicdropServer`. The route runs on the port of your Fastify application and uses its logger and hooks. That socket is a WebSocket from the `ws` library, the type `MicdropServer` expects.
 
 ## Installation
 
@@ -16,6 +16,8 @@ npm install @micdrop/server @fastify/websocket fastify
 ```
 
 Add the packages of the AI providers you call, here `@micdrop/openai`, `@micdrop/gladia` and `@micdrop/elevenlabs`.
+
+The Micdrop examples run on Fastify 5 with version 11 of `@fastify/websocket`, the version that declares Fastify 5 as its peer dependency. On Fastify 4, stay on version 10 of the plugin.
 
 ## Basic setup
 
@@ -72,7 +74,34 @@ try {
 
 The handler receives the socket as its first argument since version 10 of `@fastify/websocket`. Older versions passed a connection object, with the socket in `connection.socket`.
 
+Register the plugin before the routes, as above, since it handles the WebSocket upgrade only on the routes declared after it.
+
 On the browser side, point the client at the route path: `ws://localhost:8081/call` in development.
+
+## Serve REST routes next to the call
+
+The call route is an ordinary Fastify route, so you can declare it in the same plugin as the HTTP routes the client calls before the call starts: one that issues a short lived call token, one that lists the voices to pick from, one that returns the past calls. All these routes share the port, the hooks and the decorators of the plugin.
+
+```typescript
+import fastifyCors from '@fastify/cors'
+import { FastifyInstance } from 'fastify'
+
+// Let a client served from another origin, such as a Vite dev server, read the routes
+await fastify.register(fastifyCors, { origin: true })
+
+fastify.register(async function (app: FastifyInstance) {
+  // Issued by your session, read back by the call route
+  app.post('/call-token', async (request) => {
+    return { token: await createCallToken(request) }
+  })
+
+  app.get('/call', { websocket: true }, async (socket, request) => {
+    // Read the token, then start MicdropServer
+  })
+})
+```
+
+The browser opens the WebSocket without a CORS check: `@fastify/cors` only matters for the HTTP routes. In the Micdrop repository, the advanced example [serves its catalog of providers next to its `/call` route](https://github.com/Godefroy/micdrop/blob/main/examples/advanced/server/src/call.ts).
 
 ## Authenticate the connection
 
@@ -117,6 +146,45 @@ fastify.get('/call', { websocket: true }, async (socket) => {
 
 Keep the rest of the setup inside the same `try` block, so that `handleError` also [closes the call on a setup failure](./error-handling), such as a missing API key.
 
+### Reject the connection in a hook
+
+The `onRequest`, `preValidation` and `preHandler` hooks run on the upgrade request, before the socket opens. A hook can therefore check a session cookie, which the browser sends with the upgrade request of a same site WebSocket, and answer 401 before any provider starts.
+
+```typescript
+fastify.addHook('preValidation', async (request, reply) => {
+  if (!(await getSession(request))) {
+    await reply.code(401).send('Not authenticated')
+  }
+})
+```
+
+The page only sees the WebSocket close with code 1006, which the Micdrop client reads as a connection error. The client then reconnects every second, with unlimited attempts by default. When you reject in a hook, set `reconnect.maxAttempts` on the client. When you reject inside the route with a `MicdropError`, the socket closes with 4401 instead and the client stops for good.
+
+## Log each call with the request logger
+
+The handler receives the Fastify request as its second argument. `request.log` is a child of the Fastify logger. It adds the request id to every line, so all the logs of one call carry the same id. To send the Micdrop logs through it, set the `logger` property of `MicdropServer` to an object with a `name` and a `log` method:
+
+```typescript
+fastify.get('/call', { websocket: true }, async (socket, request) => {
+  try {
+    // Setup agent, STT and TTS [...]
+
+    const server = new MicdropServer(socket, { agent, stt, tts })
+    server.logger = {
+      name: 'MicdropServer',
+      log: (...message) => request.log.debug({ message }, 'micdrop'),
+    }
+    server.on('End', ({ duration }) => {
+      request.log.info({ duration }, 'Call ended')
+    })
+  } catch (error) {
+    handleError(socket, error)
+  }
+})
+```
+
+The agent, the STT and the TTS have the same `logger` property. Set the level of the Fastify logger to `debug` to see the lines Micdrop logs.
+
 ## Handle errors
 
 `handleError` only sees the errors your route handler catches. For the errors that escape the handler, pass an `errorHandler` to the plugin, for example one that logs the error and closes the socket with code 1011, as `handleError` does for an unexpected error:
@@ -131,6 +199,25 @@ await fastify.register(fastifyWebsocket, {
 ```
 
 The client receives the close code, so it can tell a rejected token (4401) from a server failure (1011).
+
+## Restart the server without ending calls
+
+`fastify.close()` closes every open socket through the plugin's `preClose` hook. The default hook closes them without a code, which the client reads as a call the server ended: the client stops and the user has to start a new call.
+
+To let the clients reconnect to the next instance during a deploy, close the sockets with code 1001 in your own `preClose`, then close the WebSocket server from the same hook. The client reads 1001 as a connection error and reconnects.
+
+```typescript
+await fastify.register(fastifyWebsocket, {
+  preClose(done) {
+    for (const socket of fastify.websocketServer.clients) {
+      socket.close(1001, 'Server restarting')
+    }
+    fastify.websocketServer.close(done)
+  },
+})
+```
+
+Each reconnection runs the route again, which creates a new `MicdropServer` with an empty conversation. To let the assistant continue where it stopped, [replay the saved messages into the agent](./resume-conversation) before the call starts.
 
 ## What travels over the socket
 
