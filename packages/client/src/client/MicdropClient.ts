@@ -517,10 +517,11 @@ export class MicdropClient
       // Stopped while the microphone was opening, a hang-up during the
       // permission prompt for instance: there is nothing left to start
       if (this.micRecorder !== recorder || !Mic.isStarted) return
-      if (Mic.deviceId) {
-        storage.setItem(MicdropStorageKeys.MicDevice, Mic.deviceId)
-      } else {
-        storage.removeItem(MicdropStorageKeys.MicDevice)
+      // Remember an input the user picked once it is the one recording. The
+      // input the browser chose by itself is not a choice: kept, it would be
+      // required on every later call, over the system and browser settings.
+      if (options.deviceId && Mic.deviceId === options.deviceId) {
+        storage.setItem(MicdropStorageKeys.MicDevice, options.deviceId)
       }
 
       if (Mic.echoCancellation === false && !this.options.disableInterruption) {

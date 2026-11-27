@@ -128,16 +128,7 @@ export class WebMic extends MicDriver {
       await waitForRelease(requested, signal)
       if (signal.aborted) return
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: { ideal: requested },
-          sampleRate: 16000, // not working, it will follow device settings, usually 44.1kHz
-          sampleSize: 16,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      })
+      stream = await openStream(requested)
 
       // Remember which device the browser settled on
       const track = stream.getTracks()[0]
@@ -197,6 +188,35 @@ export class WebMic extends MicDriver {
 
   private onDeviceChange = () => {
     this.emit('DeviceChange')
+  }
+}
+
+/**
+ * Asks the browser for a microphone stream.
+ *
+ * A device asked for is required, not hinted: Chrome puts the microphone
+ * chosen in its site settings or permission prompt before an `ideal` device,
+ * which made a choice in the app silently land on another input. When that
+ * device is gone, the system one (or the browser's choice) takes over.
+ * @param deviceId - The device to record from, undefined for the system one
+ */
+async function openStream(deviceId: string | undefined): Promise<MediaStream> {
+  const audio: MediaTrackConstraints = {
+    sampleRate: 16000, // not working, it will follow device settings, usually 44.1kHz
+    sampleSize: 16,
+    channelCount: 1,
+    echoCancellation: true,
+    noiseSuppression: true,
+  }
+  if (!deviceId) return navigator.mediaDevices.getUserMedia({ audio })
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: { ...audio, deviceId: { exact: deviceId } },
+    })
+  } catch (error) {
+    const name = (error as DOMException | undefined)?.name
+    if (name !== 'OverconstrainedError' && name !== 'NotFoundError') throw error
+    return navigator.mediaDevices.getUserMedia({ audio })
   }
 }
 
