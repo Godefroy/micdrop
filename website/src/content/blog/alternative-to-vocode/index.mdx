@@ -1,12 +1,15 @@
 ---
-title: 'Vocode Alternative: A Maintained Voice SDK in TypeScript'
-h1: 'Micdrop, a maintained TypeScript alternative to Vocode for web apps'
-summary: 'Vocode has shipped no release since 2024. Micdrop is a maintained open source alternative for a voice agent in a web app, with client and server in TypeScript.'
+title: 'Best Vocode Alternatives in 2026: Frameworks and Platforms'
+h1: 'The maintained alternatives to Vocode in 2026, and where Micdrop fits'
+summary: 'Vocode has shipped no release since 2024. Compare Pipecat, LiveKit Agents, Dograh, Vapi, Retell AI and Bland, and see when Micdrop fits a TypeScript web app.'
 date: 2026-10-10
+update: 2026-11-27
 author: godefroy
 image: ./thumbnail.jpg
 keywords:
   - 'Vocode alternative'
+  - 'Vocode alternatives'
+  - 'best Vocode alternatives'
   - 'alternative to Vocode'
   - 'Vocode vs Micdrop'
   - 'Vocode TypeScript'
@@ -23,19 +26,69 @@ similarPosts:
   - 'open-source-voice-agent-frameworks'
 takeaways:
   - 'Vocode is an MIT-licensed Python library for voice agents. Its last stable release dates from June 2024 and its last commit from November 2024, so adopting it today means maintaining it yourself.'
-  - 'The replacement for Vocode depends on where the call happens. For phone calls, look at Pipecat or LiveKit Agents. For a voice conversation inside a web or mobile app written in TypeScript, look at Micdrop.'
+  - 'The best Vocode alternative depends on where the call happens and who hosts it. Pipecat, LiveKit Agents and Dograh replace Vocode for phone agents on servers you host. Vapi, Retell AI and Bland run the calls for you and bill by the minute. Micdrop fits a voice conversation inside a TypeScript web or mobile app.'
   - 'Micdrop runs the microphone, speech detection and playback in the browser, and the speech-to-text, model and voice in the Node server you already run.'
   - 'Micdrop has no telephony. Vocode covers Twilio and Vonage calls, Zoom dial-in and call transfers, which are outside the scope of Micdrop.'
   - 'Vocode and Micdrop are both free and run on your own provider keys. A Vocode project also costs the time you spend updating its provider code yourself.'
 ---
 
-Teams look for a Vocode alternative for one main reason: its releases have stopped. [Vocode](https://github.com/vocodedev/vocode-core) is an open source Python library for building voice agents on top of language models, whose last stable release dates from June 2024. The right replacement depends on where your calls happen. For phone calls, [Pipecat](https://pipecat.ai) and [LiveKit Agents](https://livekit.io) are the maintained frameworks closest to it. For a voice conversation inside a web application, [Micdrop](/) is an open source TypeScript library that runs the whole call in the browser and in your Node server.
+Teams look for a Vocode alternative for one main reason: its releases have stopped. [Vocode](https://github.com/vocodedev/vocode-core) is an open source Python library for building voice agents on top of language models. Its last stable release dates from June 2024. The best Vocode alternatives in 2026 depend on where the call happens and who hosts it. [Pipecat](https://pipecat.ai), [LiveKit Agents](https://livekit.io) and Dograh are maintained open source frameworks you host, the closest to Vocode for phone calls. Vapi, Retell AI and Bland are hosted platforms billed by the minute, which replace the hosted API Vocode used to sell. For a voice conversation inside a web or mobile application, [Micdrop](/) is an open source TypeScript library that runs the whole call in the browser and in your Node server.
 
-We compare Micdrop and Vocode on language, transport, telephony, integrations and cost, as both stood on 10 October 2026. We then explain what moving a Vocode project to Micdrop involves, and when another framework fits better.
+The table of alternatives gives each option's server language, telephony and price model, checked on its own website on 27 November 2026, and adds the voice APIs of OpenAI, Google and Deepgram. The rest of the page compares Vocode in detail with Micdrop, the library we maintain, as both stood on 10 October 2026, and explains what moving a Vocode project to Micdrop involves.
 
-![Screenshot of the Vocode documentation home page, which presents Vocode as an open source library for building voice agents](./vocode.png)
+## The maintained Vocode alternatives in 2026
+
+Vocode was both an open source library you ran yourself and a hosted phone API that has since shut down. The open source frameworks replace the library and the hosted platforms replace the API. A third group, the voice APIs of a single provider, replaces the whole pipeline.
+
+| Option | Type | Server language | Telephony | Browser client | Price model |
+|---|---|---|---|---|---|
+| **Pipecat** | Open source, BSD 2-Clause | Python | Twilio, Telnyx, Plivo, Exotel, Vonage | WebRTC or WebSocket | Free, Pipecat Cloud from $0.01/min |
+| **LiveKit Agents** | Open source, Apache 2.0 | Python, Node | LiveKit SIP | WebRTC | Free, LiveKit Cloud $0.01/min past the included minutes |
+| **Dograh** | Open source platform, BSD 2-Clause | Python | Twilio, Vonage, Telnyx, Plivo, Asterisk and others | Test calls in the browser | Free self-hosted, $0.01/min on its cloud |
+| **TEN Framework** | Open source, Apache 2.0 with conditions | C++, Go, Python, Node | SIP extension | Agora RTC or WebSocket | Free |
+| **Micdrop** | Open source, MIT | TypeScript on Node | None | Web and React Native packages | Free |
+| **Vapi** | Hosted platform | Runs at Vapi | Own numbers, imported numbers, SIP | Web SDK | $0.05/min plus providers |
+| **Retell AI** | Hosted platform | Runs at Retell | Own numbers, SIP | Web SDK | $0.07 to $0.31/min |
+| **Bland** | Hosted platform | Runs at Bland | Own numbers, Twilio, SIP | Web agent SDK | $0.14/min, or $0.12 with $299 a month |
+| **ElevenAgents** | Hosted platform | Runs at ElevenLabs | Twilio, SIP | Widget and web SDKs | $0.08/min plus the model |
+| **OpenAI Realtime API** | Speech-to-speech model API | Runs at OpenAI | Inbound SIP | WebRTC | Per audio token |
+| **Gemini Live API** | Speech-to-speech model API | Runs at Google | Through partners | WebSocket | Per audio token, with a free tier |
+| **Deepgram Voice Agent API** | Hosted voice agent API | Runs at Deepgram | Twilio Media Streams | Browser SDK | $0.075/min |
+
+### Open source frameworks you host
+
+- [Pipecat](https://github.com/pipecat-ai/pipecat) is a Python framework under BSD 2-Clause, and the closest successor to Vocode's phone agents. It ships serializers for Twilio, Telnyx, Plivo, Exotel and Vonage, plus client SDKs for the web, React Native, iOS and Android. It is free to host yourself, and [Pipecat Cloud](https://www.daily.co/pricing/pipecat-cloud) runs it for $0.01 to $0.03 an active minute.
+- [LiveKit Agents](https://github.com/livekit/agents) is an Apache 2.0 framework in Python and Node, where each agent joins a LiveKit WebRTC room. LiveKit's SIP gateway brings phone calls into the same room. [LiveKit Cloud](https://livekit.com/pricing) includes 1,000 agent minutes for free, then charges $0.01 an agent minute on plans from $50 a month.
+- [Dograh](https://github.com/dograh-hq/dograh) is a platform you host, under BSD 2-Clause, with a visual workflow builder and telephony through Twilio, Vonage, Telnyx, Plivo and Asterisk. It calls itself the open source alternative to Vapi and Retell. Hosting it yourself is free, and [its cloud](https://www.dograh.com/pricing) adds 1 cent a minute.
+- [TEN Framework](https://theten.ai) is a runtime from Agora that assembles extensions written in C++, Go, Python or TypeScript, with a SIP extension for calls. Its licence is Apache 2.0 with added conditions: you may not run it on end-user or mobile devices, or use it to compete with Agora.
+- Micdrop covers a voice conversation inside a web or React Native app with a Node back end, in TypeScript from the microphone to the model. It has no telephony.
+
+The [open source voice agent frameworks](/blog/open-source-voice-agent-frameworks) differ most on transport, hosting and licence.
+
+### Hosted platforms that replace Vocode's hosted API
+
+These platforms run the call on their own servers and sell phone numbers, a dashboard and call logs, billed by the minute. They suit a team that wants phone calls without operating a voice service.
+
+- [Vapi](https://vapi.ai/pricing) charges a platform fee of $0.05 a minute and passes your transcription, model and voice providers through at cost. It has server SDKs in six languages and client SDKs for the web, React Native, Flutter and iOS. Its free numbers are US only, and you can import Twilio, Vonage or Telnyx numbers or connect a SIP trunk. Your total depends on [what Vapi's providers add per minute](/blog/vapi-pricing).
+- [Retell AI](https://www.retellai.com/pricing) bills voice infrastructure at $0.055 a minute, plus the voice, the model and telephony, for $0.07 to $0.31 a minute in total. It sells US and Canadian numbers, supports SIP trunking, and has Node.js, Python and web SDKs. The [Retell AI cost per minute](/blog/retell-ai-pricing) varies mostly with the model you pick.
+- [Bland](https://www.bland.ai/pricing) runs its own models and charges $0.14 a minute with no subscription, or $0.12 a minute on its $299 monthly plan. Calls go through Bland numbers, your Twilio account or SIP.
+- [ElevenAgents](https://elevenlabs.io/pricing/agents), the voice agent platform of ElevenLabs, costs $0.08 a minute beyond the minutes its plans include, with the model and telephony billed at cost. It connects to Twilio and SIP trunks and has SDKs for React, Swift, Kotlin and React Native.
+
+The [AI voice agent platforms](/blog/top-ai-voice-agent-platforms) differ most on price per minute, telephony and hosting in Europe.
+
+### Voice APIs from a single provider
+
+One API can replace the whole pipeline when you accept a single provider for the voice and the model. You still write the client, the server and the phone integration around it, which Vocode used to provide.
+
+- The [OpenAI Realtime API](https://developers.openai.com/api/docs/guides/realtime) answers in audio from one model, billed per audio token, at $32 per million input tokens and $64 per million output tokens on its current model. It accepts inbound calls over SIP and connects to a browser over WebRTC. We convert these rates into minutes in our breakdown of [OpenAI Realtime API pricing](/blog/openai-realtime-api-pricing).
+- The [Gemini Live API](https://aistudio.google.com/docs/live-api) from Google costs about $0.005 a minute of audio input and $0.018 a minute of output, with a free tier. It connects over WebSocket and reaches phone lines through partners such as LiveKit and Pipecat.
+- The [Deepgram Voice Agent API](https://developers.deepgram.com/docs/voice-agent) chains Deepgram transcription, a model and Deepgram voices behind one WebSocket, for $0.075 a minute. It takes phone calls through Twilio Media Streams and has a browser SDK.
+
+Micdrop can [run OpenAI Realtime or Gemini Live](/docs/realtime) behind its own browser client and Node server, so you can move between a speech-to-speech model and a pipeline of several providers without touching the front end.
 
 ## What is Vocode?
+
+![Screenshot of the Vocode documentation home page, which presents Vocode as an open source library for building voice agents](./vocode.png)
 
 Vocode is an MIT-licensed Python library that connects a speech-to-text service, a language model and a text-to-speech service into a real-time voice conversation. The company behind it went through Y Combinator in winter 2023. The `vocode-core` repository has about 3,800 stars and 650 forks on GitHub.
 
@@ -235,6 +288,8 @@ The difference is who does the maintenance. With Vocode, you do it: every provid
 
 **Choose Pipecat or LiveKit Agents** when the calls arrive over a phone line, or when your back end is in Python. They are the maintained frameworks closest to Vocode. Pipecat ships telephony serializers for Twilio, Telnyx, Plivo and Vonage, while LiveKit has its own SIP gateway. Micdrop has no telephony, so it is the wrong pick for a call centre.
 
+**Choose Vapi, Retell AI or Bland** when you want a vendor to host the voice service, the calls arrive over a phone line, and a per-minute bill fits your margins. They replace the hosted API Vocode used to sell, and include phone numbers, a dashboard and call logs. Dograh gives you the same kind of platform on your own servers.
+
 **Choose Micdrop** when voice is a feature of a web or mobile application and your team writes TypeScript. The signals are a Node back end, a React front end, an agent that needs the user's session and your database on every turn, and a team that wants to keep a single deployment. Micdrop is written by one maintainer rather than a funded team, so weigh that limit too.
 
 If you are evaluating rather than migrating, start on a maintained project in every case. A new product started on Vocode has more than two years of provider changes to catch up on from the first day.
@@ -243,10 +298,12 @@ If you are evaluating rather than migrating, start on a maintained project in ev
 graph TD
   A[Where does the call happen?] --> B[On a phone line]
   A --> C[In a web or mobile app]
-  B --> D[Pipecat or LiveKit Agents]
-  C --> E{Back end language}
+  B --> G{Who runs the servers?}
+  G -->|Your team| H[Pipecat, LiveKit Agents or Dograh]
+  G -->|A vendor, billed per minute| I[Vapi, Retell AI or Bland]
+  C --> E{Which back end language?}
   E -->|TypeScript or Node.js| F[Micdrop]
-  E -->|Python| D
+  E -->|Python| D[Pipecat or LiveKit Agents]
 ```
 
 ## What adopting Micdrop involves
@@ -295,7 +352,7 @@ The code that answers a phone number stays on Vocode, or moves to Pipecat or Liv
     Vocode supports TypeScript on the client side only. Its npm package gives a React app a hook that connects to a Vocode back end, a Python FastAPI service you deploy beside your Node server. The npm package was last published in August 2023. Micdrop's browser client is in TypeScript, like its server, which runs in [the Node process you already run](/docs/server).
   </FaqItem>
   <FaqItem question="Should I start on Vocode or on Micdrop?">
-    Start on a maintained project. For a new voice feature inside a web or mobile app written in TypeScript, start on Micdrop. For a phone agent or a Python back end, start on Pipecat or LiveKit Agents. Vocode is worth reading as a reference implementation, and worth keeping when it already runs in production and still meets your needs.
+    Start on a maintained project. For a new voice feature inside a web or mobile app written in TypeScript, start on Micdrop. For a phone agent or a Python back end, start on Pipecat or LiveKit Agents. For phone calls that a vendor runs for you, start on a hosted platform such as Vapi, Retell AI or Bland. Vocode remains a useful reference implementation. Keep it when it already runs in production and still meets your needs.
   </FaqItem>
   <FaqItem question="Does Micdrop handle phone calls like Vocode?">
     Micdrop has no telephony. It runs a conversation between a browser or a React Native app and your Node server, over a WebSocket. Vocode answers and places phone calls through Twilio and Vonage. That part of a Vocode project moves to Pipecat, LiveKit Agents or Jambonz.
@@ -314,4 +371,4 @@ If a Python framework is still on your shortlist, we ran the same comparison for
 
 ---
 
-Vocode showed early that an open source voice agent could be simple to assemble. For its phone features, Pipecat and LiveKit Agents are the maintained successors. If your team writes TypeScript and the conversation happens inside a web application, Micdrop keeps the whole call in one language and one deployment, with providers you choose and code that is still updated.
+Vocode showed early that an open source voice agent could be simple to assemble. Pipecat, LiveKit Agents and Dograh are the maintained successors you host for its phone features. Vapi, Retell AI and Bland take over from its hosted API, at a price per minute. If your team writes TypeScript and the conversation happens inside a web application, Micdrop keeps the whole call in one language and one deployment, with providers you choose and code that is still updated.
