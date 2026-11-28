@@ -1,171 +1,136 @@
 ---
-title: 'Handling Tool Calls'
-description: 'Monitor and respond to AI agent tool executions in real-time on the client side.'
+title: 'Show Voice Agent Tool Calls in the Browser'
+sidebarLabel: 'Handling Tool Calls'
+description: 'Update your interface while a Micdrop agent runs your tools: what reaches the client, in which order, and how to react in plain TypeScript or React.'
 order: 10
 ---
 
-# Handling Tool Calls
+# Show Voice Agent Tool Calls in the Browser
 
-Monitor and respond to AI agent tool executions in real-time on the client side.
+When a Micdrop voice agent runs a tool on your Node server, the browser learns about it through two channels. Every call and its result appear in `Micdrop.conversation` as `tool_call` and `tool_result` items, whatever the tool. Tools declared with `emitOutput: true` also fire a `ToolCall` event carrying the parsed parameters and output, which is the channel to use when the result changes what the screen shows, such as a booking card. The tool itself runs on the server, where you [declare it with `addTool()`](../server/tools), so the browser only displays what happens.
 
-## Overview
+## What reaches the browser during a tool call
 
-When AI agents use tools (functions) during conversations, you can monitor these tool calls on the client side. Tool calls and their results are now part of the conversation history, making them easy to display and track. This is useful for:
+1. The model asks for a tool. The server adds a `tool_call` item to the conversation and sends it to the client before running `execute`.
+2. `execute` runs on the server. The client receives nothing in the meantime.
+3. The `tool_result` item arrives with the output as a JSON string.
+4. When the tool has `emitOutput: true`, the `ToolCall` event follows right after with the same output, already parsed.
+5. The assistant speaks its answer, unless the tool has `skipAnswer`.
 
-- **Real-time UI updates**: Show users what actions the AI is performing
-- **Progress indicators**: Display loading states during tool execution
-- **Interactive confirmations**: Allow users to approve/deny tool actions
-- **Analytics and logging**: Track tool usage and effectiveness
-- **Conversation history**: Tool calls appear in the conversation alongside messages
+A `tool_call` waiting for its `tool_result` means the tool is still running, so it is your signal for a loading state. The `ToolCall` event comes after `execute` has returned, too late for a spinner.
 
-## Basic Tool Call Monitoring
+|                       | Conversation items                                               | `ToolCall` event                                     |
+| --------------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| Sent for              | Every tool the agent runs, the built-in ones included            | Tools declared with `emitOutput: true`               |
+| Arrives               | `tool_call` before `execute`, `tool_result` after                | Once, right after `tool_result`                      |
+| Parameters and output | JSON strings to pass through `JSON.parse`                        | Parsed values                                        |
+| Links call and result | `toolCallId` on both items                                       | One event holds both                                 |
+| Available             | In `Micdrop.conversation` until the next `Micdrop.start()`       | To the listeners subscribed when it fires            |
+| Read with             | `Micdrop.conversation`, the `Message` event, `useMicdropState()` | `Micdrop.on('ToolCall')`, `useMicdropToolCall()`     |
 
-You can monitor tool calls in two ways:
+The built-in tools appear in the conversation too, under the names `end_call`, `semantic_turn` and `ignore_user_noise` when you turn on `autoEndCall`, `autoSemanticTurn` or `autoIgnoreUserNoise`. Filter them out before you [display the conversation](./display-conversation-messages).
 
-### 1. Through Conversation History
+The same flow holds with a speech to speech model such as the OpenAI Realtime API or Gemini Live, because a [realtime model](../realtime) runs its tools through the same agent code.
 
-Tool calls and results are automatically added to the conversation history:
+## Show a loading state while a tool runs
+
+Listen to the `Message` event, which fires for each item added to the conversation, and track the calls by `toolCallId`:
 
 ```typescript
-import { Micdrop } from '@micdrop/web'
+import { Micdrop, MicdropConversationItem } from '@micdrop/web'
 
-// Access conversation including tool calls and results
-const conversation = Micdrop.conversation
+const running = new Map<string, string>() // toolCallId → toolName
 
-conversation.forEach((item, index) => {
-  switch (item.role) {
-    case 'tool_call':
-      console.log('Tool called:', item.toolName)
-      console.log('Parameters:', JSON.parse(item.parameters))
-      break
-    case 'tool_result':
-      console.log('Tool result:', item.toolName)
-      console.log('Output:', JSON.parse(item.output))
-      break
-    case 'user':
-    case 'assistant':
-      console.log(`${item.role}: ${item.content}`)
-      break
+Micdrop.on('Message', (item: MicdropConversationItem) => {
+  if (item.role === 'tool_call') {
+    running.set(item.toolCallId, item.toolName)
+  } else if (item.role === 'tool_result') {
+    running.delete(item.toolCallId)
+  } else if (item.role === 'assistant') {
+    // The answer that follows a failed tool
+    running.clear()
+  }
+  showRunningTools([...running.values()])
+})
+```
+
+When `execute` throws, the server sends the error to the model and the client gets no `tool_result` for that call. The model then answers, usually to say the action failed, so clear the pending calls when that `assistant` message arrives. With `OpenaiAgent`, the model can also write a sentence along with its tool call. That `assistant` message reaches the conversation before the `tool_call` item, so the handler clears `running` before it adds the new call.
+
+When the user interrupts the assistant, a tool already running still finishes and its `tool_result` still arrives.
+
+## Update the interface with the tool output
+
+Return from `execute` the data your interface needs, and set `emitOutput` on the tool:
+
+```typescript
+// Server
+agent.addTool({
+  name: 'book_meeting',
+  description: 'Book a meeting in the calendar of the user',
+  inputSchema: z.object({ date: z.string(), time: z.string() }),
+  execute: async ({ date, time }) => {
+    const meeting = await bookMeeting(date, time)
+    return { id: meeting.id, date, time }
+  },
+  emitOutput: true,
+})
+```
+
+```typescript
+// Browser
+import { Micdrop, MicdropToolCall } from '@micdrop/web'
+
+Micdrop.on('ToolCall', (toolCall: MicdropToolCall) => {
+  if (toolCall.name === 'book_meeting') {
+    showBookingCard(toolCall.output)
   }
 })
 ```
 
-### 2. Through Real-time Events
-
-Listen for tool call events using the Micdrop client:
+The event has three fields:
 
 ```typescript
-import { Micdrop } from '@micdrop/web'
-
-// Listen for tool calls from the AI agent
-Micdrop.on('ToolCall', (toolCall) => {
-  console.log('AI is using tool:', toolCall.name)
-  console.log('Parameters:', toolCall.parameters)
-  console.log('Result:', toolCall.output)
-})
-```
-
-Only tools with the `emitOutput` option enabled will emit `ToolCall` events.
-
-## Tool Call Structure
-
-Each tool call event contains complete information about the tool execution:
-
-```typescript
-interface ToolCall {
-  name: string // Name of the tool that was called
-  parameters: any // Parameters passed to the tool
-  output: any // Result returned by the tool
+interface MicdropToolCall {
+  name: string // Name of the tool
+  parameters: any // Arguments the model passed, parsed
+  output: any // Value returned by execute
 }
 ```
 
-## React Example
+The output travels over the WebSocket as JSON. A `Date` arrives as a string and a class instance as a plain object, so return plain data. The same value goes to the model and, inside the `tool_result` item, to the browser for every tool, `emitOutput` or not. Anyone with the developer tools open can read it, so keep tokens, internal ids and other users' data out of what `execute` returns.
 
-Update your interface based on specific tool calls:
+To act on the parameters alone, read the `tool_call` item, which arrives before `execute` runs, for every tool.
+
+## Handle tool calls in React
+
+The `useMicdropToolCall` hook of [`@micdrop/react`](./react-hooks) subscribes to the `ToolCall` event and unsubscribes when the component unmounts. Wrap the callback in `useCallback`, since the hook subscribes again each time the function changes:
 
 ```tsx
-import { useMicdropState } from '@micdrop/react'
-import { useState, useEffect } from 'react'
+import { useMicdropToolCall } from '@micdrop/react'
+import { MicdropToolCall } from '@micdrop/web'
+import { useCallback, useState } from 'react'
 
-function SmartInterface() {
-  const [userProfile, setUserProfile] = useState(null)
-  const [emailStatus, setEmailStatus] = useState(null)
-  const { isStarted } = useMicdropState()
+type Booking = { id: string; date: string; time: string }
 
-  useEffect(() => {
-    if (!isStarted) return
+function BookingCard() {
+  const [booking, setBooking] = useState<Booking | null>(null)
 
-    const handleToolCall = (toolCall) => {
-      // Handle different tool types
-      switch (toolCall.name) {
-        case 'save_user_data':
-          // Update user profile in UI
-          if (toolCall.output.success) {
-            setUserProfile({
-              ...toolCall.parameters,
-              id: toolCall.output.userId,
-              lastUpdated: new Date(),
-            })
-          }
-          break
+  const handleToolCall = useCallback((toolCall: MicdropToolCall) => {
+    if (toolCall.name === 'book_meeting') setBooking(toolCall.output)
+  }, [])
+  useMicdropToolCall(handleToolCall)
 
-        case 'send_email':
-          // Show email status
-          setEmailStatus({
-            sent: toolCall.output.sent,
-            messageId: toolCall.output.messageId,
-            recipient: toolCall.parameters.to,
-            timestamp: new Date(),
-          })
-          break
-
-        case 'search_database':
-          // Could trigger a UI update with search results
-          console.log(`Found ${toolCall.output.results.length} results`)
-          break
-      }
-    }
-
-    Micdrop.on('ToolCall', handleToolCall)
-
-    return () => {
-      Micdrop.off('ToolCall', handleToolCall)
-    }
-  }, [isStarted])
-
+  if (!booking) return null
   return (
-    <div className="smart-interface">
-      {userProfile && (
-        <div className="user-profile">
-          <h3>User Profile</h3>
-          <p>Name: {userProfile.name}</p>
-          <p>Email: {userProfile.email}</p>
-          <p>ID: {userProfile.id}</p>
-          <small>
-            Last updated: {userProfile.lastUpdated.toLocaleString()}
-          </small>
-        </div>
-      )}
-
-      {emailStatus && (
-        <div className="email-status">
-          <h3>Email Status</h3>
-          <p>
-            {emailStatus.sent ? '✅ Sent' : '❌ Failed'} to{' '}
-            {emailStatus.recipient}
-          </p>
-          {emailStatus.messageId && (
-            <small>Message ID: {emailStatus.messageId}</small>
-          )}
-        </div>
-      )}
-    </div>
+    <p>
+      Meeting booked on {booking.date} at {booking.time}
+    </p>
   )
 }
 ```
 
-## Server-side implementation
+`useMicdropState()` returns the conversation with its tool items, for a component that lists them. In React Native, import `Micdrop` and the types from `@micdrop/react-native`. The hooks stay the same.
 
-[Agents can pass tool calls output](../agents/custom#core-interfaces) to the client by emitting the `ToolCall` event.
+## Approve an action before it runs
 
-For example, the [OpenAI Agent](../agents/openai) emits the `ToolCall` event when a tool is called with the `emitOutput` option enabled.
+Tool calls travel one way, from the server to the browser. To have the user confirm an action, ask the model in the system prompt to read the details back and wait for a yes before calling the tool. The user then confirms by voice, so the `tool_call` item reaches the browser only once they have agreed.
