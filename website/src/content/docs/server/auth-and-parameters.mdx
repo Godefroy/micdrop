@@ -1,52 +1,67 @@
 ---
-title: 'Auth and Parameters'
-description: 'Handle user authentication and custom parameters in your voice server for secure and personalized conversations.'
+title: 'Authenticate Voice Calls and Pass Parameters'
+description: 'Check a JWT, an API key or a session before a Micdrop call starts, and configure the agent, voice and language of each call from its parameters.'
 order: 31
 ---
 
 # Auth and Parameters
 
-Handle user authentication and custom parameters in your voice server for secure and personalized conversations.
+A Micdrop call is authenticated through its parameters: the client sends them as the first message of the WebSocket, and the server reads them with `waitForParams` before it creates any provider. The same parameters carry what changes from one call to the next, such as the language, the user's conversation or the voice.
 
-## Basic Parameter Handling
+## Why the parameters travel in the first message
 
-Use `waitForParams` to receive and validate client parameters:
+A browser cannot set headers on a WebSocket, so an `Authorization` header is out of reach. A token in the URL query string would work, but it ends up in the access logs of every proxy on the way. The Micdrop client therefore sends its `params` as a JSON text frame as soon as the socket opens:
+
+```typescript
+await Micdrop.start({
+  url: 'wss://example.com/call',
+  params: {
+    authorization: 'Bearer eyJhbGciOi...',
+    language: 'fr',
+  },
+})
+```
+
+Anything you put in `params` is visible in the browser. Keep the provider API keys on the server and send only a token that identifies the user.
+
+## Read and validate the parameters
+
+`waitForParams(socket, validate)` waits for that first frame, parses it as JSON, runs your `validate` function on it and resolves with what `validate` returns. A [zod](https://zod.dev) schema gives you validation and types in one line:
 
 ```typescript
 import { MicdropServer, waitForParams, handleError } from '@micdrop/server'
+import { OpenaiAgent } from '@micdrop/openai'
 import { z } from 'zod'
 
-// Define parameter schema
 const paramsSchema = z.object({
-  language: z.string().oneOf(['en', 'fr']).default('en'),
+  language: z.enum(['en', 'fr']).default('en'),
 })
 
 wss.on('connection', async (socket) => {
   try {
-    // Wait for parameters from client
     const params = await waitForParams(socket, paramsSchema.parse)
 
-    console.log('Client params:', params)
-
-    // Use parameters to configure agent
     const agent = new OpenaiAgent({
-      apiKey: process.env.OPENAI_API_KEY,
-      systemPrompt: `Respond in ${params.language} language`,
+      apiKey: process.env.OPENAI_API_KEY || '',
+      systemPrompt: `Respond in ${params.language === 'fr' ? 'French' : 'English'}.`,
     })
 
     // Setup STT and TTS [...]
 
-    // Start MicdropServer
-    new MicdropServer(socket, { agent, stt, tss })
+    new MicdropServer(socket, { agent, stt, tts })
   } catch (error) {
     handleError(socket, error)
   }
 })
 ```
 
-## Authentication Examples
+`waitForParams` rejects with a `MicdropError` of code `BadRequest` in two cases: no frame arrives within 3 seconds, or `validate` throws. `handleError` then closes the socket with code 4400, and the reason `Missing params` after the timeout or `Invalid params` after a failed validation. The client receives a `BadRequest` error and stops the call for good. `waitForParams` drops the details of a zod failure, so log them inside your `validate` function when you need them.
 
-### JWT Token Validation
+Read the parameters before you create the agent, the speech to text and the text to speech. The server then turns a connection down before any provider session opens, so a refusal costs nothing.
+
+## Authenticate with a JWT
+
+Verify the token, then throw a `MicdropError` with the `Unauthorized` code when the verification fails. `handleError` closes the socket with code 4401. The client reports an `Unauthorized` error and stops the call for good.
 
 ```typescript
 import {
@@ -59,37 +74,25 @@ import {
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
 
-async function validateJWT(token: string) {
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    return { isValid: true, user: decoded }
-  } catch (error) {
-    return { isValid: false, error: error.message }
-  }
-}
-
 const paramsSchema = z.object({
   authorization: z.string().startsWith('Bearer '),
 })
 
+function verifyToken(token: string) {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET || '') as jwt.JwtPayload
+  } catch {
+    throw new MicdropError(MicdropErrorCode.Unauthorized, 'Invalid JWT token')
+  }
+}
+
 wss.on('connection', async (socket) => {
   try {
     const params = await waitForParams(socket, paramsSchema.parse)
+    const user = verifyToken(params.authorization.slice('Bearer '.length))
 
-    // Validate JWT token
-    const token = params.authorization.replace('Bearer ', '')
-    const auth = await validateJWT(token)
+    // Setup agent, STT and TTS for this user [...]
 
-    if (!auth.isValid) {
-      throw new MicdropError(MicdropErrorCode.Unauthorized, 'Invalid JWT token')
-    }
-
-    // Use authenticated user data
-    console.log('Authenticated user:', auth.user)
-
-    // Setup AI components [..]
-
-    // Start MicdropServer
     new MicdropServer(socket, { agent, stt, tts })
   } catch (error) {
     handleError(socket, error)
@@ -97,18 +100,11 @@ wss.on('connection', async (socket) => {
 })
 ```
 
-### API Key Authentication
+## Authenticate with an API key
+
+For server-to-server calls or an internal tool, checking a shared key against a list of valid keys is enough:
 
 ```typescript
-import {
-  MicdropServer,
-  MicdropError,
-  MicdropErrorCode,
-  waitForParams,
-  handleError,
-} from '@micdrop/server'
-import { z } from 'zod'
-
 const validApiKeys = new Set([process.env.API_KEY_1, process.env.API_KEY_2])
 
 const paramsSchema = z.object({
@@ -117,19 +113,95 @@ const paramsSchema = z.object({
 
 wss.on('connection', async (socket) => {
   try {
-    const params = await waitForParams(socket, paramsSchema.parse)
+    const { apiKey } = await waitForParams(socket, paramsSchema.parse)
 
-    // Validate API key
-    if (!validApiKeys.has(params.apiKey)) {
+    if (!validApiKeys.has(apiKey)) {
       throw new MicdropError(MicdropErrorCode.Unauthorized, 'Invalid API key')
     }
 
-    // Setup AI components [..]
+    // Setup agent, STT and TTS [...]
 
-    // Start MicdropServer
     new MicdropServer(socket, { agent, stt, tts })
   } catch (error) {
     handleError(socket, error)
   }
 })
 ```
+
+## Authenticate with a session cookie
+
+The browser sends its cookies with the upgrade request of a WebSocket on the same site, so the server can check a session before the socket even opens, with no token in `params`. A rejection at that stage reaches the page as a close with code 1006, which the Micdrop client reads as a connection error and retries every second. Set `reconnect.maxAttempts` on the client when you reject this way, or accept the upgrade and throw the `Unauthorized` error inside the handler instead. On Fastify, you can [reject the connection in a hook](./with-fastify#reject-the-connection-in-a-hook) or inside the route.
+
+## Tokens and reconnections
+
+The client sends the same `params` again after each reconnection, so the server checks them again on every new connection. A short-lived JWT can therefore expire during a long call. The next network drop then ends the call with `Unauthorized` while the user is still talking.
+
+Give the token used for calls a lifetime longer than your longest call, or fetch a new token when that error arrives and start the call again:
+
+```typescript
+Micdrop.on('Error', async (error) => {
+  if (error.code === 'Unauthorized') {
+    const token = await refreshToken()
+    await Micdrop.start({
+      url: 'wss://example.com/call',
+      params: { authorization: `Bearer ${token}` },
+    })
+  }
+})
+```
+
+On every connection, your handler creates a new `MicdropServer` whose conversation starts empty. To pick up where the call stopped, send a conversation id in `params` and [replay the saved messages](./resume-conversation).
+
+## Configure each call from its parameters
+
+Once you know the user, set up their call from the parameters. Keep every choice to a closed list on the server side, so a modified client can only pick among what you offer:
+
+```typescript
+const paramsSchema = z.object({
+  authorization: z.string().startsWith('Bearer '),
+  language: z.enum(['en', 'fr']).default('en'),
+  conversationId: z.string().uuid().optional(),
+})
+
+wss.on('connection', async (socket) => {
+  try {
+    const params = await waitForParams(socket, paramsSchema.parse)
+    const user = verifyToken(params.authorization.slice('Bearer '.length))
+
+    // A conversation id only resumes a conversation of this user
+    const history = params.conversationId
+      ? await db.messages.findMany({
+          conversationId: params.conversationId,
+          userId: user.sub,
+        })
+      : []
+
+    const agent = new OpenaiAgent({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      systemPrompt: prompts[params.language],
+    })
+    for (const message of history) {
+      agent.addMessage(message.role, message.content)
+    }
+
+    // Pick the STT language and the TTS voice from params.language [...]
+
+    new MicdropServer(socket, { agent, stt, tts })
+  } catch (error) {
+    handleError(socket, error)
+  }
+})
+```
+
+A free text parameter, such as a system prompt the user writes, needs a length limit (`z.string().max(10000)`) and a decision on what the user may change in the agent's behavior. In the Micdrop repository, the advanced example [validates a full call configuration](https://github.com/Godefroy/micdrop/blob/main/examples/advanced/server/src/params.ts): language, providers, tools, automatic prompts and an optional system prompt.
+
+## Close codes the client receives
+
+| Server side | Close code | Client error | What the client does |
+|---|---|---|---|
+| No params within 3 seconds, or `validate` throws | 4400 | `BadRequest` | Stops the call |
+| `MicdropError` with `Unauthorized` | 4401 | `Unauthorized` | Stops the call |
+| `MicdropError` with `NotFound` | 4404 | `NotFound` | Stops the call |
+| Any other error passed to `handleError` | 1011 | `InternalServer` | Reconnects |
+
+On the client, [show the user a message for each code](../client/error-handling). Every frame of a call, from the params to the close, is described in [the Micdrop WebSocket protocol](./protocol).
